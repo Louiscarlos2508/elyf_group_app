@@ -223,7 +223,7 @@ class _CreateRoleDialogState extends ConsumerState<CreateRoleDialog>
                         ),
                         const SizedBox(height: 16),
                         // Sélection du module (si pas déjà fourni)
-                        if (widget.moduleId == null)
+                         if (widget.moduleId == null)
                           DropdownButtonFormField<String>(
                             isExpanded: true,
                             initialValue: _selectedModuleId,
@@ -240,7 +240,11 @@ class _CreateRoleDialogState extends ConsumerState<CreateRoleDialog>
                               );
                             }).toList(),
                             onChanged: (value) {
-                              setState(() => _selectedModuleId = value);
+                              setState(() {
+                                _selectedModuleId = value;
+                                // Effacer les permissions si le module change
+                                _selectedPermissions.clear();
+                              });
                             },
                             validator: (value) {
                               if (value == null) {
@@ -362,6 +366,32 @@ class _CreateRoleDialogState extends ConsumerState<CreateRoleDialog>
                       const SizedBox(height: 16),
                       Builder(
                         builder: (context) {
+                          // Si aucun module n'est sélectionné, afficher un message d'invite
+                          if (_selectedModuleId == null && widget.moduleId == null) {
+                            return Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.2)),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.arrow_upward, color: theme.colorScheme.primary, size: 20),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      'Sélectionnez d\'abord un module pour voir les permissions disponibles',
+                                      style: theme.textTheme.bodyMedium?.copyWith(
+                                        color: theme.colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }
+
                           // Récupérer toutes les permissions enregistrées depuis PermissionRegistry
                           final registry = PermissionRegistry.instance;
                           final allPermissionsMap = <String, String>{};
@@ -396,16 +426,19 @@ class _CreateRoleDialogState extends ConsumerState<CreateRoleDialog>
                                 permissionsByModule: permissionsByModuleList,
                               );
 
-                          // Si aucune permission n'est enregistrée, essayer de récupérer depuis les rôles existants
-                          if (allPermissionsMap.isEmpty) {
+                          // Si aucune permission n'est enregistrée pour ce module dans le registry
+                          if (allPermissionsMap.isEmpty && _selectedModuleId != null) {
                             return rolesAsync.when(
                               data: (roles) {
-                                final allPermissions = <String>{};
+                                // Filtrer uniquement les permissions existantes pour ce module précis
+                                final modulePermissions = <String>{};
                                 for (final role in roles) {
-                                  allPermissions.addAll(role.permissions);
+                                  if (role.moduleId == _selectedModuleId) {
+                                    modulePermissions.addAll(role.permissions);
+                                  }
                                 }
 
-                                if (allPermissions.isEmpty) {
+                                if (modulePermissions.isEmpty) {
                                   return Padding(
                                     padding: const EdgeInsets.all(16),
                                     child: Column(
@@ -414,24 +447,12 @@ class _CreateRoleDialogState extends ConsumerState<CreateRoleDialog>
                                         Icon(
                                           Icons.info_outline,
                                           size: 48,
-                                          color: theme
-                                              .colorScheme
-                                              .onSurfaceVariant,
+                                          color: theme.colorScheme.onSurfaceVariant,
                                         ),
                                         const SizedBox(height: 8),
                                         Text(
-                                          'Aucune permission disponible',
+                                          'Aucune permission trouvée pour ce module',
                                           style: theme.textTheme.bodyMedium,
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          'Les permissions doivent être enregistrées dans PermissionRegistry',
-                                          style: theme.textTheme.bodySmall
-                                              ?.copyWith(
-                                                color: theme
-                                                    .colorScheme
-                                                    .onSurfaceVariant,
-                                              ),
                                           textAlign: TextAlign.center,
                                         ),
                                       ],
@@ -440,10 +461,21 @@ class _CreateRoleDialogState extends ConsumerState<CreateRoleDialog>
                                 }
 
                                 final sortedPermissions =
-                                    allPermissions.toList()..sort();
+                                    modulePermissions.toList()..sort();
 
                                 return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
+                                    Padding(
+                                      padding: const EdgeInsets.only(bottom: 8),
+                                      child: Text(
+                                        'Note: Ce module n\'est pas dans le registre. Seules les permissions déjà attribuées à d\'autres rôles du même module sont affichées.',
+                                        style: theme.textTheme.bodySmall?.copyWith(
+                                          color: theme.colorScheme.error,
+                                          fontStyle: FontStyle.italic,
+                                        ),
+                                      ),
+                                    ),
                                     Row(
                                       children: [
                                         Expanded(
@@ -453,7 +485,7 @@ class _CreateRoleDialogState extends ConsumerState<CreateRoleDialog>
                                             ),
                                             value:
                                                 _selectedPermissions.length ==
-                                                sortedPermissions.length,
+                                                sortedPermissions.length && _selectedPermissions.isNotEmpty,
                                             onChanged: (value) {
                                               setState(() {
                                                 if (value == true) {
@@ -471,8 +503,10 @@ class _CreateRoleDialogState extends ConsumerState<CreateRoleDialog>
                                     ),
                                     const Divider(),
                                     ...sortedPermissions.map((permission) {
+                                      final name = registry.getPermissionName(permission) ?? permission;
                                       return CheckboxListTile(
-                                        title: Text(permission),
+                                        title: Text(name),
+                                        subtitle: Text(permission, style: theme.textTheme.bodySmall),
                                         value: _selectedPermissions.contains(
                                           permission,
                                         ),

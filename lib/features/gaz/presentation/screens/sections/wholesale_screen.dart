@@ -12,6 +12,8 @@ import '../../widgets/gaz_header.dart';
 import '../../widgets/gaz_session_guard.dart';
 import '../wholesaler_management_screen.dart';
 import '../../../../../shared/presentation/widgets/elyf_ui/atoms/elyf_icon_button.dart';
+import '../../widgets/wholesale/independent_collection_dialog.dart';
+import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 
 /// Écran des ventes en gros - matches Figma design.
 class GazWholesaleScreen extends ConsumerStatefulWidget {
@@ -47,6 +49,21 @@ class _GazWholesaleScreenState extends ConsumerState<GazWholesaleScreen> {
                   ),
                 ),
                 tooltip: 'Gérer les grossistes',
+              ),
+              ElyfIconButton(
+                icon: Icons.add_circle_outline,
+                onPressed: () {
+                  final enterprise = ref.read(activeEnterpriseProvider).value;
+                  if (enterprise != null) {
+                    showDialog(
+                      context: context,
+                      builder: (context) => IndependentCollectionDialog(
+                        enterpriseId: enterprise.id,
+                      ),
+                    );
+                  }
+                },
+                tooltip: 'Nouvelle Collecte',
               ),
               ElyfIconButton(
                 icon: Icons.refresh,
@@ -256,7 +273,7 @@ class _WholesaleSalesList extends StatelessWidget {
           style: theme.textTheme.titleMedium?.copyWith(
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            color: const Color(0xFF101828),
+            color: theme.colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 16),

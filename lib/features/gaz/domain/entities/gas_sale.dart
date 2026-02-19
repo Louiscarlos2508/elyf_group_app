@@ -1,5 +1,4 @@
 import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
-import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 
 /// Représente une vente de gaz.
 class GasSale {
@@ -187,7 +186,8 @@ enum SaleType {
 
 enum GasSaleDealType {
   exchange('Échange'),
-  newCylinder('Nouveau');
+  newCylinder('Nouveau'),
+  returnCylinder('Retour Consigne');
 
   const GasSaleDealType(this.label);
   final String label;

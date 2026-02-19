@@ -19,6 +19,11 @@ class GazSession {
     this.totalExpenses = 0,
     this.stockReconciliation = const {},
     this.theoreticalStock = const {},
+    this.theoreticalEmptyStock = const {},
+    this.emptyStockReconciliation = const {},
+    this.openingFullStock = const {},
+    this.openingEmptyStock = const {},
+    this.openingCash = 0.0,
   });
 
   final String id;
@@ -38,6 +43,11 @@ class GazSession {
   final double totalExpenses;
   final Map<int, int> stockReconciliation;
   final Map<int, int> theoreticalStock;
+  final Map<int, int> theoreticalEmptyStock;
+  final Map<int, int> emptyStockReconciliation;
+  final Map<int, int> openingFullStock;
+  final Map<int, int> openingEmptyStock;
+  final double openingCash;
 
   bool get isOpen => status == GazSessionStatus.open;
   bool get isClosed => status == GazSessionStatus.closed;
@@ -51,6 +61,10 @@ class GazSession {
     required double physicalCash,
     required String closedBy,
     Map<int, int> physicalStock = const {},
+    Map<int, int> physicalEmptyStock = const {},
+    Map<int, int> openingFullStock = const {},
+    Map<int, int> openingEmptyStock = const {},
+    double openingCash = 0.0,
     String? notes,
   }) {
     final theoretical = metrics.theoreticalCash;
@@ -60,6 +74,15 @@ class GazSession {
       final physicalQty = physicalStock[weight] ?? theoreticalQty;
       stockReconciliation[weight] = physicalQty - theoreticalQty;
     }
+
+    // New: Calculate Empty Stock Reconciliation
+    final emptyStockReconciliation = <int, int>{};
+    for (final weight in metrics.theoreticalEmptyStock.keys) {
+      final theoreticalQty = metrics.theoreticalEmptyStock[weight] ?? 0;
+      final physicalQty = physicalEmptyStock[weight] ?? theoreticalQty;
+      emptyStockReconciliation[weight] = physicalQty - theoreticalQty;
+    }
+
 
     return GazSession(
       id: id,
@@ -78,6 +101,11 @@ class GazSession {
       totalExpenses: metrics.totalExpenses,
       stockReconciliation: stockReconciliation,
       theoreticalStock: metrics.theoreticalStock,
+      theoreticalEmptyStock: metrics.theoreticalEmptyStock,
+      emptyStockReconciliation: emptyStockReconciliation,
+      openingFullStock: openingFullStock,
+      openingEmptyStock: openingEmptyStock,
+      openingCash: openingCash,
     );
   }
 
@@ -99,6 +127,11 @@ class GazSession {
       'totalExpenses': totalExpenses,
       'stockReconciliation': stockReconciliation.map((k, v) => MapEntry(k.toString(), v)),
       'theoreticalStock': theoreticalStock.map((k, v) => MapEntry(k.toString(), v)),
+      'theoreticalEmptyStock': theoreticalEmptyStock.map((k, v) => MapEntry(k.toString(), v)),
+      'emptyStockReconciliation': emptyStockReconciliation.map((k, v) => MapEntry(k.toString(), v)),
+      'openingFullStock': openingFullStock.map((k, v) => MapEntry(k.toString(), v)),
+      'openingEmptyStock': openingEmptyStock.map((k, v) => MapEntry(k.toString(), v)),
+      'openingCash': openingCash,
     };
   }
 
@@ -124,6 +157,19 @@ class GazSession {
       theoreticalStock: (map['theoreticalStock'] as Map<String, dynamic>?)
               ?.map((k, v) => MapEntry(int.parse(k), v as int)) ??
           {},
+      theoreticalEmptyStock: (map['theoreticalEmptyStock'] as Map<String, dynamic>?)
+              ?.map((k, v) => MapEntry(int.parse(k), v as int)) ??
+          {},
+      emptyStockReconciliation: (map['emptyStockReconciliation'] as Map<String, dynamic>?)
+              ?.map((k, v) => MapEntry(int.parse(k), v as int)) ??
+          {},
+      openingFullStock: (map['openingFullStock'] as Map<String, dynamic>?)
+              ?.map((k, v) => MapEntry(int.parse(k), v as int)) ??
+          {},
+      openingEmptyStock: (map['openingEmptyStock'] as Map<String, dynamic>?)
+              ?.map((k, v) => MapEntry(int.parse(k), v as int)) ??
+          {},
+      openingCash: (map['openingCash'] as num?)?.toDouble() ?? 0.0,
     );
   }
 
@@ -145,6 +191,11 @@ class GazSession {
     double? totalExpenses,
     Map<int, int>? stockReconciliation,
     Map<int, int>? theoreticalStock,
+    Map<int, int>? theoreticalEmptyStock,
+    Map<int, int>? emptyStockReconciliation,
+    Map<int, int>? openingFullStock,
+    Map<int, int>? openingEmptyStock,
+    double? openingCash,
   }) {
     return GazSession(
       id: id ?? this.id,
@@ -164,6 +215,11 @@ class GazSession {
       totalExpenses: totalExpenses ?? this.totalExpenses,
       stockReconciliation: stockReconciliation ?? this.stockReconciliation,
       theoreticalStock: theoreticalStock ?? this.theoreticalStock,
+      theoreticalEmptyStock: theoreticalEmptyStock ?? this.theoreticalEmptyStock,
+      emptyStockReconciliation: emptyStockReconciliation ?? this.emptyStockReconciliation,
+      openingFullStock: openingFullStock ?? this.openingFullStock,
+      openingEmptyStock: openingEmptyStock ?? this.openingEmptyStock,
+      openingCash: openingCash ?? this.openingCash,
     );
   }
 }

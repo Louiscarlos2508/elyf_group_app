@@ -8,7 +8,9 @@ import 'package:elyf_groupe_app/shared.dart'
         NavigationSection,
         ProfileScreen,
         AdaptiveNavigationScaffold,
-        DoubleTapToExit;
+        DoubleTapToExit,
+        EnterpriseSelectorWidget,
+        EnterpriseSelectorStyle;
 import '../../application/providers.dart'
     show userControllerProvider, usersProvider, isAdminSyncingProvider;
 import '../../domain/entities/user.dart' show User;
@@ -147,6 +149,7 @@ class _AdminHomeScreenState extends ConsumerState<AdminHomeScreen> {
                 ),
               ),
             ),
+          EnterpriseSelectorWidget(style: EnterpriseSelectorStyle.appBar),
           IconButton(
             icon: const Icon(Icons.person_outline),
             onPressed: () => _navigateToProfile(context),

@@ -130,7 +130,7 @@ class _LeakReportDialogState extends ConsumerState<LeakReportDialog> {
                         border: OutlineInputBorder(),
                         prefixIcon: Icon(Icons.inventory_2_outlined),
                       ),
-                      value: _selectedCylinder,
+                      initialValue: _selectedCylinder,
                       items: cylinders.map((c) => DropdownMenuItem(
                         value: c,
                         child: Text('${c.weight} kg'),

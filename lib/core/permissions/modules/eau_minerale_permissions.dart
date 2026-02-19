@@ -105,6 +105,58 @@ class EauMineralePermissions {
     description: 'Permet de voir l\'historique des crédits',
   );
 
+  // Suppliers
+  static const viewSuppliers = ActionPermission(
+    id: 'view_suppliers',
+    name: 'Voir les fournisseurs',
+    module: 'eau_minerale',
+    description: 'Permet de voir la liste des fournisseurs',
+  );
+
+  static const manageSuppliers = ActionPermission(
+    id: 'manage_suppliers',
+    name: 'Gérer les fournisseurs',
+    module: 'eau_minerale',
+    description: 'Permet de créer, modifier et supprimer des fournisseurs',
+  );
+
+  // Purchases
+  static const viewPurchases = ActionPermission(
+    id: 'view_purchases',
+    name: 'Voir les approvisionnements',
+    module: 'eau_minerale',
+    description: 'Permet de voir les achats et bons de commande',
+  );
+
+  static const createPurchase = ActionPermission(
+    id: 'create_purchase',
+    name: 'Créer un approvisionnement',
+    module: 'eau_minerale',
+    description: 'Permet de créer un nouvel achat ou bon de commande',
+  );
+
+  static const validatePurchaseOrder = ActionPermission(
+    id: 'validate_po',
+    name: 'Valider un bon de commande',
+    module: 'eau_minerale',
+    description: 'Permet de valider la réception d\'un bon de commande',
+  );
+
+  // Treasury / Sessions
+  static const closeSession = ActionPermission(
+    id: 'close_session',
+    name: 'Clôturer la journée',
+    module: 'eau_minerale',
+    description: 'Permet d\'effectuer le Z-Report et clôturer la session',
+  );
+
+  static const viewTreasury = ActionPermission(
+    id: 'view_treasury',
+    name: 'Voir la trésorerie',
+    module: 'eau_minerale',
+    description: 'Permet de voir le solde et les mouvements de trésorerie',
+  );
+
   // Finances
   static const viewFinances = ActionPermission(
     id: 'view_finances',
@@ -245,6 +297,13 @@ class EauMineralePermissions {
     viewCredits,
     collectPayment,
     viewCreditHistory,
+    viewSuppliers,
+    manageSuppliers,
+    viewPurchases,
+    createPurchase,
+    validatePurchaseOrder,
+    closeSession,
+    viewTreasury,
     viewFinances,
     createExpense,
     editExpense,

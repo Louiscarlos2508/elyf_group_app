@@ -57,7 +57,7 @@ class _DepositRefundDialogState extends ConsumerState<DepositRefundDialog> {
               const SizedBox(height: AppSpacing.md),
               cylindersAsync.when(
                 data: (cylinders) => DropdownButtonFormField<Cylinder>(
-                  value: _selectedCylinder,
+                  initialValue: _selectedCylinder,
                   decoration: const InputDecoration(
                     labelText: 'Type de bouteille',
                     border: OutlineInputBorder(),

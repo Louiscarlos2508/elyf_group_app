@@ -15,24 +15,22 @@ class ExpensesEmptyState extends StatelessWidget {
           children: [
             Icon(
               Icons.account_balance_wallet_outlined,
-              size: 48,
-              color: const Color(0xFF6A7282).withValues(alpha: 0.5),
+              size: 64,
+              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.2),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
             Text(
               'Aucune dépense enregistrée',
               style: theme.textTheme.titleMedium?.copyWith(
-                fontSize: 16,
-                fontWeight: FontWeight.normal,
-                color: const Color(0xFF6A7282),
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               'Les dépenses enregistrées apparaîtront ici',
               style: theme.textTheme.bodyMedium?.copyWith(
-                fontSize: 14,
-                color: const Color(0xFF99A1AF),
+                color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
           ],

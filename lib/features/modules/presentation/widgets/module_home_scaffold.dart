@@ -63,7 +63,12 @@ class _ModuleHomeScaffoldState extends State<ModuleHomeScaffold> {
     return Scaffold(
       appBar: _selectedIndex == 1
           ? null
-          : AppBar(title: Text(widget.title), centerTitle: true),
+          : ElyfAppBar(
+              title: widget.title,
+              actions: [
+                EnterpriseSelectorWidget(style: EnterpriseSelectorStyle.appBar),
+              ],
+            ),
       body: IndexedStack(
         index: _selectedIndex,
         children: [

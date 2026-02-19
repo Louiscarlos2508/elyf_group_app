@@ -4,11 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
-import '../../../../core/tenant/tenant_provider.dart';
-import '../../domain/entities/daily_worker.dart';
-import '../../domain/entities/production_payment.dart';
-import '../../domain/entities/production_payment_person.dart';
-import '../../domain/entities/weekly_salary_info.dart';
+import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/daily_worker.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/production_payment.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/production_payment_person.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/weekly_salary_info.dart';
 import 'payment_signature_dialog.dart';
 
 /// Widget pour calculer et afficher les salaires hebdomadaires des ouvriers journaliers.

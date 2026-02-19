@@ -95,10 +95,18 @@ class AppDatabase extends _$AppDatabase {
           await migrator.createTable(saleItemsTable);
         }
         if (from < 3) {
-          await migrator.addColumn(syncOperations, syncOperations.priority);
+          await _addColumnIfNotExists(
+            'sync_operations',
+            'priority',
+            'INTEGER NOT NULL DEFAULT 2',
+          );
         }
         if (from < 5) {
-          await migrator.addColumn(salesTable, salesTable.number);
+          await _addColumnIfNotExists(
+            'sales_table',
+            'number',
+            'TEXT',
+          );
         }
         if (from < 6) {
           await migrator.createTable(propertiesTable);
@@ -113,16 +121,70 @@ class AppDatabase extends _$AppDatabase {
           await migrator.createTable(maintenanceTicketsTable);
         }
         if (from < 9) {
-          await migrator.addColumn(propertyExpensesTable, propertyExpensesTable.paymentMethod);
+          // Use safe SQL to avoid duplicate column error if the table was
+          // created with this column already included in the schema definition.
+          await _addColumnIfNotExists(
+            'property_expenses_table',
+            'payment_method',
+            "TEXT NOT NULL DEFAULT 'cash'",
+          );
         }
         if (from < 10) {
-          await migrator.addColumn(immobilierPaymentsTable, immobilierPaymentsTable.paidAmount);
+          await _addColumnIfNotExists(
+            'immobilier_payments_table',
+            'paid_amount',
+            'INTEGER NOT NULL DEFAULT 0',
+          );
         }
         if (from < 11) {
-          await migrator.addColumn(maintenanceTicketsTable, maintenanceTicketsTable.assignedUserId);
-          await migrator.addColumn(immobilierPaymentsTable, immobilierPaymentsTable.penaltyAmount);
+          await _addColumnIfNotExists(
+            'maintenance_tickets_table',
+            'assigned_user_id',
+            'TEXT',
+          );
+          await _addColumnIfNotExists(
+            'immobilier_payments_table',
+            'penalty_amount',
+            'INTEGER NOT NULL DEFAULT 0',
+          );
         }
       },
     );
+  }
+
+  /// Safely adds a column to a table only if it doesn't already exist.
+  /// SQLite does not support `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` natively,
+  /// so we check the existing columns first via PRAGMA.
+  Future<void> _addColumnIfNotExists(
+    String tableName,
+    String columnName,
+    String columnDefinition,
+  ) async {
+    final result = await customSelect(
+      'PRAGMA table_info($tableName)',
+    ).get();
+    final columnExists = result.any(
+      (row) => row.read<String>('name') == columnName,
+    );
+    if (!columnExists) {
+      await customStatement(
+        'ALTER TABLE $tableName ADD COLUMN $columnName $columnDefinition',
+      );
+    }
+  }
+
+  /// Watches records by collection name and optionally module type.
+  Stream<List<OfflineRecord>> watchRecordsByCollection(
+    String collectionName, {
+    String? moduleType,
+  }) {
+    final query = select(offlineRecords)
+      ..where((t) => t.collectionName.equals(collectionName));
+    
+    if (moduleType != null) {
+      query.where((t) => t.moduleType.equals(moduleType));
+    }
+    
+    return query.watch();
   }
 }

@@ -28,7 +28,7 @@ class PackagingStockMovement {
   final DateTime date;
   final int quantite; // Quantité en UNITÉS (toujours)
   final bool isInLots; // Vrai si saisi en lots
-  final int? quantiteSaisie; // Quantité telle que saisie
+  final double? quantiteSaisie; // Quantité telle que saisie (supporte les décimales pour les lots)
   final String
   raison; // Ex: "Livraison", "Utilisation en production", "Ajustement"
   final String? productionId; // ID de la production si lié à une production
@@ -50,7 +50,7 @@ class PackagingStockMovement {
     DateTime? date,
     int? quantite,
     bool? isInLots,
-    int? quantiteSaisie,
+    double? quantiteSaisie,
     String? raison,
     String? productionId,
     String? fournisseur,
@@ -92,7 +92,7 @@ class PackagingStockMovement {
       quantite: (map['quantite'] as num?)?.toInt() ?? 0,
       raison: map['raison'] as String? ?? '',
       isInLots: map['isInLots'] as bool? ?? false,
-      quantiteSaisie: (map['quantiteSaisie'] as num?)?.toInt(),
+      quantiteSaisie: (map['quantiteSaisie'] as num?)?.toDouble(),
       productionId: map['productionId'] as String?,
       fournisseur: map['fournisseur'] as String?,
       notes: map['notes'] as String?,

@@ -58,7 +58,7 @@ class AdminOfflineRepository implements AdminRepository {
               ?.map((e) => e as String)
               .toSet() ??
           {},
-      moduleId: map['moduleId'] as String? ?? 'general',
+      moduleId: map['moduleId'] as String? ?? 'administration',
       isSystemRole: map['isSystemRole'] as bool? ?? false,
     );
   }
@@ -78,7 +78,9 @@ class AdminOfflineRepository implements AdminRepository {
     if (id.startsWith('local_')) {
       return id;
     }
-    return LocalIdGenerator.generate();
+    // Utiliser un ID local déterministe basé sur l'ID du rôle
+    // pour que l'upsert mette à jour le bon enregistrement
+    return 'local_$id';
   }
 
   String? _getRemoteId(String id) {
@@ -247,6 +249,15 @@ class AdminOfflineRepository implements AdminRepository {
       moduleType: 'administration',
       dataJson: jsonEncode(map),
       localUpdatedAt: DateTime.now(),
+    );
+
+    // Queue sync operation (background)
+    await syncManager.queueUpdate(
+      collectionName: _enterpriseModuleUsersCollection,
+      localId: localId,
+      remoteId: remoteId,
+      data: _enterpriseModuleUserToMap(enterpriseModuleUser),
+      enterpriseId: 'global',
     );
   }
 
@@ -452,6 +463,15 @@ class AdminOfflineRepository implements AdminRepository {
       dataJson: jsonEncode(map),
       localUpdatedAt: DateTime.now(),
     );
+
+    // Queue sync operation (background)
+    await syncManager.queueUpdate(
+      collectionName: _rolesCollection,
+      localId: localId,
+      remoteId: remoteId ?? role.id,
+      data: _userRoleToMap(role),
+      enterpriseId: 'global',
+    );
     return role.id;
   }
 
@@ -473,23 +493,38 @@ class AdminOfflineRepository implements AdminRepository {
     }
 
     final localId = _getLocalId(roleId);
-    final remoteId = _getRemoteId(roleId);
+    // remoteId: si roleId ne commence pas par 'local_', c'est lui-même le remoteId
+    final remoteId = _getRemoteId(roleId) ?? (roleId.startsWith('local_') ? null : roleId);
 
     developer.log(
-      'AdminOfflineRepository.deleteRole: $_rolesCollection/$localId',
+      'AdminOfflineRepository.deleteRole: $_rolesCollection/$localId (remoteId=$remoteId)',
       name: 'admin.repository',
     );
 
-    // Delete from local storage first
-    // Le roleId est utilisé comme remoteId dans Drift
-    await driftService.records.deleteByRemoteId(
-      collectionName: _rolesCollection,
-      remoteId: roleId,
-      enterpriseId: 'global',
-      moduleType: 'administration',
-    );
+    // Delete from local storage — essayer par remoteId d'abord, puis par localId
+    // pour couvrir tous les patterns de stockage possibles.
+    try {
+      await driftService.records.deleteByRemoteId(
+        collectionName: _rolesCollection,
+        remoteId: roleId,
+        enterpriseId: 'global',
+        moduleType: 'administration',
+      );
+    } catch (_) {
+      // Si la suppression par remoteId échoue, essayer par localId
+    }
+    try {
+      await driftService.records.deleteByLocalId(
+        collectionName: _rolesCollection,
+        localId: localId,
+        enterpriseId: 'global',
+        moduleType: 'administration',
+      );
+    } catch (_) {
+      // Ignorer si déjà supprimé
+    }
 
-    // Queue sync operation if has remote ID
+    // Queue sync operation vers Firestore si le rôle a un remoteId
     if (remoteId != null && remoteId.isNotEmpty) {
       await syncManager.queueDelete(
         collectionName: _rolesCollection,

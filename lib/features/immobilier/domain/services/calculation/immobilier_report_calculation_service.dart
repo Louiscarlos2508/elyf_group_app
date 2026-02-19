@@ -1,7 +1,5 @@
 
-import '../../entities/contract.dart';
 import '../../entities/payment.dart';
-import '../../entities/expense.dart';
 
 class ImmobilierReportCalculationService {
   // Logic for report calculations

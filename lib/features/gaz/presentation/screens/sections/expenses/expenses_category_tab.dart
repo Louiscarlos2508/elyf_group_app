@@ -23,13 +23,13 @@ class ExpensesCategoryTab extends StatelessWidget {
 
     return Container(
       margin: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-      padding: const EdgeInsets.all(25),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: Colors.black.withValues(alpha: 0.1),
-          width: 1.3,
+          color: theme.colorScheme.outlineVariant,
+          width: 1,
         ),
       ),
       child: Column(
@@ -38,12 +38,11 @@ class ExpensesCategoryTab extends StatelessWidget {
           Text(
             'Dépenses par catégorie',
             style: theme.textTheme.titleMedium?.copyWith(
-              fontSize: 16,
-              fontWeight: FontWeight.normal,
-              color: const Color(0xFF0A0A0A),
+              fontWeight: FontWeight.bold,
+              color: theme.colorScheme.onSurface,
             ),
           ),
-          const SizedBox(height: 30),
+          const SizedBox(height: 24),
           Expanded(
             child: expensesByCategory.isEmpty
                 ? const ExpensesEmptyState()
@@ -58,16 +57,33 @@ class ExpensesCategoryTab extends StatelessWidget {
                       );
 
                       return Card(
+                        elevation: 0,
                         margin: const EdgeInsets.only(bottom: 12),
+                        color: theme.colorScheme.surfaceContainerLow,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: BorderSide(
+                            color: theme.colorScheme.outlineVariant,
+                            width: 0.5,
+                          ),
+                        ),
                         child: ListTile(
-                          title: Text(category.label),
+                          title: Text(
+                            category.label,
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
                           subtitle: Text(
                             '${categoryExpenses.length} dépense(s)',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
                           ),
                           trailing: Text(
                             CurrencyFormatter.formatDouble(categoryTotal),
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              color: const Color(0xFFE7000B),
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                              color: theme.colorScheme.error,
                               fontWeight: FontWeight.bold,
                             ),
                           ),

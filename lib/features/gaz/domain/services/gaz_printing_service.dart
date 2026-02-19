@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../core/printing/thermal_printer_service.dart';
+import '../../../../core/printing/printer_interface.dart';
 import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
 import '../../domain/entities/gas_sale.dart';
 import '../services/gaz_calculation_service.dart';
@@ -8,7 +8,7 @@ import '../services/gaz_calculation_service.dart';
 class GazPrintingService {
   const GazPrintingService({required this.printerService});
 
-  final ThermalPrinterService printerService;
+  final PrinterInterface printerService;
 
   /// Imprime un reçu pour une vente de gaz.
   Future<bool> printSaleReceipt({
@@ -95,7 +95,7 @@ class GazPrintingService {
       buffer.writeln('PAR FORMAT DE BOUTEILLE:');
       metrics.salesByCylinderWeight.forEach((weight, count) {
         if (count > 0) {
-          buffer.writeln('${weight}kg'.padRight(12) + ': $count unités');
+          buffer.writeln('${'${weight}kg'.padRight(12)}: $count unités');
         }
       });
       buffer.writeln('--------------------------------');

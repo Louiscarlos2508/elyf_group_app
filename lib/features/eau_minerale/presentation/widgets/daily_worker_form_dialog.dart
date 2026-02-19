@@ -125,7 +125,8 @@ class _DailyWorkerFormDialogState extends ConsumerState<DailyWorkerFormDialog> {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 500),
         child: ElyfCard(
-          isGlass: true,
+          isGlass: false,
+          backgroundColor: colors.surface,
           padding: EdgeInsets.zero,
           child: Form(
             key: _formKey,
@@ -278,7 +279,7 @@ class _DailyWorkerFormDialogState extends ConsumerState<DailyWorkerFormDialog> {
         borderSide: BorderSide(color: colors.primary, width: 2),
       ),
       filled: true,
-      fillColor: colors.surfaceContainerLow.withValues(alpha: 0.3),
+      fillColor: colors.surfaceContainerLow,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
     );
   }

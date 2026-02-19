@@ -62,7 +62,7 @@ class _SupplierSettlementDialogState extends State<SupplierSettlementDialog> {
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<PaymentMethod>(
-              value: _paymentMethod,
+              initialValue: _paymentMethod,
               decoration: const InputDecoration(
                 labelText: 'Compte de paiement',
                 border: OutlineInputBorder(),

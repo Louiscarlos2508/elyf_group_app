@@ -42,13 +42,7 @@ class _ModuleMenuScreenState extends ConsumerState<ModuleMenuScreen> {
           elevation: 0,
           actions: activeEnterpriseAsync.asData?.value != null
               ? [
-                  IconButton(
-                    icon: const Icon(Icons.swap_horiz_rounded),
-                    tooltip: 'Changer d\'organisation',
-                    onPressed: () {
-                      ref.read(activeEnterpriseIdProvider.notifier).clearActiveEnterprise();
-                    },
-                  ),
+                  EnterpriseSelectorWidget(style: EnterpriseSelectorStyle.appBar),
                 ]
               : null,
         ),

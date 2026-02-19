@@ -170,6 +170,12 @@ class ModuleSectionsRegistry {
         description: 'Rapports immobiliers',
       ),
       ModuleSection(
+        id: 'settings',
+        name: 'Paramètres',
+        icon: Icons.settings_outlined,
+        description: 'Configuration du module',
+      ),
+      ModuleSection(
         id: 'profile',
         name: 'Profil',
         icon: Icons.person_outline,

@@ -192,8 +192,8 @@ class _PaymentSignatureDialogState extends State<PaymentSignatureDialog> {
               border: Border.all(
                 color: theme.colorScheme.outline.withValues(alpha: 0.3),
               ),
-              borderRadius: BorderRadius.circular(8),
-              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              color: Colors.white, // Always white for signing (like paper)
             ),
             clipBehavior: Clip.hardEdge,
             child: RepaintBoundary(
@@ -218,7 +218,11 @@ class _PaymentSignatureDialogState extends State<PaymentSignatureDialog> {
                       _addPoint(null);
                     },
                     child: CustomPaint(
-                      painter: _SignaturePainter(_points),
+                      painter: _SignaturePainter(
+                        _points, 
+                        Colors.black, // Always black ink
+                        Colors.white, // Always white background for capture
+                      ),
                       size: Size.infinite,
                     ),
                   );
@@ -228,11 +232,19 @@ class _PaymentSignatureDialogState extends State<PaymentSignatureDialog> {
           ),
           const SizedBox(height: 8),
           Row(
-            mainAxisAlignment: MainAxisAlignment.end,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              TextButton(
+              Text(
+                'Signez à l\'intérieur du cadre',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+              TextButton.icon(
                 onPressed: _clearSignature,
-                child: const Text('Effacer'),
+                icon: const Icon(Icons.refresh, size: 16),
+                label: const Text('Effacer'),
               ),
             ],
           ),
@@ -253,15 +265,21 @@ class _PaymentSignatureDialogState extends State<PaymentSignatureDialog> {
 }
 
 class _SignaturePainter extends CustomPainter {
-  _SignaturePainter(this.points);
+  _SignaturePainter(this.points, this.inkColor, this.backgroundColor);
 
   final List<Offset?> points;
+  final Color inkColor;
+  final Color backgroundColor;
 
   @override
   void paint(Canvas canvas, Size size) {
+    // Fill background so capture is opaque even if captured separately
+    final bgPaint = Paint()..color = backgroundColor;
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), bgPaint);
+
     final paint = Paint()
-      ..color = Colors.black
-      ..strokeWidth = 2.5
+      ..color = inkColor
+      ..strokeWidth = 3.0
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
 
@@ -281,6 +299,6 @@ class _SignaturePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_SignaturePainter oldDelegate) {
-    return oldDelegate.points != points;
+    return true; // Simple and reliable during interactions
   }
 }

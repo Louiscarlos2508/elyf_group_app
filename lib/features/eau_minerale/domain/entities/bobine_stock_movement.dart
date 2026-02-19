@@ -4,6 +4,7 @@ class BobineStockMovement {
     required this.id,
     required this.enterpriseId,
     required this.bobineId,
+    this.productId, // ID du produit dans le catalogue
     required this.bobineReference,
     required this.type,
     required this.date,
@@ -11,6 +12,9 @@ class BobineStockMovement {
     required this.raison,
     this.productionId,
     this.machineId,
+    this.bobineUsageId, // Lien vers la stint d'utilisation spécifique
+    this.isInLots = false,
+    this.quantiteSaisie,
     this.notes,
     this.createdAt,
     this.updatedAt,
@@ -21,6 +25,7 @@ class BobineStockMovement {
   final String id;
   final String enterpriseId;
   final String bobineId;
+  final String? productId; // ID du produit dans le catalogue
   final String bobineReference;
   final BobineMovementType type;
   final DateTime date;
@@ -29,6 +34,9 @@ class BobineStockMovement {
   raison; // Ex: "Livraison", "Installation en production", "Retrait après fin"
   final String? productionId; // ID de la production si lié à une production
   final String? machineId; // ID de la machine si lié à une installation
+  final String? bobineUsageId; // ID de l'utilisation (pour reutilisation)
+  final bool isInLots;
+  final double? quantiteSaisie;
   final String? notes;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -39,6 +47,7 @@ class BobineStockMovement {
     String? id,
     String? enterpriseId,
     String? bobineId,
+    String? productId,
     String? bobineReference,
     BobineMovementType? type,
     DateTime? date,
@@ -46,6 +55,9 @@ class BobineStockMovement {
     String? raison,
     String? productionId,
     String? machineId,
+    String? bobineUsageId,
+    bool? isInLots,
+    double? quantiteSaisie,
     String? notes,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -56,6 +68,7 @@ class BobineStockMovement {
       id: id ?? this.id,
       enterpriseId: enterpriseId ?? this.enterpriseId,
       bobineId: bobineId ?? this.bobineId,
+      productId: productId ?? this.productId,
       bobineReference: bobineReference ?? this.bobineReference,
       type: type ?? this.type,
       date: date ?? this.date,
@@ -63,6 +76,9 @@ class BobineStockMovement {
       raison: raison ?? this.raison,
       productionId: productionId ?? this.productionId,
       machineId: machineId ?? this.machineId,
+      bobineUsageId: bobineUsageId ?? this.bobineUsageId,
+      isInLots: isInLots ?? this.isInLots,
+      quantiteSaisie: quantiteSaisie ?? this.quantiteSaisie,
       notes: notes ?? this.notes,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -76,6 +92,7 @@ class BobineStockMovement {
       id: map['id'] as String? ?? map['localId'] as String,
       enterpriseId: map['enterpriseId'] as String? ?? defaultEnterpriseId,
       bobineId: map['bobineId'] as String? ?? '',
+      productId: map['productId'] as String?,
       bobineReference: map['bobineReference'] as String? ?? '',
       type: BobineMovementType.values.byName(map['type'] as String? ?? 'entree'),
       date: DateTime.parse(map['date'] as String),
@@ -83,6 +100,9 @@ class BobineStockMovement {
       raison: map['raison'] as String? ?? '',
       productionId: map['productionId'] as String?,
       machineId: map['machineId'] as String?,
+      bobineUsageId: map['bobineUsageId'] as String?,
+      isInLots: map['isInLots'] as bool? ?? false,
+      quantiteSaisie: (map['quantiteSaisie'] as num?)?.toDouble(),
       notes: map['notes'] as String?,
       createdAt: map['createdAt'] != null
           ? DateTime.parse(map['createdAt'] as String)
@@ -102,6 +122,7 @@ class BobineStockMovement {
       'id': id,
       'enterpriseId': enterpriseId,
       'bobineId': bobineId,
+      'productId': productId,
       'bobineReference': bobineReference,
       'type': type.name,
       'date': date.toIso8601String(),
@@ -109,6 +130,9 @@ class BobineStockMovement {
       'raison': raison,
       'productionId': productionId,
       'machineId': machineId,
+      'bobineUsageId': bobineUsageId,
+      'isInLots': isInLots,
+      'quantiteSaisie': quantiteSaisie,
       'notes': notes,
       'createdAt': createdAt?.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),

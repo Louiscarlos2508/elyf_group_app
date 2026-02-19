@@ -157,12 +157,12 @@ class _CapacityItem extends StatelessWidget {
                   children: [
                     _StatusBadge(
                       label: '$full Pleines',
-                      color: const Color(0xFF10B981), // Emerald
+                      color: theme.colorScheme.primary,
                     ),
                     const SizedBox(width: 8),
                     _StatusBadge(
                       label: '$empty Vides',
-                      color: const Color(0xFF6B7280), // Gray
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ],
                 ),
@@ -172,7 +172,7 @@ class _CapacityItem extends StatelessWidget {
           // Progress-like indicator
           _SmallIndicator(
             value: (full + empty) > 0 ? full / (full + empty) : 0,
-            color: const Color(0xFF10B981),
+            color: theme.colorScheme.primary,
           ),
         ],
       ),

@@ -31,8 +31,13 @@ class InvoicePrintHelpers {
   }
 
   /// Tronque un ID à 8 caractères maximum.
+  /// Retire le préfixe 'local_' pour plus de lisibilité.
   static String truncateId(String id) {
-    if (id.length <= 8) return id.toUpperCase();
-    return id.substring(0, 8).toUpperCase();
+    var cleanId = id;
+    if (id.startsWith('local_')) {
+      cleanId = id.replaceFirst('local_', '');
+    }
+    if (cleanId.length <= 8) return cleanId.toUpperCase();
+    return cleanId.substring(0, 8).toUpperCase();
   }
 }

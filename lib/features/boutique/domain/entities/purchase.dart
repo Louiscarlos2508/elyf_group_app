@@ -79,7 +79,7 @@ class Purchase {
       attachedFiles: attachedFiles ?? this.attachedFiles,
       deletedAt: deletedAt ?? this.deletedAt,
       deletedBy: deletedBy ?? this.deletedBy,
-      createdAt: createdAt ?? this.createdAt,
+      createdAt: createdAt ?? createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       number: number ?? this.number,
       hash: hash ?? this.hash,

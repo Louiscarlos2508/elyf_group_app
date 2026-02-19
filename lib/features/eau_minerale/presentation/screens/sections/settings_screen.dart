@@ -6,7 +6,7 @@ import '../../widgets/centralized_permission_guard.dart';
 import '../../widgets/electricity_meter_config_card.dart';
 import '../../widgets/machine_breakdown_report_card.dart';
 import '../../widgets/machine_management_card.dart';
-import '../../widgets/pack_price_config_card.dart';
+import '../../widgets/machine_management_card.dart';
 
 /// Settings screen for the Eau Minérale module.
 class SettingsScreen extends ConsumerWidget {
@@ -86,10 +86,6 @@ class SettingsScreen extends ConsumerWidget {
                   childAspectRatio: 1.1, // Increased height to prevent overflow
                   children: const [
                     EauMineralePermissionGuard(
-                      permission: EauMineralePermissions.manageProducts,
-                      child: PackPriceConfigCard(),
-                    ),
-                    EauMineralePermissionGuard(
                       permission: EauMineralePermissions.configureProduction,
                       child: ElectricityMeterConfigCard(),
                     ),
@@ -98,11 +94,6 @@ class SettingsScreen extends ConsumerWidget {
               }
               return SliverList(
                 delegate: SliverChildListDelegate(const [
-                  EauMineralePermissionGuard(
-                    permission: EauMineralePermissions.manageProducts,
-                    child: PackPriceConfigCard(),
-                  ),
-                  SizedBox(height: 16),
                   EauMineralePermissionGuard(
                     permission: EauMineralePermissions.configureProduction,
                     child: ElectricityMeterConfigCard(),

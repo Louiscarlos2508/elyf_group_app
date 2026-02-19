@@ -16,7 +16,6 @@ import 'package:elyf_groupe_app/features/boutique/presentation/screens/sections/
 import 'package:elyf_groupe_app/features/boutique/presentation/screens/sections/stock_screen.dart';
 import 'package:elyf_groupe_app/features/boutique/presentation/screens/sections/settings_screen.dart';
 import 'package:elyf_groupe_app/features/boutique/presentation/screens/sections/sales_screen.dart';
-import 'package:elyf_groupe_app/shared/presentation/widgets/profile/profile_screen.dart';
 import 'permission_providers.dart';
 
 /// Provider pour récupérer les sections accessibles selon les permissions.

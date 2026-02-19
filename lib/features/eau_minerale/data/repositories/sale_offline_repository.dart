@@ -296,6 +296,25 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
   }
 
   @override
+  Future<void> updateSale(Sale sale) async {
+    try {
+      final saleToUpdate = sale.copyWith(
+        updatedAt: DateTime.now(),
+      );
+      await save(saleToUpdate);
+    } catch (error, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
+      AppLogger.error(
+        'Error updating sale: ${appException.message}',
+        name: 'SaleOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      throw appException;
+    }
+  }
+
+  @override
   Future<void> deleteSale(String saleId) async {
     try {
       final sale = await getSale(saleId);

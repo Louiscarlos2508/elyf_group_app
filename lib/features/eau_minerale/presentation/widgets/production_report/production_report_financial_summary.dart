@@ -21,14 +21,27 @@ class ProductionReportFinancialSummary extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final electricityRate = ref.watch(electricityRateProvider).value;
+
     final coutPersonnel = session.coutTotalPersonnel;
     final coutBobines = session.coutBobines ?? 0;
-    final coutElectricite = session.coutElectricite ?? 0;
+    
+    // Calculate electricity cost: preference for saved cost, fallback to rate * consumption
+    int coutElectricite = session.coutElectricite ?? 0;
+    if (coutElectricite == 0 && electricityRate != null && session.consommationCourant > 0) {
+      coutElectricite = (session.consommationCourant * electricityRate).round();
+    }
+
     final coutDepenses = linkedExpenses.fold<int>(
       0,
       (sum, expense) => sum + expense.amountCfa,
     );
-    final coutTotal = session.coutTotal + coutDepenses;
+    
+    // Total production cost (base session + dynamic electricity + linked expenses)
+    // Note: session.coutTotal already includes session.coutElectricite if it was saved
+    // So we calculate manually to be safe with the dynamic fallback
+    final sessionBaseCosts = (session.coutBobines ?? 0) + (session.coutEmballages ?? 0) + session.coutTotalPersonnel;
+    final coutTotal = sessionBaseCosts + coutElectricite + coutDepenses;
     
     // Calculer les revenus estimés basés sur la quantité produite et le prix moyen des ventes
     final revenusEstimes = _calculateEstimatedRevenue(ref, session);
@@ -36,6 +49,10 @@ class ProductionReportFinancialSummary extends ConsumerWidget {
     final margePourcentage = revenusEstimes > 0
         ? (marge / revenusEstimes * 100)
         : 0.0;
+    
+    // Unit cost price (prix de revient)
+    final totalUnits = session.quantiteProduite > 0 ? session.quantiteProduite : 1;
+    final prixDeRevient = coutTotal / totalUnits;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -100,6 +117,12 @@ class ProductionReportFinancialSummary extends ConsumerWidget {
                 theme: theme,
                 isTotal: true,
               ),
+              const SizedBox(height: 8),
+              _buildUnitPriceRow(
+                context,
+                'Prix de revient',
+                '${prixDeRevient.toStringAsFixed(2)} CFA / ${session.quantiteProduiteUnite}',
+              ),
               if (revenusEstimes > 0) ...[
                 const SizedBox(height: 16),
                 Text(
@@ -130,6 +153,32 @@ class ProductionReportFinancialSummary extends ConsumerWidget {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildUnitPriceRow(BuildContext context, String label, String value) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          Text(
+            value,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.primary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
     );
   }
 

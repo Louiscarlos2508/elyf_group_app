@@ -225,7 +225,7 @@ class _GazTreasuryOperationDialogState extends ConsumerState<GazTreasuryOperatio
     required ValueChanged<PaymentMethod?> onChanged,
   }) {
     return DropdownButtonFormField<PaymentMethod>(
-      value: value,
+      initialValue: value,
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: const Icon(Icons.account_balance_outlined),

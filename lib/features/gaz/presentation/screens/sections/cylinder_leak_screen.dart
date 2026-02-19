@@ -6,7 +6,6 @@ import 'package:elyf_groupe_app/core/logging/app_logger.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder_leak.dart';
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import 'package:elyf_groupe_app/features/gaz/presentation/widgets/leak_report_dialog.dart';
-import 'package:elyf_groupe_app/features/gaz/presentation/widgets/exchange_dialog.dart';
 import 'package:elyf_groupe_app/features/gaz/presentation/widgets/supplier_claim_dialog.dart';
 import 'cylinder_leak/leak_filters.dart';
 import 'cylinder_leak/leak_header.dart';

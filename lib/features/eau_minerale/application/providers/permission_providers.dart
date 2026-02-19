@@ -8,6 +8,7 @@ import '../../../../core/permissions/services/permission_service.dart';
 import '../../../../core/auth/providers.dart' as auth;
 import '../../domain/adapters/eau_minerale_permission_adapter.dart';
 import '../../domain/entities/eau_minerale_section.dart';
+import '../../presentation/screens/sections/catalog_screen.dart';
 import '../../presentation/screens/sections/clients_screen.dart';
 import '../../presentation/screens/sections/dashboard_screen.dart';
 import '../../presentation/screens/sections/finances_screen.dart';
@@ -18,17 +19,13 @@ import '../../presentation/screens/sections/salaries_screen.dart';
 import '../../presentation/screens/sections/sales_screen.dart';
 import '../../presentation/screens/sections/settings_screen.dart';
 import '../../presentation/screens/sections/stock_screen.dart';
-
-/// Initialize permissions when module loads
-void _initializeEauMineralePermissions() {
-  EauMineralePermissionAdapter.initialize();
-}
+import '../../presentation/screens/sections/suppliers_screen.dart';
+import '../../presentation/screens/sections/purchases_screen.dart';
+import '../../presentation/screens/sections/treasury_screen.dart';
 
 /// Provider for centralized permission service.
 /// Uses the shared permission service from administration module.
 final centralizedPermissionServiceProvider = Provider<PermissionService>((ref) {
-  // Initialize permissions on first access
-  _initializeEauMineralePermissions();
   return ref.watch(permissionServiceProvider);
 });
 
@@ -96,16 +93,16 @@ final _allSections = [
     builder: () => const DashboardScreen(),
   ),
   EauMineraleSectionConfig(
-    id: EauMineraleSection.production,
-    label: 'Production',
-    icon: Icons.factory_outlined,
-    builder: () => const ProductionSessionsScreen(),
-  ),
-  EauMineraleSectionConfig(
     id: EauMineraleSection.sales,
     label: 'Ventes',
     icon: Icons.point_of_sale,
     builder: () => const SalesScreen(),
+  ),
+  EauMineraleSectionConfig(
+    id: EauMineraleSection.production,
+    label: 'Production',
+    icon: Icons.factory_outlined,
+    builder: () => const ProductionSessionsScreen(),
   ),
   EauMineraleSectionConfig(
     id: EauMineraleSection.stock,
@@ -114,16 +111,34 @@ final _allSections = [
     builder: () => const StockScreen(),
   ),
   EauMineraleSectionConfig(
-    id: EauMineraleSection.clients,
-    label: 'Crédits',
-    icon: Icons.credit_card,
-    builder: () => const ClientsScreen(),
+    id: EauMineraleSection.purchases,
+    label: 'Achats',
+    icon: Icons.add_shopping_cart,
+    builder: () => const PurchasesScreen(),
+  ),
+  EauMineraleSectionConfig(
+    id: EauMineraleSection.suppliers,
+    label: 'Fournisseurs',
+    icon: Icons.local_shipping_outlined,
+    builder: () => const SuppliersScreen(),
+  ),
+  EauMineraleSectionConfig(
+    id: EauMineraleSection.treasury,
+    label: 'Trésorerie',
+    icon: Icons.account_balance_wallet_outlined,
+    builder: () => const TreasuryScreen(),
   ),
   EauMineraleSectionConfig(
     id: EauMineraleSection.finances,
     label: 'Dépenses',
     icon: Icons.receipt_long,
     builder: () => const FinancesScreen(),
+  ),
+  EauMineraleSectionConfig(
+    id: EauMineraleSection.clients,
+    label: 'Crédits',
+    icon: Icons.credit_card,
+    builder: () => const ClientsScreen(),
   ),
   EauMineraleSectionConfig(
     id: EauMineraleSection.salaries,
@@ -136,6 +151,12 @@ final _allSections = [
     label: 'Rapports',
     icon: Icons.description,
     builder: () => const ReportsScreen(),
+  ),
+  EauMineraleSectionConfig(
+    id: EauMineraleSection.catalog,
+    label: 'Catalogue',
+    icon: Icons.inventory_2_outlined,
+    builder: () => const CatalogScreen(),
   ),
   EauMineraleSectionConfig(
     id: EauMineraleSection.profile,
@@ -179,33 +200,31 @@ final accessibleSectionsProvider =
 
 /// Provider for navigation sections used in the shell.
 /// Memoizes the conversion from EauMineraleSectionConfig to NavigationSection.
-final navigationSectionsProvider = Provider.family<
+final navigationSectionsProvider = FutureProvider.family<
   List<NavigationSection>,
   ({String enterpriseId, String moduleId})
->((ref, params) {
-  final sectionsAsync = ref.watch(accessibleSectionsProvider);
+>((ref, params) async {
+  final configs = await ref.watch(accessibleSectionsProvider.future);
 
-  return sectionsAsync.maybeWhen(
-    data: (configs) {
-      final primarySectionIds = {
-        EauMineraleSection.activity,
-        EauMineraleSection.production,
-        EauMineraleSection.sales,
-        EauMineraleSection.stock,
-        EauMineraleSection.clients,
-      };
+  final primarySectionIds = {
+    EauMineraleSection.activity,
+    EauMineraleSection.sales,
+    EauMineraleSection.production,
+    EauMineraleSection.stock,
+    EauMineraleSection.purchases,
+    EauMineraleSection.treasury,
+    EauMineraleSection.finances,
+    EauMineraleSection.clients,
+  };
 
-      return configs.map((config) {
-        return NavigationSection(
-          label: config.label,
-          icon: config.icon,
-          builder: config.builder,
-          isPrimary: primarySectionIds.contains(config.id),
-          enterpriseId: params.enterpriseId,
-          moduleId: params.moduleId,
-        );
-      }).toList();
-    },
-    orElse: () => [],
-  );
+  return configs.map((config) {
+    return NavigationSection(
+      label: config.label,
+      icon: config.icon,
+      builder: config.builder,
+      isPrimary: primarySectionIds.contains(config.id),
+      enterpriseId: params.enterpriseId,
+      moduleId: params.moduleId,
+    );
+  }).toList();
 });

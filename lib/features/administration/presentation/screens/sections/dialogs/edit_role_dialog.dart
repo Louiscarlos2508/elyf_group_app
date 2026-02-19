@@ -26,6 +26,7 @@ class _EditRoleDialogState extends ConsumerState<EditRoleDialog>
   late final TextEditingController _nameController;
   late final TextEditingController _descriptionController;
 
+  late String _selectedModuleId;
   late Set<String> _selectedPermissions;
   bool _isLoading = false;
 
@@ -37,67 +38,53 @@ class _EditRoleDialogState extends ConsumerState<EditRoleDialog>
     _descriptionController = TextEditingController(
       text: widget.role.description,
     );
+    _selectedModuleId = widget.role.moduleId;
     // Normaliser les permissions pour s'assurer qu'elles correspondent aux IDs du PermissionRegistry
     _selectedPermissions = _normalizePermissions(widget.role.permissions);
   }
 
   /// Normalise les IDs de permissions pour qu'ils correspondent au format du PermissionRegistry.
   ///
-  /// Les permissions peuvent être stockées avec ou sans préfixe de module.
-  /// Cette méthode s'assure qu'elles sont dans le bon format pour la comparaison.
+  /// Seules les permissions du module de ce rôle sont considérées si le module est enregistré.
   Set<String> _normalizePermissions(Set<String> permissions) {
     final normalized = <String>{};
     final registry = PermissionRegistry.instance;
 
-    // Créer un index de toutes les permissions disponibles dans le registry
-    // pour une recherche plus rapide
-    final allRegistryPermissions = <String>{};
-    for (final moduleId in registry.registeredModules) {
-      final modulePerms = registry.getModulePermissions(moduleId);
-      if (modulePerms != null) {
-        allRegistryPermissions.addAll(modulePerms.keys);
-      }
+    // Récupérer les permissions enregistrées pour ce module
+    final modulePermissions = registry.getModulePermissions(_selectedModuleId);
+    final modulePermissionIds = modulePermissions?.keys.toSet() ?? {};
+
+    // Si le module n'est pas enregistré, on garde les permissions actuelles telles quelles
+    // pour éviter toute perte de données accidentelle lors de l'ouverture du dialogue.
+    if (modulePermissionIds.isEmpty) {
+      return Set.from(permissions);
     }
 
     for (final permissionId in permissions) {
-      String? normalizedId;
-
       // Si la permission contient un point (format module.permission), extraire juste l'ID
-      if (permissionId.contains('.')) {
-        final parts = permissionId.split('.');
-        // Prendre la dernière partie comme ID de permission
-        final permissionIdOnly = parts.last;
-        
-        // Vérifier si cette permission existe dans le registry
-        if (allRegistryPermissions.contains(permissionIdOnly)) {
-          normalizedId = permissionIdOnly;
-        }
-      } else {
-        // Vérifier si la permission existe directement dans le registry
-        if (allRegistryPermissions.contains(permissionId)) {
-          normalizedId = permissionId;
-        }
-      }
+      final permissionIdOnly = permissionId.contains('.') 
+          ? permissionId.split('.').last 
+          : permissionId;
 
-      // Ajouter la permission normalisée ou l'originale si pas trouvée
-      if (normalizedId != null) {
-        normalized.add(normalizedId);
-      } else {
-        // Garder l'ID original si pas trouvé dans le registry
-        // (pour les permissions personnalisées ou non enregistrées)
-        normalized.add(permissionId);
+      if (modulePermissionIds.contains(permissionIdOnly)) {
+        normalized.add(permissionIdOnly);
       }
+      // Note: on ignore les permissions qui ne sont pas dans le PermissionRegistry pour ce module
+      // seulement SI le module a des permissions enregistrées.
     }
 
     return normalized;
   }
+
 
   @override
   void didUpdateWidget(EditRoleDialog oldWidget) {
     super.didUpdateWidget(oldWidget);
     // Mettre à jour les permissions si le rôle a changé
     if (oldWidget.role.id != widget.role.id ||
-        oldWidget.role.permissions != widget.role.permissions) {
+        oldWidget.role.permissions != widget.role.permissions ||
+        oldWidget.role.moduleId != widget.role.moduleId) {
+      _selectedModuleId = widget.role.moduleId;
       _selectedPermissions = _normalizePermissions(widget.role.permissions);
       _nameController.text = widget.role.name;
       _descriptionController.text = widget.role.description;
@@ -136,6 +123,7 @@ class _EditRoleDialogState extends ConsumerState<EditRoleDialog>
         final updatedRole = widget.role.copyWith(
           name: _nameController.text.trim(),
           description: _descriptionController.text.trim(),
+          moduleId: _selectedModuleId,
           permissions: _selectedPermissions,
         );
 
@@ -216,6 +204,50 @@ class _EditRoleDialogState extends ConsumerState<EditRoleDialog>
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Column(
                     children: [
+                      // Sélecteur de Module
+                      if (!widget.role.isSystemRole) ...[
+                        DropdownButtonFormField<String>(
+                          value: _selectedModuleId,
+                          decoration: _buildInputDecoration(
+                            theme,
+                            'Module associé *',
+                            'Sélectionnez le module',
+                            Icons.view_module_outlined,
+                          ),
+                          items: () {
+                            final modules = Set<String>.from(PermissionRegistry.instance.registeredModules);
+                            modules.add(_selectedModuleId);
+                            
+                            return modules.map((moduleId) {
+                              return DropdownMenuItem(
+                                value: moduleId,
+                                child: Text(_getModuleName(moduleId)),
+                              );
+                            }).toList();
+                          }(),
+                          onChanged: (value) {
+                            if (value != null) {
+                              setState(() {
+                                _selectedModuleId = value;
+                                // Réinitialiser les permissions seulement si le module change réellement
+                                if (value != widget.role.moduleId) {
+                                  _selectedPermissions.clear();
+                                } else {
+                                  _selectedPermissions = _normalizePermissions(widget.role.permissions);
+                                }
+                              });
+                            }
+                          },
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Le module est requis';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+
                       TextFormField(
                         controller: _nameController,
                         decoration: _buildInputDecoration(
@@ -266,8 +298,8 @@ class _EditRoleDialogState extends ConsumerState<EditRoleDialog>
                           final permissionsByModuleList =
                               <String, List<ModulePermission>>{};
 
-                          // Parcourir uniquement le module de ce rôle
-                          for (final moduleId in [widget.role.moduleId]) {
+                          // Parcourir uniquement le module sélectionné
+                          for (final moduleId in [_selectedModuleId]) {
                             final modulePermissions = registry
                                 .getModulePermissions(moduleId);
                             if (modulePermissions != null) {
@@ -290,112 +322,67 @@ class _EditRoleDialogState extends ConsumerState<EditRoleDialog>
                                 permissionsByModule: permissionsByModuleList,
                               );
 
-                          // Si aucune permission n'est enregistrée, essayer de récupérer depuis les rôles existants
+                          // Si aucune permission n'est enregistrée pour ce module dans le registry
                           if (allPermissionsMap.isEmpty) {
-                            return rolesAsync.when(
-                              data: (roles) {
-                                final allPermissions = <String>{};
-                                for (final role in roles) {
-                                  allPermissions.addAll(role.permissions);
-                                }
-
-                                if (allPermissions.isEmpty) {
-                                  return Padding(
-                                    padding: const EdgeInsets.all(16),
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          Icons.info_outline,
-                                          size: 48,
-                                          color: theme
-                                              .colorScheme
-                                              .onSurfaceVariant,
-                                        ),
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          'Aucune permission disponible',
-                                          style: theme.textTheme.bodyMedium,
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          'Les permissions doivent être enregistrées dans PermissionRegistry',
-                                          style: theme.textTheme.bodySmall
-                                              ?.copyWith(
-                                                color: theme
-                                                    .colorScheme
-                                                    .onSurfaceVariant,
-                                              ),
-                                          textAlign: TextAlign.center,
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                }
-
-                                final sortedPermissions =
-                                    allPermissions.toList()..sort();
-
-                                return Column(
+                            // On affiche uniquement les permissions déjà présentes dans le rôle
+                            // pour éviter de "polluer" avec les permissions d'autres rôles
+                            if (_selectedPermissions.isEmpty) {
+                              return Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    if (!widget.role.isSystemRole)
-                                      Row(
-                                        children: [
-                                          Expanded(
-                                            child: CheckboxListTile(
-                                              title: const Text(
-                                                'Toutes les permissions',
-                                              ),
-                                              value:
-                                                  _selectedPermissions.length ==
-                                                  sortedPermissions.length,
-                                              onChanged: (value) {
-                                                setState(() {
-                                                  if (value == true) {
-                                                    _selectedPermissions.addAll(
-                                                      sortedPermissions,
-                                                    );
-                                                  } else {
-                                                    _selectedPermissions
-                                                        .clear();
-                                                  }
-                                                });
-                                              },
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    if (!widget.role.isSystemRole)
-                                      const Divider(),
-                                    ...sortedPermissions.map((permission) {
-                                      return CheckboxListTile(
-                                        title: Text(permission),
-                                        value: _selectedPermissions.contains(
-                                          permission,
-                                        ),
-                                        enabled: !widget.role.isSystemRole,
-                                        onChanged: widget.role.isSystemRole
-                                            ? null
-                                            : (value) {
-                                                setState(() {
-                                                  if (value == true) {
-                                                    _selectedPermissions.add(
-                                                      permission,
-                                                    );
-                                                  } else {
-                                                    _selectedPermissions.remove(
-                                                      permission,
-                                                    );
-                                                  }
-                                                });
-                                              },
-                                      );
-                                    }),
+                                    Icon(
+                                      Icons.info_outline,
+                                      size: 48,
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'Aucune permission enregistrée pour ce module',
+                                      style: theme.textTheme.bodyMedium,
+                                      textAlign: TextAlign.center,
+                                    ),
                                   ],
-                                );
-                              },
-                              loading: () => const LinearProgressIndicator(),
-                              error: (error, stack) => Text('Erreur: $error'),
+                                ),
+                              );
+                            }
+
+                            final sortedPermissions = _selectedPermissions.toList()..sort();
+
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 8),
+                                  child: Text(
+                                    'Note: Ce module n\'est pas configuré dans le registre. Seules les permissions existantes sont affichées.',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: theme.colorScheme.error,
+                                      fontStyle: FontStyle.italic,
+                                    ),
+                                  ),
+                                ),
+                                ...sortedPermissions.map((permissionId) {
+                                  // Essayer d'obtenir un nom lisible même si le module est différent
+                                  final name = registry.getPermissionName(permissionId) ?? permissionId;
+                                  return CheckboxListTile(
+                                    title: Text(name),
+                                    subtitle: Text(permissionId, style: theme.textTheme.bodySmall),
+                                    value: true, // Ces permissions sont forcément sélectionnées puisqu'on les tire de _selectedPermissions
+                                    enabled: !widget.role.isSystemRole,
+                                    onChanged: widget.role.isSystemRole
+                                        ? null
+                                        : (value) {
+                                            if (value == false) {
+                                              setState(() {
+                                                _selectedPermissions.remove(permissionId);
+                                              });
+                                            }
+                                          },
+                                  );
+                                }),
+                              ],
                             );
                           }
 
@@ -406,6 +393,29 @@ class _EditRoleDialogState extends ConsumerState<EditRoleDialog>
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              // En-tête avec statistiques
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 8),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.info_outline,
+                                      size: 16,
+                                      color: theme.colorScheme.primary,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        '${allPermissionsMap.length} permission${allPermissionsMap.length > 1 ? 's' : ''} disponible${allPermissionsMap.length > 1 ? 's' : ''} (${organizedPermissions.length} module${organizedPermissions.length > 1 ? 's' : ''})',
+                                        style: theme.textTheme.bodySmall
+                                            ?.copyWith(
+                                              color: theme.colorScheme.primary,
+                                            ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                               if (!widget.role.isSystemRole)
                                 Row(
                                   children: [
@@ -433,7 +443,41 @@ class _EditRoleDialogState extends ConsumerState<EditRoleDialog>
                                     ),
                                   ],
                                 ),
-                              if (!widget.role.isSystemRole) const Divider(),
+                              const Divider(),
+                              // Afficher les permissions sélectionnées qui ne sont pas dans le registre (orphelines)
+                              if (_selectedPermissions.any((p) => !allPermissionsMap.containsKey(p)))
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(vertical: 8),
+                                      child: Text(
+                                        'Permissions additionnelles (hors registre)',
+                                        style: theme.textTheme.titleSmall?.copyWith(
+                                          color: theme.colorScheme.error,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                    ..._selectedPermissions.where((p) => !allPermissionsMap.containsKey(p)).map((permissionId) {
+                                      final name = registry.getPermissionName(permissionId) ?? permissionId;
+                                      return CheckboxListTile(
+                                        title: Text(name),
+                                        subtitle: Text(permissionId, style: theme.textTheme.bodySmall),
+                                        value: true,
+                                        enabled: !widget.role.isSystemRole,
+                                        onChanged: (value) {
+                                          if (value == false) {
+                                            setState(() {
+                                              _selectedPermissions.remove(permissionId);
+                                            });
+                                          }
+                                        },
+                                      );
+                                    }),
+                                    const Divider(),
+                                  ],
+                                ),
                               // Afficher les permissions organisées par module → section
                               if (organizedPermissions.length > 1)
                                 ...organizedPermissions.map((moduleData) {

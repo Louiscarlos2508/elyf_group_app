@@ -12,6 +12,9 @@ abstract class BobineStockQuantityRepository {
   /// Récupère un stock de bobine par son type.
   Future<BobineStock?> fetchByType(String type);
 
+  /// Récupère un stock de bobine par l'ID de produit du catalogue.
+  Future<BobineStock?> fetchByProductId(String productId);
+
   /// Crée ou met à jour un stock de bobine.
   Future<BobineStock> save(BobineStock stock);
 

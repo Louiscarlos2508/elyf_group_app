@@ -155,7 +155,7 @@ class _StockAdjustmentDialogState extends ConsumerState<StockAdjustmentDialog> {
             ),
             const SizedBox(height: 24),
             DropdownButtonFormField<String>(
-              value: _reason,
+              initialValue: _reason,
               decoration: const InputDecoration(
                 labelText: 'Motif de l\'ajustement',
                 prefixIcon: Icon(Icons.info_outline),

@@ -1,4 +1,5 @@
 import 'payment_status.dart';
+import 'material_consumption.dart';
 
 /// Représente un jour de production avec le personnel et la production journalière.
 class ProductionDay {
@@ -21,6 +22,8 @@ class ProductionDay {
     this.paymentStatus = PaymentStatus.unpaid,
     this.paymentId,
     this.datePaiement,
+    this.consumptions = const [],
+    this.producedItems = const [],
   });
 
   /// Identifiant unique du jour de production.
@@ -78,6 +81,12 @@ class ProductionDay {
   /// Date à laquelle le paiement a été effectué.
   final DateTime? datePaiement;
 
+  /// Liste des matières consommées ce jour‑là (emballages, etc. hors bobines).
+  final List<MaterialConsumption> consumptions;
+
+  /// Liste des produits finis produits ce jour‑là.
+  final List<MaterialConsumption> producedItems;
+
   /// Coût total du personnel pour ce jour.
   /// Utilise [coutTotalPersonnelStored] si présent, sinon nombrePersonnes × salaireJournalierParPersonne.
   int get coutTotalPersonnel =>
@@ -88,7 +97,7 @@ class ProductionDay {
   bool get aPersonnel => nombrePersonnes > 0 && personnelIds.isNotEmpty;
 
   /// Indique si une production a été saisie pour ce jour.
-  bool get aProduction => packsProduits > 0 || emballagesUtilises > 0;
+  bool get aProduction => producedItems.isNotEmpty || packsProduits > 0 || consumptions.isNotEmpty || emballagesUtilises > 0;
   bool get isDeleted => deletedAt != null;
 
   ProductionDay copyWith({
@@ -110,6 +119,8 @@ class ProductionDay {
     PaymentStatus? paymentStatus,
     String? paymentId,
     DateTime? datePaiement,
+    List<MaterialConsumption>? consumptions,
+    List<MaterialConsumption>? producedItems,
   }) {
     return ProductionDay(
       id: id ?? this.id,
@@ -132,6 +143,8 @@ class ProductionDay {
       paymentStatus: paymentStatus ?? this.paymentStatus,
       paymentId: paymentId ?? this.paymentId,
       datePaiement: datePaiement ?? this.datePaiement,
+      consumptions: consumptions ?? this.consumptions,
+      producedItems: producedItems ?? this.producedItems,
     );
   }
 
@@ -170,6 +183,12 @@ class ProductionDay {
       datePaiement: map['datePaiement'] != null
           ? DateTime.parse(map['datePaiement'] as String)
           : null,
+      consumptions: (map['consumptions'] as List? ?? [])
+          .map((e) => MaterialConsumption.fromMap(e as Map<String, dynamic>))
+          .toList(),
+      producedItems: (map['producedItems'] as List? ?? [])
+          .map((e) => MaterialConsumption.fromMap(e as Map<String, dynamic>))
+          .toList(),
     );
   }
 
@@ -193,6 +212,8 @@ class ProductionDay {
       'paymentStatus': paymentStatus.name,
       'paymentId': paymentId,
       'datePaiement': datePaiement?.toIso8601String(),
+      'consumptions': consumptions.map((e) => e.toMap()).toList(),
+      'producedItems': producedItems.map((e) => e.toMap()).toList(),
     };
   }
 }

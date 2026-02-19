@@ -18,4 +18,7 @@ abstract class GasRepository {
   Future<void> addSale(GasSale sale);
   Future<void> updateSale(GasSale sale);
   Future<void> deleteSale(String id);
+  
+  /// Exécute une transaction de vente avec mise à jour bi-modale du stock.
+  Future<void> executeSaleTransaction(GasSale sale);
 }

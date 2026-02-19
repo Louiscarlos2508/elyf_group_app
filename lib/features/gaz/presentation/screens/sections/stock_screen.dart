@@ -38,7 +38,12 @@ class _GazStockScreenState extends ConsumerState<GazStockScreen> {
     
     if (_enterpriseId == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Stock')),
+        appBar: ElyfAppBar(
+          title: 'Stock',
+          actions: [
+            EnterpriseSelectorWidget(style: EnterpriseSelectorStyle.appBar),
+          ],
+        ),
         body: const Center(
           child: Text('Aucune entreprise active disponible'),
         ),
@@ -119,7 +124,7 @@ class _GazStockScreenState extends ConsumerState<GazStockScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(2),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFECECF0),
+                    color: theme.colorScheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Container(
@@ -128,14 +133,14 @@ class _GazStockScreenState extends ConsumerState<GazStockScreen> {
                       vertical: 5,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: theme.colorScheme.surface,
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Text(
                       'Points de vente actifs (${activePointsOfSale.length})',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         fontSize: 14,
-                        color: const Color(0xFF0A0A0A),
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
                   ),

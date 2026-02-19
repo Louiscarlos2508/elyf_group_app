@@ -8,7 +8,6 @@ import 'package:elyf_groupe_app/features/boutique/application/providers.dart';
 import 'package:elyf_groupe_app/features/boutique/domain/entities/product.dart';
 import 'package:elyf_groupe_app/features/boutique/domain/entities/stock_movement.dart';
 import 'package:elyf_groupe_app/features/boutique/presentation/widgets/boutique_header.dart';
-import 'package:elyf_groupe_app/app/theme/app_colors.dart';
 import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
 
 class StockMovementScreen extends ConsumerStatefulWidget {
@@ -220,7 +219,7 @@ class _StockMovementScreenState extends ConsumerState<StockMovementScreen> {
 
   Widget _buildTypeFilter() {
     return DropdownButtonFormField<StockMovementType>(
-      value: _selectedType,
+      initialValue: _selectedType,
       decoration: InputDecoration(
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         border: OutlineInputBorder(

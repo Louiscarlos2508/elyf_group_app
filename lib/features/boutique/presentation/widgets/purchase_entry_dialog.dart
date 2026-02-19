@@ -208,7 +208,7 @@ class _PurchaseEntryDialogState extends ConsumerState<PurchaseEntryDialog> {
                               const SizedBox(height: 16),
                               productsAsync.when(
                                 data: (products) => DropdownButtonFormField<Product>(
-                                  value: _selectedProduct != null 
+                                  initialValue: _selectedProduct != null 
                                       ? products.where((p) => p.id == _selectedProduct!.id).firstOrNull 
                                       : null,
                                   isExpanded: true,
@@ -384,7 +384,7 @@ class _PurchaseEntryDialogState extends ConsumerState<PurchaseEntryDialog> {
                             // Supplier
                             ref.watch(suppliersProvider).when(
                               data: (suppliers) => DropdownButtonFormField<Supplier>(
-                                value: _selectedSupplier,
+                                initialValue: _selectedSupplier,
                                 decoration: const InputDecoration(
                                   labelText: 'Fournisseur (Optionnel)',
                                   border: OutlineInputBorder(),

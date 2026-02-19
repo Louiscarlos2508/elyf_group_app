@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/boutique/presentation/widgets/boutique_header.dart';
 import 'package:elyf_groupe_app/features/boutique/presentation/widgets/integrity_verification_dialog.dart';
 import 'package:elyf_groupe_app/features/boutique/presentation/screens/sections/category_management_screen.dart';

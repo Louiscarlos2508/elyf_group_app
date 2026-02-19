@@ -1,5 +1,4 @@
 import '../entities/liquidity_checkpoint.dart';
-import '../entities/orange_money_settings.dart';
 import '../entities/transaction.dart';
 import '../repositories/liquidity_repository.dart';
 import '../repositories/settings_repository.dart';

@@ -40,7 +40,8 @@ class FirestoreSyncService {
   /// Pulls all initial data from Firestore to local Drift database.
   ///
   /// This fetches Users, Enterprises, Roles, and EnterpriseModuleUsers.
-  Future<void> pullInitialData() async {
+  /// If [userId] is provided, only fetches assignments for that user.
+  Future<void> pullInitialData({String? userId}) async {
     try {
       developer.log(
         'Starting initial pull of all collections...',
@@ -55,7 +56,7 @@ class FirestoreSyncService {
       ]);
       
       // EnterpriseModuleUsers might depend on others conceptually, but technically can be fetched in parallel too
-      await _pullAndSaveEnterpriseModuleUsers();
+      await _pullAndSaveEnterpriseModuleUsers(userId: userId);
 
       developer.log(
         'Initial pull completed successfully',
@@ -119,15 +120,17 @@ class FirestoreSyncService {
           'name': role.name,
           'description': role.description,
           'permissions': role.permissions.toList(),
+          'moduleId': role.moduleId,  // Assure la persistance du module associé
           'isSystemRole': role.isSystemRole,
         }),
         localUpdatedAt: DateTime.now(),
       );
     }
   }
+
   
-  Future<void> _pullAndSaveEnterpriseModuleUsers() async {
-    final emus = await pullEnterpriseModuleUsersFromFirestore();
+  Future<void> _pullAndSaveEnterpriseModuleUsers({String? userId}) async {
+    final emus = await pullEnterpriseModuleUsersFromFirestore(userId: userId);
     for (final emu in emus) {
       await driftService.records.upsert(
         collectionName: _enterpriseModuleUsersCollection,
@@ -217,6 +220,7 @@ class FirestoreSyncService {
         'name': role.name,
         'description': role.description,
         'permissions': role.permissions.toList(),
+        'moduleId': role.moduleId,
         'isSystemRole': role.isSystemRole,
         'updatedAt': FieldValue.serverTimestamp(),
       };
@@ -447,7 +451,7 @@ class FirestoreSyncService {
                   ?.map((e) => e as String)
                   .toSet() ??
               {},
-          moduleId: data['moduleId'] as String? ?? 'general',
+          moduleId: data['moduleId'] as String? ?? 'administration',
           isSystemRole: data['isSystemRole'] as bool? ?? false,
         );
       }).toList();
@@ -464,14 +468,22 @@ class FirestoreSyncService {
   }
 
   /// Pull EnterpriseModuleUsers from Firestore
-  Future<List<EnterpriseModuleUser>>
-  pullEnterpriseModuleUsersFromFirestore() async {
+  ///
+  /// Si [userId] est fourni, ne récupère que les assignations de cet utilisateur.
+  /// Sinon, récupère tout (admin seulement).
+  Future<List<EnterpriseModuleUser>> pullEnterpriseModuleUsersFromFirestore({
+    String? userId,
+  }) async {
     try {
-      final snapshot = await firestore
-          .collection(_enterpriseModuleUsersCollection)
-          .get();
+      Query query = firestore.collection(_enterpriseModuleUsersCollection);
+
+      if (userId != null) {
+        query = query.where('userId', isEqualTo: userId);
+      }
+
+      final snapshot = await query.get();
       return snapshot.docs
-          .map((doc) => EnterpriseModuleUser.fromMap(doc.data()))
+          .map((doc) => EnterpriseModuleUser.fromMap(doc.data() as Map<String, dynamic>))
           .toList();
     } catch (e, stackTrace) {
       final appException = ErrorHandler.instance.handleError(e, stackTrace);

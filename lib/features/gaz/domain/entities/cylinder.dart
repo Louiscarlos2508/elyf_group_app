@@ -7,6 +7,7 @@ class Cylinder {
     required this.sellPrice,
     required this.enterpriseId,
     required this.moduleId,
+    @Deprecated('Use CylinderStockRepository to track bi-modal stock instead')
     this.stock = 0,
     this.depositPrice = 0.0, // Prix de la consigne (bouteille vide)
     this.createdAt,
@@ -22,6 +23,7 @@ class Cylinder {
   final double sellPrice;
   final String enterpriseId;
   final String moduleId;
+  @Deprecated('Use CylinderStockRepository to track bi-modal stock instead')
   final int stock; // Stock disponible
   final double depositPrice; // Prix de la consigne (bouteille vide)
   final DateTime? createdAt;

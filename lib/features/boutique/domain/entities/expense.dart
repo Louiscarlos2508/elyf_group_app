@@ -69,7 +69,7 @@ class Expense {
       notes: notes ?? this.notes,
       deletedAt: deletedAt ?? this.deletedAt,
       deletedBy: deletedBy ?? this.deletedBy,
-      createdAt: createdAt ?? this.createdAt,
+      createdAt: createdAt ?? createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       receiptPath: receiptPath ?? this.receiptPath,
       number: number ?? this.number,

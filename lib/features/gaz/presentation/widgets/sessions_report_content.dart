@@ -4,8 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/gaz_session.dart';
 import 'package:elyf_groupe_app/shared.dart';
-import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
-import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import 'package:intl/intl.dart';
 
 class GazSessionsReportContent extends ConsumerWidget {

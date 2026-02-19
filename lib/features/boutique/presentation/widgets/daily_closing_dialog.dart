@@ -2,12 +2,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/shared.dart';
-import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 import 'package:open_file/open_file.dart';
 import '../../domain/entities/closing.dart';
 import '../../application/providers.dart';
 import '../../../../core/pdf/boutique_report_pdf_service.dart';
-import 'package:elyf_groupe_app/app/theme/app_colors.dart';
 
 class DailyClosingDialog extends ConsumerStatefulWidget {
   const DailyClosingDialog({super.key});
@@ -38,7 +36,6 @@ class _DailyClosingDialogState extends ConsumerState<DailyClosingDialog> {
     required int totalRevenue,
     required int cashRevenue,
     required int mmRevenue,
-    required int cardRevenue,
     required int totalExpenses,
   }) async {
     final physicalCash = int.tryParse(_cashController.text) ?? 0;
@@ -70,7 +67,6 @@ class _DailyClosingDialogState extends ConsumerState<DailyClosingDialog> {
         discrepancy: totalDiscrepancy,
         digitalCashRevenue: cashRevenue,
         digitalMobileMoneyRevenue: mmRevenue,
-        digitalCardRevenue: cardRevenue,
         mobileMoneyDiscrepancy: mmDiscrepancy,
         notes: _notesController.text.isNotEmpty ? _notesController.text : null,
       );
@@ -228,7 +224,6 @@ class _DailyClosingDialogState extends ConsumerState<DailyClosingDialog> {
                       totalRevenue: metrics.revenue,
                       cashRevenue: metrics.cashRevenue,
                       mmRevenue: metrics.mobileMoneyRevenue,
-                      cardRevenue: metrics.cardRevenue,
                       totalExpenses: todayExpenses,
                     );
                   }
@@ -304,12 +299,10 @@ class _DailyClosingDialogState extends ConsumerState<DailyClosingDialog> {
         const Divider(),
         _buildStatItem('Ventes Espèces (Session)', metrics.cashRevenue, Colors.green),
         _buildStatItem('Ventes MM (Session)', metrics.mobileMoneyRevenue, Colors.blue),
-        _buildStatItem('Ventes Carte (Session)', metrics.cardRevenue, Colors.orange),
         _buildStatItem('Dépenses (Session)', -expenses, Colors.red),
         const Divider(height: 24),
         _buildStatItem('Total Attendu (Espèces)', (session.openingCashAmount + (metrics.cashRevenue - expenses)).toInt(), Colors.green, isTotal: true),
         _buildStatItem('Total Attendu (MM)', (session.openingMobileMoneyAmount + metrics.mobileMoneyRevenue).toInt(), Colors.blue, isTotal: true),
-        _buildStatItem('Total Attendu (Carte)', metrics.cardRevenue.toInt(), Colors.orange, isTotal: true),
       ],
     );
   }

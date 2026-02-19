@@ -14,7 +14,10 @@ class SalesTableHelpers {
     String statusText;
     Color statusColor;
 
-    if (isPaid) {
+    if (sale.status == SaleStatus.voided) {
+      statusText = 'Annulée';
+      statusColor = Colors.red;
+    } else if (isPaid) {
       statusText = 'Payé';
       statusColor = Colors.green;
     } else if (isCredit) {
@@ -73,6 +76,7 @@ class SalesTableHelpers {
         ),
         PopupMenuItem(
           value: 'print',
+          enabled: sale.status != SaleStatus.voided,
           child: ListTile(
             leading: const Icon(Icons.print_outlined, size: 20),
             title: const Text('Imprimer Facture'),
@@ -82,10 +86,20 @@ class SalesTableHelpers {
           ),
         ),
         PopupMenuItem(
-          value: 'edit',
+          value: 'void',
+          enabled: sale.status != SaleStatus.voided,
           child: ListTile(
-            leading: const Icon(Icons.edit_outlined, size: 20),
-            title: const Text('Modifier la vente'),
+            leading: Icon(
+              Icons.cancel_outlined,
+              size: 20,
+              color: sale.status != SaleStatus.voided ? Colors.red : null,
+            ),
+            title: Text(
+              'Annuler la vente',
+              style: TextStyle(
+                color: sale.status != SaleStatus.voided ? Colors.red : null,
+              ),
+            ),
             contentPadding: EdgeInsets.zero,
             visualDensity: VisualDensity.compact,
             dense: true,

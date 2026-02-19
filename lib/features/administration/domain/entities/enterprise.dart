@@ -48,7 +48,10 @@ enum EnterpriseType {
   mobileMoneyAgent('mm_agent', 'Agent Mobile Money', 'Agent principal', EnterpriseModule.mobileMoney, isMain: true),
   mobileMoneySubAgent('mm_sub_agent', 'Sous-Agent', 'Sous-agent Mobile Money', EnterpriseModule.mobileMoney),
   mobileMoneyDistributor('mm_distributor', 'Distributeur', 'Distributeur Mobile Money', EnterpriseModule.mobileMoney),
-  mobileMoneyKiosk('mm_kiosk', 'Kiosque', 'Kiosque Mobile Money', EnterpriseModule.mobileMoney);
+  mobileMoneyKiosk('mm_kiosk', 'Kiosque', 'Kiosque Mobile Money', EnterpriseModule.mobileMoney),
+  
+  // Générique
+  pointOfSale('pos', 'Point de vente', 'Point de vente générique', EnterpriseModule.gaz);
 
   const EnterpriseType(this.id, this.label, this.description, this.module, {this.isMain = false});
 

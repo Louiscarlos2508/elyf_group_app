@@ -37,7 +37,7 @@ class _GasPrintReceiptButtonState extends ConsumerState<GasPrintReceiptButton> {
   }
 
   Future<void> _checkPrinterAvailability() async {
-    final printer = ref.read(thermalPrinterServiceProvider);
+    final printer = ref.read(activePrinterProvider);
     final isAvailable = await printer.isAvailable();
 
     if (mounted) {

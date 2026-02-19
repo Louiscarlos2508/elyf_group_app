@@ -185,7 +185,7 @@ class DashboardPerformanceChart extends StatelessWidget {
                       getDotPainter: (spot, percent, barData, index) {
                         return FlDotCirclePainter(
                           radius: 3,
-                          color: Colors.white,
+                          color: theme.colorScheme.surface,
                           strokeWidth: 2,
                           strokeColor: theme.colorScheme.error,
                         );
@@ -197,7 +197,7 @@ class DashboardPerformanceChart extends StatelessWidget {
                   LineChartBarData(
                     spots: salesSpots,
                     isCurved: true,
-                    color: AppColors.success,
+                    color: const Color(0xFF10B981),
                     barWidth: 3,
                     isStrokeCapRound: true,
                     dotData: FlDotData(
@@ -205,9 +205,9 @@ class DashboardPerformanceChart extends StatelessWidget {
                       getDotPainter: (spot, percent, barData, index) {
                         return FlDotCirclePainter(
                           radius: 3,
-                          color: Colors.white,
+                          color: theme.colorScheme.surface,
                           strokeWidth: 2,
-                          strokeColor: AppColors.success,
+                          strokeColor: const Color(0xFF10B981),
                         );
                       },
                     ),
@@ -226,7 +226,7 @@ class DashboardPerformanceChart extends StatelessWidget {
             children: [
               _LegendItem(color: theme.colorScheme.primary, label: 'Bénéfice'),
               _LegendItem(color: theme.colorScheme.error, label: 'Dépenses'),
-              _LegendItem(color: AppColors.success, label: 'Ventes'),
+              _LegendItem(color: const Color(0xFF10B981), label: 'Ventes'),
             ],
           ),
         ],

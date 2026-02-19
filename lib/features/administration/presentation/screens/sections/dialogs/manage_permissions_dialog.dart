@@ -121,20 +121,21 @@ class _ManagePermissionsDialogState
                     final permissionsByModuleList =
                         <String, List<ModulePermission>>{};
 
-                    // Parcourir tous les modules enregistrés
-                    for (final moduleId in registry.registeredModules) {
-                      final modulePermissions = registry.getModulePermissions(
-                        moduleId,
-                      );
-                      if (modulePermissions != null) {
-                        final modulePerms = <ModulePermission>[];
-                        for (final permission in modulePermissions.values) {
-                          allPermissionsMap[permission.id] = permission.name;
-                          modulePerms.add(permission);
-                        }
-                        if (modulePerms.isNotEmpty) {
-                          permissionsByModuleList[moduleId] = modulePerms;
-                        }
+                    // Pour les permissions personnalisées, on ne devrait montrer que les permissions
+                    // liées au module de l'assignation courante
+                    final targetModuleId = widget.enterpriseModuleUser.moduleId;
+                    
+                    // Récupérer uniquement les permissions du module concerné
+                    final modulePermissions = registry.getModulePermissions(targetModuleId);
+                    
+                    if (modulePermissions != null) {
+                      final modulePerms = <ModulePermission>[];
+                      for (final permission in modulePermissions.values) {
+                        allPermissionsMap[permission.id] = permission.name;
+                        modulePerms.add(permission);
+                      }
+                      if (modulePerms.isNotEmpty) {
+                        permissionsByModuleList[targetModuleId] = modulePerms;
                       }
                     }
 

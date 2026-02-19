@@ -1,25 +1,42 @@
-import '../../../../core/logging/app_logger.dart';
-import '../../domain/entities/daily_worker.dart';
-import '../../domain/entities/employee.dart';
-import '../../domain/entities/payment_status.dart';
-import '../../domain/entities/production_payment.dart';
-import '../../domain/entities/salary_payment.dart';
-import '../../domain/entities/worker_monthly_stat.dart';
-import '../../domain/repositories/daily_worker_repository.dart';
-import '../../domain/repositories/production_session_repository.dart';
-import '../../domain/repositories/salary_repository.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/employee.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/payment_status.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/production_payment.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/salary_payment.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/daily_worker.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/worker_monthly_stat.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/expense_record.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/repositories/daily_worker_repository.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/repositories/production_session_repository.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/repositories/salary_repository.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/repositories/treasury_repository.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/repositories/finance_repository.dart';
+import 'package:elyf_groupe_app/shared/domain/entities/treasury_operation.dart';
+import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
+import 'package:elyf_groupe_app/core/logging/app_logger.dart';
 
 class SalaryController {
   SalaryController(
     this._repository, {
     required ProductionSessionRepository productionSessionRepository,
     required DailyWorkerRepository dailyWorkerRepository,
+    required TreasuryRepository treasuryRepository,
+    required FinanceRepository financeRepository,
+    required String enterpriseId,
+    required String userId,
   })  : _productionSessionRepository = productionSessionRepository,
-        _dailyWorkerRepository = dailyWorkerRepository;
+        _dailyWorkerRepository = dailyWorkerRepository,
+        _treasuryRepository = treasuryRepository,
+        _financeRepository = financeRepository,
+        _enterpriseId = enterpriseId,
+        _userId = userId;
 
   final SalaryRepository _repository;
   final ProductionSessionRepository _productionSessionRepository;
   final DailyWorkerRepository _dailyWorkerRepository;
+  final TreasuryRepository _treasuryRepository;
+  final FinanceRepository _financeRepository;
+  final String _enterpriseId;
+  final String _userId;
 
   Future<SalaryState> fetchSalaries() async {
     final fixedEmployees = await _repository.fetchFixedEmployees();
@@ -50,7 +67,17 @@ class SalaryController {
     final paymentId = await _repository.createProductionPayment(payment);
 
     try {
-      // 2. Tenter de mettre à jour les jours de production (Source de vérité opérationnelle)
+      // 2. Orchestration financière (Trésorerie + Dépenses)
+      await _recordFinancialsForSalary(
+        amount: payment.totalAmount,
+        date: payment.paymentDate,
+        label: 'Paye Production: ${payment.period}',
+        referenceId: paymentId,
+        referenceType: 'production_payment',
+        notes: payment.notes,
+      );
+
+      // 3. Tenter de mettre à jour les jours de production (Source de vérité opérationnelle)
       if (payment.sourceProductionDayIds.isNotEmpty) {
         await _markProductionDaysAsPaid(
           payment.sourceProductionDayIds,
@@ -116,7 +143,65 @@ class SalaryController {
   }
 
   Future<String> createMonthlySalaryPayment(SalaryPayment payment) async {
-    return await _repository.createMonthlySalaryPayment(payment);
+    final paymentId = await _repository.createMonthlySalaryPayment(payment);
+    
+    try {
+      await _recordFinancialsForSalary(
+        amount: payment.amount,
+        date: payment.date,
+        label: 'Salaire: ${payment.employeeName} (${payment.period})',
+        referenceId: paymentId,
+        referenceType: 'salary_payment',
+        notes: payment.notes,
+      );
+    } catch (e) {
+      AppLogger.error('Erreur lors de l\'enregistrement financier du salaire', error: e);
+    }
+
+    return paymentId;
+  }
+
+  Future<void> _recordFinancialsForSalary({
+    required int amount,
+    required DateTime date,
+    required String label,
+    required String referenceId,
+    required String referenceType,
+    String? notes,
+  }) async {
+    try {
+      // 1. Enregistrer dans la trésorerie (Défaut: Cash pour les salaires)
+      await _treasuryRepository.createOperation(TreasuryOperation(
+        id: '',
+        enterpriseId: _enterpriseId,
+        userId: _userId,
+        amount: amount,
+        type: TreasuryOperationType.removal,
+        fromAccount: PaymentMethod.cash,
+        date: date,
+        reason: label,
+        referenceEntityId: referenceId,
+        referenceEntityType: referenceType,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      ));
+
+      // 2. Enregistrer comme dépense
+      await _financeRepository.createExpense(ExpenseRecord(
+        id: '',
+        enterpriseId: _enterpriseId,
+        label: label,
+        amountCfa: amount,
+        date: date,
+        paymentMethod: PaymentMethod.cash,
+        category: ExpenseCategory.salaires,
+        notes: notes,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      ));
+    } catch (e) {
+      AppLogger.error('Failed to record financials for salary payment', error: e);
+    }
   }
 
   /// Récupère les statistiques mensuelles par ouvrier pour un mois donné.

@@ -557,14 +557,18 @@ class _AssignEnterpriseDialogState
     final modulePermissionIds = modulePermissions.keys.toSet();
 
     return allRoles.where((role) {
-      // Vérifier que le rôle a au moins une permission du module
+      // 1. Check if role is explicitly for this module
+      final isForModule = role.moduleId == moduleId;
+
+      // 2. Check if role has at least one permission of the module
       final hasModulePermission = role.permissions.any(
         (permissionId) => modulePermissionIds.contains(permissionId),
       );
 
-      if (!hasModulePermission) return false;
+      // Verify overall compatibility (moduleId OR permissions)
+      if (!isForModule && !hasModulePermission) return false;
 
-      // Si une entreprise est sélectionnée, vérifier la compatibilité du type
+      // 3. If an enterprise is selected, verify type compatibility
       if (selectedEnterprise != null) {
         return role.canBeAssignedTo(selectedEnterprise.type);
       }

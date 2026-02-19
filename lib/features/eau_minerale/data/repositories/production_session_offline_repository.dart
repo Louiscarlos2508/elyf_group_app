@@ -3,12 +3,7 @@ import 'dart:convert';
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/offline_repository.dart';
-import '../../domain/entities/bobine_usage.dart';
-import '../../domain/entities/payment_status.dart';
-import '../../domain/entities/production_day.dart';
-import '../../domain/entities/production_event.dart';
 import '../../domain/entities/production_session.dart';
-import '../../domain/entities/production_session_status.dart';
 import '../../domain/repositories/production_session_repository.dart';
 
 /// Offline-first repository for ProductionSession entities.
@@ -344,7 +339,9 @@ class ProductionSessionOfflineRepository
           // Sort by date descending
           sessions.sort((a, b) => b.date.compareTo(a.date));
 
-          return _mergeLocalBobinesIntoSync(sessions);
+          var deduped = deduplicateByRemoteId(sessions);
+          deduped = _mergeLocalBobinesIntoSync(deduped);
+          return deduplicateIntelligently(deduped);
         });
   }
 
@@ -381,7 +378,7 @@ class ProductionSessionOfflineRepository
         }
       }
 
-      final localId = getLocalId(session);
+      final localId = session.id.isNotEmpty ? session.id : 'local_prod_$key';
       final sessionWithLocalId = session.copyWith(
         id: localId,
         createdAt: DateTime.now(),

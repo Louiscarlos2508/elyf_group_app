@@ -10,7 +10,7 @@ class StockControllerPackAdapter implements PackStockAdapter {
 
   @override
   Future<int> getPackStock({String? productId}) async {
-    final pack = await _controller.ensurePackStockItem(productId: productId);
+    final pack = await _controller.ensureStockItemForProduct(productId: productId);
     return pack.quantity.toInt();
   }
 
@@ -21,7 +21,7 @@ class StockControllerPackAdapter implements PackStockAdapter {
     String? reason,
     String? notes,
   }) async {
-    final pack = await _controller.ensurePackStockItem(productId: productId);
+    final pack = await _controller.ensureStockItemForProduct(productId: productId);
     await _controller.recordItemMovement(
       itemId: pack.id,
       itemName: pack.name,
@@ -29,6 +29,25 @@ class StockControllerPackAdapter implements PackStockAdapter {
       quantity: quantity.toDouble(),
       unit: pack.unit,
       reason: reason ?? 'Vente',
+      notes: notes,
+    );
+  }
+
+  @override
+  Future<void> recordPackEntry(
+    int quantity, {
+    String? productId,
+    String? reason,
+    String? notes,
+  }) async {
+    final pack = await _controller.ensureStockItemForProduct(productId: productId);
+    await _controller.recordItemMovement(
+      itemId: pack.id,
+      itemName: pack.name,
+      type: StockMovementType.entry,
+      quantity: quantity.toDouble(),
+      unit: pack.unit,
+      reason: reason ?? 'Annulation Vente',
       notes: notes,
     );
   }

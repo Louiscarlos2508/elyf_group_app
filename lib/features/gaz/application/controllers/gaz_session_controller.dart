@@ -22,7 +22,12 @@ class GazSessionController {
   }
 
   /// Ouvre une nouvelle session.
-  Future<void> openSession({required String userId}) async {
+  Future<void> openSession({
+    required String userId,
+    Map<int, int> openingFullStock = const {},
+    Map<int, int> openingEmptyStock = const {},
+    double openingCash = 0.0,
+  }) async {
     final active = await getActiveSession();
     if (active != null) return; // Déjà une session ouverte
 
@@ -33,6 +38,9 @@ class GazSessionController {
       openedAt: DateTime.now(),
       openedBy: userId,
       date: DateTime.now(),
+      openingFullStock: openingFullStock,
+      openingEmptyStock: openingEmptyStock,
+      openingCash: openingCash,
     );
 
     await sessionRepository.saveSession(session);

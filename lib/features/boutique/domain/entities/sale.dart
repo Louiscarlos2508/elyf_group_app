@@ -14,7 +14,6 @@ class Sale {
     this.notes,
     this.cashAmount = 0,
     this.mobileMoneyAmount = 0,
-    this.cardAmount = 0,
     this.deletedAt,
     this.deletedBy,
     this.createdAt,
@@ -35,7 +34,6 @@ class Sale {
   final String? notes;
   final int cashAmount; // Montant payé en espèces (pour paiement mixte)
   final int mobileMoneyAmount; // Montant payé en Mobile Money
-  final int cardAmount; // Montant payé par carte
   final DateTime? deletedAt;
   final String? deletedBy;
   final DateTime? createdAt;
@@ -50,7 +48,7 @@ class Sale {
 
   /// Vérifie si la somme des paiements correspond au montant payé
   bool get isPaymentSplitValid =>
-      (cashAmount + mobileMoneyAmount + cardAmount) == amountPaid;
+      (cashAmount + mobileMoneyAmount) == amountPaid;
 
   Sale copyWith({
     String? id,
@@ -64,7 +62,6 @@ class Sale {
     String? notes,
     int? cashAmount,
     int? mobileMoneyAmount,
-    int? cardAmount,
     DateTime? deletedAt,
     String? deletedBy,
     DateTime? updatedAt,
@@ -84,10 +81,9 @@ class Sale {
       notes: notes ?? this.notes,
       cashAmount: cashAmount ?? this.cashAmount,
       mobileMoneyAmount: mobileMoneyAmount ?? this.mobileMoneyAmount,
-      cardAmount: cardAmount ?? this.cardAmount,
       deletedAt: deletedAt ?? this.deletedAt,
       deletedBy: deletedBy ?? this.deletedBy,
-      createdAt: createdAt ?? this.createdAt,
+      createdAt: createdAt ?? createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       number: number ?? this.number,
       ticketHash: ticketHash ?? this.ticketHash,
@@ -114,7 +110,7 @@ class Sale {
           paymentMethod = PaymentMethod.mobileMoney;
           break;
         case 'card':
-          paymentMethod = PaymentMethod.card;
+          paymentMethod = PaymentMethod.cash; // Fallback since card is removed
           break;
         case 'both':
           paymentMethod = PaymentMethod.both;
@@ -136,7 +132,6 @@ class Sale {
       notes: map['notes'] as String?,
       cashAmount: (map['cashAmount'] as num?)?.toInt() ?? 0,
       mobileMoneyAmount: (map['mobileMoneyAmount'] as num?)?.toInt() ?? 0,
-      cardAmount: (map['cardAmount'] as num?)?.toInt() ?? 0,
       deletedAt: map['deletedAt'] != null
           ? DateTime.parse(map['deletedAt'] as String)
           : null,
@@ -168,7 +163,6 @@ class Sale {
       'notes': notes,
       'cashAmount': cashAmount.toDouble(),
       'mobileMoneyAmount': mobileMoneyAmount.toDouble(),
-      'cardAmount': cardAmount.toDouble(),
       'isComplete': amountPaid >= totalAmount,
       'deletedAt': deletedAt?.toIso8601String(),
       'deletedBy': deletedBy,

@@ -204,6 +204,8 @@ class PermissionSectionMapper {
             return 'expenses';
           } else if (suffix == 'reports' || suffix == 'report') {
             return 'reports';
+          } else if (suffix == 'settings' || suffix == 'setting') {
+            return 'settings';
           } else if (suffix == 'profile' || suffix == 'password') {
             return 'profile';
           }

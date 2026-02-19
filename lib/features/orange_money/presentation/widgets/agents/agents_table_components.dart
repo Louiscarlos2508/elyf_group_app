@@ -143,7 +143,7 @@ class AgentsTableComponents {
           decoration: BoxDecoration(
             color: isActive 
                 ? theme.colorScheme.primaryContainer 
-                : theme.colorScheme.surfaceVariant.withValues(alpha: 0.3),
+                : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
             border: Border.all(
               color: isActive 
                   ? theme.colorScheme.primary.withValues(alpha: 0.5)

@@ -5,6 +5,19 @@ import 'package:go_router/go_router.dart';
 
 import '../../../features/administration/domain/entities/enterprise.dart';
 import '../../../core/tenant/tenant_provider.dart';
+import '../../../core/logging/app_logger.dart';
+
+/// Styles de présentation pour le sélecteur d'entreprise
+enum EnterpriseSelectorStyle {
+  /// Style standard avec label et bordure (pour les formulaires/écrans de paramétrage)
+  standard,
+
+  /// Style compact (icône uniquement)
+  compact,
+
+  /// Style AppBar (chip premium avec nom de l'entreprise)
+  appBar,
+}
 
 /// Widget pour sélectionner l'entreprise active
 ///
@@ -14,14 +27,14 @@ class EnterpriseSelectorWidget extends ConsumerWidget {
   const EnterpriseSelectorWidget({
     super.key,
     this.showLabel = true,
-    this.compact = false,
+    this.style = EnterpriseSelectorStyle.standard,
   });
 
-  /// Afficher le label "Entreprise"
+  /// Afficher le label "Entreprise" (uniquement style standard)
   final bool showLabel;
 
-  /// Mode compact (icône seulement)
-  final bool compact;
+  /// Style de présentation
+  final EnterpriseSelectorStyle style;
 
   /// Affiche le sélecteur d'entreprise depuis n'importe quel contexte
   static Future<void> showSelector(BuildContext context, WidgetRef ref) async {
@@ -180,8 +193,20 @@ class EnterpriseSelectorWidget extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final activeEnterpriseAsync = ref.watch(activeEnterpriseProvider);
+    final accessibleEnterprisesAsync = ref.watch(userAccessibleEnterprisesProvider);
 
-    if (compact) {
+    // Ne rien afficher si l'utilisateur n'a qu'une seule entreprise
+    final canShow = accessibleEnterprisesAsync.when(
+      data: (enterprises) => enterprises.length > 1,
+      loading: () => false,
+      error: (_, __) => false,
+    );
+
+    if (!canShow) {
+      return const SizedBox.shrink();
+    }
+
+    if (style == EnterpriseSelectorStyle.compact) {
       return IconButton(
         icon: const Icon(Icons.business_outlined),
         tooltip: 'Changer d\'entreprise',
@@ -192,6 +217,9 @@ class EnterpriseSelectorWidget extends ConsumerWidget {
     return activeEnterpriseAsync.when(
       data: (enterprise) {
         if (enterprise == null) {
+          if (style == EnterpriseSelectorStyle.appBar) {
+            return _buildAppBarSelector(context, ref, theme, null);
+          }
           return _buildSelectorButton(
             context,
             ref,
@@ -199,6 +227,10 @@ class EnterpriseSelectorWidget extends ConsumerWidget {
             label: 'Sélectionner une entreprise',
             icon: Icons.business_outlined,
           );
+        }
+
+        if (style == EnterpriseSelectorStyle.appBar) {
+          return _buildAppBarSelector(context, ref, theme, enterprise);
         }
 
         return _buildSelectorButton(
@@ -210,15 +242,17 @@ class EnterpriseSelectorWidget extends ConsumerWidget {
           icon: Icons.business,
         );
       },
-      loading: () => _buildSelectorButton(
-        context,
-        ref,
-        theme,
-        label: showLabel ? 'Entreprise' : null,
-        enterpriseName: 'Chargement...',
-        icon: Icons.business_outlined,
-        enabled: false,
-      ),
+      loading: () => style == EnterpriseSelectorStyle.appBar
+          ? _buildAppBarSelector(context, ref, theme, null, isLoading: true)
+          : _buildSelectorButton(
+              context,
+              ref,
+              theme,
+              label: showLabel ? 'Entreprise' : null,
+              enterpriseName: 'Chargement...',
+              icon: Icons.business_outlined,
+              enabled: false,
+            ),
       error: (error, stack) => _buildSelectorButton(
         context,
         ref,
@@ -226,6 +260,69 @@ class EnterpriseSelectorWidget extends ConsumerWidget {
         label: showLabel ? 'Entreprise' : null,
         enterpriseName: 'Erreur',
         icon: Icons.error_outline,
+      ),
+    );
+  }
+
+  Widget _buildAppBarSelector(
+    BuildContext context,
+    WidgetRef ref,
+    ThemeData theme,
+    Enterprise? enterprise, {
+    bool isLoading = false,
+  }) {
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: isLoading ? null : () => _showEnterpriseSelector(context, ref),
+          borderRadius: BorderRadius.circular(12),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3)
+                  : theme.colorScheme.primaryContainer.withValues(alpha: 0.4),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: theme.colorScheme.primary.withValues(alpha: 0.2),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  enterprise?.type.icon ?? Icons.business_rounded,
+                  size: 16,
+                  color: theme.colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    isLoading ? '...' : (enterprise?.name ?? 'Sélect.'),
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.primary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  size: 16,
+                  color: theme.colorScheme.primary.withValues(alpha: 0.7),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -390,7 +487,7 @@ class _EnterpriseSelectorDialog extends StatelessWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Sélectionnez une organisation',
+                            'Entreprises, dépôts et points de vente',
                             style: theme.textTheme.bodyMedium?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant,
                             ),

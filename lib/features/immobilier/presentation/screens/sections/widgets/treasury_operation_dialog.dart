@@ -80,7 +80,7 @@ class _TreasuryOperationDialogState extends State<TreasuryOperationDialog> {
               if (widget.type == TreasuryOperationType.transfer || widget.type == TreasuryOperationType.removal)
                 DropdownButtonFormField<PaymentMethod>(
                   key: ValueKey('from_$_fromAccount'),
-                  value: _fromAccount,
+                  initialValue: _fromAccount,
                   decoration: const InputDecoration(labelText: 'Depuis le compte'),
                   items: [
                     DropdownMenuItem(value: PaymentMethod.cash, child: const Text('Caisse (Espèces)')),
@@ -97,7 +97,7 @@ class _TreasuryOperationDialogState extends State<TreasuryOperationDialog> {
               if (widget.type == TreasuryOperationType.transfer || widget.type == TreasuryOperationType.supply || widget.type == TreasuryOperationType.adjustment)
                 DropdownButtonFormField<PaymentMethod>(
                   key: ValueKey('to_$_toAccount'),
-                  value: _toAccount,
+                  initialValue: _toAccount,
                   decoration: InputDecoration(
                     labelText: widget.type == TreasuryOperationType.adjustment 
                         ? 'Compte à ajuster' 

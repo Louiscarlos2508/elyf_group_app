@@ -27,7 +27,7 @@ class PersonnelDayCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final hasProduction = day.packsProduits > 0 || day.emballagesUtilises > 0;
+    final hasProduction = day.aProduction;
     final isCompleted = session.status == ProductionSessionStatus.completed;
 
     return Card(
@@ -55,12 +55,21 @@ class PersonnelDayCard extends ConsumerWidget {
                 if (hasProduction) ...[
                   const SizedBox(height: 4),
                   Text(
-                    '${day.packsProduits} packs produits • ${day.emballagesUtilises} emballages utilisés',
+                    day.producedItems.isNotEmpty 
+                      ? day.producedItems.map((p) => '${p.quantity.toInt()} ${p.productName}').join(' • ')
+                      : '${day.packsProduits} packs produits',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.primary,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
+                  if (day.consumptions.isNotEmpty)
+                    Text(
+                      'Conso: ' + day.consumptions.map((c) => '${c.quantity} ${c.productName}').join(', '),
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
                 ] else ...[
                   const SizedBox(height: 4),
                   Container(

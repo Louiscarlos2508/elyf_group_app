@@ -11,10 +11,10 @@ class WholesaleEmptyState extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(1.3),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: Colors.black.withValues(alpha: 0.1),
+          color: theme.colorScheme.outline.withValues(alpha: 0.1),
           width: 1.3,
         ),
       ),
@@ -28,7 +28,7 @@ class WholesaleEmptyState extends StatelessWidget {
               Icon(
                 Icons.shopping_cart_outlined,
                 size: 48,
-                color: const Color(0xFF4A5565).withValues(alpha: 0.5),
+                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
               ),
               const SizedBox(height: 16),
               Text(
@@ -36,7 +36,7 @@ class WholesaleEmptyState extends StatelessWidget {
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontSize: 16,
                   fontWeight: FontWeight.normal,
-                  color: const Color(0xFF4A5565),
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
             ],

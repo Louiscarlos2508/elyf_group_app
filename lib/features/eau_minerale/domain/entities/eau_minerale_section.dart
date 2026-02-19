@@ -5,9 +5,13 @@ enum EauMineraleSection {
   sales,
   stock,
   clients,
+  suppliers,
+  purchases,
   finances,
   salaries,
   reports,
   profile,
+  treasury,
   settings,
+  catalog,
 }

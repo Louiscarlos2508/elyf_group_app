@@ -9,30 +9,31 @@ class ProductController {
   final ProductRepository _repository;
   final String enterpriseId;
 
-  /// Garantit l'existence du produit Pack. Le crée avec prix 200 CFA si absent.
-  /// Retourne toujours un [Product] avec [packProductId] pour aligner Stock / Ventes.
   Future<Product> ensurePackProduct() async {
-    final all = await _repository.fetchProducts();
+    final products = await _repository.fetchProducts();
     Product? pack;
     try {
-      pack = all.firstWhere((p) =>
-          p.isFinishedGood &&
-          p.name.toLowerCase().contains(packName.toLowerCase()));
-    } catch (_) {}
+      pack = products.firstWhere(
+        (p) =>
+            p.id == packProductId ||
+            (p.isFinishedGood &&
+                p.name.toLowerCase().contains(packName.toLowerCase())),
+      );
+    } catch (_) {
+      pack = null;
+    }
+
     if (pack != null) {
       if (pack.id != packProductId) {
-        return Product(
-          id: packProductId,
-          enterpriseId: enterpriseId,
-          name: pack.name,
-          type: pack.type,
-          unitPrice: pack.unitPrice,
-          unit: pack.unit,
-          description: pack.description,
-        );
+        final updatedPack = pack.copyWith(id: packProductId);
+        // We don't necessarily need to save it back to repo with NEW id if we map it in fetch
+        // but it's cleaner to have a consistent record.
+        // However, record replacement safely:
+        return updatedPack;
       }
       return pack;
     }
+
     final defaultPack = Product(
       id: packProductId,
       enterpriseId: enterpriseId,
@@ -40,33 +41,66 @@ class ProductController {
       type: ProductType.finishedGood,
       unitPrice: 200,
       unit: packUnit,
-      description: null,
+      description: 'Pack de bouteilles d\'eau minérale',
     );
     await _repository.createProduct(defaultPack);
     return defaultPack;
   }
 
-  /// Récupère tous les produits. Garantit la présence du Pack.
+  Future<void> ensureDefaultRawMaterials() async {
+    final products = await _repository.fetchProducts();
+    
+    // Ensure Bobine
+    final hasBobine = products.any((p) => p.id == bobineProductId || (p.isRawMaterial && p.name.toLowerCase() == bobineName.toLowerCase()));
+    if (!hasBobine) {
+      final bobine = Product(
+        id: bobineProductId,
+        enterpriseId: enterpriseId,
+        name: bobineName,
+        type: ProductType.rawMaterial,
+        unitPrice: 0,
+        unit: 'unité',
+        description: 'Bobine de film plastique pour sachets',
+      );
+      await _repository.createProduct(bobine);
+    }
+
+    // Ensure Emballage
+    final hasEmballage = products.any((p) => p.id == emballageProductId || (p.isRawMaterial && p.name.toLowerCase() == emballageName.toLowerCase()));
+    if (!hasEmballage) {
+      final emballage = Product(
+        id: emballageProductId,
+        enterpriseId: enterpriseId,
+        name: emballageName,
+        type: ProductType.rawMaterial,
+        unitPrice: 0,
+        unit: 'unité',
+        supplyUnit: 'Paquet',
+        unitsPerLot: emballageDefaultUnitsPerLot,
+        description: 'Sacs d\'emballage pour les packs',
+      );
+      await _repository.createProduct(emballage);
+    }
+  }
+
+  /// Récupère tous les produits. Garantit la présence du Pack et des matières premières par défaut.
   /// Le Pack est toujours retourné avec [packProductId] pour aligner Stock / Ventes.
   Future<List<Product>> fetchProducts() async {
     await ensurePackProduct();
+    await ensureDefaultRawMaterials();
     final list = await _repository.fetchProducts();
-    return list.map((p) {
+    final mapped = list.map((p) {
       if (p.isFinishedGood &&
           p.name.toLowerCase().contains(packName.toLowerCase()) &&
           p.id != packProductId) {
-        return Product(
-          id: packProductId,
-          enterpriseId: enterpriseId,
-          name: p.name,
-          type: p.type,
-          unitPrice: p.unitPrice,
-          unit: p.unit,
-          description: p.description,
-        );
+        return p.copyWith(id: packProductId);
       }
       return p;
     }).toList();
+
+    // Dédupliquer par ID pour éviter les doublons de Pack
+    final seen = <String>{};
+    return mapped.where((p) => seen.add(p.id)).toList();
   }
 
   /// Récupère un produit par son ID.

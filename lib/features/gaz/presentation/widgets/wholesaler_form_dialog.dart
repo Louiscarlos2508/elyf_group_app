@@ -88,7 +88,7 @@ class _WholesalerFormDialogState extends ConsumerState<WholesalerFormDialog> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: _tier,
+                initialValue: _tier,
                 decoration: const InputDecoration(
                   labelText: 'Palier Tarifaire',
                   border: OutlineInputBorder(),

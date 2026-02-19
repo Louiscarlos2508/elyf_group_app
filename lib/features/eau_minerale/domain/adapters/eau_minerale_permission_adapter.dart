@@ -15,14 +15,6 @@ class EauMineralePermissionAdapter {
 
   static const String moduleId = 'eau_minerale';
 
-  /// Initialize and register permissions
-  static void initialize() {
-    PermissionRegistry.instance.registerModulePermissions(
-      moduleId,
-      EauMineralePermissions.all,
-    );
-  }
-
   /// Check if user has a specific permission
   Future<bool> hasPermission(String permissionId) async {
     return await permissionService.hasPermission(
@@ -63,8 +55,14 @@ class EauMineralePermissionAdapter {
         return hasPermission(EauMineralePermissions.viewStock.id);
       case EauMineraleSection.clients:
         return hasPermission(EauMineralePermissions.viewCredits.id);
+      case EauMineraleSection.suppliers:
+        return hasPermission(EauMineralePermissions.viewSuppliers.id);
+      case EauMineraleSection.purchases:
+        return hasPermission(EauMineralePermissions.viewPurchases.id);
       case EauMineraleSection.finances:
-        return hasPermission(EauMineralePermissions.viewFinances.id);
+        return await hasPermission(EauMineralePermissions.viewFinances.id);
+      case EauMineraleSection.treasury:
+        return await hasPermission(EauMineralePermissions.viewTreasury.id);
       case EauMineraleSection.salaries:
         return hasPermission(EauMineralePermissions.viewSalaries.id);
       case EauMineraleSection.reports:
@@ -73,6 +71,8 @@ class EauMineralePermissionAdapter {
         return hasPermission(EauMineralePermissions.viewProfile.id);
       case EauMineraleSection.settings:
         return hasPermission(EauMineralePermissions.viewSettings.id);
+      case EauMineraleSection.catalog:
+        return hasPermission(EauMineralePermissions.manageProducts.id);
     }
   }
 }

@@ -209,7 +209,7 @@ class _LiquidityScreenState extends ConsumerState<LiquidityScreen> {
               checkpoint,
             ),
             onJustifyPressed: checkpoint?.requiresJustification == true && !checkpoint!.isValidated
-                ? () => _showJustificationDialog(context, checkpoint!)
+                ? () => _showJustificationDialog(context, checkpoint)
                 : null,
           ),
         ),

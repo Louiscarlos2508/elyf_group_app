@@ -22,6 +22,8 @@ class Collection {
     this.amountPaid = 0.0,
     this.paymentDate,
     this.unitPricesByWeight, // poids -> prix unitaire (pour prix en gros par poids)
+    this.sessionId,
+    this.tourId,
   });
 
   final String id;
@@ -37,6 +39,8 @@ class Collection {
   unitPricesByWeight; // poids -> prix unitaire (prioritaire si défini)
   final double amountPaid;
   final DateTime? paymentDate;
+  final String? sessionId;
+  final String? tourId;
 
   Collection copyWith({
     String? id,
@@ -51,6 +55,8 @@ class Collection {
     Map<int, double>? unitPricesByWeight,
     double? amountPaid,
     DateTime? paymentDate,
+    String? sessionId,
+    String? tourId,
   }) {
     return Collection(
       id: id ?? this.id,
@@ -65,6 +71,8 @@ class Collection {
       unitPricesByWeight: unitPricesByWeight ?? this.unitPricesByWeight,
       amountPaid: amountPaid ?? this.amountPaid,
       paymentDate: paymentDate ?? this.paymentDate,
+      sessionId: sessionId ?? this.sessionId,
+      tourId: tourId ?? this.tourId,
     );
   }
 
@@ -117,6 +125,8 @@ class Collection {
       paymentDate: map['paymentDate'] != null
           ? DateTime.parse(map['paymentDate'] as String)
           : null,
+      sessionId: map['sessionId'] as String?,
+      tourId: map['tourId'] as String?,
     );
   }
 
@@ -138,6 +148,8 @@ class Collection {
       'leaks': leaks.map((k, v) => MapEntry(k.toString(), v)),
       'amountPaid': amountPaid,
       'paymentDate': paymentDate?.toIso8601String(),
+      'sessionId': sessionId,
+      'tourId': tourId,
     };
   }
 

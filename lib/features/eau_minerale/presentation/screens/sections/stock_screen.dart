@@ -8,37 +8,12 @@ import '../../widgets/raw_materials_card.dart';
 import '../../widgets/stock_alerts_widget.dart';
 import '../../widgets/stock_movement_table.dart';
 import '../../widgets/stock_movement_filters.dart';
-import '../../widgets/stock_entry_form.dart';
 import '../../widgets/stock_adjustment_form.dart';
 import '../../widgets/stock_integrity_check_dialog.dart';
 
 class StockScreen extends ConsumerWidget {
   const StockScreen({super.key});
 
-  void _showStockEntry(BuildContext context, WidgetRef ref) {
-    final formKey = GlobalKey<StockEntryFormState>();
-
-    showDialog(
-      context: context,
-      builder: (dialogContext) {
-        return FormDialog(
-          title: 'Approvisionnement Matières Premières',
-          saveLabel: 'Ajouter au stock',
-          onSave: () async {
-            final formState = formKey.currentState;
-            if (formState != null) {
-              return await formState.submit();
-            }
-            return false;
-          },
-          child: StockEntryForm(
-            key: formKey,
-            showSubmitButton: false,
-          ),
-        );
-      },
-    );
-  }
 
   void _showStockAdjustment(BuildContext context, WidgetRef ref) {
     final formKey = GlobalKey<StockAdjustmentFormState>();
@@ -70,8 +45,7 @@ class StockScreen extends ConsumerWidget {
     final state = ref.watch(stockStateProvider);
     return state.when(
       data: (data) => _StockContentWithFilters(
-          state: data as StockState,
-          onStockEntry: () => _showStockEntry(context, ref),
+          state: data,
           onStockAdjustment: () => _showStockAdjustment(context, ref),
         ),
       loading: () => const LoadingIndicator(),
@@ -88,12 +62,10 @@ class StockScreen extends ConsumerWidget {
 class _StockContentWithFilters extends ConsumerStatefulWidget {
   const _StockContentWithFilters({
     required this.state,
-    required this.onStockEntry,
     required this.onStockAdjustment,
   });
 
   final StockState state;
-  final VoidCallback onStockEntry;
   final VoidCallback onStockAdjustment;
 
   @override
@@ -105,6 +77,7 @@ class _StockContentWithFiltersState
     extends ConsumerState<_StockContentWithFilters> {
   DateTime? _startDate;
   DateTime? _endDate;
+  DateTime? _inventoryDate;
   StockMovementType? _selectedType;
   String? _selectedProduct;
 
@@ -113,6 +86,7 @@ class _StockContentWithFiltersState
     super.initState();
     _endDate = DateTime.now();
     _startDate = DateTime.now().subtract(const Duration(days: 30));
+    _inventoryDate = null;
     _selectedType = null;
     _selectedProduct = null;
   }
@@ -158,12 +132,14 @@ class _StockContentWithFiltersState
   void _onFiltersChanged({
     DateTime? startDate,
     DateTime? endDate,
+    DateTime? inventoryDate,
     StockMovementType? type,
     String? productName,
   }) {
     setState(() {
       _startDate = startDate;
       _endDate = endDate;
+      _inventoryDate = inventoryDate;
       _selectedType = type;
       _selectedProduct = productName;
     });
@@ -205,6 +181,18 @@ class _StockContentWithFiltersState
         final movementsAsync = ref.watch(
           stockMovementsProvider((filterParams)),
         );
+
+        // État historique si une date d'inventaire est sélectionnée
+        final historicalStateAsync = _inventoryDate != null
+            ? ref.watch(historicalStockStateProvider(_inventoryDate!))
+            : null;
+
+        // Déterminer quel état de stock afficher
+        final activeState = historicalStateAsync?.maybeWhen(
+              data: (data) => data,
+              orElse: () => widget.state,
+            ) ??
+            widget.state;
 
         return CustomScrollView(
           slivers: [
@@ -318,25 +306,10 @@ class _StockContentWithFiltersState
                       children: [
                         Expanded(
                           child: FilledButton.icon(
-                            onPressed: widget.onStockEntry,
-                            style: FilledButton.styleFrom(
-                              backgroundColor: Colors.white.withValues(alpha: 0.2),
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            icon: const Icon(Icons.add_circle_outline, size: 20),
-                            label: const Text('Approvisionner'),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: FilledButton.icon(
                             onPressed: widget.onStockAdjustment,
                             style: FilledButton.styleFrom(
-                              backgroundColor: Colors.white.withValues(alpha: 0.2),
+                              backgroundColor:
+                                  Colors.white.withValues(alpha: 0.2),
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(vertical: 12),
                               shape: RoundedRectangleBorder(
@@ -353,6 +326,43 @@ class _StockContentWithFiltersState
                 ),
               ),
             ),
+            if (_inventoryDate != null)
+              SliverToBoxAdapter(
+                child: Container(
+                  margin: const EdgeInsets.fromLTRB(24, 8, 24, 0),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.secondaryContainer.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: theme.colorScheme.secondary),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.history, color: theme.colorScheme.secondary),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'AFFICHAGE DU BILAN AU ${DateFormatter.formatDate(_inventoryDate!)}',
+                          style: theme.textTheme.labelLarge?.copyWith(
+                            color: theme.colorScheme.onSecondaryContainer,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => _onFiltersChanged(
+                          startDate: DateTime.now().subtract(const Duration(days: 30)),
+                          endDate: DateTime.now(),
+                          inventoryDate: null,
+                          productName: _selectedProduct,
+                          type: _selectedType,
+                        ),
+                        child: const Text('Retour au présent'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             const SliverToBoxAdapter(
               child: Padding(
                 padding: EdgeInsets.symmetric(horizontal: 24),
@@ -370,17 +380,17 @@ class _StockContentWithFiltersState
                             children: [
                               Expanded(
                                 child: RawMaterialsCard(
-                                  items: widget.state.items,
-                                  availableBobines:
-                                      widget.state.availableBobines,
-                                  bobineStocks: widget.state.bobineStocks,
-                                  packagingStocks: widget.state.packagingStocks,
+                                  items: activeState.items,
+                                  products: ref.watch(productsProvider).value,
+                                  availableBobines: activeState.availableBobines,
+                                  bobineStocks: activeState.bobineStocks,
+                                  packagingStocks: activeState.packagingStocks,
                                 ),
                               ),
                               const SizedBox(width: 16),
                               Expanded(
                                 child: FinishedProductsCard(
-                                  items: widget.state.items,
+                                  items: activeState.items,
                                 ),
                               ),
                             ],
@@ -390,13 +400,14 @@ class _StockContentWithFiltersState
                     : Column(
                         children: [
                           RawMaterialsCard(
-                            items: widget.state.items,
-                            availableBobines: widget.state.availableBobines,
-                            bobineStocks: widget.state.bobineStocks,
-                            packagingStocks: widget.state.packagingStocks,
+                            items: activeState.items,
+                            products: ref.watch(productsProvider).value,
+                            availableBobines: activeState.availableBobines,
+                            bobineStocks: activeState.bobineStocks,
+                            packagingStocks: activeState.packagingStocks,
                           ),
                           const SizedBox(height: 16),
-                          FinishedProductsCard(items: widget.state.items),
+                          FinishedProductsCard(items: activeState.items),
                         ],
                       ),
               ),

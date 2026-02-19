@@ -5,6 +5,8 @@ import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart' show
 import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
 import 'package:elyf_groupe_app/features/immobilier/application/providers.dart';
 import 'package:elyf_groupe_app/features/immobilier/domain/entities/payment.dart';
+import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
+import 'package:elyf_groupe_app/features/audit_trail/application/providers.dart';
 import '../../widgets/immobilier_header.dart';
 
 class ZReportScreen extends ConsumerWidget {
@@ -15,6 +17,29 @@ class ZReportScreen extends ConsumerWidget {
     final theme = Theme.of(context);
     final paymentsAsync = ref.watch(paymentsProvider);
     final balancesAsync = ref.watch(treasuryBalancesProvider);
+
+    // Calculate Collections
+    final payments = paymentsAsync.value ?? [];
+    final today = DateTime.now();
+    final List<Payment> todayPayments = payments.where((p) {
+      final date = p.paymentDate;
+      return date.year == today.year && date.month == today.month && date.day == today.day;
+    }).toList();
+
+    int cashCollected = 0;
+    int mmCollected = 0;
+    for (final p in todayPayments) {
+      if (p.paymentMethod == PaymentMethod.cash) {
+        cashCollected += p.paidAmount.toInt();
+      } else if (p.paymentMethod == PaymentMethod.mobileMoney) {
+        mmCollected += p.paidAmount.toInt();
+      }
+    }
+
+    // Get Balances
+    final Map<String, int> balances = balancesAsync.value ?? {};
+    final theoreticalCash = balances['cash'] ?? 0;
+    final theoreticalMM = balances['mobileMoney'] ?? 0;
 
     return Scaffold(
       body: CustomScrollView(
@@ -32,7 +57,7 @@ class ZReportScreen extends ConsumerWidget {
                   _buildSectionTitle(theme, 'Collections du Jour'),
                   const SizedBox(height: 16),
                   paymentsAsync.when(
-                    data: (payments) => _buildCollectionsSummary(theme, payments.cast<Payment>()),
+                    data: (payments) => _buildCollectionsSummary(theme, cashCollected, mmCollected),
                     loading: () => const LoadingIndicator(),
                     error: (e, st) => ErrorDisplayWidget(error: e),
                   ),
@@ -40,7 +65,7 @@ class ZReportScreen extends ConsumerWidget {
                   _buildSectionTitle(theme, 'Soldes Théoriques'),
                   const SizedBox(height: 16),
                   balancesAsync.when(
-                    data: (balances) => _buildBalancesSummary(theme, balances),
+                    data: (balances) => _buildBalancesSummary(theme, theoreticalCash, theoreticalMM),
                     loading: () => const LoadingIndicator(),
                     error: (e, st) => ErrorDisplayWidget(error: e),
                   ),
@@ -48,7 +73,14 @@ class ZReportScreen extends ConsumerWidget {
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton.icon(
-                      onPressed: () => _showCloseShiftConfirmation(context, ref),
+                      onPressed: () => _showCloseShiftConfirmation(
+                        context,
+                        ref,
+                        cashCollected: cashCollected,
+                        mmCollected: mmCollected,
+                        theoreticalCash: theoreticalCash,
+                        theoreticalMM: theoreticalMM,
+                      ),
                       icon: const Icon(Icons.check_circle_outline),
                       label: const Text('Valider et Clôturer la Journée'),
                       style: FilledButton.styleFrom(
@@ -76,21 +108,7 @@ class ZReportScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildCollectionsSummary(ThemeData theme, List<Payment> payments) {
-    final today = DateTime.now();
-    final todayPayments = payments.where((p) {
-      final date = p.paymentDate;
-      return date.year == today.year && date.month == today.month && date.day == today.day;
-    }).toList();
-
-    int cashTotal = 0;
-    int mmTotal = 0;
-
-    for (final p in todayPayments) {
-      if (p.paymentMethod == PaymentMethod.cash) cashTotal += p.paidAmount;
-      if (p.paymentMethod == PaymentMethod.mobileMoney) mmTotal += p.paidAmount;
-    }
-
+  Widget _buildCollectionsSummary(ThemeData theme, int cashTotal, int mmTotal) {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -128,7 +146,7 @@ class ZReportScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildBalancesSummary(ThemeData theme, Map<String, int> balances) {
+  Widget _buildBalancesSummary(ThemeData theme, int cashBalance, int mmBalance) {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -140,7 +158,7 @@ class ZReportScreen extends ConsumerWidget {
           _buildSummaryRow(
             theme,
             'Solde Théorique Espèces',
-            balances['cash'] ?? 0,
+            cashBalance,
             Icons.account_balance_wallet,
             Colors.green,
           ),
@@ -148,7 +166,7 @@ class ZReportScreen extends ConsumerWidget {
           _buildSummaryRow(
             theme,
             'Solde Théorique Mobile Money',
-            balances['mobileMoney'] ?? 0,
+            mmBalance,
             Icons.phonelink_setup,
             Colors.blue,
           ),
@@ -198,7 +216,14 @@ class ZReportScreen extends ConsumerWidget {
     );
   }
 
-  void _showCloseShiftConfirmation(BuildContext context, WidgetRef ref) {
+  void _showCloseShiftConfirmation(
+    BuildContext context,
+    WidgetRef ref, {
+    required int cashCollected,
+    required int mmCollected,
+    required int theoreticalCash,
+    required int theoreticalMM,
+  }) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -212,10 +237,38 @@ class ZReportScreen extends ConsumerWidget {
             child: const Text('Annuler'),
           ),
           FilledButton(
-            onPressed: () {
-              // In the future, this would send an audit or lock the session
-              Navigator.pop(context);
-              NotificationService.showSuccess(context, 'Journée clôturée avec succès');
+            onPressed: () async {
+              try {
+                final auditService = ref.read(auditTrailServiceProvider);
+                final enterpriseId = ref.read(activeEnterpriseProvider).value?.id ?? 'default';
+                final userId = ref.read(currentUserIdProvider) ?? 'unknown';
+
+                await auditService.logAction(
+                  enterpriseId: enterpriseId,
+                  userId: userId,
+                  module: 'immobilier',
+                  action: 'close_day',
+                  entityId: DateTime.now().toIso8601String().split('T').first,
+                  entityType: 'z_report',
+                  metadata: {
+                    'cashCollected': cashCollected,
+                    'mmCollected': mmCollected,
+                    'theoreticalCash': theoreticalCash,
+                    'theoreticalMM': theoreticalMM,
+                    'totalCollected': cashCollected + mmCollected,
+                    'timestamp': DateTime.now().toIso8601String(),
+                  },
+                );
+
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  NotificationService.showSuccess(context, 'Journée clôturée avec succès (Audit enregistré)');
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  NotificationService.showError(context, 'Erreur lors de la clôture: $e');
+                }
+              }
             },
             child: const Text('Confirmer'),
           ),

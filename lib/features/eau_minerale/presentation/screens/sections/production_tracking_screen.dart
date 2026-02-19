@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
+import 'package:elyf_groupe_app/shared.dart';
 import '../../../domain/entities/production_session.dart';
 import '../../widgets/production_tracking/production_tracking_progress.dart';
 import '../../widgets/production_tracking/production_tracking_session_info.dart';
@@ -28,9 +29,10 @@ class _ProductionTrackingScreenState
     );
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Suivi de production'),
+      appBar: ElyfAppBar(
+        title: 'Suivi de production',
         actions: [
+          EnterpriseSelectorWidget(style: EnterpriseSelectorStyle.appBar),
           IconButton(
             icon: const Icon(Icons.edit),
             onPressed: () {

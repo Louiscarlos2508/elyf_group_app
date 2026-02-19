@@ -2,7 +2,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'printer_interface.dart';
 import 'sunmi_v3_service.dart';
-import 'thermal_printer_service.dart';
 import 'system_printer_service.dart';
 
 /// Simple configuration for printer
@@ -31,20 +30,10 @@ final activePrinterProvider = Provider<PrinterInterface>((ref) {
   switch (type) {
     case 'sunmi':
       return SunmiV3Service.instance;
-    case 'bluetooth':
-      final service = ThermalPrinterService();
-      // If address is provided, the service should eventually handle it.
-      // For now, ThermalPrinterService is a singleton that manages its own connection.
-      return service;
     case 'system':
     default:
       return SystemPrinterService();
   }
-});
-
-/// Provider for a default thermal printer instance
-final thermalPrinterServiceProvider = Provider<ThermalPrinterService>((ref) {
-  return ThermalPrinterService();
 });
 
 /// Provider pour vérifier si une imprimante est configurée/disponible

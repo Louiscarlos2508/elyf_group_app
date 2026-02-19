@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../application/providers.dart';
+import 'package:elyf_groupe_app/shared.dart';
 import '../../../domain/entities/production_session.dart';
 import '../../widgets/production_session_form_steps.dart';
 
@@ -46,12 +47,15 @@ class _ProductionSessionFormScreenState
     final isEditing = widget.session != null;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(isEditing ? 'Modifier session' : 'Nouvelle session'),
+      appBar: ElyfAppBar(
+        title: isEditing ? 'Modifier session' : 'Nouvelle session',
         leading: IconButton(
           icon: const Icon(Icons.close),
           onPressed: () => Navigator.of(context).pop(),
         ),
+        actions: [
+          EnterpriseSelectorWidget(style: EnterpriseSelectorStyle.appBar),
+        ],
       ),
       body: Column(
         children: [

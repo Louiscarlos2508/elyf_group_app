@@ -22,13 +22,13 @@ class ExpensesHistoryTab extends StatelessWidget {
 
     return Container(
       margin: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-      padding: const EdgeInsets.all(25),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: Colors.black.withValues(alpha: 0.1),
-          width: 1.3,
+          color: theme.colorScheme.outlineVariant,
+          width: 1,
         ),
       ),
       child: Column(
@@ -37,31 +37,43 @@ class ExpensesHistoryTab extends StatelessWidget {
           Text(
             'Historique des dépenses',
             style: theme.textTheme.titleMedium?.copyWith(
-              fontSize: 16,
-              fontWeight: FontWeight.normal,
-              color: const Color(0xFF0A0A0A),
+              fontWeight: FontWeight.bold,
+              color: theme.colorScheme.onSurface,
             ),
           ),
-          const SizedBox(height: 30),
+          const SizedBox(height: 24),
           Expanded(
             child: expenses.isEmpty
                 ? const ExpensesEmptyState()
-                : ListView.builder(
+                : ListView.separated(
                     itemCount: expenses.length,
+                    separatorBuilder: (context, index) => Divider(
+                      height: 1,
+                      color: theme.colorScheme.outlineVariant,
+                    ),
                     itemBuilder: (context, index) {
                       final expense = expenses[index];
                       return ListTile(
-                        title: Text(expense.description),
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(
+                          expense.description,
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
                         subtitle: Row(
                           children: [
                             Text(
                               '${expense.category.label} • ${expense.date.day}/${expense.date.month}/${expense.date.year}',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
                             ),
                             if (expense.receiptPath != null) ...[
                               const SizedBox(width: 8),
                               Icon(
                                 Icons.receipt_long_rounded,
-                                size: 12,
+                                size: 14,
                                 color: theme.colorScheme.primary,
                               ),
                             ],
@@ -69,8 +81,8 @@ class ExpensesHistoryTab extends StatelessWidget {
                         ),
                         trailing: Text(
                           CurrencyFormatter.formatDouble(expense.amount),
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            color: const Color(0xFFE7000B),
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            color: theme.colorScheme.error,
                             fontWeight: FontWeight.bold,
                           ),
                         ),

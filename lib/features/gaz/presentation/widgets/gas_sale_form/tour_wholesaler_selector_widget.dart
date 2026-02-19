@@ -76,7 +76,7 @@ class _TourWholesalerSelectorWidgetState
                 .toList();
 
             return DropdownButtonFormField<Tour?>(
-              value: widget.selectedTour,
+              initialValue: widget.selectedTour,
               decoration: const InputDecoration(
                 labelText: 'Source de la vente *',
                 prefixIcon: Icon(Icons.local_shipping),

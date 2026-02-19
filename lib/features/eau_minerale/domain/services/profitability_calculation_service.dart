@@ -12,15 +12,32 @@ class ProfitabilityCalculationService {
     required List<ProductionSession> sessions,
     required List<Sale> sales,
     required int totalExpenses,
+    double? electricityRate,
   }) {
     final totalProduction = sessions.fold<int>(
       0,
       (sum, s) => sum + s.quantiteProduite,
     );
+    
+    // Calculate total production cost, ensuring electricity is accounted for
     final totalProductionCost = sessions.fold<int>(
       0,
-      (sum, s) => sum + s.coutTotal,
+      (sum, s) {
+        int sessionCost = s.coutTotal;
+        
+        // If coutElectricite is null or 0, and we have a rate and consumption,
+        // add the calculated electricity cost
+        if ((s.coutElectricite == null || s.coutElectricite == 0) &&
+            electricityRate != null &&
+            s.consommationCourant > 0) {
+          final calculatedElec = (s.consommationCourant * electricityRate).round();
+          sessionCost += calculatedElec;
+        }
+        
+        return sum + sessionCost;
+      },
     );
+
     final totalRevenue = sales.fold<int>(0, (sum, s) => sum + s.totalPrice);
     final totalSalesQuantity = sales.fold<int>(0, (sum, s) => sum + s.quantity);
 

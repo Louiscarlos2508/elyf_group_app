@@ -240,28 +240,22 @@ class SalaryReceiptDialog extends StatelessWidget {
             ],
             if (payment.aSignature) ...[
               const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: theme.colorScheme.outline.withValues(alpha: 0.3),
-                  ),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Signature du bénéficiaire',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        border: Border.all(
+                          color: theme.colorScheme.outline.withValues(alpha: 0.3),
+                        ),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Image.memory(
+                        payment.signature!,
+                        height: 80,
+                        fit: BoxFit.contain,
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    Image.memory(payment.signature!, height: 80),
-                  ],
-                ),
-              ),
             ],
           ],
         ),

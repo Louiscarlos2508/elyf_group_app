@@ -133,7 +133,7 @@ class _ExpenseEntryDialogState extends ConsumerState<ExpenseEntryDialog> {
                     Expanded(
                       flex: 3,
                       child: DropdownButtonFormField<ExpenseCategory>(
-                        value: _selectedCategory,
+                        initialValue: _selectedCategory,
                         decoration: const InputDecoration(
                           labelText: 'Catégorie',
                           border: OutlineInputBorder(),

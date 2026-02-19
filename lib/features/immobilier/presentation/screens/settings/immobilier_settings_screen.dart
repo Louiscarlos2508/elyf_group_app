@@ -6,9 +6,6 @@ import 'package:elyf_groupe_app/features/immobilier/application/providers.dart';
 import 'package:elyf_groupe_app/features/immobilier/presentation/widgets/immobilier_header.dart';
 import 'package:elyf_groupe_app/features/immobilier/domain/entities/immobilier_settings.dart';
 import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
-import 'package:elyf_groupe_app/core/printing/thermal_printer_service.dart';
-import 'package:flutter_bluetooth_serial/flutter_bluetooth_serial.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:elyf_groupe_app/core/printing/printer_provider.dart';
 
 class ImmobilierSettingsScreen extends ConsumerStatefulWidget {
@@ -28,11 +25,6 @@ class _ImmobilierSettingsScreenState extends ConsumerState<ImmobilierSettingsScr
   final _penaltyRateController = TextEditingController();
   String _penaltyType = 'fixed'; // fixed, daily
   String? _enterpriseId;
-  // Bluetooth specific
-  final _thermalService = ThermalPrinterService();
-  List<BluetoothDiscoveryResult> _devices = [];
-  bool _isScanning = false;
-  bool _isConnected = false;
  
   final _headerController = TextEditingController();
   final _footerController = TextEditingController();
@@ -40,9 +32,6 @@ class _ImmobilierSettingsScreenState extends ConsumerState<ImmobilierSettingsScr
   @override
   void initState() {
     super.initState();
-    _thermalService.initialize().then((_) {
-      _attemptAutoReconnect();
-    });
     // Initial load will happen when build watches the enterprise & settings
   }
 
@@ -55,19 +44,7 @@ class _ImmobilierSettingsScreenState extends ConsumerState<ImmobilierSettingsScr
     super.dispose();
   }
 
-  Future<void> _attemptAutoReconnect() async {
-    if (!mounted) return;
-    final settings = ref.read(immobilierSettingsServiceProvider);
-    if (settings.printerType == 'bluetooth' && settings.printerAddress != null) {
-      await _thermalService.connectToAddress(settings.printerAddress!);
-    }
-    _checkConnection();
-  }
 
-  Future<void> _checkConnection() async {
-    final connected = await _thermalService.isAvailable();
-    if (mounted) setState(() => _isConnected = connected);
-  }
 
 
   Future<void> _savePrinterType(String type) async {
@@ -105,78 +82,7 @@ class _ImmobilierSettingsScreenState extends ConsumerState<ImmobilierSettingsScr
     }
   }
 
-  Future<void> _startScan() async {
-    Map<Permission, PermissionStatus> statuses;
-    
-    if (await Permission.bluetoothScan.isGranted && await Permission.bluetoothConnect.isGranted) {
-       statuses = {};
-    } else {
-       statuses = await [
-        Permission.bluetoothScan,
-        Permission.bluetoothConnect,
-        Permission.bluetooth,
-        Permission.location, 
-      ].request();
-    }
 
-    final scanDenied = statuses[Permission.bluetoothScan]?.isDenied ?? false;
-    final connectDenied = statuses[Permission.bluetoothConnect]?.isDenied ?? false;
-
-    if (scanDenied || connectDenied) {
-      if (mounted) {
-        NotificationService.showWarning(context, 'Permissions Bluetooth nécessaires.');
-      }
-      return;
-    }
-
-    setState(() {
-      _isScanning = true;
-      _devices = [];
-    });
-
-    try {
-      _thermalService.scanBluetooth().listen((result) {
-        if (mounted) {
-          setState(() {
-            final index = _devices.indexWhere((element) => element.device.address == result.device.address);
-            if (index >= 0) {
-              _devices[index] = result;
-            } else {
-              _devices.add(result);
-            }
-          });
-        }
-      }).onDone(() {
-        if (mounted) setState(() => _isScanning = false);
-      });
-      
-    } catch (e) {
-      if (mounted) {
-        NotificationService.showError(context, 'Erreur de scan: $e');
-        setState(() => _isScanning = false);
-      }
-    }
-  }
-
-  Future<void> _connectToDevice(BluetoothDevice device) async {
-    setState(() => _isLoading = true);
-    try {
-      final success = await _thermalService.connectBluetooth(device);
-      if (success) {
-        if (mounted) {
-          NotificationService.showSuccess(context, 'Connecté à ${device.name ?? "Inconnu"}');
-          await ref.read(immobilierSettingsServiceProvider).setPrinterAddress(device.address);
-          _checkConnection();
-        }
-      } else {
-        if (mounted) NotificationService.showError(context, 'Échec de connexion');
-      }
-    } catch (e) {
-      if (mounted) NotificationService.showError(context, 'Erreur de connexion: $e');
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
 
   Future<void> _testPrint() async {
     setState(() => _isTesting = true);
@@ -296,16 +202,7 @@ class _ImmobilierSettingsScreenState extends ConsumerState<ImmobilierSettingsScr
                     color: Colors.orange,
                   ),
                   
-                  _buildOptionCard(
-                    id: 'bluetooth',
-                    title: 'Imprimante Bluetooth',
-                    description: 'Imprimante thermique externe ESC/POS.',
-                    icon: Icons.bluetooth,
-                    color: Colors.blue,
-                  ),
-
-                  if (_selectedType == 'bluetooth')
-                    _buildBluetoothSection(context),
+                  
                   
                   _buildOptionCard(
                     id: 'system',
@@ -435,66 +332,7 @@ class _ImmobilierSettingsScreenState extends ConsumerState<ImmobilierSettingsScr
     );
   }
 
-  Widget _buildBluetoothSection(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16, left: 16, right: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.blue.shade50,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.blue.shade200),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Icon(_isConnected ? Icons.check_circle : Icons.bluetooth_searching,
-                  color: _isConnected ? Colors.green : Colors.blue),
-              const SizedBox(width: 8),
-              Text(
-                _isConnected ? 'Connectée' : 'Déconnectée',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const Spacer(),
-              if (_isConnected)
-                TextButton(
-                  onPressed: () {
-                    _thermalService.disconnect();
-                    setState(() => _isConnected = false);
-                  },
-                  child: const Text('Déconnecter', style: TextStyle(color: Colors.red)),
-                )
-            ],
-          ),
-          const Divider(),
-          if (!_isScanning && !_isConnected)
-            ElevatedButton.icon(
-              onPressed: _startScan,
-              icon: const Icon(Icons.search),
-              label: const Text("Scanner les imprimantes"),
-            ),
-          if (_isScanning) ...[
-            const Padding(
-              padding: EdgeInsets.all(8.0),
-              child: Center(child: CircularProgressIndicator()),
-            ),
-          ],
-          if (_devices.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            ..._devices.map((d) => ListTile(
-                  title: Text(d.device.name ?? "Inconnu"),
-                  subtitle: Text(d.device.address),
-                  onTap: () => _connectToDevice(d.device),
-                  dense: true,
-                  tileColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                )),
-          ],
-        ],
-      ),
-    );
-  }
+
 
   Widget _buildOptionCard({
     required String id,

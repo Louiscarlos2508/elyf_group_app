@@ -285,6 +285,13 @@ class ImmobilierPermissions {
     module: 'immobilier',
     description: 'Permet de créer une opération de trésorerie',
   );
+  
+  static const manageSettings = ActionPermission(
+    id: 'manage_settings',
+    name: 'Gérer les paramètres',
+    module: 'immobilier',
+    description: 'Permet de gérer les paramètres du module',
+  );
 
   /// All permissions for the module
   static const all = [
@@ -327,5 +334,6 @@ class ImmobilierPermissions {
     deleteMaintenance,
     viewTreasury,
     createTreasuryOperation,
+    manageSettings,
   ];
 }

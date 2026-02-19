@@ -42,10 +42,10 @@ class ToursListTab extends ConsumerWidget {
           margin: const EdgeInsets.fromLTRB(24, 0, 24, 24),
           padding: const EdgeInsets.all(25),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: theme.colorScheme.surface,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: Colors.black.withValues(alpha: 0.1),
+              color: theme.colorScheme.outline.withValues(alpha: 0.1),
               width: 1.3,
             ),
           ),
@@ -57,7 +57,7 @@ class ToursListTab extends ConsumerWidget {
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontSize: 16,
                     fontWeight: FontWeight.normal,
-                    color: const Color(0xFF0A0A0A),
+                    color: theme.colorScheme.onSurface,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -75,7 +75,7 @@ class ToursListTab extends ConsumerWidget {
                                     ? Icons.local_shipping_outlined
                                     : Icons.history,
                                 size: 48,
-                                color: const Color(0xFF6A7282).withValues(alpha: 0.5),
+                                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
                               ),
                               const SizedBox(height: 16),
                               Text(
@@ -85,7 +85,7 @@ class ToursListTab extends ConsumerWidget {
                                 style: theme.textTheme.titleMedium?.copyWith(
                                   fontSize: 16,
                                   fontWeight: FontWeight.normal,
-                                  color: const Color(0xFF6A7282),
+                                  color: theme.colorScheme.onSurfaceVariant,
                                 ),
                                 textAlign: TextAlign.center,
                               ),
@@ -95,7 +95,7 @@ class ToursListTab extends ConsumerWidget {
                                   'Accédez à l\'historique ou créez-en un nouveau',
                                   style: theme.textTheme.bodyMedium?.copyWith(
                                     fontSize: 14,
-                                    color: const Color(0xFF99A1AF),
+                                    color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
                                   ),
                                   textAlign: TextAlign.center,
                                 ),

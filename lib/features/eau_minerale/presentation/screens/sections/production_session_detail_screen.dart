@@ -1,16 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../../app/theme/app_theme.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
-import '../../../domain/entities/production_session.dart';
-import '../../../domain/entities/production_session_status.dart';
-import '../../../domain/entities/sale.dart';
-import '../../../domain/services/production_margin_calculator.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/production_session.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/production_session_status.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/bobine_usage.dart';
 import '../../widgets/production_detail_report.dart';
 import '../../widgets/section_placeholder.dart';
-// Removed: ventesParSessionProvider is imported from providers.dart
-import '../../../domain/entities/bobine_usage.dart';
 import 'production_session_form_screen.dart';
 import '../../widgets/production_tracking/personnel_section.dart';
 
@@ -47,11 +44,10 @@ class _ProductionSessionDetailScreenState
     final sessionAsync = ref.watch(
       productionSessionDetailProvider((widget.sessionId)),
     );
-    final ventesAsync = ref.watch(ventesParSessionProvider((widget.sessionId)));
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Détail session'),
+      appBar: ElyfAppBar(
+        title: 'Détail session',
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
@@ -60,6 +56,7 @@ class _ProductionSessionDetailScreenState
           ],
         ),
         actions: [
+          EnterpriseSelectorWidget(style: EnterpriseSelectorStyle.appBar),
           sessionAsync.when(
             data: (session) {
               if (session.status == ProductionSessionStatus.completed) {
@@ -83,7 +80,6 @@ class _ProductionSessionDetailScreenState
           sessionAsync.when(
             data: (session) => _ProductionSessionDetailContent(
               sessionId: widget.sessionId,
-              ventesAsync: ventesAsync,
             ),
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (error, stack) => SectionPlaceholder(
@@ -120,11 +116,9 @@ class _ProductionSessionDetailScreenState
 class _ProductionSessionDetailContent extends ConsumerWidget {
   const _ProductionSessionDetailContent({
     required this.sessionId,
-    required this.ventesAsync,
   });
 
   final String sessionId;
-  final AsyncValue<List<Sale>> ventesAsync;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -135,11 +129,7 @@ class _ProductionSessionDetailContent extends ConsumerWidget {
     return RefreshIndicator(
       onRefresh: () async {
         ref.invalidate(productionSessionDetailProvider((sessionId)));
-        ref.invalidate(ventesParSessionProvider((sessionId)));
-        await Future.wait([
-          ref.read(productionSessionDetailProvider((sessionId)).future),
-          ref.read(ventesParSessionProvider((sessionId)).future),
-        ]);
+        await ref.read(productionSessionDetailProvider((sessionId)).future);
       },
       child: sessionAsync.when(
         data: (session) => SingleChildScrollView(
@@ -159,15 +149,6 @@ class _ProductionSessionDetailContent extends ConsumerWidget {
               PersonnelSection(
                 session: session,
                 isReadOnly: true,
-              ),
-              const SizedBox(height: 16),
-              ventesAsync.when(
-                data: (ventes) => _buildMarginCard(context, session, ventes),
-                loading: () => const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 24.0),
-                  child: Center(child: CircularProgressIndicator()),
-                ),
-                error: (_, __) => _buildMarginCard(context, session, []),
               ),
               if (session.notes != null) ...[
                 const SizedBox(height: 16),
@@ -520,116 +501,6 @@ class _ProductionSessionDetailContent extends ConsumerWidget {
     );
   }
 
-  Widget _buildMarginCard(
-    BuildContext context,
-    ProductionSession session,
-    List<Sale> ventes,
-  ) {
-    final theme = Theme.of(context);
-    final marge = ProductionMarginCalculator.calculerMarge(
-      session: session,
-      ventesLiees: ventes,
-    );
-
-    final statusColors = Theme.of(context).extension<StatusColors>()!;
-    final marginColor = marge.estRentable
-        ? statusColors.success
-        : statusColors.danger;
-    return Card(
-      color: marginColor.withValues(alpha: 0.08),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(28),
-        side: BorderSide(color: marginColor.withValues(alpha: 0.2), width: 1.5),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: marginColor.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(
-                    marge.estRentable ? Icons.trending_up : Icons.trending_down,
-                    color: marginColor,
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  'Analyse de marge',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.onSurface,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            _buildInfoRow(
-              context,
-              'Revenus totaux',
-              '${marge.revenusTotaux} CFA',
-            ),
-            const SizedBox(height: 8),
-            _buildInfoRow(context, 'Coût bobines', '${marge.coutBobines} CFA'),
-            const SizedBox(height: 8),
-            _buildInfoRow(
-              context,
-              'Coût emballages',
-              '${marge.coutEmballages} CFA',
-            ),
-            const SizedBox(height: 8),
-            _buildInfoRow(
-              context,
-              'Coût électricité',
-              '${marge.coutElectricite} CFA',
-            ),
-            const SizedBox(height: 8),
-            _buildInfoRow(
-              context,
-              'Coût personnel',
-              '${marge.coutPersonnel} CFA',
-            ),
-            const SizedBox(height: 8),
-            _buildInfoRow(context, 'Coût total', '${marge.coutTotal} CFA'),
-            const SizedBox(height: 16),
-            Divider(
-              color: theme.colorScheme.outline.withValues(alpha: 0.2),
-              thickness: 1,
-            ),
-            const SizedBox(height: 8),
-            _buildInfoRow(
-              context,
-              'Marge brute',
-              '${marge.margeBrute} CFA',
-              isBold: true,
-              valueColor: marginColor,
-            ),
-            const SizedBox(height: 8),
-            _buildInfoRow(
-              context,
-              'Pourcentage marge',
-              marge.pourcentageMargeFormate,
-              isBold: true,
-              valueColor: marginColor,
-            ),
-            const SizedBox(height: 8),
-            _buildInfoRow(
-              context,
-              'Nombre ventes',
-              marge.nombreVentes.toString(),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _buildNotesCard(BuildContext context, ProductionSession session) {
     final theme = Theme.of(context);

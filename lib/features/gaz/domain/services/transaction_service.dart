@@ -28,6 +28,7 @@ import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
 
 import '../../../audit_trail/domain/repositories/audit_trail_repository.dart';
 import '../../../audit_trail/domain/entities/audit_record.dart';
+import 'package:elyf_groupe_app/shared.dart'; // For PhoneUtils if needed, but assuming internal logic
 
 /// Service de gestion des transactions atomiques pour opérations critiques.
 ///
@@ -280,8 +281,8 @@ class TransactionService {
         );
       }
 
-        // 3. Créditer le stock de bouteilles vides si c'est un échange
-      if (saleWithSession.isExchange && saleWithSession.emptyReturnedQuantity > 0) {
+        // 3. Créditer le stock de bouteilles vides si c'est un échange ou un retour
+      if ((saleWithSession.isExchange || saleWithSession.dealType == GasSaleDealType.returnCylinder) && saleWithSession.emptyReturnedQuantity > 0) {
         final emptyStock = stocks
             .where((s) => s.status == CylinderStatus.emptyAtStore)
             .firstOrNull;
@@ -368,7 +369,7 @@ class TransactionService {
               'status': 'full',
               'delta': -saleWithSession.quantity,
             },
-            if (saleWithSession.isExchange && saleWithSession.emptyReturnedQuantity > 0)
+            if ((saleWithSession.isExchange || saleWithSession.dealType == GasSaleDealType.returnCylinder) && saleWithSession.emptyReturnedQuantity > 0)
               {
                 'cylinderId': saleWithSession.cylinderId,
                 'weight': weight,
@@ -762,6 +763,125 @@ class TransactionService {
     ));
 
     return updatedCollection;
+  }
+
+  /// Exécute une collecte indépendante (Hors Tour) de manière atomique.
+  /// 
+  /// Cette méthode décompose la collecte en plusieurs transactions de vente (Type retour)
+  /// pour assurer la traçabilité et gérer le stock/trésorerie via les mécanismes existants.
+  Future<void> executeIndependentCollectionTransaction({
+    required Collection collection,
+    required String enterpriseId,
+    required String userId,
+  }) async {
+    // 0. Validation
+    final activeSession = await sessionRepository.getActiveSession(enterpriseId);
+    if (activeSession == null) {
+      throw ValidationException(
+        'Aucune session active. Veuillez ouvrir une session.',
+        'NO_ACTIVE_SESSION',
+      );
+    }
+
+    if (collection.emptyBottles.isEmpty) {
+      throw ValidationException(
+        'La collecte ne contient aucune bouteille.',
+        'EMPTY_COLLECTION',
+      );
+    }
+
+    // 1. Récupérer les bouteilles pour mapping ID
+    final allCylinders = await gasRepository.getCylinders();
+    final cylinders = allCylinders
+        .where((c) => c.enterpriseId == enterpriseId)
+        .toList();
+
+    // 2. Pour chaque type de bouteille, créer une transaction "Vente" de type Retour
+    for (final entry in collection.emptyBottles.entries) {
+      final weight = entry.key;
+      final quantity = entry.value;
+      if (quantity <= 0) continue;
+
+      final cylinder = cylinders.firstWhere(
+        (c) => c.weight == weight,
+        orElse: () => throw NotFoundException('Cylindre $weight kg introuvable', 'CYLINDER_NOT_FOUND'),
+      );
+
+      // Calculer le montant (si on rembourse ou paye)
+      // Note: Dans une collecte pure, souvent on ne paye pas sauf si c'est un remboursement de consigne.
+      // Ici on suppose que le montant est géré globalement ou par bouteille.
+      // Pour simplifier, on divise le montant total payé proportionnellement? 
+      // Ou on met 0 et on gère la trésorerie séparément?
+      // Mieux: On crée une vente avec quantity=0, emptyReturned=quantity.
+      // Le totalAmount peut représenter le montant remboursé (négatif?) -> GasSale ne supporte pas négatif facilement.
+      // On met totalAmount = 0 ici, et on gère le paiement séparément si besoin.
+      // MAIS: Si `collection.amountPaid` > 0, c'est une sortie d'argent (Dépense).
+      
+      final sale = GasSale(
+        id: 'coll_sale_${DateTime.now().millisecondsSinceEpoch}_$weight',
+        enterpriseId: enterpriseId,
+        cylinderId: cylinder.id,
+        quantity: 0, // Pas de vente de plein
+        unitPrice: 0,
+        totalAmount: 0, // On gère le financier via Treasury directement ou via Expense
+        saleDate: DateTime.now(),
+        saleType: SaleType.wholesale, // Ou retail selon le type de client?
+        sessionId: activeSession.id,
+        customerName: collection.clientName,
+        customerPhone: collection.clientPhone,
+        emptyReturnedQuantity: quantity,
+        dealType: GasSaleDealType.returnCylinder,
+        sellerId: userId,
+        notes: 'Collecte indépendante: $quantity bouteilles vides',
+        wholesalerId: collection.type == CollectionType.wholesaler ? collection.clientId : null,
+        // Si c'est un Point de Vente, on pourrait mettre le pointOfSaleId quelque part?
+      );
+
+      // Exécuter la transaction stock
+      await executeSaleTransaction(
+        sale: sale,
+        weight: weight,
+        enterpriseId: enterpriseId,
+      );
+    }
+
+    // 3. Gérer l'aspect financier (Trésorerie / Dépense)
+    if (collection.amountPaid > 0) {
+       // C'est une sortie d'argent (on paye le client pour les bouteilles / ou retour consigne)
+       // On enregistre une dépense OU une opération de trésorerie SORTIE
+       
+       await treasuryRepository.saveOperation(TreasuryOperation(
+        id: LocalIdGenerator.generate(),
+        enterpriseId: enterpriseId,
+        userId: userId,
+        amount: collection.amountPaid.toInt(),
+        type: TreasuryOperationType.removal, // Sortie d'argent
+        date: DateTime.now(),
+        reason: 'Paiement Collecte Indépendante (${collection.clientName})',
+        referenceEntityId: collection.id, // On réfère à l'ID de collection même si virtuelle
+        referenceEntityType: 'gas_collection', // Nouveau type
+        createdAt: DateTime.now(),
+      ));
+    }
+
+    // 4. Audit global
+    await auditTrailRepository.log(AuditRecord(
+        id: '',
+        enterpriseId: enterpriseId,
+        userId: userId,
+        module: 'gaz',
+        action: 'INDEPENDENT_COLLECTION',
+        entityId: collection.id, // ID virtuel
+        entityType: 'collection',
+        timestamp: DateTime.now(),
+        metadata: {
+          'clientName': collection.clientName,
+          'bottles': collection.emptyBottles.entries
+              .map((e) => {'weight': e.key, 'qty': e.value})
+              .toList(),
+          'amountPaid': collection.amountPaid,
+        },
+      ));
   }
 
 

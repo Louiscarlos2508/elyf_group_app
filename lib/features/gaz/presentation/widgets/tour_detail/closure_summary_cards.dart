@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
-import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
-import 'package:elyf_groupe_app/app/theme/app_colors.dart';
 
 /// Cartes de résumé pour l'étape de clôture.
 class ClosureSummaryCards extends StatelessWidget {

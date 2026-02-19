@@ -6,6 +6,7 @@ import '../../domain/repositories/bobine_stock_quantity_repository.dart';
 import '../../domain/entities/production_session_status.dart';
 import '../../domain/repositories/production_session_repository.dart';
 import '../../../audit_trail/domain/services/audit_trail_service.dart';
+import '../../domain/repositories/product_repository.dart';
 import 'stock_controller.dart';
 
 class ProductionSessionController {
@@ -13,12 +14,14 @@ class ProductionSessionController {
     this._repository,
     this._stockController,
     this._bobineStockQuantityRepository,
+    this._productRepository,
     this._auditTrailService,
   );
 
   final ProductionSessionRepository _repository;
   final StockController _stockController;
   final BobineStockQuantityRepository _bobineStockQuantityRepository;
+  final ProductRepository _productRepository;
   final AuditTrailService _auditTrailService;
 
   Future<List<ProductionSession>> fetchSessions({
@@ -41,7 +44,19 @@ class ProductionSessionController {
 
   /// Crée une session et décrémente le stock pour les nouvelles bobines.
   Future<ProductionSession> createSession(ProductionSession session) async {
-    final savedSession = await _repository.createSession(session);
+    // Calculer le coût des bobines (uniquement les nouvelles)
+    final coutBobines = await _calculerCoutBobinesNouvelles(
+      bobinesUtilisees: session.bobinesUtilisees,
+      sessionId: session.id,
+      estNouvelleSession: true,
+      sessionExistante: null,
+    );
+
+    final sessionAvecCout = session.copyWith(
+      coutBobines: session.coutBobines ?? coutBobines,
+    );
+
+    final savedSession = await _repository.createSession(sessionAvecCout);
 
     // Audit Log
     try {
@@ -77,7 +92,19 @@ class ProductionSessionController {
     // Récupérer la session existante pour comparer
     final sessionExistante = await _repository.fetchSessionById(session.id);
 
-    final savedSession = await _repository.updateSession(session);
+    // Calculer le coût des bobines (uniquement les nouvelles)
+    final coutBobines = await _calculerCoutBobinesNouvelles(
+      bobinesUtilisees: session.bobinesUtilisees,
+      sessionId: session.id,
+      estNouvelleSession: false,
+      sessionExistante: sessionExistante,
+    );
+
+    final sessionAvecCout = session.copyWith(
+      coutBobines: session.coutBobines ?? coutBobines,
+    );
+
+    final savedSession = await _repository.updateSession(sessionAvecCout);
 
     // Audit Log for Completion
     if (savedSession.status == ProductionSessionStatus.completed &&
@@ -240,105 +267,41 @@ class ProductionSessionController {
 
     for (final bobineUsage in bobinesUtilisees) {
       AppLogger.debug(
-        'Vérification bobine: ${bobineUsage.bobineType} sur machine ${bobineUsage.machineId}',
+        'Vérification bobine: ${bobineUsage.bobineType} sur machine ${bobineUsage.machineId} (UsageID: ${bobineUsage.id})',
         name: 'eau_minerale.production',
       );
 
-      // ÉTAPE 0: Ignorer les bobines déjà présentes avant la mise à jour (déjà décrémentées).
-      if (!estNouvelleSession && sessionExistante != null) {
-        final key = '${bobineUsage.machineId}|${bobineUsage.bobineType}';
-        final quota = skipQuota[key] ?? 0;
-        if (quota > 0) {
-          skipQuota[key] = quota - 1;
-          AppLogger.debug(
-            'Bobine déjà en session (${bobineUsage.bobineType} / ${bobineUsage.machineId}) - pas de décrémentation',
-            name: 'eau_minerale.production',
-          );
-          bobinesDejaEnSession++;
-          continue;
-        }
-      }
-
-      // ÉTAPE 1: Vérifier si cette machine a une bobine non finie du même type
-      // Si oui, c'est une bobine réutilisée qui a déjà été décrémentée lors de sa première installation
-      final bobineNonFinieExistante =
-          bobinesNonFiniesParMachine[bobineUsage.machineId];
-      final estBobineNonFinieReutilisee =
-          bobineNonFinieExistante != null &&
-          bobineNonFinieExistante.bobineType == bobineUsage.bobineType &&
-          // IMPORTANT: Pour être considérée comme réutilisée, la date d'installation doit être IDENTIQUE.
-          // Si la date diffère, cela signifie que c'est une NOUVELLE bobine du même type
-          // qui a été installée physiquement (et le formulaire a mis une nouvelle date).
-          bobineNonFinieExistante.dateInstallation.isAtSameMomentAs(bobineUsage.dateInstallation);
-
-      if (estBobineNonFinieReutilisee) {
-        // Bobine non finie réutilisée : ne PAS décrémenter le stock car déjà fait lors de la première installation
+      // ÉTAPE 0: Ignorer les bobines explicitement marquées comme réutilisées
+      // (Sécurité supplémentaire en plus du check de mouvement)
+      if (bobineUsage.isReused) {
         AppLogger.debug(
-          'Bobine non finie réutilisée (${bobineNonFinieExistante.bobineType}) - pas de décrémentation',
+          'Bobine marquée comme réutilisée (UsageID: ${bobineUsage.id}) - pas de décrémentation',
           name: 'eau_minerale.production',
         );
         bobinesReutilisees++;
         continue;
       }
 
-      // ÉTAPE 1b: Vérifier si cette machine a déjà eu des bobines du même type dans des sessions précédentes
-      // Si toutes les bobines précédentes de ce type sont finies, alors cette bobine est nouvelle
-      // Si une bobine non finie existe mais n'a pas été détectée (cas limite), on évite la décrémentation
-      final bobinesPrecedentesSurMachine =
-          bobinesDejaUtiliseesParMachine[bobineUsage.machineId] ?? [];
-      final bobinesDuMemeType = bobinesPrecedentesSurMachine
-          .where((b) => b.bobineType == bobineUsage.bobineType)
-          .toList();
+      // ÉTAPE 1: Vérifier si cette bobine a DEJA été décrémentée du stock.
+      // Un mouvement avec le même bobineUsageId indique que le stock a déjà été réduit pour ce rouleau physique.
+      final aDejaMouvement = await _verifierMouvementParUsageId(
+        bobineType: bobineUsage.bobineType,
+        usageId: bobineUsage.id,
+      );
 
-      if (bobinesDuMemeType.isNotEmpty) {
-        // Cette machine a déjà eu des bobines de ce type
-        final toutesBobinesFinies = bobinesDuMemeType.every((b) => b.estFinie);
-
-        if (!toutesBobinesFinies) {
-          // Il y a une bobine non finie de ce type qui n'a pas été détectée dans bobinesNonFiniesParMachine
-          // Cela peut arriver si la bobine a été marquée comme finie puis une nouvelle installée dans la même session
-          // On évite la décrémentation pour être sûr
-          AppLogger.warning(
-            'Bobine du même type non finie trouvée sur cette machine - pas de décrémentation par sécurité',
-            name: 'eau_minerale.production',
-          );
-          bobinesReutilisees++;
-          continue;
-        }
-        // Si toutes les bobines précédentes sont finies, alors cette bobine est nouvelle → on continue pour décrémenter
+      if (aDejaMouvement) {
         AppLogger.debug(
-          'Toutes les bobines précédentes de ce type sont finies - cette bobine est nouvelle',
-          name: 'eau_minerale.production',
-        );
-      }
-
-      // ÉTAPE 2: Vérifier si cette bobine a déjà été décrémentée lors d'une installation
-      // en temps réel (via BobineInstallationForm) DANS CETTE SESSION.
-      // On vérifie uniquement lors de la mise à jour d'une session (pas lors de la création),
-      // car lors de la création, toutes les nouvelles bobines doivent être décrémentées.
-      bool aDejaMouvementRecent = false;
-      if (!estNouvelleSession) {
-        // Seulement lors de la mise à jour : vérifier si la bobine a été installée via le formulaire
-        aDejaMouvementRecent = await _verifierMouvementBobineExistant(
-          bobineType: bobineUsage.bobineType,
-          machineId: bobineUsage.machineId,
-          timeWindowMinutes: 5, // Seulement les 5 dernières minutes
-        );
-      }
-
-      if (aDejaMouvementRecent) {
-        AppLogger.debug(
-          'Mouvement très récent trouvé (installation via formulaire) - pas de décrémentation supplémentaire',
+          'Mouvement trouvé pour cet UsageID (${bobineUsage.id}) - pas de décrémentation supplémentaire',
           name: 'eau_minerale.production',
         );
         bobinesAvecMouvementRecent++;
         continue;
       }
 
-      // ÉTAPE 3: Nouvelle bobine qui n'a pas encore été décrémentée
+      // ÉTAPE 2: Nouvelle bobine (ou première fois qu'on la voit sans mouvement enregistré)
       // Décrémenter le stock pour cette machine
       AppLogger.debug(
-        'NOUVELLE bobine sur machine ${bobineUsage.machineId} - DÉCRÉMENTATION du stock',
+        'DÉCRÉMENTATION du stock pour UsageID: ${bobineUsage.id}',
         name: 'eau_minerale.production',
       );
       try {
@@ -347,21 +310,21 @@ class ProductionSessionController {
           quantite: 1,
           productionId: sessionId,
           machineId: bobineUsage.machineId,
+          bobineUsageId: bobineUsage.id,
           notes: 'Installation en production',
         );
         AppLogger.debug(
-          'Stock décrémenté avec succès pour machine ${bobineUsage.machineId}',
+          'Stock décrémenté avec succès pour UsageID ${bobineUsage.id}',
           name: 'eau_minerale.production',
         );
         bobinesDecrimentees++;
       } catch (e, stackTrace) {
         AppLogger.error(
-          'ERREUR lors de la décrémentation pour machine ${bobineUsage.machineId}: $e',
+          'ERREUR lors de la décrémentation pour UsageID ${bobineUsage.id}: $e',
           name: 'eau_minerale.production',
           error: e,
           stackTrace: stackTrace,
         );
-        // Continuer avec les autres bobines même en cas d'erreur
       }
     }
 
@@ -375,70 +338,29 @@ class ProductionSessionController {
     );
   }
 
-  /// Vérifie si une bobine a déjà un mouvement de sortie pour cette machine.
-  /// Utilisé pour éviter les doubles décrémentations lors de la sauvegarde de session.
-  ///
-  /// Cette méthode vérifie si une bobine a déjà été décrémentée lors d'une installation
-  /// en temps réel (via BobineInstallationForm) en cherchant directement dans les mouvements de bobines.
-  ///
-  /// Retourne true si un mouvement de sortie existe déjà pour cette machine et ce type,
-  /// ce qui indique que la bobine a déjà été décrémentée et ne doit pas l'être à nouveau.
-  ///
-  /// [timeWindowMinutes] : Fenêtre de temps pour chercher les mouvements (par défaut 5 minutes).
-  /// Utilisé pour détecter uniquement les installations très récentes via le formulaire.
-  Future<bool> _verifierMouvementBobineExistant({
+  /// Vérifie si une bobine a déjà un mouvement de sortie pour un UsageID donné.
+  /// C'est la méthode la plus robuste pour éviter les doubles décrémentations.
+  Future<bool> _verifierMouvementParUsageId({
     required String bobineType,
-    required String machineId,
-    int timeWindowMinutes = 5,
+    required String usageId,
   }) async {
     try {
-      // Récupérer le stock pour obtenir l'ID
-      final stock = await _bobineStockQuantityRepository.fetchByType(
-        bobineType,
-      );
-      if (stock == null) {
-        AppLogger.debug(
-          'Stock non trouvé pour $bobineType - on considère qu\'il n\'y a pas de mouvement',
-          name: 'eau_minerale.production',
-        );
-        return false;
-      }
+      final stock = await _bobineStockQuantityRepository.fetchByType(bobineType);
+      if (stock == null) return false;
 
-      // Récupérer les mouvements très récents (dernières X minutes) pour ce type de bobine
-      final maintenant = DateTime.now();
-      final limiteTemps = maintenant.subtract(
-        Duration(minutes: timeWindowMinutes),
-      );
-
+      // On cherche dans TOUS les mouvements de ce stock
       final mouvements = await _bobineStockQuantityRepository.fetchMovements(
         bobineStockId: stock.id,
-        startDate: limiteTemps,
       );
 
-      // Chercher un mouvement de sortie pour cette machine et ce type de bobine
-      // IMPORTANT: On vérifie que c'est exactement cette machine et ce type
-      final mouvementExistant = mouvements.any(
+      // Si un mouvement de sortie avec cet UsageID existe déjà, c'est que le stock a été déduit
+      return mouvements.any(
         (m) =>
             m.type == BobineMovementType.sortie &&
-            m.bobineReference == bobineType &&
-            m.machineId == machineId,
+            m.bobineUsageId == usageId,
       );
-
-      if (mouvementExistant) {
-        AppLogger.debug(
-          'Mouvement récent trouvé pour $bobineType sur machine $machineId ($timeWindowMinutes min)',
-          name: 'eau_minerale.production',
-        );
-      }
-
-      return mouvementExistant;
     } catch (e) {
-      AppLogger.error(
-        'Erreur lors de la vérification du mouvement: $e',
-        name: 'eau_minerale.production',
-        error: e,
-      );
-      // En cas d'erreur, ne pas bloquer : on décrémente pour être sûr
+      AppLogger.error('Erreur lors de la vérification par UsageID: $e', error: e);
       return false;
     }
   }
@@ -468,5 +390,85 @@ class ProductionSessionController {
     // Le système de détection de réutilisation (_decrementerStockBobinesNouvelles) continuera
     // de voir cette bobine comme "sur la machine" pour les prochaines sessions,
     // évitant ainsi un double décompte du stock.
+  }
+
+  /// Calcule le coût total des nouvelles bobines installées dans cette session.
+  Future<int> _calculerCoutBobinesNouvelles({
+    required List<BobineUsage> bobinesUtilisees,
+    required String sessionId,
+    required bool estNouvelleSession,
+    ProductionSession? sessionExistante,
+  }) async {
+    int totalCout = 0;
+
+    // Récupérer toutes les sessions pour vérifier quelles bobines ont déjà été utilisées
+    final toutesSessions = await _repository.fetchSessions();
+    final sessionsTriees = toutesSessions.toList()
+      ..sort((a, b) => b.date.compareTo(a.date));
+
+    final bobinesNonFiniesParMachine = <String, BobineUsage>{};
+    final bobinesDejaUtiliseesParMachine = <String, List<BobineUsage>>{};
+
+    for (final session in sessionsTriees) {
+      if (session.id == sessionId) continue;
+      for (final bobineUsage in session.bobinesUtilisees) {
+        if (!bobinesDejaUtiliseesParMachine.containsKey(bobineUsage.machineId)) {
+          bobinesDejaUtiliseesParMachine[bobineUsage.machineId] = [];
+        }
+        bobinesDejaUtiliseesParMachine[bobineUsage.machineId]!.add(bobineUsage);
+        if (!bobineUsage.estFinie) {
+          if (!bobinesNonFiniesParMachine.containsKey(bobineUsage.machineId)) {
+            bobinesNonFiniesParMachine[bobineUsage.machineId] = bobineUsage;
+          }
+        }
+      }
+    }
+
+    final skipQuota = <String, int>{};
+    if (!estNouvelleSession && sessionExistante != null) {
+      for (final b in sessionExistante.bobinesUtilisees) {
+        final key = '${b.machineId}|${b.bobineType}';
+        skipQuota[key] = (skipQuota[key] ?? 0) + 1;
+      }
+      // Si c'est une mise à jour, on part du coût existant (ou 0 si on veut recalculer tout proprement)
+      // On va tout recalculer pour être sûr.
+    }
+
+    for (final bobineUsage in bobinesUtilisees) {
+      // Ignorer si déjà en session (déjà compté)
+      if (!estNouvelleSession && sessionExistante != null) {
+        final key = '${bobineUsage.machineId}|${bobineUsage.bobineType}';
+        final quota = skipQuota[key] ?? 0;
+        if (quota > 0) {
+          skipQuota[key] = quota - 1;
+          continue;
+        }
+      }
+
+      // Vérifier si réutilisée
+      final bobineNonFinieExistante = bobinesNonFiniesParMachine[bobineUsage.machineId];
+      final estBobineNonFinieReutilisee = bobineNonFinieExistante != null &&
+          bobineNonFinieExistante.bobineType == bobineUsage.bobineType &&
+          bobineNonFinieExistante.dateInstallation.isAtSameMomentAs(bobineUsage.dateInstallation);
+
+      if (estBobineNonFinieReutilisee) continue;
+
+      // Vérifier si mouvement récent (déjà décrémentée → nouvelle)
+      // Pour le coût, on doit quand même compter si c'est une nouvelle installation
+      
+      // Nouvelle bobine -> chercher le prix
+      if (bobineUsage.productId != null) {
+        try {
+          final product = await _productRepository.getProduct(bobineUsage.productId!);
+          if (product != null) {
+            totalCout += product.unitPrice.toInt();
+          }
+        } catch (e) {
+          AppLogger.error('Erreur lors de la récupération du prix pour ${bobineUsage.bobineType}', error: e);
+        }
+      }
+    }
+
+    return totalCout;
   }
 }

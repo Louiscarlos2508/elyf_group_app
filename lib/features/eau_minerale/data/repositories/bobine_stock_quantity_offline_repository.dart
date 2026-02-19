@@ -41,17 +41,11 @@ class BobineStockQuantityOfflineRepository
 
   @override
   String getLocalId(BobineStock entity) {
-    // Si l'ID commence par "local_", le retourner tel quel
     if (entity.id.startsWith('local_')) {
       return entity.id;
     }
-    // Si l'ID est un ID fixe basé sur le type (ex: "bobine-bobine"), le préserver
-    // pour garantir la cohérence entre les mouvements et le stock
-    if (entity.id.startsWith('bobine-')) {
-      return 'local_${entity.id}';
-    }
-    // Sinon, générer un nouvel ID
-    return LocalIdGenerator.generate();
+    // Prefix with local_ to mark as local and ensure deterministic IDs
+    return 'local_${entity.id}';
   }
 
   @override
@@ -244,6 +238,27 @@ class BobineStockQuantityOfflineRepository
   }
 
   @override
+  Future<BobineStock?> fetchByProductId(String productId) async {
+    try {
+      final allStocks = await getAllForEnterprise(enterpriseId);
+      try {
+        return allStocks.firstWhere((stock) => stock.productId == productId);
+      } catch (_) {
+        return null;
+      }
+    } catch (e, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(e, stackTrace);
+      AppLogger.error(
+        'Error fetching bobine stock by productId: ${appException.message}',
+        name: 'BobineStockQuantityOfflineRepository',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      throw appException;
+    }
+  }
+
+  @override
   Future<BobineStock> save(BobineStock entity) async {
     try {
       final now = DateTime.now();
@@ -323,65 +338,71 @@ class BobineStockQuantityOfflineRepository
         );
       }
 
-      // Chercher le stock par type (plus fiable que par ID car l'ID peut changer)
-      var stock = await fetchByType(movement.bobineReference);
-      final now = DateTime.now();
+      // 1. Chercher le stock par ID (ex: ID catalogue ou fixed ID)
+      var stock = await fetchById(movement.bobineId);
       
-      // Si le stock n'existe pas, le créer avec la quantité initiale basée sur le mouvement
+      // 2. Chercher par productId si non trouvé (le mouvement bobineId peut être le productId)
       if (stock == null) {
-        int initialQuantity = 0;
-        switch (movement.type) {
-          case BobineMovementType.entree:
-            initialQuantity = movement.quantite.toInt();
-            break;
-          case BobineMovementType.sortie:
-          case BobineMovementType.retrait:
-            initialQuantity = 0; // Ne pas créer un stock négatif
-            break;
+        stock = await fetchByProductId(movement.bobineId);
+      }
+
+      // 3. Fallback: Chercher par type si non trouvé par ID
+      if (stock == null) {
+        stock = await fetchByType(movement.bobineReference);
+      }
+      
+      if (stock == null) {
+        // 2. Si le stock n'existe pas du tout, le créer
+        double initialQuantity = 0;
+        if (movement.type == BobineMovementType.entree) {
+          initialQuantity = movement.quantite;
         }
         
-        // Utiliser un ID fixe basé sur le type pour garantir la cohérence
-        final stockId = 'bobine-${movement.bobineReference.toLowerCase().replaceAll(' ', '-')}';
+        // Déterminer le facteur de lot à partir du mouvement si possible
+        int movementUnitsPerLot = 1;
+        if (movement.isInLots && movement.quantiteSaisie != null && movement.quantiteSaisie! > 0) {
+          movementUnitsPerLot = (movement.quantite / movement.quantiteSaisie!).round();
+          if (movementUnitsPerLot < 1) movementUnitsPerLot = 1;
+        }
+
         stock = BobineStock(
-          id: stockId,
+          id: movement.bobineId,
           enterpriseId: enterpriseId,
           type: movement.bobineReference,
-          quantity: initialQuantity,
+          quantity: initialQuantity.toInt(),
           unit: 'unité',
-          createdAt: now,
-          updatedAt: now,
+          unitsPerLot: movementUnitsPerLot,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
         );
       } else {
-        // Mettre à jour la quantité existante
+        // 3. Mettre à jour la quantité existante (ADDITION)
         int newQuantity = stock.quantity;
+        
+        // Mettre à jour le facteur de lot si le mouvement en apporte un nouveau plus précis
+        int updatedUnitsPerLot = stock.unitsPerLot;
+        if (movement.isInLots && movement.quantiteSaisie != null && movement.quantiteSaisie! > 0) {
+          final computedUnitsPerLot = (movement.quantite / movement.quantiteSaisie!).round();
+          if (computedUnitsPerLot > 1) {
+             updatedUnitsPerLot = computedUnitsPerLot;
+          }
+        }
+
         switch (movement.type) {
           case BobineMovementType.entree:
             newQuantity += movement.quantite.toInt();
-            // Protection contre les débordements
-            if (newQuantity > 1000000) {
-              throw ValidationException(
-                'La quantité totale ne peut pas dépasser 1 000 000',
-                'QUANTITY_EXCEEDS_LIMIT',
-              );
-            }
             break;
           case BobineMovementType.sortie:
           case BobineMovementType.retrait:
             newQuantity -= movement.quantite.toInt();
-            // Vérifier que le stock ne devient pas négatif
-            if (newQuantity < 0) {
-              throw ValidationException(
-                'Stock insuffisant. Stock actuel: ${stock.quantity}, '
-                'Demandé: ${movement.quantite.toInt()}',
-                'INSUFFICIENT_STOCK',
-              );
-            }
+            if (newQuantity < 0) newQuantity = 0; // Sécurité
             break;
         }
 
         stock = stock.copyWith(
           quantity: newQuantity,
-          updatedAt: now,
+          unitsPerLot: updatedUnitsPerLot,
+          updatedAt: DateTime.now(),
         );
       }
 

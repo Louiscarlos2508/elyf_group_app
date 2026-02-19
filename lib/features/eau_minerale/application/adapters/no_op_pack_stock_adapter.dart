@@ -15,4 +15,12 @@ class NoOpPackStockAdapter implements PackStockAdapter {
     String? reason,
     String? notes,
   }) async {}
+
+  @override
+  Future<void> recordPackEntry(
+    int quantity, {
+    String? productId,
+    String? reason,
+    String? notes,
+  }) async {}
 }

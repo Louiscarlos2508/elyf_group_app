@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
 import '../../domain/entities/gas_sale.dart';
-import '../../application/providers.dart';
 
 class WholesaleSaleCard extends StatelessWidget {
   const WholesaleSaleCard({super.key, required this.sale});
@@ -47,7 +45,7 @@ class WholesaleSaleCard extends StatelessWidget {
                       dateFormat.format(sale.saleDate),
                       style: theme.textTheme.bodyMedium?.copyWith(
                         fontSize: 14,
-                        color: const Color(0xFF6A7282),
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                     if (sale.wholesalerName != null) ...[
@@ -85,7 +83,7 @@ class WholesaleSaleCard extends StatelessWidget {
                             'Tour d\'approvisionnement',
                             style: theme.textTheme.bodySmall?.copyWith(
                               fontSize: 12,
-                              color: const Color(0xFF6A7282),
+                              color: theme.colorScheme.onSurfaceVariant,
                             ),
                           ),
                         ],
@@ -166,7 +164,7 @@ class WholesaleSaleCard extends StatelessWidget {
                       sale.notes!,
                       style: theme.textTheme.bodySmall?.copyWith(
                         fontSize: 12,
-                        color: const Color(0xFF6A7282),
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ),
@@ -199,13 +197,13 @@ class _DetailItem extends StatelessWidget {
       children: [
         Row(
           children: [
-            Icon(icon, size: 14, color: const Color(0xFF6A7282)),
+            Icon(icon, size: 14, color: theme.colorScheme.onSurfaceVariant),
             const SizedBox(width: 4),
             Text(
               label,
               style: theme.textTheme.bodySmall?.copyWith(
                 fontSize: 12,
-                color: const Color(0xFF6A7282),
+                color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
           ],
@@ -216,7 +214,7 @@ class _DetailItem extends StatelessWidget {
           style: theme.textTheme.bodyMedium?.copyWith(
             fontSize: 14,
             fontWeight: FontWeight.w500,
-            color: const Color(0xFF101828),
+            color: theme.colorScheme.onSurface,
           ),
         ),
       ],

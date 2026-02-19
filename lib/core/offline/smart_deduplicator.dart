@@ -34,6 +34,7 @@ class SmartDeduplicator {
     'properties': ['address', 'reference'],
     'contracts': ['contractNumber', 'reference'],
     'tours': ['tourDate', 'enterpriseId'],
+    'production_sessions': ['date', 'heureDebut', 'enterpriseId'],
   };
 
   /// Génère un hash pour une entité basé sur ses champs clés.
@@ -51,7 +52,19 @@ class SmartDeduplicator {
       final value = data[field];
       if (value != null) {
         // Normaliser la valeur (lowercase, trim)
-        final normalized = value.toString().toLowerCase().trim();
+        var normalized = value.toString().toLowerCase().trim();
+
+        // Normalisation spéciale pour les dates pour éviter les doublons dus au formatage
+        if (field.contains('date') || field.contains('Date') || 
+            field.contains('heure') || field.contains('Heure') ||
+            field.contains('time') || field.contains('Time')) {
+          final parsed = DateTime.tryParse(normalized);
+          if (parsed != null) {
+            // Utiliser le format UTC ISO sans millisecondes pour une comparaison robuste
+            normalized = parsed.toUtc().toIso8601String().split('.').first;
+          }
+        }
+
         if (normalized.isNotEmpty) {
           keyValues.add('$field:$normalized');
         }

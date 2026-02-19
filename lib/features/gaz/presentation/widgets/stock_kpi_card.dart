@@ -24,10 +24,10 @@ class StockKpiCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: Colors.black.withValues(alpha: 0.1),
+          color: theme.colorScheme.outlineVariant,
           width: 1.3,
         ),
       ),
@@ -38,14 +38,14 @@ class StockKpiCard extends StatelessWidget {
           // Title with icon
           Row(
             children: [
-              Icon(icon, size: 16, color: const Color(0xFF4A5565)),
+              Icon(icon, size: 16, color: theme.colorScheme.onSurfaceVariant),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   title,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     fontSize: 14,
-                    color: const Color(0xFF4A5565),
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
               ),
@@ -58,7 +58,7 @@ class StockKpiCard extends StatelessWidget {
             style: theme.textTheme.headlineMedium?.copyWith(
               fontSize: 28,
               fontWeight: FontWeight.normal,
-              color: valueColor ?? const Color(0xFF0A0A0A),
+              color: valueColor ?? theme.colorScheme.onSurface,
             ),
           ),
           if (subtitle != null) ...[
@@ -67,7 +67,7 @@ class StockKpiCard extends StatelessWidget {
               subtitle!,
               style: theme.textTheme.bodySmall?.copyWith(
                 fontSize: 12,
-                color: const Color(0xFF6A7282),
+                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
               ),
             ),
           ],

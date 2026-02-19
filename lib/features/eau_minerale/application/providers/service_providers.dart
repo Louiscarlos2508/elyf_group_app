@@ -40,8 +40,13 @@ final saleCalculationServiceProvider = Provider<SaleCalculationService>(
 final creditServiceProvider = Provider<CreditService>((ref) {
   final creditRepo = ref.watch(creditRepositoryProvider);
   final saleRepo = ref.watch(saleRepositoryProvider);
+  final treasuryRepo = ref.watch(treasuryRepositoryProvider);
 
-  return CreditService(creditRepository: creditRepo, saleRepository: saleRepo);
+  return CreditService(
+    creditRepository: creditRepo,
+    saleRepository: saleRepo,
+    treasuryRepository: treasuryRepo,
+  );
 });
 
 final dashboardCalculationServiceProvider =

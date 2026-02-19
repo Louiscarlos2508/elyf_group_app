@@ -34,7 +34,6 @@ class Closing extends Equatable {
     // Split revenue for audit
     required this.digitalCashRevenue,
     required this.digitalMobileMoneyRevenue,
-    required this.digitalCardRevenue,
     
     this.status = ClosingStatus.closed,
     this.notes,
@@ -64,7 +63,6 @@ class Closing extends Equatable {
   
   final int digitalCashRevenue;
   final int digitalMobileMoneyRevenue;
-  final int digitalCardRevenue;
 
   final ClosingStatus status;
   final String? notes; // Closing notes
@@ -98,7 +96,6 @@ class Closing extends Equatable {
     int? mobileMoneyDiscrepancy,
     int? digitalCashRevenue,
     int? digitalMobileMoneyRevenue,
-    int? digitalCardRevenue,
     ClosingStatus? status,
     String? notes,
     String? openingNotes,
@@ -122,7 +119,6 @@ class Closing extends Equatable {
       mobileMoneyDiscrepancy: mobileMoneyDiscrepancy ?? this.mobileMoneyDiscrepancy,
       digitalCashRevenue: digitalCashRevenue ?? this.digitalCashRevenue,
       digitalMobileMoneyRevenue: digitalMobileMoneyRevenue ?? this.digitalMobileMoneyRevenue,
-      digitalCardRevenue: digitalCardRevenue ?? this.digitalCardRevenue,
       status: status ?? this.status,
       notes: notes ?? this.notes,
       openingNotes: openingNotes ?? this.openingNotes,
@@ -149,7 +145,6 @@ class Closing extends Equatable {
       'mobileMoneyDiscrepancy': mobileMoneyDiscrepancy,
       'digitalCashRevenue': digitalCashRevenue,
       'digitalMobileMoneyRevenue': digitalMobileMoneyRevenue,
-      'digitalCardRevenue': digitalCardRevenue,
       'status': status.name,
       'notes': notes,
       'openingNotes': openingNotes,
@@ -176,7 +171,6 @@ class Closing extends Equatable {
       mobileMoneyDiscrepancy: map['mobileMoneyDiscrepancy'] ?? 0,
       digitalCashRevenue: map['digitalCashRevenue'] ?? 0,
       digitalMobileMoneyRevenue: map['digitalMobileMoneyRevenue'] ?? 0,
-      digitalCardRevenue: map['digitalCardRevenue'] ?? 0,
       status: ClosingStatus.values.firstWhere(
         (e) => e.name == (map['status'] ?? 'closed'),
         orElse: () => ClosingStatus.closed,

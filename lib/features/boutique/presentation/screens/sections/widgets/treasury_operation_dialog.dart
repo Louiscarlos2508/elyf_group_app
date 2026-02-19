@@ -64,7 +64,7 @@ class _TreasuryOperationDialogState extends State<TreasuryOperationDialog> {
               const SizedBox(height: 16),
               if (widget.type == TreasuryOperationType.transfer || widget.type == TreasuryOperationType.removal)
                 DropdownButtonFormField<PaymentMethod>(
-                  value: _fromAccount,
+                  initialValue: _fromAccount,
                   decoration: const InputDecoration(labelText: 'Depuis le compte'),
                   items: [
                     DropdownMenuItem(value: PaymentMethod.cash, child: const Text('Caisse (Espèces)')),
@@ -76,7 +76,7 @@ class _TreasuryOperationDialogState extends State<TreasuryOperationDialog> {
                 Padding(
                   padding: const EdgeInsets.only(top: 16.0),
                   child: DropdownButtonFormField<String>(
-                    value: _reason,
+                    initialValue: _reason,
                     decoration: const InputDecoration(labelText: 'Motif du retrait'),
                     items: const [
                       DropdownMenuItem(value: 'Retrait Superviseur', child: Text('Remis au Superviseur')),
@@ -99,7 +99,7 @@ class _TreasuryOperationDialogState extends State<TreasuryOperationDialog> {
                 ),
               if (widget.type == TreasuryOperationType.transfer || widget.type == TreasuryOperationType.supply || widget.type == TreasuryOperationType.adjustment)
                 DropdownButtonFormField<PaymentMethod>(
-                  value: _toAccount,
+                  initialValue: _toAccount,
                   decoration: const InputDecoration(labelText: 'Vers le compte'),
                   items: [
                     DropdownMenuItem(value: PaymentMethod.cash, child: const Text('Caisse (Espèces)')),

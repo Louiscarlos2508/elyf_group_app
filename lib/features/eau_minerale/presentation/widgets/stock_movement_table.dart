@@ -189,13 +189,40 @@ class StockMovementTable extends StatelessWidget {
 
   Widget _buildDesktopTable(BuildContext context, List<StockMovement> movements) {
     final theme = Theme.of(context);
+    // Déterminer s'il faut afficher la colonne Solde
+    // On l'affiche si tous les mouvements concernent le même produit
+    final uniqueProducts = movements.map((m) => m.productName).toSet();
+    final isSingleProduct = uniqueProducts.length == 1 && movements.isNotEmpty;
+
+    // Calculer les soldes progressifs si on est sur un seul produit
+    final List<double> runningBalances = [];
+    if (isSingleProduct) {
+      double currentBalance = 0;
+      // Inverser pour calculer du plus vieux au plus récent
+      final reversedMovements = movements.reversed.toList();
+      final balancesFromOldest = <double>[];
+      for (final m in reversedMovements) {
+        if (m.type == StockMovementType.entry) {
+          currentBalance += m.quantity;
+        } else {
+          currentBalance -= m.quantity;
+        }
+        balancesFromOldest.add(currentBalance);
+      }
+      // Remettre dans l'ordre original (plus récent en premier)
+      runningBalances.addAll(balancesFromOldest.reversed);
+    }
+
     return ElyfCard(
+      padding: EdgeInsets.zero,
       child: Table(
-        columnWidths: const {
-          0: FlexColumnWidth(2),
-          1: FlexColumnWidth(2),
-          2: FlexColumnWidth(3),
-          3: FlexColumnWidth(2),
+        columnWidths: {
+          0: const FlexColumnWidth(1.2), // Date
+          1: const FlexColumnWidth(0.8), // Type
+          2: const FlexColumnWidth(1.5), // Produit
+          3: const FlexColumnWidth(1.2), // Quantité
+          4: const FlexColumnWidth(2),   // Raison
+          if (isSingleProduct) 5: const FlexColumnWidth(0.8), // Delta
         },
         children: [
           TableRow(
@@ -207,20 +234,59 @@ class StockMovementTable extends StatelessWidget {
               _buildHeaderCell(context, 'Type'),
               _buildHeaderCell(context, 'Produit'),
               _buildHeaderCell(context, 'Quantité'),
+              _buildHeaderCell(context, 'Raison'),
+              if (isSingleProduct) _buildHeaderCell(context, 'Bilan'),
             ],
           ),
-          ...movements.map((m) => TableRow(
-                children: [
-                  _buildDataCell(context, _formatDateTime(m.date)),
+          for (int i = 0; i < movements.length; i++)
+            TableRow(
+              children: [
+                _buildDataCell(context, _formatDateTime(movements[i].date)),
+                _buildTypeIndicator(movements[i].type),
+                _buildDataCell(context, movements[i].productName, isBold: true),
+                _buildDataCell(context, movements[i].quantityLabel ?? '${movements[i].quantity.toStringAsFixed(0)} ${movements[i].unit}'),
+                _buildDataCell(context, movements[i].reason, isSecondary: true),
+                if (isSingleProduct)
                   _buildDataCell(
-                    context,
-                    m.type == StockMovementType.entry ? 'ENTRÉE' : 'SORTIE',
-                    color: m.type == StockMovementType.entry ? Colors.green : Colors.red,
+                    context, 
+                    '${runningBalances[i] > 0 ? '+' : ''}${runningBalances[i].toStringAsFixed(0)}',
+                    isBold: true,
                   ),
-                  _buildDataCell(context, m.productName),
-                  _buildDataCell(context, '${m.quantity} ${m.unit}'),
-                ],
-              )),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTypeIndicator(StockMovementType type) {
+    final isEntry = type == StockMovementType.entry;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: (isEntry ? Colors.green : Colors.red).withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: (isEntry ? Colors.green : Colors.red).withValues(alpha: 0.2),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            isEntry ? Icons.arrow_downward : Icons.arrow_upward,
+            size: 14,
+            color: isEntry ? Colors.green : Colors.red,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            isEntry ? 'ENTRÉE' : 'SORTIE',
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              color: isEntry ? Colors.green : Colors.red,
+            ),
+          ),
         ],
       ),
     );
@@ -230,21 +296,67 @@ class StockMovementTable extends StatelessWidget {
     return Column(
       children: movements
           .map((m) => ElyfCard(
-                margin: const EdgeInsets.only(bottom: 8),
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: EdgeInsets.zero,
                 child: ListTile(
-                  leading: Icon(
-                    m.type == StockMovementType.entry ? Icons.arrow_downward : Icons.arrow_upward,
-                    color: m.type == StockMovementType.entry ? Colors.green : Colors.red,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  leading: _buildMobileTypeIcon(m.type),
+                  title: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          m.productName,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      Text(
+                        m.quantityLabel ?? '${m.quantity.toInt()} ${m.unit}',
+                        style: TextStyle(
+                          color: m.type == StockMovementType.entry ? Colors.green : Colors.red,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
                   ),
-                  title: Text(m.productName),
-                  subtitle: Text(_formatDateTime(m.date)),
-                  trailing: Text(
-                    '${m.quantity} ${m.unit}',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(Icons.access_time, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                          const SizedBox(width: 4),
+                          Text(_formatDateTime(m.date)),
+                        ],
+                      ),
+                      if (m.reason.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          m.reason,
+                          style: TextStyle(fontStyle: FontStyle.italic, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
               ))
           .toList(),
+    );
+  }
+
+  Widget _buildMobileTypeIcon(StockMovementType type) {
+    final isEntry = type == StockMovementType.entry;
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: (isEntry ? Colors.green : Colors.red).withValues(alpha: 0.1),
+        shape: BoxShape.circle,
+      ),
+      child: Icon(
+        isEntry ? Icons.add : Icons.remove,
+        color: isEntry ? Colors.green : Colors.red,
+        size: 20,
+      ),
     );
   }
 
@@ -260,14 +372,17 @@ class StockMovementTable extends StatelessWidget {
     );
   }
 
-  Widget _buildDataCell(BuildContext context, String text, {Color? color}) {
+  Widget _buildDataCell(BuildContext context, String text,
+      {bool isBold = false, bool isSecondary = false}) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.all(12),
       child: Text(
         text,
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: color,
-            ),
+        style: theme.textTheme.bodyMedium?.copyWith(
+          fontWeight: isBold ? FontWeight.bold : null,
+          color: isSecondary ? theme.colorScheme.onSurfaceVariant : null,
+        ),
       ),
     );
   }

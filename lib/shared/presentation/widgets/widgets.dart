@@ -18,6 +18,7 @@ export 'auth_guard.dart';
 export 'base_module_shell_screen.dart'
     show BaseModuleShellScreen, BaseModuleShellScreenState;
 export 'enterprise_selector_widget.dart';
+export 'confirm_dialog.dart';
 export 'form_dialog.dart';
 export 'form_dialog_actions.dart';
 export 'form_dialog_header.dart';

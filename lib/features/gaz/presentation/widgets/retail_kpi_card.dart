@@ -22,10 +22,10 @@ class RetailKpiCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(17),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: Colors.black.withValues(alpha: 0.1),
+          color: theme.colorScheme.outline.withValues(alpha: 0.1),
           width: 1.3,
         ),
       ),
@@ -41,7 +41,7 @@ class RetailKpiCard extends StatelessWidget {
                   title,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     fontSize: 14,
-                    color: const Color(0xFF4A5565),
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -50,7 +50,7 @@ class RetailKpiCard extends StatelessWidget {
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontSize: 24,
                     fontWeight: FontWeight.normal,
-                    color: const Color(0xFF101828),
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
                 if (subtitle != null) ...[
@@ -59,7 +59,7 @@ class RetailKpiCard extends StatelessWidget {
                     subtitle!,
                     style: theme.textTheme.bodySmall?.copyWith(
                       fontSize: 12,
-                      color: const Color(0xFF6A7282),
+                      color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
                     ),
                   ),
                 ],

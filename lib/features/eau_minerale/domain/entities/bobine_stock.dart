@@ -2,9 +2,11 @@ class BobineStock {
   const BobineStock({
     required this.id,
     required this.enterpriseId,
+    this.productId, // ID du produit dans le catalogue
     required this.type,
     required this.quantity,
     required this.unit,
+    this.unitsPerLot = 1,
     this.seuilAlerte,
     this.fournisseur,
     this.prixUnitaire,
@@ -20,9 +22,11 @@ class BobineStock {
 
   final String id;
   final String enterpriseId;
+  final String? productId; // ID du produit dans le catalogue
   final String type; // Type de bobine (par défaut: "Bobine standard")
   final int quantity; // Quantité disponible
   final String unit; // Unité (ex: "unités", "bobines")
+  final int unitsPerLot;
   final int? seuilAlerte; // Seuil d'alerte pour stock faible
   final String? fournisseur;
   final int? prixUnitaire; // Prix d'achat unitaire (CFA)
@@ -42,12 +46,23 @@ class BobineStock {
   /// Vérifie si le stock peut satisfaire une demande de [besoinEnUnites]
   bool peutSatisfaire(int besoinEnUnites) => quantity >= besoinEnUnites;
 
+  /// Retourne la quantité exprimée en lots
+  double get lotsRestants => quantity / unitsPerLot;
+
+  /// Libellé formaté de la quantité
+  String get quantityLabel {
+    if (unitsPerLot <= 1) return '$quantity $unit';
+    return '${lotsRestants.toStringAsFixed(1)} lots ($quantity $unit)';
+  }
+
   BobineStock copyWith({
     String? id,
     String? enterpriseId,
+    String? productId,
     String? type,
     int? quantity,
     String? unit,
+    int? unitsPerLot,
     int? seuilAlerte,
     String? fournisseur,
     int? prixUnitaire,
@@ -59,9 +74,11 @@ class BobineStock {
     return BobineStock(
       id: id ?? this.id,
       enterpriseId: enterpriseId ?? this.enterpriseId,
+      productId: productId ?? this.productId,
       type: type ?? this.type,
       quantity: quantity ?? this.quantity,
       unit: unit ?? this.unit,
+      unitsPerLot: unitsPerLot ?? this.unitsPerLot,
       seuilAlerte: seuilAlerte ?? this.seuilAlerte,
       fournisseur: fournisseur ?? this.fournisseur,
       prixUnitaire: prixUnitaire ?? this.prixUnitaire,
@@ -76,9 +93,11 @@ class BobineStock {
     return BobineStock(
       id: map['id'] as String? ?? map['localId'] as String,
       enterpriseId: map['enterpriseId'] as String? ?? defaultEnterpriseId,
+      productId: map['productId'] as String?,
       type: map['type'] as String? ?? '',
       quantity: (map['quantity'] as num?)?.toInt() ?? 0,
       unit: map['unit'] as String? ?? '',
+      unitsPerLot: (map['unitsPerLot'] as num?)?.toInt() ?? 1,
       seuilAlerte: (map['seuilAlerte'] as num?)?.toInt(),
       fournisseur: map['fournisseur'] as String?,
       prixUnitaire: (map['prixUnitaire'] as num?)?.toInt(),
@@ -99,9 +118,11 @@ class BobineStock {
     return {
       'id': id,
       'enterpriseId': enterpriseId,
+      'productId': productId,
       'type': type,
       'quantity': quantity,
       'unit': unit,
+      'unitsPerLot': unitsPerLot,
       'seuilAlerte': seuilAlerte,
       'fournisseur': fournisseur,
       'prixUnitaire': prixUnitaire,

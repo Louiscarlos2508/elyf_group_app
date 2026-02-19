@@ -1,5 +1,4 @@
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../entities/boutique_settings.dart';
 import '../repositories/boutique_settings_repository.dart';
@@ -16,7 +15,7 @@ class BoutiqueSettingsService {
 
   void _initSync() {
     if (_repository != null && _enterpriseId != null) {
-      _repository!.watchSettings(_enterpriseId!).listen((settings) {
+      _repository.watchSettings(_enterpriseId).listen((settings) {
         if (settings != null) {
           _updateLocalFromSynced(settings);
         }
@@ -78,8 +77,8 @@ class BoutiqueSettingsService {
   Future<void> setReceiptHeader(String text) async {
     await _prefs.setString(_keyReceiptHeader, text);
     if (_repository != null && _enterpriseId != null) {
-      final current = await _repository!.getSettings(_enterpriseId!) ?? BoutiqueSettings(enterpriseId: _enterpriseId!);
-      await _repository!.saveSettings(current.copyWith(receiptHeader: text));
+      final current = await _repository.getSettings(_enterpriseId) ?? BoutiqueSettings(enterpriseId: _enterpriseId);
+      await _repository.saveSettings(current.copyWith(receiptHeader: text));
     }
   }
 
@@ -88,8 +87,8 @@ class BoutiqueSettingsService {
   Future<void> setReceiptFooter(String text) async {
     await _prefs.setString(_keyReceiptFooter, text);
     if (_repository != null && _enterpriseId != null) {
-      final current = await _repository!.getSettings(_enterpriseId!) ?? BoutiqueSettings(enterpriseId: _enterpriseId!);
-      await _repository!.saveSettings(current.copyWith(receiptFooter: text));
+      final current = await _repository.getSettings(_enterpriseId) ?? BoutiqueSettings(enterpriseId: _enterpriseId);
+      await _repository.saveSettings(current.copyWith(receiptFooter: text));
     }
   }
 
@@ -98,8 +97,8 @@ class BoutiqueSettingsService {
   Future<void> setShowLogo(bool show) async {
     await _prefs.setBool(_keyShowLogo, show);
     if (_repository != null && _enterpriseId != null) {
-      final current = await _repository!.getSettings(_enterpriseId!) ?? BoutiqueSettings(enterpriseId: _enterpriseId!);
-      await _repository!.saveSettings(current.copyWith(showLogo: show));
+      final current = await _repository.getSettings(_enterpriseId) ?? BoutiqueSettings(enterpriseId: _enterpriseId);
+      await _repository.saveSettings(current.copyWith(showLogo: show));
     }
   }
 
@@ -110,8 +109,8 @@ class BoutiqueSettingsService {
   Future<void> setLowStockThreshold(int threshold) async {
     await _prefs.setInt(_keyLowStockThreshold, threshold);
     if (_repository != null && _enterpriseId != null) {
-      final current = await _repository!.getSettings(_enterpriseId!) ?? BoutiqueSettings(enterpriseId: _enterpriseId!);
-      await _repository!.saveSettings(current.copyWith(lowStockThreshold: threshold));
+      final current = await _repository.getSettings(_enterpriseId) ?? BoutiqueSettings(enterpriseId: _enterpriseId);
+      await _repository.saveSettings(current.copyWith(lowStockThreshold: threshold));
     }
   }
 
@@ -128,8 +127,8 @@ class BoutiqueSettingsService {
   Future<void> setEnabledPaymentMethods(List<String> methods) async {
     await _prefs.setString(_keyPaymentMethods, methods.join(','));
     if (_repository != null && _enterpriseId != null) {
-      final current = await _repository!.getSettings(_enterpriseId!) ?? BoutiqueSettings(enterpriseId: _enterpriseId!);
-      await _repository!.saveSettings(current.copyWith(enabledPaymentMethods: methods));
+      final current = await _repository.getSettings(_enterpriseId) ?? BoutiqueSettings(enterpriseId: _enterpriseId);
+      await _repository.saveSettings(current.copyWith(enabledPaymentMethods: methods));
     }
   }
 

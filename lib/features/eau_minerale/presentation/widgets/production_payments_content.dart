@@ -4,7 +4,7 @@ import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
-import '../../domain/entities/production_payment.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/production_payment.dart';
 import 'weekly_salary_calculator.dart';
 
 /// Content widget for production payments tab.
@@ -162,18 +162,19 @@ class _PaymentCard extends StatelessWidget {
                     content: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Container(
-                          width: double.infinity,
-                          height: 200,
-                          decoration: BoxDecoration(
-                            border: Border.all(color: theme.colorScheme.outlineVariant),
-                            borderRadius: BorderRadius.circular(8),
+                          Container(
+                            width: double.infinity,
+                            height: 200,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              border: Border.all(color: theme.colorScheme.outlineVariant),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Image.memory(
+                              payment.signature!,
+                              fit: BoxFit.contain,
+                            ),
                           ),
-                          child: Image.memory(
-                            payment.signature!,
-                            fit: BoxFit.contain,
-                          ),
-                        ),
                       ],
                     ),
                     actions: [

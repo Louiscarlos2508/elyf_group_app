@@ -116,7 +116,7 @@ class _PaymentSettingsScreenState extends ConsumerState<PaymentSettingsScreen> {
           ],
         ),
         subtitle: Text(subtitle, style: const TextStyle(fontSize: 12)),
-        activeColor: AppColors.primary,
+        activeThumbColor: AppColors.primary,
       ),
     );
   }

@@ -54,7 +54,10 @@ class PackagingStock {
   }
 
   /// Libellé formaté de la quantité
-  String get quantityLabel => '$quantity $unit (${lotsRestants.toStringAsFixed(1)} lots)';
+  String get quantityLabel {
+    if (unitsPerLot <= 1) return '$quantity $unit';
+    return '${lotsRestants.toStringAsFixed(1)} lots ($quantity $unit)';
+  }
 
   bool get isDeleted => deletedAt != null;
 

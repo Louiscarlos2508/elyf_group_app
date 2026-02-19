@@ -17,8 +17,13 @@ import '../controllers/report_controller.dart';
 import '../controllers/sales_controller.dart';
 import '../controllers/salary_controller.dart';
 import '../controllers/stock_controller.dart';
-import '../../../audit_trail/application/providers.dart';
+import '../controllers/supplier_controller.dart';
+import '../controllers/purchase_controller.dart';
+import '../controllers/closing_controller.dart';
+import '../controllers/treasury_controller.dart';
+import 'permission_providers.dart' show currentUserIdProvider;
 import '../../../../core/tenant/tenant_provider.dart';
+import '../../../../features/audit_trail/application/providers.dart';
 import 'repository_providers.dart';
 
 // Controller Providers
@@ -90,6 +95,7 @@ final productionSessionControllerProvider =
         ref.watch(productionSessionRepositoryProvider),
         ref.watch(stockControllerProvider),
         ref.watch(bobineStockQuantityRepositoryProvider),
+        ref.watch(eauMineraleProductRepositoryProvider),
         ref.watch(auditTrailServiceProvider),
       ),
     );
@@ -100,25 +106,80 @@ final salesControllerProvider = Provider<SalesController>(
     ref.watch(packStockAdapterProvider),
     ref.watch(eauMineraleProductRepositoryProvider),
     ref.watch(auditTrailServiceProvider),
+    ref.watch(treasuryRepositoryProvider),
+    ref.watch(closingRepositoryProvider),
   ),
 );
 
 final clientsControllerProvider = Provider<ClientsController>(
-  (ref) => ClientsController(ref.watch(customerRepositoryProvider)),
+  (ref) => ClientsController(
+    ref.watch(customerRepositoryProvider),
+    ref.watch(creditRepositoryProvider),
+  ),
 );
 
-final financesControllerProvider = Provider<FinancesController>(
-  (ref) => FinancesController(ref.watch(financeRepositoryProvider)),
-);
+final financesControllerProvider = Provider<FinancesController>((ref) {
+  final enterpriseId = ref.watch(activeEnterpriseIdProvider).value ?? 'default';
+  final userId = ref.watch(currentUserIdProvider) ?? 'unknown';
+
+  return FinancesController(
+    ref.watch(financeRepositoryProvider),
+    ref.watch(treasuryRepositoryProvider),
+    ref.watch(closingRepositoryProvider),
+    enterpriseId,
+    userId,
+  );
+});
 
 final salaryControllerProvider = Provider<SalaryController>(
-  (ref) => SalaryController(
-    ref.watch(salaryRepositoryProvider),
-    productionSessionRepository: ref.watch(productionSessionRepositoryProvider),
-    dailyWorkerRepository: ref.watch(dailyWorkerRepositoryProvider),
-  ),
+  (ref) {
+    final enterpriseId = ref.watch(activeEnterpriseIdProvider).value ?? 'default';
+    final userId = ref.watch(currentUserIdProvider) ?? 'unknown';
+    
+    return SalaryController(
+      ref.watch(salaryRepositoryProvider),
+      productionSessionRepository: ref.watch(productionSessionRepositoryProvider),
+      dailyWorkerRepository: ref.watch(dailyWorkerRepositoryProvider),
+      treasuryRepository: ref.watch(treasuryRepositoryProvider),
+      financeRepository: ref.watch(financeRepositoryProvider),
+      enterpriseId: enterpriseId,
+      userId: userId,
+    );
+  },
 );
 
 final reportControllerProvider = Provider<ReportController>(
   (ref) => ReportController(ref.watch(reportRepositoryProvider)),
+);
+
+final supplierControllerProvider = Provider<SupplierController>(
+  (ref) => SupplierController(ref.watch(supplierRepositoryProvider)),
+);
+
+final purchaseControllerProvider = Provider<PurchaseController>(
+  (ref) => PurchaseController(
+    ref.watch(purchaseRepositoryProvider),
+    ref.watch(stockRepositoryProvider),
+    ref.watch(stockControllerProvider),
+    ref.watch(treasuryRepositoryProvider),
+    ref.watch(financeRepositoryProvider),
+    ref.watch(supplierRepositoryProvider),
+  ),
+);
+
+final closingControllerProvider = Provider<ClosingController>(
+  (ref) => ClosingController(ref.watch(closingRepositoryProvider)),
+);
+
+final treasuryControllerProvider = Provider<TreasuryController>(
+  (ref) {
+    final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+    final userId = ref.watch(currentUserIdProvider) ?? 'unknown';
+    
+    return TreasuryController(
+      ref.watch(treasuryRepositoryProvider),
+      enterpriseId,
+      userId,
+    );
+  },
 );

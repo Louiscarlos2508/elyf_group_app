@@ -4,9 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/boutique/application/providers.dart';
 import 'package:elyf_groupe_app/features/boutique/presentation/widgets/boutique_header.dart';
-import 'package:elyf_groupe_app/core/printing/thermal_printer_service.dart';
-import 'package:flutter_bluetooth_serial/flutter_bluetooth_serial.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:elyf_groupe_app/core/printing/printer_provider.dart';
 
 class PrinterSettingsScreen extends ConsumerStatefulWidget {
@@ -21,12 +18,6 @@ class _PrinterSettingsScreenState extends ConsumerState<PrinterSettingsScreen> {
   bool _isLoading = true;
   bool _isTesting = false;
   
-  // Bluetooth specific
-  final _thermalService = ThermalPrinterService();
-  List<BluetoothDiscoveryResult> _devices = [];
-  bool _isScanning = false;
-  bool _isConnected = false;
-  
   final _headerController = TextEditingController();
   final _footerController = TextEditingController();
 
@@ -35,18 +26,9 @@ class _PrinterSettingsScreenState extends ConsumerState<PrinterSettingsScreen> {
   void initState() {
     super.initState();
     _loadSettings();
-    _thermalService.initialize().then((_) {
-      _attemptAutoReconnect();
-    });
   }
 
-  Future<void> _attemptAutoReconnect() async {
-     final settings = ref.read(boutiqueSettingsServiceProvider);
-     if (settings.printerType == 'bluetooth' && settings.printerConnection != null) {
-        await _thermalService.connectToAddress(settings.printerConnection!);
-     }
-     _checkConnection();
-  }
+
 
   @override
   void dispose() {
@@ -55,10 +37,7 @@ class _PrinterSettingsScreenState extends ConsumerState<PrinterSettingsScreen> {
     super.dispose();
   }
 
-  Future<void> _checkConnection() async {
-    final connected = await _thermalService.isAvailable();
-    if (mounted) setState(() => _isConnected = connected);
-  }
+
 
   Future<void> _loadSettings() async {
     final settingsService = ref.read(boutiqueSettingsServiceProvider);
@@ -87,87 +66,7 @@ class _PrinterSettingsScreenState extends ConsumerState<PrinterSettingsScreen> {
     }
   }
 
-  Future<void> _startScan() async {
-    // Permission logic optimized for Android 12+ (API 31+)
-    // On newer versions, we don't need location for Bluetooth scanning if we use BLUETOOTH_SCAN
-    
-    Map<Permission, PermissionStatus> statuses;
-    
-    if (await Permission.bluetoothScan.isGranted && await Permission.bluetoothConnect.isGranted) {
-       // Already granted
-       statuses = {};
-    } else {
-       statuses = await [
-        Permission.bluetoothScan,
-        Permission.bluetoothConnect,
-        Permission.bluetooth,
-        // Location is still needed for some older thermal printers or Android < 12
-        Permission.location, 
-      ].request();
-    }
 
-    final scanDenied = statuses[Permission.bluetoothScan]?.isDenied ?? false;
-    final connectDenied = statuses[Permission.bluetoothConnect]?.isDenied ?? false;
-
-    if (scanDenied || connectDenied) {
-      if (mounted) {
-        NotificationService.showWarning(
-          context, 
-          'Les permissions Bluetooth sont nécessaires pour trouver des imprimantes.'
-        );
-      }
-      return;
-    }
-
-    setState(() {
-      _isScanning = true;
-      _devices = [];
-    });
-
-    try {
-      _thermalService.scanBluetooth().listen((result) {
-        if (mounted) {
-          setState(() {
-            final index = _devices.indexWhere((element) => element.device.address == result.device.address);
-            if (index >= 0) {
-              _devices[index] = result;
-            } else {
-              _devices.add(result);
-            }
-          });
-        }
-      }).onDone(() {
-        if (mounted) setState(() => _isScanning = false);
-      });
-      
-    } catch (e) {
-      if (mounted) {
-        NotificationService.showError(context, 'Erreur de scan: $e');
-        setState(() => _isScanning = false);
-      }
-    }
-  }
-
-  Future<void> _connectToDevice(BluetoothDevice device) async {
-    setState(() => _isLoading = true);
-    try {
-      final success = await _thermalService.connectBluetooth(device);
-      if (success) {
-        if (mounted) {
-          NotificationService.showSuccess(context, 'Connecté à ${device.name ?? "Inconnu"}');
-          // Save connection details
-          await ref.read(boutiqueSettingsServiceProvider).setPrinterConnection(device.address);
-          _checkConnection();
-        }
-      } else {
-        if (mounted) NotificationService.showError(context, 'Échec de connexion');
-      }
-    } catch (e) {
-      if (mounted) NotificationService.showError(context, 'Erreur de connexion: $e');
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
 
   Future<void> _testPrint() async {
     setState(() => _isTesting = true);
@@ -178,13 +77,7 @@ class _PrinterSettingsScreenState extends ConsumerState<PrinterSettingsScreen> {
         await sunmi.initialize();
         await sunmi.printReceipt('TEST D\'IMPRESSION ELYF\n\nImprimante Sunmi OK\n\n\n');
         if (mounted) NotificationService.showSuccess(context, 'Test envoyé au Sunmi');
-      } else if (_selectedType == 'bluetooth') {
-        if (!_isConnected) {
-            if (mounted) NotificationService.showWarning(context, 'Aucune imprimante connectée');
-            return;
-        }
-        await _thermalService.printReceipt('TEST D\'IMPRESSION ELYF\n\nImprimante Bluetooth OK\n\n\n');
-        if (mounted) NotificationService.showSuccess(context, 'Test envoyé à l\'imprimante');
+        if (mounted) NotificationService.showError(context, 'Action non disponible (Bluetooth retiré)');
       } else {
         if (mounted) NotificationService.showInfo(context, 'Impression test simulée (Système)');
       }
@@ -226,16 +119,7 @@ class _PrinterSettingsScreenState extends ConsumerState<PrinterSettingsScreen> {
                     color: Colors.orange,
                   ),
                   
-                  _buildOptionCard(
-                    id: 'bluetooth',
-                    title: 'Imprimante Thermique (Bluetooth)',
-                    description: 'Imprimante externe connectée via Bluetooth (ESC/POS).',
-                    icon: Icons.bluetooth,
-                    color: Colors.blue,
-                  ),
-
-                  if (_selectedType == 'bluetooth')
-                    _buildBluetoothSection(context),
+                  
                   
                   _buildOptionCard(
                     id: 'system',
@@ -299,71 +183,7 @@ class _PrinterSettingsScreenState extends ConsumerState<PrinterSettingsScreen> {
     );
   }
 
-  Widget _buildBluetoothSection(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16, left: 16, right: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.blue.shade50,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.blue.shade200),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Icon(_isConnected ? Icons.check_circle : Icons.bluetooth_searching,
-                  color: _isConnected ? Colors.green : Colors.blue),
-              const SizedBox(width: 8),
-              Text(
-                _isConnected ? 'Imprimante Connectée' : 'Aucune connexion',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const Spacer(),
-              if (_isConnected)
-                TextButton(
-                  onPressed: () {
-                    _thermalService.disconnect();
-                    setState(() => _isConnected = false);
-                  },
-                  child: const Text('Déconnecter', style: TextStyle(color: Colors.red)),
-                )
-            ],
-          ),
-          const Divider(),
-          if (!_isScanning && !_isConnected)
-            ElevatedButton.icon(
-              onPressed: _startScan,
-              icon: const Icon(Icons.search),
-              label: const Text("Scanner les appareils"),
-            ),
-          if (_isScanning) ...[
-            const Padding(
-              padding: EdgeInsets.all(8.0),
-              child: Center(child: CircularProgressIndicator()),
-            ),
-            const SizedBox(height: 8),
-            const Text('Recherche en cours...', textAlign: TextAlign.center),
-          ],
-          if (_devices.isNotEmpty) ...[
-            const SizedBox(height: 16),
-            const Text('Appareils trouvés :', style: TextStyle(fontWeight: FontWeight.w500)),
-            const SizedBox(height: 8),
-            ..._devices.map((d) => ListTile(
-                  title: Text(d.device.name ?? "Appareil Inconnu"),
-                  subtitle: Text(d.device.address),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => _connectToDevice(d.device),
-                  dense: true,
-                  tileColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                )),
-          ],
-        ],
-      ),
-    );
-  }
+
 
   Widget _buildOptionCard({
     required String id,

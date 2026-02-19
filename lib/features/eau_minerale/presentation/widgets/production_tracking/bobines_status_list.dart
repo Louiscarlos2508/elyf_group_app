@@ -126,7 +126,30 @@ class BobinesStatusList extends ConsumerWidget {
         backgroundColor: theme.colorScheme.secondaryContainer,
         child: const Icon(Icons.sync, size: 20),
       ),
-      title: Text(bobine.bobineType, style: const TextStyle(fontWeight: FontWeight.bold)),
+      title: Row(
+        children: [
+          Text(bobine.bobineType, style: const TextStyle(fontWeight: FontWeight.bold)),
+          if (bobine.isReused) ...[
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.orange.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(color: Colors.orange.withValues(alpha: 0.2)),
+              ),
+              child: Text(
+                'RÉUTILISÉE',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: Colors.orange.shade900,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 8,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
       subtitle: const Text('En cours d\'utilisation'),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,

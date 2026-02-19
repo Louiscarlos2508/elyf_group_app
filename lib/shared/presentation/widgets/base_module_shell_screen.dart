@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'widgets.dart';
-import 'elyf_ui/organisms/elyf_app_bar.dart';
 import '../../../core/tenant/tenant_provider.dart';
 
 // Re-export NavigationSection so subclasses can use it
@@ -46,19 +45,7 @@ abstract class BaseModuleShellScreenState<T extends BaseModuleShellScreen>
 
   /// Construit les actions de l'AppBar (sélecteur d'entreprise si plusieurs entreprises accessibles).
   List<Widget> _buildAppBarActions() {
-    final accessibleEnterprisesAsync = ref.watch(userAccessibleEnterprisesProvider);
-    
-    return accessibleEnterprisesAsync.when(
-      data: (enterprises) {
-        // Afficher le sélecteur uniquement si l'utilisateur a accès à plus d'une entreprise
-        if (enterprises.length > 1) {
-          return const [EnterpriseSelectorWidget(compact: true)];
-        }
-        return const [];
-      },
-      loading: () => const [],
-      error: (_, __) => const [],
-    );
+    return [const EnterpriseSelectorWidget(style: EnterpriseSelectorStyle.appBar)];
   }
 
   /// Construit la liste des sections de navigation.

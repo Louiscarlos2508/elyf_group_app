@@ -4,17 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/services/gaz_calculation_service.dart';
-import 'package:elyf_groupe_app/features/gaz/domain/entities/gas_sale.dart';
 import 'package:elyf_groupe_app/core/auth/providers.dart' as auth;
-import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
-import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
-import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
-import 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder_stock.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/gaz_session.dart';
-import 'package:elyf_groupe_app/shared/presentation/widgets/app_shimmers.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder.dart';
+import '../../widgets/gaz_session_opening_dialog.dart';
 
 /// Section du dashboard pour la réconciliation journalière (Z-Report).
 class DashboardReconciliationSection extends ConsumerStatefulWidget {
@@ -59,6 +54,7 @@ class _DashboardReconciliationSectionState extends ConsumerState<DashboardReconc
                 status: CylinderStatus.full,
                 siteId: null, // Global
               ))).value ?? [],
+              openingCash: session.openingCash,
             );
 
             return Card(
@@ -199,7 +195,7 @@ class _DashboardReconciliationSectionState extends ConsumerState<DashboardReconc
                         const SizedBox(width: AppSpacing.md),
                         Expanded(
                           child: FilledButton.icon(
-                            onPressed: () => _confirmDayClosure(context, ref, metrics),
+                            onPressed: () => _confirmDayClosure(context, ref, metrics, session),
                             icon: const Icon(Icons.lock_clock),
                             label: const Text('Clôturer la Journée'),
                             style: FilledButton.styleFrom(
@@ -280,25 +276,23 @@ class _DashboardReconciliationSectionState extends ConsumerState<DashboardReconc
   }
 
   Future<void> _handleOpenSession(BuildContext context, WidgetRef ref) async {
-    final userId = ref.read(auth.currentUserIdProvider);
-    try {
-      await ref.read(gazSessionControllerProvider).openSession(userId: userId ?? '');
+    final success = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const GazSessionOpeningDialog(),
+    );
+
+    if (success == true) {
       ref.invalidate(todayGazSessionProvider);
       if (context.mounted) {
         NotificationService.showSuccess(context, 'Session ouverte avec succès. Vous pouvez maintenant vendre.');
-      }
-    } catch (e) {
-      if (context.mounted) {
-        NotificationService.showError(context, 'Échec de l\'ouverture de session : $e');
       }
     }
   }
 
   Widget _buildStatusChip(BuildContext context, GazSession session) {
     final theme = Theme.of(context);
-    final openedAtStr = session.openedAt != null 
-        ? ' depuis ${session.openedAt!.hour}:${session.openedAt!.minute.toString().padLeft(2, '0')}'
-        : '';
+    final openedAtStr = ' depuis ${session.openedAt.hour}:${session.openedAt.minute.toString().padLeft(2, '0')}';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -426,7 +420,7 @@ class _DashboardReconciliationSectionState extends ConsumerState<DashboardReconc
     }
   }
 
-  Future<void> _confirmDayClosure(BuildContext context, WidgetRef ref, ReconciliationMetrics metrics) async {
+  Future<void> _confirmDayClosure(BuildContext context, WidgetRef ref, ReconciliationMetrics metrics, GazSession session) async {
     // Controllers for physical stock counts
     final stockControllers = <int, TextEditingController>{};
     for (final weight in metrics.theoreticalStock.keys) {
@@ -521,6 +515,9 @@ class _DashboardReconciliationSectionState extends ConsumerState<DashboardReconc
         physicalCash: physicalCash,
         closedBy: userId,
         physicalStock: physicalStock,
+        openingFullStock: session.openingFullStock,
+        openingEmptyStock: session.openingEmptyStock,
+        openingCash: session.openingCash,
         notes: _notesController.text,
       );
 

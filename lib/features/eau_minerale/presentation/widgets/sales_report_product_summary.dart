@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 
-import '../../domain/entities/product_sales_summary.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/product_sales_summary.dart';
 
 /// Product summary widget for sales report.
 class SalesReportProductSummary extends StatelessWidget {

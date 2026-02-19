@@ -28,7 +28,6 @@ class PaymentSplitterService {
           cashAmount: cashAmount ?? 0,
           orangeMoneyAmount: orangeMoneyAmount ?? 0,
         );
-      case PaymentMethod.card:
       case PaymentMethod.credit:
         return const PaymentSplitResult(
           cashAmount: 0,

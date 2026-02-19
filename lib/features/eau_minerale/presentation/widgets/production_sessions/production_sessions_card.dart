@@ -19,7 +19,6 @@ class ProductionSessionsCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final ventesAsync = ref.watch(ventesParSessionProvider((session.id)));
 
     return ElyfCard(
       isGlass: true,
@@ -41,24 +40,27 @@ class ProductionSessionsCard extends ConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      ProductionSessionsHelpers.formatDate(session.date),
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        ProductionSessionsHelpers.formatDate(session.date),
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      ProductionSessionsHelpers.formatTime(session.date),
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                      const SizedBox(height: 2),
+                      Text(
+                        ProductionSessionsHelpers.formatTime(session.date),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
+                const SizedBox(width: 8),
                 ProductionSessionsCardComponents.buildStatusChip(
                   context,
                   session.effectiveStatus,
@@ -71,65 +73,30 @@ class ProductionSessionsCard extends ConsumerWidget {
             // Infos principales (Durée, Quantité)
             Row(
               children: [
-                _buildMetric(
-                  context, 
-                  Icons.timer_outlined, 
-                  '${session.dureeHeures.toStringAsFixed(1)} h',
-                  'Durée',
-                  Colors.blue,
+                Expanded(
+                  child: _buildMetric(
+                    context, 
+                    Icons.timer_outlined, 
+                    '${session.dureeHeures.toStringAsFixed(1)} h',
+                    'Durée',
+                    Colors.blue,
+                  ),
                 ),
-                const SizedBox(width: 32),
-                _buildMetric(
-                  context,
-                  Icons.water_drop_outlined,
-                  '${session.quantiteProduite.toInt()}',
-                  'Produits',
-                  Colors.cyan,
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _buildMetric(
+                    context,
+                    Icons.water_drop_outlined,
+                    '${session.quantiteProduite.toInt()}',
+                    'Produits',
+                    Colors.cyan,
+                  ),
                 ),
               ],
             ),
 
             const SizedBox(height: 20),
             
-            // Indicateur de marge (si dispo)
-            ventesAsync.when(
-              data: (ventes) {
-                if (ventes.isEmpty) return const SizedBox.shrink();
-                // Version simplifiée de la marge pour la liste
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.secondaryContainer.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: theme.colorScheme.secondary.withValues(alpha: 0.1),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.shopping_cart_outlined, 
-                        size: 16, 
-                        color: theme.colorScheme.secondary
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '${ventes.length} Ventes terminées',
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          color: theme.colorScheme.secondary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-              loading: () => const SizedBox.shrink(),
-              error: (_, __) => const SizedBox.shrink(),
-            ),
-
             // Bouton Suivre et Supprimer pour les sessions actives
             if (session.effectiveStatus != ProductionSessionStatus.completed)
               Padding(
@@ -191,26 +158,28 @@ class ProductionSessionsCard extends ConsumerWidget {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Supprimer la session'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Cette action marquera la session comme annulée. '
-              'Les bobines installées seront remises en stock.',
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: reasonController,
-              decoration: const InputDecoration(
-                labelText: 'Motif d\'annulation',
-                hintText: 'Ex: Erreur de saisie, panne majeure...',
-                border: OutlineInputBorder(),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Cette action marquera la session comme annulée. '
+                'Les bobines installées seront remises en stock.',
               ),
-              maxLines: 2,
-              autofocus: true,
-            ),
-          ],
+              const SizedBox(height: 16),
+              TextField(
+                controller: reasonController,
+                decoration: const InputDecoration(
+                  labelText: 'Motif d\'annulation',
+                  hintText: 'Ex: Erreur de saisie, panne majeure...',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 2,
+                autofocus: true,
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(

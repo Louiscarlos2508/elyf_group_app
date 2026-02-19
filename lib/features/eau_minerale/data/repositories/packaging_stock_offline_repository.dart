@@ -37,20 +37,12 @@ class PackagingStockOfflineRepository extends OfflineRepository<PackagingStock>
 
   @override
   String getLocalId(PackagingStock entity) {
-    // Si l'ID de l'entité est déjà un ID local généré par nous (commence par 'local_')
-    // ou un ID fixe basé sur le type (commence par 'packaging-'), on le conserve.
-    // Sinon, on génère un nouvel ID local.
     if (entity.id.startsWith('local_')) {
       return entity.id;
     }
-    // Utiliser un ID fixe basé sur le type pour garantir la cohérence
-    // (comme pour les bobines avec 'bobine-${type}')
-    if (entity.id.startsWith('packaging-')) {
-      return 'local_${entity.id}'; // Préfixer pour marquer comme local
-    }
-    // Si l'ID ne correspond à aucun pattern connu, générer un nouvel ID
-    // mais essayer de préserver l'ID original s'il existe déjà dans la base
-    return LocalIdGenerator.generate();
+    // If it's a fixed ID or a catalog ID, prefix it with local_ to mark it as local
+    // This makes ID generation deterministic for the same input ID
+    return 'local_${entity.id}';
   }
 
   @override
@@ -427,64 +419,69 @@ class PackagingStockOfflineRepository extends OfflineRepository<PackagingStock>
 
       // Mettre à jour automatiquement le stock en fonction du type de mouvement
       // (comme pour les bobines)
+      // 1. Chercher le stock par ID (ID catalogue ou fixed ID)
       var stock = await fetchById(movement.packagingId);
       
+      // 2. Fallback: Chercher par type si non trouvé par ID
+      // Cela permet de récupérer les stocks créés avec l'ancienne logique (ID basé sur le type)
       if (stock == null) {
-        // Si le stock n'existe pas, le créer avec la quantité initiale basée sur le mouvement
+        stock = await fetchByType(movement.packagingType);
+      }
+      
+      if (stock == null) {
+        // Si le stock n'existe pas du tout, le créer
         int initialQuantity = 0;
-        switch (movement.type) {
-          case PackagingMovementType.entree:
-            initialQuantity = movement.quantite;
-            break;
-          case PackagingMovementType.sortie:
-          case PackagingMovementType.ajustement:
-            initialQuantity = 0; // Ne pas créer un stock négatif
-            break;
+        if (movement.type == PackagingMovementType.entree) {
+          initialQuantity = movement.quantite;
         }
         
-        // Utiliser un ID fixe basé sur le type pour garantir la cohérence
-        final stockId = movement.packagingId.startsWith('packaging-')
-            ? movement.packagingId
-            : 'packaging-${movement.packagingType.toLowerCase().replaceAll(' ', '-')}';
+        // Utiliser l'ID fourni (probablement l'ID du catalogue)
+        final stockId = movement.packagingId;
+        
+        // Déterminer le facteur de lot à partir du mouvement si possible
+        int movementUnitsPerLot = 1;
+        if (movement.isInLots && movement.quantiteSaisie != null && movement.quantiteSaisie! > 0) {
+          movementUnitsPerLot = (movement.quantite / movement.quantiteSaisie!).round();
+          if (movementUnitsPerLot < 1) movementUnitsPerLot = 1;
+        }
+
         stock = PackagingStock(
           id: stockId,
           enterpriseId: enterpriseId,
           type: movement.packagingType,
           quantity: initialQuantity,
           unit: 'unité',
+          unitsPerLot: movementUnitsPerLot,
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
         );
       } else {
-        // Mettre à jour la quantité existante
+        // 3. Mettre à jour la quantité existante (ADDITION)
         int newQuantity = stock.quantity;
+        
+        // Mettre à jour le facteur de lot si le mouvement en apporte un nouveau plus précis
+        int updatedUnitsPerLot = stock.unitsPerLot;
+        if (movement.isInLots && movement.quantiteSaisie != null && movement.quantiteSaisie! > 0) {
+          final computedUnitsPerLot = (movement.quantite / movement.quantiteSaisie!).round();
+          if (computedUnitsPerLot > 1) {
+             updatedUnitsPerLot = computedUnitsPerLot;
+          }
+        }
+
         switch (movement.type) {
           case PackagingMovementType.entree:
             newQuantity += movement.quantite;
-            // Protection contre les débordements
-            if (newQuantity > 1000000) {
-              throw ValidationException(
-                'La quantité totale ne peut pas dépasser 1 000 000',
-                'QUANTITY_EXCEEDS_LIMIT',
-              );
-            }
             break;
           case PackagingMovementType.sortie:
           case PackagingMovementType.ajustement:
             newQuantity -= movement.quantite;
-            // Vérifier que le stock ne devient pas négatif
-            if (newQuantity < 0) {
-              throw ValidationException(
-                'Stock insuffisant. Stock actuel: ${stock.quantity}, '
-                'Demandé: ${movement.quantite}',
-                'INSUFFICIENT_STOCK',
-              );
-            }
+            if (newQuantity < 0) newQuantity = 0; // Sécurité
             break;
         }
 
         stock = stock.copyWith(
           quantity: newQuantity,
+          unitsPerLot: updatedUnitsPerLot,
           updatedAt: DateTime.now(),
         );
       }

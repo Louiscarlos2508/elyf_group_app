@@ -54,14 +54,66 @@ class SalaryHistoryItem extends StatelessWidget {
     final theme = Theme.of(context);
     final color = _getColor(context);
 
+    final signature = payment.originalPayment is SalaryPayment 
+        ? (payment.originalPayment as SalaryPayment).signature 
+        : (payment.originalPayment is ProductionPayment 
+            ? (payment.originalPayment as ProductionPayment).signature 
+            : null);
+    final hasSignature = signature != null && signature.isNotEmpty;
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
+        onTap: hasSignature ? () {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Signature du bénéficiaire'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: double.infinity,
+                    height: 200,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      border: Border.all(color: theme.colorScheme.outlineVariant),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Image.memory(
+                      signature,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Fermer'),
+                ),
+              ],
+            ),
+          );
+        } : null,
         leading: CircleAvatar(
           backgroundColor: color.withValues(alpha: 0.1),
           child: Icon(_getIcon(), color: color),
         ),
-        title: Text(payment.label),
+        title: Row(
+          children: [
+            Expanded(child: Text(payment.label)),
+            if (hasSignature)
+              Padding(
+                padding: const EdgeInsets.only(left: 4),
+                child: Icon(
+                  Icons.verified,
+                  color: Colors.green,
+                  size: 14,
+                ),
+              ),
+          ],
+        ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

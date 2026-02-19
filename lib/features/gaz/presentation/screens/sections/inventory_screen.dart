@@ -6,10 +6,8 @@ import '../../../../../core/tenant/tenant_provider.dart';
 import '../../../../../core/auth/providers.dart' as auth;
 import '../../../application/providers.dart';
 import '../../../domain/entities/cylinder.dart';
-import '../../../domain/entities/cylinder_stock.dart';
 import '../../../domain/entities/gaz_inventory_audit.dart';
 import '../../../domain/entities/point_of_sale.dart';
-import '../../../../../shared/utils/notification_service.dart';
 import '../../widgets/replenishment_dialog.dart';
 import '../../widgets/deposit_refund_dialog.dart';
 
@@ -41,9 +39,10 @@ class _GazInventoryScreenState extends ConsumerState<GazInventoryScreen> {
     )));
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Inventaire & Audit'),
+      appBar: ElyfAppBar(
+        title: 'Inventaire & Audit',
         actions: [
+          EnterpriseSelectorWidget(style: EnterpriseSelectorStyle.appBar),
           if (!_isAuditing) ...[
             IconButton(
               onPressed: () => _showReplenishmentDialog(context),

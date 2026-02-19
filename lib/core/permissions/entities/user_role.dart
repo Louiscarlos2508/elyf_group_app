@@ -103,7 +103,7 @@ class UserRole {
               ?.map((e) => e as String)
               .toSet() ??
           const {},
-      moduleId: map['moduleId'] as String? ?? 'general',
+      moduleId: map['moduleId'] as String? ?? 'administration',
       isSystemRole: map['isSystemRole'] as bool? ?? false,
       allowedEnterpriseTypes:
           (map['allowedEnterpriseTypes'] as List<dynamic>?)

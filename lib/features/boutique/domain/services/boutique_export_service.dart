@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import 'package:elyf_groupe_app/features/boutique/domain/entities/sale.dart';
 import 'package:elyf_groupe_app/features/boutique/domain/entities/purchase.dart';
 import 'package:elyf_groupe_app/features/boutique/domain/entities/expense.dart';

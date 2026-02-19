@@ -7,6 +7,7 @@ import '../widgets/wholesaler_form_dialog.dart';
 import '../../../../../shared/presentation/widgets/elyf_ui/atoms/elyf_button.dart';
 import '../../../../../shared/presentation/widgets/elyf_ui/atoms/elyf_icon_button.dart';
 import '../../../../../core/tenant/tenant_provider.dart';
+import 'package:elyf_groupe_app/shared.dart';
 
 class WholesalerManagementScreen extends ConsumerWidget {
   const WholesalerManagementScreen({super.key});
@@ -18,9 +19,10 @@ class WholesalerManagementScreen extends ConsumerWidget {
     final wholesalersAsync = ref.watch(allWholesalersProvider(enterpriseId));
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Gestion des Grossistes'),
+      appBar: ElyfAppBar(
+        title: 'Gestion des Grossistes',
         actions: [
+          EnterpriseSelectorWidget(style: EnterpriseSelectorStyle.appBar),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () => ref.invalidate(allWholesalersProvider),

@@ -15,7 +15,7 @@ class ApprovisionnementTabBar extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(3),
         decoration: BoxDecoration(
-          color: const Color(0xFFECECF0),
+          color: theme.colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(14),
         ),
         child: Row(
@@ -32,18 +32,27 @@ class ApprovisionnementTabBar extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: tabController.index == 0
-                        ? Colors.white
+                        ? theme.colorScheme.surface
                         : Colors.transparent,
                     borderRadius: BorderRadius.circular(14),
-                    border: tabController.index == 0
-                        ? Border.all(color: Colors.transparent, width: 1.3)
+                    boxShadow: tabController.index == 0
+                        ? [
+                            BoxShadow(
+                              color: theme.colorScheme.shadow.withValues(alpha: 0.05),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ]
                         : null,
                   ),
                     child: Text(
                       'Tours en cours',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         fontSize: 14,
-                        color: const Color(0xFF0A0A0A),
+                        color: tabController.index == 0
+                            ? theme.colorScheme.onSurface
+                            : theme.colorScheme.onSurfaceVariant,
+                        fontWeight: tabController.index == 0 ? FontWeight.bold : FontWeight.normal,
                       ),
                       textAlign: TextAlign.center,
                       maxLines: 1,
@@ -64,15 +73,27 @@ class ApprovisionnementTabBar extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: tabController.index == 1
-                        ? Colors.white
+                        ? theme.colorScheme.surface
                         : Colors.transparent,
                     borderRadius: BorderRadius.circular(14),
+                    boxShadow: tabController.index == 1
+                        ? [
+                            BoxShadow(
+                              color: theme.colorScheme.shadow.withValues(alpha: 0.05),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ]
+                        : null,
                   ),
                     child: Text(
                       'Historique',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         fontSize: 14,
-                        color: const Color(0xFF0A0A0A),
+                        color: tabController.index == 1
+                            ? theme.colorScheme.onSurface
+                            : theme.colorScheme.onSurfaceVariant,
+                        fontWeight: tabController.index == 1 ? FontWeight.bold : FontWeight.normal,
                       ),
                       textAlign: TextAlign.center,
                       maxLines: 1,

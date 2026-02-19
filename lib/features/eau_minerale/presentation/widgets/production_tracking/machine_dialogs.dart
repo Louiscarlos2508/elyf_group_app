@@ -3,9 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
-import '../../../domain/entities/bobine_usage.dart';
-import '../../../domain/entities/machine.dart';
-import '../../../domain/entities/production_session.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/bobine_usage.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/machine.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/production_session.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../bobine_installation_form.dart';
 import 'machine_add_helpers.dart';

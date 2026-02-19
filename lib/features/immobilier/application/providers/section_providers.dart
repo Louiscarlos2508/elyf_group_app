@@ -8,7 +8,6 @@ import '../../../../../core/tenant/tenant_provider.dart'
     show activeEnterpriseProvider;
 import '../../presentation/screens/sections/contracts_screen.dart';
 import '../../presentation/screens/sections/dashboard_screen.dart';
-import '../../presentation/screens/sections/expenses_screen.dart';
 import '../../presentation/screens/sections/payments_screen.dart';
 import '../../presentation/screens/sections/properties_screen.dart';
 import '../../presentation/screens/sections/reports_screen.dart';
@@ -136,7 +135,7 @@ final accessibleImmobilierSectionsProvider =
         enterpriseId: enterpriseId,
         moduleId: moduleId,
       ),
-      requiredPermissions: {ImmobilierPermissions.viewDashboard.id},
+      requiredPermissions: {ImmobilierPermissions.manageSettings.id},
     ),
     (
       section: NavigationSection(

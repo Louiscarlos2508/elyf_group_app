@@ -2,6 +2,7 @@ import 'bobine_usage.dart';
 import 'production_day.dart';
 import 'production_event.dart';
 import 'production_session_status.dart';
+import 'material_consumption.dart';
 
 /// Session de production avec suivi détaillé des bobines, machines et coûts.
 class ProductionSession {
@@ -145,13 +146,71 @@ class ProductionSession {
         machinesUtilisees.length == bobinesUtilisees.length;
   }
 
-  /// Total des packs produits sur l'ensemble des jours de production.
+  /// Nombre total de packs produits au cours de la session.
+  /// Priorise la somme des productions journalières détaillées si présentes.
   int get totalPacksProduitsJournalier {
-    return productionDays.fold<int>(0, (sum, day) => sum + day.packsProduits);
+    if (productionDays.isEmpty) return 0;
+    
+    // Si on a des produits finis détaillés dans les jours, on les somme par produit 
+    // ou on retourne simplement le total brut des quantités produites.
+    final hasDetailedProduction = productionDays.any((d) => d.producedItems.isNotEmpty);
+    if (hasDetailedProduction) {
+      return productionDays.fold<int>(
+        0,
+        (sum, day) => sum + day.producedItems.fold<int>(0, (s, item) => s + item.quantity.toInt()),
+      );
+    }
+
+    return productionDays.fold<int>(
+      0,
+      (sum, day) => sum + day.packsProduits,
+    );
   }
 
-  /// Total des emballages utilisés sur l'ensemble des jours de production.
+  /// Liste de tous les produits finis produits pendant la session (agrégée).
+  List<MaterialConsumption> get producedItems {
+    final Map<String, MaterialConsumption> totals = {};
+    for (final day in productionDays) {
+      for (final item in day.producedItems) {
+        if (totals.containsKey(item.productId)) {
+          final existing = totals[item.productId]!;
+          totals[item.productId] = existing.copyWith(
+            quantity: existing.quantity + item.quantity,
+          );
+        } else {
+          totals[item.productId] = item;
+        }
+      }
+    }
+    return totals.values.toList();
+  }
+
+  /// Liste de toutes les matières consommées pendant la session (agrégée).
+  List<MaterialConsumption> get consumptions {
+    final Map<String, MaterialConsumption> totals = {};
+    for (final day in productionDays) {
+      for (final item in day.consumptions) {
+        if (totals.containsKey(item.productId)) {
+          final existing = totals[item.productId]!;
+          totals[item.productId] = existing.copyWith(
+            quantity: existing.quantity + item.quantity,
+          );
+        } else {
+          totals[item.productId] = item;
+        }
+      }
+    }
+    return totals.values.toList();
+  }
+
+  /// Nombre total d'emballages utilisés au cours de la session.
+  /// Priorise le nouveau champ détaillé `consumptions`.
   int get totalEmballagesUtilisesJournalier {
+    // Si on a les nouvelles consommations détaillées, on les préfère
+    if (consumptions.isNotEmpty) {
+      return consumptions.fold<int>(0, (sum, c) => sum + c.quantity.toInt());
+    }
+    // Sinon on retombe sur l'ancien champ
     return productionDays.fold<int>(
       0,
       (sum, day) => sum + day.emballagesUtilises,

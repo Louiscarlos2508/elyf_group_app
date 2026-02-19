@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../shared.dart';
 import '../../application/providers.dart';
-import '../../application/controllers/leak_report_controller.dart';
 import '../../domain/entities/cylinder_leak.dart';
 
 /// Dialogue pour générer un rapport de réclamation fournisseur.

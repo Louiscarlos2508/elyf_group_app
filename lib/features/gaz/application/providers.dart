@@ -161,7 +161,7 @@ final leakReportServiceProvider = Provider<LeakReportService>((ref) {
 
 /// Provider for GazPrintingService.
 final gazPrintingServiceProvider = Provider<GazPrintingService>((ref) {
-  final printerService = ref.watch(thermalPrinterServiceProvider);
+  final printerService = ref.watch(activePrinterProvider);
   return GazPrintingService(printerService: printerService);
 });
 // Repositories
@@ -192,12 +192,14 @@ final gasRepositoryProvider = Provider<GasRepository>((ref) {
   final driftService = DriftService.instance;
   final syncManager = ref.watch(syncManagerProvider);
   final connectivityService = ref.watch(connectivityServiceProvider);
+  final cylinderStockRepository = ref.watch(cylinderStockRepositoryProvider);
 
   return GasOfflineRepository(
     driftService: driftService,
     syncManager: syncManager,
     connectivityService: connectivityService,
     enterpriseId: enterpriseId,
+    cylinderStockRepository: cylinderStockRepository,
   );
 });
 

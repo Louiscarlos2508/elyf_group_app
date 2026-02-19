@@ -13,20 +13,16 @@ class PaymentSplitter extends StatefulWidget {
     required this.onSplitChanged,
     this.initialCashAmount = 0,
     this.initialMobileMoneyAmount = 0,
-    this.initialCardAmount = 0,
     this.cashLabel = 'Espèces',
     this.mobileMoneyLabel = 'Mobile Money',
-    this.cardLabel = 'Carte Bancaire',
   });
 
   final int totalAmount;
-  final void Function(int cashAmount, int mobileMoneyAmount, int cardAmount) onSplitChanged;
+  final void Function(int cashAmount, int mobileMoneyAmount) onSplitChanged;
   final int initialCashAmount;
   final int initialMobileMoneyAmount;
-  final int initialCardAmount;
   final String cashLabel;
   final String mobileMoneyLabel;
-  final String cardLabel;
 
   @override
   State<PaymentSplitter> createState() => _PaymentSplitterState();
@@ -35,7 +31,6 @@ class PaymentSplitter extends StatefulWidget {
 class _PaymentSplitterState extends State<PaymentSplitter> {
   late TextEditingController _cashController;
   late TextEditingController _mobileMoneyController;
-  late TextEditingController _cardController;
 
   @override
   void initState() {
@@ -45,9 +40,6 @@ class _PaymentSplitterState extends State<PaymentSplitter> {
     );
     _mobileMoneyController = TextEditingController(
       text: widget.initialMobileMoneyAmount > 0 ? widget.initialMobileMoneyAmount.toString() : '',
-    );
-    _cardController = TextEditingController(
-      text: widget.initialCardAmount > 0 ? widget.initialCardAmount.toString() : '',
     );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -59,15 +51,13 @@ class _PaymentSplitterState extends State<PaymentSplitter> {
   void dispose() {
     _cashController.dispose();
     _mobileMoneyController.dispose();
-    _cardController.dispose();
     super.dispose();
   }
 
   void _updateSplit() {
     final cash = int.tryParse(_cashController.text) ?? 0;
     final mobileMoney = int.tryParse(_mobileMoneyController.text) ?? 0;
-    final card = int.tryParse(_cardController.text) ?? 0;
-    widget.onSplitChanged(cash, mobileMoney, card);
+    widget.onSplitChanged(cash, mobileMoney);
   }
 
   void _onFieldChanged(String _) {
@@ -82,8 +72,7 @@ class _PaymentSplitterState extends State<PaymentSplitter> {
     final colors = theme.colorScheme;
     final cash = int.tryParse(_cashController.text) ?? 0;
     final mobileMoney = int.tryParse(_mobileMoneyController.text) ?? 0;
-    final card = int.tryParse(_cardController.text) ?? 0;
-    final total = cash + mobileMoney + card;
+    final total = cash + mobileMoney;
     final isValid = total == widget.totalAmount;
     final remaining = widget.totalAmount - total;
 
@@ -108,8 +97,6 @@ class _PaymentSplitterState extends State<PaymentSplitter> {
           _buildField(_cashController, widget.cashLabel, Icons.money, cash),
           const SizedBox(height: 12),
           _buildField(_mobileMoneyController, widget.mobileMoneyLabel, Icons.account_balance_wallet, mobileMoney),
-          const SizedBox(height: 12),
-          _buildField(_cardController, widget.cardLabel, Icons.credit_card, card),
           const SizedBox(height: 16),
           _buildSummary(theme, colors, total, isValid, remaining),
         ],

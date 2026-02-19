@@ -16,7 +16,6 @@ class LeakFilters extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: const Color(0xFFF9FAFB),
       padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
       child: Wrap(
         spacing: 8,

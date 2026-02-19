@@ -20,6 +20,8 @@ class SaleDetailHelpers {
         return 'Validée';
       case SaleStatus.fullyPaid:
         return 'Payée';
+      case SaleStatus.voided:
+        return 'Annulée';
     }
   }
 
@@ -30,6 +32,8 @@ class SaleDetailHelpers {
         return Colors.green;
       case SaleStatus.fullyPaid:
         return theme.colorScheme.primary;
+      case SaleStatus.voided:
+        return Colors.red;
     }
   }
 }

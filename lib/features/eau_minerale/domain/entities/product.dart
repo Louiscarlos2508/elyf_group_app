@@ -6,6 +6,8 @@ class Product {
     required this.type,
     required this.unitPrice,
     required this.unit,
+    this.supplyUnit, // ex: "Paquet", "Rouleau"
+    this.unitsPerLot = 1, // Conversion ratio (ex: 100 films per packet)
     this.description,
     this.createdAt,
     this.updatedAt,
@@ -19,6 +21,8 @@ class Product {
   final ProductType type;
   final int unitPrice; // Price in CFA
   final String unit;
+  final String? supplyUnit;
+  final int unitsPerLot;
   final String? description;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -32,6 +36,8 @@ class Product {
     ProductType? type,
     int? unitPrice,
     String? unit,
+    String? supplyUnit,
+    int? unitsPerLot,
     String? description,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -45,6 +51,8 @@ class Product {
       type: type ?? this.type,
       unitPrice: unitPrice ?? this.unitPrice,
       unit: unit ?? this.unit,
+      supplyUnit: supplyUnit ?? this.supplyUnit,
+      unitsPerLot: unitsPerLot ?? this.unitsPerLot,
       description: description ?? this.description,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -58,9 +66,11 @@ class Product {
       id: map['id'] as String? ?? map['localId'] as String,
       enterpriseId: map['enterpriseId'] as String? ?? defaultEnterpriseId,
       name: map['name'] as String? ?? '',
-      type: ProductType.values.byName(map['type'] as String? ?? 'finishedGood'),
+      type: _parseType(map['type']),
       unitPrice: (map['unitPrice'] as num?)?.toInt() ?? 0,
       unit: map['unit'] as String? ?? '',
+      supplyUnit: map['supplyUnit'] as String?,
+      unitsPerLot: (map['unitsPerLot'] as num?)?.toInt() ?? 1,
       description: map['description'] as String?,
       createdAt: map['createdAt'] != null
           ? DateTime.parse(map['createdAt'] as String)
@@ -83,12 +93,26 @@ class Product {
       'type': type.name,
       'unitPrice': unitPrice,
       'unit': unit,
+      'supplyUnit': supplyUnit,
+      'unitsPerLot': unitsPerLot,
       'description': description,
       'createdAt': createdAt?.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
       'deletedAt': deletedAt?.toIso8601String(),
       'deletedBy': deletedBy,
     };
+  }
+
+  static ProductType _parseType(dynamic value) {
+    if (value == null) return ProductType.finishedGood;
+    if (value is String) {
+      try {
+        return ProductType.values.byName(value);
+      } catch (_) {
+        return ProductType.finishedGood;
+      }
+    }
+    return ProductType.finishedGood;
   }
 
   bool get isRawMaterial => type == ProductType.rawMaterial;
@@ -105,6 +129,17 @@ class Product {
     }
     return 'Ajouté par production • Déduit par ventes';
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is Product &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          enterpriseId == other.enterpriseId;
+
+  @override
+  int get hashCode => id.hashCode ^ enterpriseId.hashCode;
 }
 
 enum ProductType { rawMaterial, finishedGood }

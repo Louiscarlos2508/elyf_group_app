@@ -1,3 +1,5 @@
+import 'package:uuid/uuid.dart';
+
 import '../../domain/entities/production_session.dart';
 import '../../domain/entities/production_session_status.dart';
 import '../../domain/entities/machine.dart';
@@ -101,11 +103,10 @@ class ProductionService {
       if (bobinesNonFiniesParMachine.containsKey(machineId)) {
         // Machine with unfinished bobine: reuse (no decrement)
         final bobineNonFinie = bobinesNonFiniesParMachine[machineId]!;
-        final maintenant = DateTime.now();
+        // On garde son ID et on marque comme réutilisée
         nouvellesBobines.add(
           bobineNonFinie.copyWith(
-            dateInstallation: maintenant,
-            heureInstallation: maintenant,
+            isReused: true,
           ),
         );
       } else if (bobineStocksDisponibles.isNotEmpty) {
@@ -113,6 +114,7 @@ class ProductionService {
         final bobineStock = bobineStocksDisponibles.first;
         final maintenant = DateTime.now();
         final nouvelleBobineUsage = BobineUsage(
+          id: const Uuid().v4(),
           bobineType: bobineStock.type,
           machineId: machineId,
           machineName: machine.name,
@@ -120,6 +122,7 @@ class ProductionService {
           heureInstallation: maintenant,
           estInstallee: true,
           estFinie: false,
+          isReused: false,
         );
         nouvellesBobines.add(nouvelleBobineUsage);
       }

@@ -1,12 +1,10 @@
 import 'dart:convert';
-import 'dart:typed_data';
 
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/offline_repository.dart';
 import '../../domain/entities/employee.dart';
 import '../../domain/entities/production_payment.dart';
-import '../../domain/entities/production_payment_person.dart';
 import '../../domain/entities/salary_payment.dart';
 import '../../domain/repositories/salary_repository.dart';
 

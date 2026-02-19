@@ -74,7 +74,6 @@ class EnterpriseController {
       try {
         final posRecords = await driftService.records.listForCollection(
           collectionName: 'pointOfSale',
-          moduleType: 'gaz',
         );
         
         AppLogger.debug(
@@ -678,5 +677,110 @@ class EnterpriseController {
   /// Surveille toutes les entreprises (Stream).
   Stream<List<Enterprise>> watchAllEnterprises() {
     return _repository.watchAllEnterprises();
+  }
+
+  /// Récupère explicitement des entreprises manquantes depuis Firestore.
+  ///
+  /// Utile pour la synchronisation initiale ou lorsqu'une assignation existe
+  /// mais que le document entreprise n'est pas encore présent localement.
+  Future<List<Enterprise>> fetchMissingEnterprises(List<String> enterpriseIds) async {
+    if (enterpriseIds.isEmpty || firestoreSync == null) return [];
+
+    final fetchedEnterprises = <Enterprise>[];
+
+    try {
+      AppLogger.info(
+        'Fetching ${enterpriseIds.length} missing enterprises from Firestore: ${enterpriseIds.join(", ")}',
+        name: 'enterprise.controller',
+      );
+
+      for (final id in enterpriseIds) {
+        try {
+          final doc = await FirebaseFirestore.instance
+              .collection('enterprises')
+              .doc(id)
+              .get();
+
+          if (doc.exists && doc.data() != null) {
+            final data = doc.data()!;
+            
+            // Reconstruire l'objet Enterprise
+            // Note: On utilise Enterprise.fromMap ou similaire si disponible, 
+            // sinon on le construit manuellement comme dans getAllEnterprises
+            // Mais ici on n'a pas accès direct au fromMap du repository car il attend un format Drift/Local
+            
+            final timestamp = DateTime.now();
+            DateTime? createdAt;
+            DateTime? updatedAt;
+
+            if (data['createdAt'] != null) {
+               if (data['createdAt'] is Timestamp) {
+                 createdAt = (data['createdAt'] as Timestamp).toDate();
+               } else if (data['createdAt'] is String) {
+                 createdAt = DateTime.tryParse(data['createdAt'] as String);
+               }
+            }
+
+            if (data['updatedAt'] != null) {
+               if (data['updatedAt'] is Timestamp) {
+                 updatedAt = (data['updatedAt'] as Timestamp).toDate();
+               } else if (data['updatedAt'] is String) {
+                 updatedAt = DateTime.tryParse(data['updatedAt'] as String);
+               }
+            }
+
+            final enterprise = Enterprise(
+              id: doc.id,
+              name: data['name'] as String? ?? 'Unknown',
+              type: EnterpriseType.fromId(data['type'] as String? ?? 'gaz'), // Fallback safe
+              parentEnterpriseId: data['parentEnterpriseId'] as String?,
+              isActive: data['isActive'] as bool? ?? true,
+              address: data['address'] as String?,
+              phone: data['phone'] as String?,
+              email: data['email'] as String?,
+              description: data['description'] as String?,
+              latitude: (data['latitude'] as num?)?.toDouble(),
+              longitude: (data['longitude'] as num?)?.toDouble(),
+              createdAt: createdAt,
+              updatedAt: updatedAt ?? timestamp,
+              moduleId: data['moduleId'] as String?,
+              metadata: (data['metadata'] as Map<String, dynamic>?) ?? {},
+              hierarchyLevel: data['hierarchyLevel'] as int? ?? 0,
+              hierarchyPath: data['hierarchyPath'] as String? ?? '',
+              ancestorIds: (data['ancestorIds'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
+            );
+
+            // Sauvegarder localement via le repository
+            await _repository.updateEnterprise(enterprise);
+            fetchedEnterprises.add(enterprise);
+            
+            developer.log(
+              'Fetched and saved missing enterprise: ${enterprise.name} (${enterprise.id})',
+              name: 'enterprise.controller',
+            );
+          } else {
+             developer.log(
+              'Missing enterprise not found in Firestore: $id',
+              name: 'enterprise.controller',
+            );
+          }
+        } catch (e) {
+          developer.log(
+            'Error fetching enterprise $id: $e',
+            name: 'enterprise.controller',
+          );
+        }
+      }
+    } catch (e, stackTrace) {
+       final appException = ErrorHandler.instance.handleError(e, stackTrace);
+       AppLogger.error(
+        'Error in fetchMissingEnterprises: ${appException.message}',
+        name: 'enterprise.controller',
+        error: e,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return fetchedEnterprises;
   }
 }

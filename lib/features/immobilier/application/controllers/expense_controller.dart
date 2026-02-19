@@ -2,7 +2,6 @@ import '../../../audit_trail/domain/services/audit_trail_service.dart';
 import '../../domain/entities/expense.dart';
 import '../../domain/repositories/expense_repository.dart';
 import 'immobilier_treasury_controller.dart';
-import '../../../../shared/domain/entities/payment_method.dart';
 
 class PropertyExpenseController {
   PropertyExpenseController(

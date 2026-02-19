@@ -160,7 +160,7 @@ class RealtimeSyncService {
       if (_initialPullCompleted) return;
 
       // Utiliser le service de synchro existant qui gère déjà bien le pull initial
-      await firestoreSync.pullInitialData();
+      await firestoreSync.pullInitialData(userId: _currentUserId);
       
       _initialPullCompleted = true;
     } catch (e, stackTrace) {

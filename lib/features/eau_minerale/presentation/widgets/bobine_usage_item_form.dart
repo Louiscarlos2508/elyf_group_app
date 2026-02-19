@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../../../shared/utils/notification_service.dart';
@@ -47,12 +48,14 @@ class _BobineUsageItemFormState extends ConsumerState<BobineUsageItemForm> {
 
     final now = DateTime.now();
     final usage = BobineUsage(
+      id: const Uuid().v4(),
       bobineType: bobineStock.type,
       machineId: _machineSelectionnee!.id,
       machineName: _machineSelectionnee!.name,
       dateInstallation: now,
       heureInstallation: now,
       dateUtilisation: now,
+      isReused: false,
     );
 
     Navigator.of(context).pop(usage);

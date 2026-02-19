@@ -89,8 +89,6 @@ class SalesReceiptTemplate {
         return 'Mobile Money';
       case PaymentMethod.both:
         return 'Mixte';
-      case PaymentMethod.card:
-        return 'Carte Bancaire';
       case PaymentMethod.credit:
         return 'Crédit';
     }

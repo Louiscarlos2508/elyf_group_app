@@ -181,6 +181,7 @@ class ProductionSessionFormState extends ConsumerState<ProductionSessionForm> {
   }
 
   Future<void> submit() async {
+    if (_isLoading) return;
     if (!_formKey.currentState!.validate()) return;
 
     // Validation : machines et bobines
@@ -272,7 +273,7 @@ class ProductionSessionFormState extends ConsumerState<ProductionSessionForm> {
             ElyfCard(
               padding: const EdgeInsets.all(20),
               borderRadius: 24,
-              backgroundColor: colors.surfaceContainerLow.withValues(alpha: 0.5),
+              backgroundColor: colors.surfaceContainerLow,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -302,7 +303,7 @@ class ProductionSessionFormState extends ConsumerState<ProductionSessionForm> {
             ElyfCard(
               padding: const EdgeInsets.all(20),
               borderRadius: 24,
-              backgroundColor: colors.surfaceContainerLow.withValues(alpha: 0.5),
+              backgroundColor: colors.surfaceContainerLow,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -346,7 +347,7 @@ class ProductionSessionFormState extends ConsumerState<ProductionSessionForm> {
             ElyfCard(
               padding: const EdgeInsets.all(20),
               borderRadius: 24,
-              backgroundColor: colors.primary.withValues(alpha: 0.03),
+              backgroundColor: colors.surfaceContainerLow,
               borderColor: colors.primary.withValues(alpha: 0.1),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -420,7 +421,7 @@ class ProductionSessionFormState extends ConsumerState<ProductionSessionForm> {
             ElyfCard(
               padding: const EdgeInsets.all(20),
               borderRadius: 24,
-              backgroundColor: colors.surfaceContainerLow.withValues(alpha: 0.5),
+              backgroundColor: colors.surfaceContainerLow,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -482,7 +483,7 @@ class ProductionSessionFormState extends ConsumerState<ProductionSessionForm> {
         borderSide: BorderSide(color: colors.primary, width: 2),
       ),
       filled: true,
-      fillColor: colors.surfaceContainerLow.withValues(alpha: 0.3),
+      fillColor: colors.surfaceContainerLow,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
     );
   }
@@ -509,7 +510,7 @@ class ProductionSessionFormState extends ConsumerState<ProductionSessionForm> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainerLow.withValues(alpha: 0.5),
+              color: Theme.of(context).colorScheme.surfaceContainerLow,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.1)),
             ),
@@ -665,8 +666,8 @@ class ProductionSessionFormState extends ConsumerState<ProductionSessionForm> {
       margin: const EdgeInsets.symmetric(vertical: 8),
       decoration: BoxDecoration(
         color: isCompleted
-            ? theme.colorScheme.primaryContainer.withValues(alpha: 0.2)
-            : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+            ? theme.colorScheme.primaryContainer
+            : theme.colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isCompleted

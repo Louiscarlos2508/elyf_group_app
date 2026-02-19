@@ -693,7 +693,7 @@ class _BulkPaymentDialogState extends ConsumerState<_BulkPaymentDialog> {
               style: TextStyle(fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           DropdownButtonFormField<PaymentMethod>(
-            value: _method,
+            initialValue: _method,
             items: PaymentMethod.values
                 .where((m) => m != PaymentMethod.both)
                 .map((m) => DropdownMenuItem(

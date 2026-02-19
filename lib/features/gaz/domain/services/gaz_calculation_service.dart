@@ -539,6 +539,7 @@ class GazCalculationService {
     required List<GazExpense> allExpenses,
     required List<Cylinder> cylinders,
     List<CylinderStock> stocks = const [],
+    double openingCash = 0.0,
   }) {
     final dayStart = DateTime(date.year, date.month, date.day);
     final dayEnd = dayStart.add(const Duration(days: 1));
@@ -572,9 +573,9 @@ class GazCalculationService {
           .fold<double>(0, (sum, s) => sum + s.totalAmount);
     }
 
-    // Le cash théorique est: Total Espèces - Dépenses (si on considère qu'elles sortent du cash)
+    // Le cash théorique est: Cash Initial + Total Espèces - Dépenses
     final cashSales = salesByPaymentMethod[PaymentMethod.cash] ?? 0.0;
-    final theoreticalCash = cashSales - totalExpenses;
+    final theoreticalCash = openingCash + cashSales - totalExpenses;
 
     // Ventes partagées par poids (quantité totale de bouteilles)
     final salesByCylinderWeight = <int, int>{};
@@ -597,6 +598,16 @@ class GazCalculationService {
       theoreticalStock[weight] = (theoreticalStock[weight] ?? 0) + fullStock;
     }
 
+    // Stock théorique (Bouteilles vides actuelles)
+    final theoreticalEmptyStock = <int, int>{};
+    for (final cylinder in cylinders) {
+      final weight = cylinder.weight;
+      final emptyStock = stocks
+          .where((s) => s.cylinderId == cylinder.id && s.status == CylinderStatus.emptyAtStore)
+          .fold<int>(0, (sum, s) => sum + s.quantity);
+      theoreticalEmptyStock[weight] = (theoreticalEmptyStock[weight] ?? 0) + emptyStock;
+    }
+
     return ReconciliationMetrics(
       date: dayStart,
       totalSales: totalSales,
@@ -605,6 +616,7 @@ class GazCalculationService {
       salesByPaymentMethod: salesByPaymentMethod,
       salesByCylinderWeight: salesByCylinderWeight,
       theoreticalStock: theoreticalStock,
+      theoreticalEmptyStock: theoreticalEmptyStock,
     );
   }
 
@@ -616,6 +628,10 @@ class GazCalculationService {
     required double physicalCash,
     required String closedBy,
     Map<int, int> physicalStock = const {},
+    Map<int, int> physicalEmptyStock = const {},
+    Map<int, int> openingFullStock = const {},
+    Map<int, int> openingEmptyStock = const {},
+    double openingCash = 0.0,
     String? notes,
   }) {
     return GazSession.fromMetrics(
@@ -625,6 +641,10 @@ class GazCalculationService {
       physicalCash: physicalCash,
       closedBy: closedBy,
       physicalStock: physicalStock,
+      physicalEmptyStock: physicalEmptyStock,
+      openingFullStock: openingFullStock,
+      openingEmptyStock: openingEmptyStock,
+      openingCash: openingCash,
       notes: notes,
     );
   }
@@ -720,6 +740,7 @@ class ReconciliationMetrics {
     required this.salesByPaymentMethod,
     required this.salesByCylinderWeight,
     this.theoreticalStock = const {},
+    this.theoreticalEmptyStock = const {},
   });
 
   final DateTime date;
@@ -729,4 +750,5 @@ class ReconciliationMetrics {
   final Map<PaymentMethod, double> salesByPaymentMethod;
   final Map<int, int> salesByCylinderWeight;
   final Map<int, int> theoreticalStock;
+  final Map<int, int> theoreticalEmptyStock;
 }

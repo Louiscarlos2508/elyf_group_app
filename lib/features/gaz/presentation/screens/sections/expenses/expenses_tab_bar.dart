@@ -13,10 +13,10 @@ class ExpensesTabBar extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
       child: Container(
-        padding: const EdgeInsets.all(3),
+        padding: const EdgeInsets.all(4),
         decoration: BoxDecoration(
-          color: const Color(0xFFECECF0),
-          borderRadius: BorderRadius.circular(14),
+          color: theme.colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
           children: [
@@ -27,23 +27,34 @@ class ExpensesTabBar extends StatelessWidget {
                 },
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 9,
-                    vertical: 5,
+                    horizontal: 12,
+                    vertical: 8,
                   ),
                   decoration: BoxDecoration(
                     color: tabController.index == 0
-                        ? Colors.white
+                        ? theme.colorScheme.surface
                         : Colors.transparent,
-                    borderRadius: BorderRadius.circular(14),
-                    border: tabController.index == 0
-                        ? Border.all(color: Colors.transparent, width: 1.3)
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: tabController.index == 0
+                        ? [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.05),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ]
                         : null,
                   ),
                   child: Text(
                     'Historique',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       fontSize: 14,
-                      color: const Color(0xFF0A0A0A),
+                      fontWeight: tabController.index == 0
+                          ? FontWeight.bold
+                          : FontWeight.normal,
+                      color: tabController.index == 0
+                          ? theme.colorScheme.onSurface
+                          : theme.colorScheme.onSurfaceVariant,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -57,20 +68,34 @@ class ExpensesTabBar extends StatelessWidget {
                 },
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 9,
-                    vertical: 5,
+                    horizontal: 12,
+                    vertical: 8,
                   ),
                   decoration: BoxDecoration(
                     color: tabController.index == 1
-                        ? Colors.white
+                        ? theme.colorScheme.surface
                         : Colors.transparent,
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: tabController.index == 1
+                        ? [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.05),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ]
+                        : null,
                   ),
                   child: Text(
                     'Par catégorie',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       fontSize: 14,
-                      color: const Color(0xFF0A0A0A),
+                      fontWeight: tabController.index == 1
+                          ? FontWeight.bold
+                          : FontWeight.normal,
+                      color: tabController.index == 1
+                          ? theme.colorScheme.onSurface
+                          : theme.colorScheme.onSurfaceVariant,
                     ),
                     textAlign: TextAlign.center,
                   ),

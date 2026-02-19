@@ -14,6 +14,7 @@ class RetailStatisticsTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
     final salesAsync = ref.watch(gasSalesProvider);
 
     return salesAsync.when(
@@ -78,7 +79,7 @@ class RetailStatisticsTab extends ConsumerWidget {
                             label: 'Ventes aujourd\'hui',
                             value: '${todaySales.length}',
                             icon: Icons.shopping_cart,
-                            color: const Color(0xFF3B82F6),
+                            color: theme.colorScheme.primary,
                           ),
                         ),
                         const SizedBox(width: AppSpacing.md),
@@ -88,7 +89,7 @@ class RetailStatisticsTab extends ConsumerWidget {
                             value: CurrencyFormatter.formatDouble(todayRevenue),
                             subtitle: 'FCFA',
                             icon: Icons.attach_money,
-                            color: const Color(0xFF10B981),
+                            color: theme.colorScheme.secondary,
                           ),
                         ),
                       ],
@@ -103,7 +104,7 @@ class RetailStatisticsTab extends ConsumerWidget {
                             value: CurrencyFormatter.formatDouble(weekRevenue),
                             subtitle: 'FCFA',
                             icon: Icons.calendar_today,
-                            color: const Color(0xFF6366F1),
+                            color: theme.colorScheme.tertiary,
                           ),
                         ),
                         const SizedBox(width: AppSpacing.md),
@@ -113,7 +114,7 @@ class RetailStatisticsTab extends ConsumerWidget {
                             value: CurrencyFormatter.formatDouble(monthRevenue),
                             subtitle: 'FCFA',
                             icon: Icons.calendar_month,
-                            color: const Color(0xFF8B5CF6),
+                            color: theme.colorScheme.primary.withValues(alpha: 0.7),
                           ),
                         ),
                       ],
@@ -133,7 +134,7 @@ class RetailStatisticsTab extends ConsumerWidget {
                       'Ventes récentes',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: const Color(0xFF101828),
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -150,26 +151,24 @@ class RetailStatisticsTab extends ConsumerWidget {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(
+                             Icon(
                               Icons.receipt_long,
                               size: 64,
-                              color: Colors.grey[400],
+                              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
                             ),
                             const SizedBox(height: 16),
                             Text(
                               'Aucune vente enregistrée',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleMedium
-                                  ?.copyWith(color: Colors.grey[600]),
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
                             ),
                             const SizedBox(height: 8),
                             Text(
                               'Les ventes effectuées apparaîtront ici',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
-                                  ?.copyWith(color: Colors.grey[500]),
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                              ),
                             ),
                           ],
                         ),
@@ -191,16 +190,16 @@ class RetailStatisticsTab extends ConsumerWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
+            Icon(Icons.error_outline, size: 64, color: theme.colorScheme.error.withValues(alpha: 0.5)),
             const SizedBox(height: 16),
             Text(
               'Erreur de chargement',
-              style: TextStyle(color: Colors.red[700]),
+              style: TextStyle(color: theme.colorScheme.error),
             ),
             const SizedBox(height: 8),
             Text(
               e.toString(),
-              style: TextStyle(color: Colors.grey[600], fontSize: 12),
+              style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 12),
               textAlign: TextAlign.center,
             ),
           ],
@@ -225,12 +224,19 @@ class _RetailSaleItem extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Colors.black.withValues(alpha: 0.1),
+          color: theme.colorScheme.outline.withValues(alpha: 0.1),
           width: 1,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -246,7 +252,7 @@ class _RetailSaleItem extends StatelessWidget {
                       sale.customerName ?? 'Client anonyme',
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: const Color(0xFF101828),
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
                     if (sale.customerPhone != null) ...[
@@ -254,7 +260,7 @@ class _RetailSaleItem extends StatelessWidget {
                       Text(
                         sale.customerPhone!,
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: const Color(0xFF4A5565),
+                          color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -267,14 +273,14 @@ class _RetailSaleItem extends StatelessWidget {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF3B82F6).withValues(alpha: 0.1),
+                  color: theme.colorScheme.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   CurrencyFormatter.formatDouble(sale.totalAmount),
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: const Color(0xFF3B82F6),
+                    color: theme.colorScheme.primary,
                   ),
                 ),
               ),
@@ -292,7 +298,7 @@ class _RetailSaleItem extends StatelessWidget {
               Text(
                 '${sale.quantity} bouteille${sale.quantity > 1 ? 's' : ''}',
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: const Color(0xFF4A5565),
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
               const SizedBox(width: 16),
@@ -305,7 +311,7 @@ class _RetailSaleItem extends StatelessWidget {
               Text(
                 dateFormat.format(sale.saleDate),
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: const Color(0xFF4A5565),
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
             ],

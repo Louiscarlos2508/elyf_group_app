@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../../../core/tenant/tenant_provider.dart';
 import '../../domain/entities/expense_record.dart';
+import '../../domain/entities/closing.dart';
 
 /// Form for creating/editing an expense record.
 class ExpenseForm extends ConsumerStatefulWidget {
@@ -24,6 +26,7 @@ class ExpenseFormState extends ConsumerState<ExpenseForm> {
   ExpenseCategory _category = ExpenseCategory.carburant;
   DateTime _selectedDate = DateTime.now();
   String? _receiptPath;
+  PaymentMethod _paymentMethod = PaymentMethod.cash;
 
   @override
   void initState() {
@@ -36,6 +39,7 @@ class ExpenseFormState extends ConsumerState<ExpenseForm> {
       _selectedDate = expense.date;
       _notesController.text = expense.notes ?? '';
       _receiptPath = expense.receiptPath;
+      _paymentMethod = expense.paymentMethod;
     }
   }
 
@@ -59,7 +63,69 @@ class ExpenseFormState extends ConsumerState<ExpenseForm> {
     }
   }
 
+  Widget _buildSessionWarning(BuildContext context, WidgetRef ref) {
+    final sessionAsync = ref.watch(currentClosingSessionProvider);
+    final theme = Theme.of(context);
+
+    return sessionAsync.maybeWhen(
+      data: (session) {
+        if (session != null && session.status == ClosingStatus.open) {
+          return const SizedBox.shrink();
+        }
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 24),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.errorContainer.withValues(alpha: 0.8),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: theme.colorScheme.error.withValues(alpha: 0.3)),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: theme.colorScheme.error),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Session de trésorerie fermée',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onErrorContainer,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Vous devez ouvrir une session dans l\'onglet "Trésorerie" avant de pouvoir enregistrer une dépense.',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onErrorContainer,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+      orElse: () => const SizedBox.shrink(),
+    );
+  }
+
   Future<void> submit() async {
+    // 0. Vérifier la session de trésorerie
+    final currentSession = await ref.read(currentClosingSessionProvider.future);
+    if (currentSession == null || currentSession.status != ClosingStatus.open) {
+      if (!mounted) return;
+      NotificationService.showError(
+        context,
+        'La session de trésorerie est fermée. Veuillez l\'ouvrir avant d\'enregistrer une dépense.',
+      );
+      return;
+    }
+
     if (!_formKey.currentState!.validate()) return;
 
     try {
@@ -77,6 +143,7 @@ class ExpenseFormState extends ConsumerState<ExpenseForm> {
         createdAt: widget.expense?.createdAt ?? DateTime.now(),
         updatedAt: widget.expense != null ? DateTime.now() : null,
         receiptPath: _receiptPath,
+        paymentMethod: _paymentMethod,
       );
 
       if (widget.expense == null) {
@@ -106,6 +173,10 @@ class ExpenseFormState extends ConsumerState<ExpenseForm> {
         return Icons.build;
       case ExpenseCategory.achatsDivers:
         return Icons.shopping_cart;
+      case ExpenseCategory.salaires:
+        return Icons.people_alt;
+      case ExpenseCategory.achatMatieresPremieres:
+        return Icons.inventory_2;
       case ExpenseCategory.autres:
         return Icons.more_horiz;
     }
@@ -123,6 +194,7 @@ class ExpenseFormState extends ConsumerState<ExpenseForm> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            _buildSessionWarning(context, ref),
             // Section Reçu
             FormImagePicker(
               initialImagePath: _receiptPath,
@@ -183,7 +255,12 @@ class ExpenseFormState extends ConsumerState<ExpenseForm> {
                               color: colors.primary.withValues(alpha: 0.7),
                             ),
                             const SizedBox(width: 12),
-                            Text(category.label),
+                            Expanded(
+                              child: Text(
+                                category.label,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
                           ],
                         ),
                       );
@@ -241,6 +318,8 @@ class ExpenseFormState extends ConsumerState<ExpenseForm> {
                   ),
                   const SizedBox(height: 16),
                   _buildDateField(),
+                  const SizedBox(height: 16),
+                  _buildPaymentMethodSelector(),
                 ],
               ),
             ),
@@ -315,6 +394,40 @@ class ExpenseFormState extends ConsumerState<ExpenseForm> {
       filled: true,
       fillColor: colors.surfaceContainerLow.withValues(alpha: 0.3),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+    );
+  }
+
+  Widget _buildPaymentMethodSelector() {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    return DropdownButtonFormField<PaymentMethod>(
+      initialValue: _paymentMethod,
+      decoration: _buildInputDecoration(
+        label: 'Mode de paiement',
+        icon: Icons.account_balance_wallet_rounded,
+      ),
+      items: [
+        PaymentMethod.cash,
+        PaymentMethod.mobileMoney,
+      ].map((method) {
+        return DropdownMenuItem(
+          value: method,
+          child: Row(
+            children: [
+              Icon(
+                method == PaymentMethod.cash ? Icons.money : Icons.phone_android,
+                size: 18,
+                color: colors.primary.withValues(alpha: 0.7),
+              ),
+              const SizedBox(width: 12),
+              Text(method.label),
+            ],
+          ),
+        );
+      }).toList(),
+      onChanged: (v) {
+        if (v != null) setState(() => _paymentMethod = v);
+      },
     );
   }
 

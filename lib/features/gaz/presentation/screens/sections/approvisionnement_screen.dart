@@ -72,6 +72,7 @@ class _ApprovisionnementScreenState
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final isMobile = MediaQuery.of(context).size.width < 600;
     final activeEnterpriseAsync = ref.watch(activeEnterpriseProvider);
 
@@ -92,54 +93,54 @@ class _ApprovisionnementScreenState
         _enterpriseId = activeEnterprise.id;
 
         return Container(
-      color: const Color(0xFFF9FAFB),
-      child: Column(
-        children: [
-          // Header
-          ApprovisionnementHeader(
-            isMobile: isMobile,
-            onNewTour: _showNewTourDialog,
-          ),
-          // Tabs and content
-          Expanded(
-            child: Column(
-              children: [
-                // Custom tab bar
-                ApprovisionnementTabBar(tabController: _tabController),
-                // Content
-                Expanded(
-                  child: TabBarView(
-                    controller: _tabController,
-                    children: [
-                      ToursListTab(
-                        enterpriseId: _enterpriseId!,
-                        tourStatus: null,
-                        title: 'Tours en cours',
-                        onNewTour: _showNewTourDialog,
+          color: theme.colorScheme.surface,
+          child: Column(
+            children: [
+              // Header
+              ApprovisionnementHeader(
+                isMobile: isMobile,
+                onNewTour: _showNewTourDialog,
+              ),
+              // Tabs and content
+              Expanded(
+                child: Column(
+                  children: [
+                    // Custom tab bar
+                    ApprovisionnementTabBar(tabController: _tabController),
+                    // Content
+                    Expanded(
+                      child: TabBarView(
+                        controller: _tabController,
+                        children: [
+                          ToursListTab(
+                            enterpriseId: _enterpriseId!,
+                            tourStatus: null,
+                            title: 'Tours en cours',
+                            onNewTour: _showNewTourDialog,
+                          ),
+                          ToursListTab(
+                            enterpriseId: _enterpriseId!,
+                            tourStatus: TourStatus.closure,
+                            title: 'Historique',
+                            onNewTour: _showNewTourDialog,
+                            emptyStateMessage: 'Aucun tour dans l\'historique',
+                          ),
+                        ],
                       ),
-                      ToursListTab(
-                        enterpriseId: _enterpriseId!,
-                        tourStatus: TourStatus.closure,
-                        title: 'Historique',
-                        onNewTour: _showNewTourDialog,
-                        emptyStateMessage: 'Aucun tour dans l\'historique',
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
-    );
+        );
       },
       loading: () => Container(
-        color: const Color(0xFFF9FAFB),
+        color: Theme.of(context).colorScheme.surface,
         child: AppShimmers.list(context),
       ),
       error: (error, stack) => Container(
-        color: const Color(0xFFF9FAFB),
+        color: Theme.of(context).colorScheme.surface,
         child: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),

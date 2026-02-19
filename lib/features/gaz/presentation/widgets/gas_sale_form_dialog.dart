@@ -301,7 +301,7 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
                     if (widget.saleType == SaleType.wholesale) ...[
                       const SizedBox(height: 16),
                       DropdownButtonFormField<String>(
-                        value: _selectedTier,
+                        initialValue: _selectedTier,
                         decoration: const InputDecoration(
                           labelText: 'Tier de prix *',
                           prefixIcon: Icon(Icons.loyalty),

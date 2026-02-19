@@ -77,7 +77,8 @@ class _ProductionEventDialogState extends State<ProductionEventDialog> {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 500),
         child: ElyfCard(
-          isGlass: true,
+          isGlass: false,
+          backgroundColor: colors.surface,
           padding: EdgeInsets.zero,
           child: Form(
             key: _formKey,
@@ -89,11 +90,7 @@ class _ProductionEventDialogState extends State<ProductionEventDialog> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [colors.primary.withValues(alpha: 0.1), colors.surface],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
+                    color: colors.surfaceContainerLow,
                   ),
                   child: Row(
                     children: [
@@ -145,7 +142,7 @@ class _ProductionEventDialogState extends State<ProductionEventDialog> {
                         ElyfCard(
                           padding: EdgeInsets.zero,
                           borderRadius: 20,
-                          backgroundColor: colors.surfaceContainerLow.withValues(alpha: 0.3),
+                          backgroundColor: colors.surfaceContainerLow,
                           child: Column(
                             children: ProductionEventType.values.map((type) {
                               return RadioListTile<ProductionEventType>(
@@ -226,7 +223,7 @@ class _ProductionEventDialogState extends State<ProductionEventDialog> {
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          color: colors.surfaceContainerLow.withValues(alpha: 0.3),
+          color: colors.surfaceContainerLow,
           border: Border.all(color: colors.outline.withValues(alpha: 0.1)),
         ),
         child: Column(
@@ -260,7 +257,7 @@ class _ProductionEventDialogState extends State<ProductionEventDialog> {
       enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: colors.outline.withValues(alpha: 0.1))),
       focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: colors.primary, width: 2)),
       filled: true,
-      fillColor: colors.surfaceContainerLow.withValues(alpha: 0.3),
+      fillColor: colors.surfaceContainerLow,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
     );
   }

@@ -1,12 +1,14 @@
-import '../../domain/entities/sale.dart';
-import '../../domain/entities/customer_account.dart';
-import '../../domain/entities/expense.dart';
-import '../../domain/entities/expense_record.dart';
-import '../../domain/entities/credit_payment.dart';
-import '../../domain/entities/salary_payment.dart';
-import '../../domain/entities/production_payment.dart';
-import '../../domain/entities/production_session.dart';
-import '../../domain/entities/production_session_status.dart';
+import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/sale.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/customer_account.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/expense.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/expense_record.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/credit_payment.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/salary_payment.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/production_payment.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/production_session.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/production_session_status.dart';
+import 'package:elyf_groupe_app/shared/domain/entities/treasury_operation.dart';
 
 /// Service for calculating dashboard metrics.
 ///
@@ -92,8 +94,11 @@ class DashboardCalculationService {
     required DateTime monthStart,
   }) {
     final generalExpenses = expenses
-        .where((e) =>
-            e.date.isAfter(monthStart) || e.date.isAtSameMomentAs(monthStart))
+        .where((e) {
+          final isInMonth = e.date.isAfter(monthStart) || e.date.isAtSameMomentAs(monthStart);
+          // Exclude 'Salaires' because they are aggregated separately below from salaryPayments/productionPayments
+          return isInMonth && e.category != ExpenseCategory.salaires;
+        })
         .fold<int>(0, (sum, e) => sum + e.amountCfa);
 
     final fixedSalaries = salaryPayments
@@ -276,40 +281,71 @@ class DashboardCalculationService {
     required List<Sale> sales,
     required List<CreditPayment> creditPayments,
     required List<ProductionSession> sessions,
+    required List<ExpenseRecord> expenses,
+    List<TreasuryOperation> treasuryOperations = const [],
     DateTime? referenceDate,
   }) {
     final now = referenceDate ?? DateTime.now();
     final startOfDay = DateTime(now.year, now.month, now.day);
+    final endOfDay = startOfDay.add(const Duration(days: 1));
     
     // Filter for today
     final todaySales = sales.where((s) {
       final sDate = s.date;
       return sDate.isAfter(startOfDay.subtract(const Duration(milliseconds: 1))) && 
-             sDate.isBefore(startOfDay.add(const Duration(days: 1)));
+             sDate.isBefore(endOfDay);
     }).toList();
 
     final todayPayments = creditPayments.where((p) {
         final pDate = p.date;
         return pDate.isAfter(startOfDay.subtract(const Duration(milliseconds: 1))) && 
-               pDate.isBefore(startOfDay.add(const Duration(days: 1)));
+               pDate.isBefore(endOfDay);
+    }).toList();
+
+    final todayExpenses = expenses.where((e) {
+      final eDate = e.date;
+      return eDate.isAfter(startOfDay.subtract(const Duration(milliseconds: 1))) && 
+             eDate.isBefore(endOfDay);
+    }).toList();
+
+    final todayOps = treasuryOperations.where((op) {
+      final opDate = op.date;
+      return opDate.isAfter(startOfDay.subtract(const Duration(milliseconds: 1))) && 
+             opDate.isBefore(endOfDay);
     }).toList();
 
     // 1. Revenue (Total Price of Today's Sales)
     final revenue = todaySales.fold<int>(0, (sum, s) => sum + s.totalPrice);
 
-    // 2. Collections from Today's Sales (Initial Payments)
-    final collectionsFromSales = todaySales.fold<int>(0, (sum, s) => sum + s.amountPaid);
+    // 2. Collections (Breakdown)
+    final cashCollectionsFromSales = todaySales.fold<int>(0, (sum, s) => sum + s.cashAmount);
+    final mmCollectionsFromSales = todaySales.fold<int>(0, (sum, s) => sum + s.orangeMoneyAmount);
 
-    // 3. Collections from Credit Payments (Recoveries made today)
-    final collectionsFromCredit = todayPayments.fold<int>(0, (sum, p) => sum + p.amount);
+    final cashCollectionsFromCredit = todayPayments.fold<int>(0, (sum, p) => sum + p.cashAmount);
+    final mmCollectionsFromCredit = todayPayments.fold<int>(0, (sum, p) => sum + p.orangeMoneyAmount);
 
-    final totalCollections = collectionsFromSales + collectionsFromCredit;
+    // Manual Operations: Apport (Supply)
+    final cashApport = todayOps
+        .where((op) => op.type == TreasuryOperationType.supply && 
+                       op.toAccount == PaymentMethod.cash &&
+                       op.referenceEntityType == null)
+        .fold<int>(0, (sum, op) => sum + op.amount);
+    final mmApport = todayOps
+        .where((op) => op.type == TreasuryOperationType.supply && 
+                       op.toAccount == PaymentMethod.mobileMoney &&
+                       op.referenceEntityType == null)
+        .fold<int>(0, (sum, op) => sum + op.amount);
 
-    // 4. Production Volume Today
+    final totalCashCollections = cashCollectionsFromSales + cashCollectionsFromCredit + cashApport;
+
+    final totalMMCollections = mmCollectionsFromSales + mmCollectionsFromCredit + mmApport;
+    final totalCollections = totalCashCollections + totalMMCollections;
+
+    // 3. Production Volume Today
     final productionVolume = sessions.where((s) {
       final sDate = s.date;
       return sDate.isAfter(startOfDay.subtract(const Duration(milliseconds: 1))) && 
-             sDate.isBefore(startOfDay.add(const Duration(days: 1))) &&
+             sDate.isBefore(endOfDay) &&
              s.status != ProductionSessionStatus.cancelled;
     }).fold<int>(0, (sum, s) {
       final dailySum = s.totalPacksProduitsJournalier;
@@ -317,9 +353,40 @@ class DashboardCalculationService {
       return sum + (dailySum > 0 ? dailySum : finalQty);
     });
 
+    // 4. Expenses Today (Breakdown)
+    final cashExpensesFromRecords = todayExpenses
+        .where((e) => e.paymentMethod == PaymentMethod.cash)
+        .fold<int>(0, (sum, e) => sum + e.amountCfa);
+    final mmExpensesFromRecords = todayExpenses
+        .where((e) => e.paymentMethod == PaymentMethod.mobileMoney)
+        .fold<int>(0, (sum, e) => sum + e.amountCfa);
+
+    // Manual Operations: Retrait (Removal)
+    final cashRetrait = todayOps
+        .where((op) => op.type == TreasuryOperationType.removal && 
+                       op.fromAccount == PaymentMethod.cash &&
+                       op.referenceEntityType == null)
+        .fold<int>(0, (sum, op) => sum + op.amount);
+    final mmRetrait = todayOps
+        .where((op) => op.type == TreasuryOperationType.removal && 
+                       op.fromAccount == PaymentMethod.mobileMoney &&
+                       op.referenceEntityType == null)
+        .fold<int>(0, (sum, op) => sum + op.amount);
+
+    final totalCashExpenses = cashExpensesFromRecords + cashRetrait;
+    final totalMMExpenses = mmExpensesFromRecords + mmRetrait;
+    final totalExpenses = totalCashExpenses + totalMMExpenses;
+
     return DailyDashboardMetrics(
       revenue: revenue,
       collections: totalCollections,
+      cashCollections: totalCashCollections,
+      mobileMoneyCollections: totalMMCollections,
+      expenses: totalExpenses,
+      cashExpenses: totalCashExpenses,
+      mobileMoneyExpenses: totalMMExpenses,
+      apports: cashApport + mmApport,
+      retraits: cashRetrait + mmRetrait,
       salesCount: todaySales.length,
       sales: todaySales,
       productionVolume: productionVolume,
@@ -332,6 +399,13 @@ class DailyDashboardMetrics {
   const DailyDashboardMetrics({
     required this.revenue,
     required this.collections,
+    this.cashCollections = 0,
+    this.mobileMoneyCollections = 0,
+    this.expenses = 0,
+    this.cashExpenses = 0,
+    this.mobileMoneyExpenses = 0,
+    this.apports = 0,
+    this.retraits = 0,
     required this.salesCount,
     required this.sales,
     this.productionVolume = 0,
@@ -339,6 +413,13 @@ class DailyDashboardMetrics {
 
   final int revenue;
   final int collections;
+  final int cashCollections;
+  final int mobileMoneyCollections;
+  final int expenses;
+  final int cashExpenses;
+  final int mobileMoneyExpenses;
+  final int apports;
+  final int retraits;
   final int salesCount;
   final List<Sale> sales;
   final int productionVolume;

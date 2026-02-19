@@ -24,6 +24,7 @@ class CollectionNames {
   static const String creditPayments = 'credit_payments';
   static const String dailyWorkers = 'daily_workers';
   static const String expenseRecords = 'expense_records';
+  static const String eauMineraleTreasuryOperations = 'eau_minerale_treasury_operations';
 
   // Collections Gaz
   static const String cylinders = 'cylinders';

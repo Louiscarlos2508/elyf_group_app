@@ -50,6 +50,8 @@ final collectionPaths = <String, String Function(String?)>{
       'enterprises/${enterpriseId!}/packagingStocks',
   'packaging_stock_movements': (enterpriseId) =>
       'enterprises/${enterpriseId!}/packagingStockMovements',
+  'eau_minerale_treasury_operations': (enterpriseId) =>
+      'enterprises/${enterpriseId!}/eauMineraleTreasuryOperations',
 
   // Orange Money module
   'agents': (enterpriseId) => 'enterprises/${enterpriseId!}/agents',
@@ -100,10 +102,6 @@ final collectionPaths = <String, String Function(String?)>{
       'enterprises/${enterpriseId!}/gazSessions',
   'gaz_treasury_operations': (enterpriseId) =>
       'enterprises/${enterpriseId!}/gazTreasuryOperations',
-  'inventory_audits': (enterpriseId) =>
-      'enterprises/${enterpriseId!}/inventoryAudits',
-  'wholesalers': (enterpriseId) =>
-      'enterprises/${enterpriseId!}/wholesalers',
 
   // Audit Trail module
   'audit_trail': (enterpriseId) => 'enterprises/${enterpriseId!}/auditTrail',

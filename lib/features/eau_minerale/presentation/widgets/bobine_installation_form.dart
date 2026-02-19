@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
 
 import 'package:elyf_groupe_app/core/logging/app_logger.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
@@ -7,6 +8,7 @@ import '../../domain/entities/bobine_usage.dart';
 import '../../domain/entities/machine.dart';
 import 'bobine_usage_form_field.dart' show bobineStocksDisponiblesProvider;
 import 'package:elyf_groupe_app/shared.dart';
+import '../../domain/entities/product.dart';
 
 /// Formulaire pour installer une bobine.
 /// Crée automatiquement une nouvelle bobine et l'installe sur la machine.
@@ -32,6 +34,7 @@ class _BobineInstallationFormState
   TimeOfDay _heureInstallation = TimeOfDay.now();
   bool _isLoading = false;
   BobineUsage? _bobineNonFinieExistante;
+  Product? _selectedBobineProduct;
   bool _aChargeBobines = false;
 
   @override
@@ -76,19 +79,23 @@ class _BobineInstallationFormState
         if (bobineNonFinieTrouvee != null) break;
       }
 
-      setState(() {
-        _bobineNonFinieExistante = bobineNonFinieTrouvee;
-        _aChargeBobines = true;
-      });
+      if (mounted) {
+        setState(() {
+          _bobineNonFinieExistante = bobineNonFinieTrouvee;
+          _aChargeBobines = true;
+        });
+      }
     } catch (e) {
       AppLogger.error(
         'Erreur lors du chargement de la bobine non finie: $e',
         name: 'eau_minerale.production',
         error: e,
       );
-      setState(() {
-        _aChargeBobines = true;
-      });
+      if (mounted) {
+        setState(() {
+          _aChargeBobines = true;
+        });
+      }
     }
   }
 
@@ -110,41 +117,41 @@ class _BobineInstallationFormState
 
       if (_bobineNonFinieExistante != null) {
         // Réutiliser la bobine non finie existante (ne pas décrémenter car déjà fait)
-        // IMPORTANT: On garde la date d'installation d'origine pour que le contrôleur
-        // détecte bien que c'est la même bobine (comparaison par date).
+        // On conserve son ID unique d'utilisation
         usage = _bobineNonFinieExistante!.copyWith(
-          dateInstallation: _bobineNonFinieExistante!.dateInstallation,
-          heureInstallation: _bobineNonFinieExistante!.heureInstallation,
-          // On peut éventuellement mettre à jour lastUsageDate ici si on avait champ
+          isReused: true,
         );
       } else {
-        // Prendre automatiquement le premier type de bobine disponible.
-        // Le stock n'est pas décrémenté ici : il le sera uniquement à la
-        // sauvegarde de la session (create/update) pour éviter double
-        // décrémentation si l'installation est modifiée ou écrasée.
-        final bobineStocks = await ref.read(
-          bobineStocksDisponiblesProvider.future,
-        );
-        if (bobineStocks.isEmpty) {
-          if (mounted) {
-            NotificationService.showError(
-              context,
-              'Aucune bobine disponible en stock',
-            );
+        if (_selectedBobineProduct == null) {
+          final bobineStocks = await ref.read(bobineStocksDisponiblesProvider.future);
+          if (bobineStocks.isNotEmpty) {
+            final first = bobineStocks.first;
+            // Tenter de trouver le produit correspondant par nom
+            final allProds = await ref.read(productsProvider.future);
+            _selectedBobineProduct = allProds.where((p) => p.name.toLowerCase() == first.type.toLowerCase()).firstOrNull;
           }
-          setState(() => _isLoading = false);
+        }
+
+        if (_selectedBobineProduct == null) {
+          if (mounted) {
+            NotificationService.showError(context, 'Veuillez sélectionner un type de bobine');
+            setState(() => _isLoading = false);
+          }
           return;
         }
 
-        final bobineStock = bobineStocks.first;
         usage = BobineUsage(
-          bobineType: bobineStock.type,
+          id: const Uuid().v4(), // Nouvel ID unique pour cette nouvelle bobine physique
+          bobineType: _selectedBobineProduct!.name,
+          productId: _selectedBobineProduct!.id,
+          productName: _selectedBobineProduct!.name,
           machineId: widget.machine.id,
           machineName: widget.machine.name,
           dateInstallation: dateHeureInstallation,
           heureInstallation: dateHeureInstallation,
           estInstallee: true,
           estFinie: false,
+          isReused: false,
         );
       }
 
@@ -232,11 +239,17 @@ class _BobineInstallationFormState
 
             const SizedBox(height: 16),
 
+            // Bobine Product Selector (if not reusing)
+            if (_bobineNonFinieExistante == null) ...[
+              const SizedBox(height: 16),
+              _buildBobineProductSelector(theme, colors),
+            ],
+
             // Configuration Section
             ElyfCard(
               padding: const EdgeInsets.all(20),
               borderRadius: 24,
-              backgroundColor: colors.surfaceContainerLow.withValues(alpha: 0.5),
+              backgroundColor: colors.surfaceContainerLow,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -374,6 +387,54 @@ class _BobineInstallationFormState
     );
   }
 
+  Widget _buildBobineProductSelector(ThemeData theme, ColorScheme colors) {
+    return ref.watch(productsProvider).when(
+      data: (allProducts) {
+        final products = allProducts.where((p) => p.name.toLowerCase().contains('bobine')).toList();
+        if (products.isEmpty) return const SizedBox.shrink();
+
+        // Auto-sélection si une seule bobine
+        if (_selectedBobineProduct == null && products.length == 1) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) setState(() => _selectedBobineProduct = products.first);
+          });
+        }
+
+        return ElyfCard(
+          padding: const EdgeInsets.all(20),
+          borderRadius: 24,
+          backgroundColor: colors.surfaceContainerLow,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Choix de la Bobine',
+                style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<Product>(
+                value: products.contains(_selectedBobineProduct) ? _selectedBobineProduct : null,
+                borderRadius: BorderRadius.circular(16),
+                decoration: InputDecoration(
+                  prefixIcon: const Icon(Icons.inventory_2_outlined),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+                items: products.map((p) => DropdownMenuItem(
+                  value: p,
+                  child: Text(p.name),
+                )).toList(),
+                onChanged: products.length <= 1 ? null : (p) => setState(() => _selectedBobineProduct = p),
+                validator: (v) => v == null ? 'Sélectionnez une bobine' : null,
+              ),
+            ],
+          ),
+        );
+      },
+      loading: () => const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator())),
+      error: (_, __) => const SizedBox.shrink(),
+    );
+  }
+
   Widget _buildStockInfo(ThemeData theme, ColorScheme colors, List<dynamic> bobineStocks) {
     if (bobineStocks.isEmpty) return _buildEmptyStockWarning(theme, colors);
     
@@ -429,7 +490,7 @@ class _BobineInstallationFormState
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: colors.surfaceContainerLow.withValues(alpha: 0.3),
+          color: colors.surfaceContainerLow,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: colors.outline.withValues(alpha: 0.1)),
         ),
@@ -493,7 +554,7 @@ class _BobineInstallationFormState
       firstDate: DateTime.now().subtract(const Duration(days: 30)),
       lastDate: DateTime.now(),
     );
-    if (picked != null) {
+    if (picked != null && mounted) {
       setState(() => _dateInstallation = picked);
     }
   }
@@ -503,7 +564,7 @@ class _BobineInstallationFormState
       context: context,
       initialTime: _heureInstallation,
     );
-    if (picked != null) {
+    if (picked != null && mounted) {
       setState(() => _heureInstallation = picked);
     }
   }

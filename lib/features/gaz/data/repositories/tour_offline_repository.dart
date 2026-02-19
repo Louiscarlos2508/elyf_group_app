@@ -4,9 +4,7 @@ import '../../../../core/errors/app_exceptions.dart';
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/offline_repository.dart';
-import '../../domain/entities/collection.dart';
 import '../../domain/entities/tour.dart';
-import '../../domain/entities/transport_expense.dart';
 import '../../domain/repositories/tour_repository.dart';
 
 /// Offline-first repository for Tour entities.

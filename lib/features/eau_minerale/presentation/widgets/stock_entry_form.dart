@@ -5,13 +5,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/errors/app_exceptions.dart';
-import '../../../../core/offline/providers.dart' as offline_providers;
 import '../../../../core/logging/app_logger.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../../../core/tenant/tenant_provider.dart';
-import '../../domain/entities/packaging_stock.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/packaging_stock.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/product.dart';
 
 /// Formulaire pour ajouter des matières premières en stock (bobines, emballages, autres).
 class StockEntryForm extends ConsumerStatefulWidget {
@@ -32,23 +32,17 @@ class StockEntryForm extends ConsumerStatefulWidget {
   ConsumerState<StockEntryForm> createState() => StockEntryFormState();
 }
 
-enum _StockEntryType { bobine, emballage }
-
 class StockEntryFormState extends ConsumerState<StockEntryForm> {
   final _formKey = GlobalKey<FormState>();
   final _quantityController = TextEditingController();
   final _supplierController = TextEditingController();
   final _priceController = TextEditingController();
   final _notesController = TextEditingController();
-  final _unitsPerLotController = TextEditingController(text: '1000'); // Valeur par défaut indicative
+  final _unitsPerLotController = TextEditingController(text: '1000');
 
-  _StockEntryType _selectedType = _StockEntryType.bobine;
+  Product? _selectedProduct;
   DateTime _selectedDate = DateTime.now();
-  bool _useLots = false; // Toggle pour saisir en lots au lieu d'unités
-  
-  // Type fixe pour toutes les bobines
-  static const String _bobineType = 'Bobine';
-
+  bool _useLots = false;
   bool _isLoading = false;
 
   @override
@@ -75,34 +69,35 @@ class StockEntryFormState extends ConsumerState<StockEntryForm> {
       return false;
     }
 
+    final selectedProduct = _selectedProduct;
+    if (selectedProduct == null) {
+      throw const ValidationException('Veuillez sélectionner un produit', 'MISSING_PRODUCT');
+    }
+
     AppLogger.debug('Starting stock entry submission', name: 'StockEntryForm');
     setState(() => _isLoading = true);
     try {
-      AppLogger.debug('Reading stock controller', name: 'StockEntryForm');
       final stockController = ref.read(stockControllerProvider);
-      final quantiteStr = _quantityController.text.trim();
-      AppLogger.debug('Quantité saisie: "$quantiteStr"', name: 'StockEntryForm');
+      final quantiteStr = _quantityController.text.trim().replaceAll(',', '.');
       
       // Valider et parser la quantité
       if (quantiteStr.isEmpty) {
-        AppLogger.debug('Quantité vide - validation failed', name: 'StockEntryForm');
         throw const ValidationException('La quantité est requise', 'MISSING_QUANTITY');
       }
       
-      final quantite = int.tryParse(quantiteStr);
+      final quantite = double.tryParse(quantiteStr);
       if (quantite == null || quantite <= 0) {
-        AppLogger.debug('Quantité invalide: $quantite', name: 'StockEntryForm');
-        throw const ValidationException('La quantité doit être un nombre entier positif', 'INVALID_QUANTITY');
+        throw const ValidationException('La quantité doit être un nombre positif', 'INVALID_QUANTITY');
       }
       
-      AppLogger.debug('Quantité validée: $quantite, Type: $_selectedType', name: 'StockEntryForm');
+      AppLogger.debug('Quantité validée: $quantite, Produit: ${selectedProduct.name}', name: 'StockEntryForm');
 
-      switch (_selectedType) {
-        case _StockEntryType.bobine:
-          AppLogger.debug('Recording bobine entry - calling recordBobineEntry', name: 'StockEntryForm');
+      final isBobine = selectedProduct.name.toLowerCase().contains('bobine');
+
+      if (isBobine) {
           await stockController.recordBobineEntry(
-            bobineType: _bobineType,
-            quantite: quantite,
+            bobineType: selectedProduct.name,
+            quantite: quantite.round(), // Les bobines restent en int
             prixUnitaire: _priceController.text.isEmpty
                 ? null
                 : int.tryParse(_priceController.text),
@@ -111,179 +106,73 @@ class StockEntryFormState extends ConsumerState<StockEntryForm> {
                 : _supplierController.text,
             notes: _notesController.text.isEmpty ? null : _notesController.text,
           );
-          break;
-
-        case _StockEntryType.emballage:
-          AppLogger.debug('Recording packaging entry - starting', name: 'StockEntryForm');
-          
-          // Récupérer ou créer le stock d'emballages
-          final packagingController = ref.read(
-            packagingStockControllerProvider,
-          );
-          var stockEmballage = await packagingController.fetchByType(
-            'Emballage',
-          );
+      } else {
+          final packagingId = 'packaging-${selectedProduct.name.toLowerCase().replaceAll(' ', '-')}';
+          final packagingController = ref.read(packagingStockControllerProvider);
+          var stockEmballage = await packagingController.fetchById(packagingId);
 
           if (stockEmballage == null) {
-            // Créer un nouveau stock d'emballages avec le facteur de conversion renseigné
-            final unitsPerLot = int.tryParse(_unitsPerLotController.text) ?? 1;
-            final packagingId = 'packaging-emballage';
+            final unitsPerLot = _useLots ? (int.tryParse(_unitsPerLotController.text) ?? selectedProduct.unitsPerLot) : selectedProduct.unitsPerLot;
             final enterpriseId = ref.read(activeEnterpriseProvider).value?.id ?? 'default';
             stockEmballage = PackagingStock(
               id: packagingId,
               enterpriseId: enterpriseId,
-              type: 'Emballage',
+              type: selectedProduct.name,
               quantity: 0, 
-              unit: 'unité',
+              unit: selectedProduct.unit,
               unitsPerLot: unitsPerLot,
-              fournisseur: _supplierController.text.isEmpty
-                  ? null
-                  : _supplierController.text,
-              prixUnitaire: _priceController.text.isEmpty
-                  ? null
-                  : int.tryParse(_priceController.text),
+              fournisseur: _supplierController.text.isEmpty ? null : _supplierController.text,
+              prixUnitaire: _priceController.text.isEmpty ? null : int.tryParse(_priceController.text),
               createdAt: _selectedDate,
               updatedAt: _selectedDate,
             );
-            
-            // On sauvegarde le stock avec sa configuration d'unité d'abord
             await packagingController.save(stockEmballage);
           } else if (_useLots) {
-             // Si on utilise des lots, on met à jour la configuration si elle a changé
-             // Cela permet de gérer les changements de conditionnement (ex: passage de 1000 à 500)
-             final newUnitsPerLot = int.tryParse(_unitsPerLotController.text) ?? 1;
+             final newUnitsPerLot = int.tryParse(_unitsPerLotController.text) ?? selectedProduct.unitsPerLot;
              if (newUnitsPerLot > 0 && stockEmballage.unitsPerLot != newUnitsPerLot) {
-               AppLogger.debug('Updating unitsPerLot from ${stockEmballage.unitsPerLot} to $newUnitsPerLot', name: 'StockEntryForm');
                await packagingController.save(stockEmballage.copyWith(unitsPerLot: newUnitsPerLot));
              }
           }
 
-          // Calculer le prix à l'unité si on saisit par lots
           int? prixFinalUnitaire;
           final prixSaisiStr = _priceController.text.trim();
           if (prixSaisiStr.isNotEmpty) {
             final prixSaisi = int.tryParse(prixSaisiStr) ?? 0;
             if (_useLots) {
-              final unitsPerLot = int.tryParse(_unitsPerLotController.text) ?? 1;
-              prixFinalUnitaire = (prixSaisi / unitsPerLot).round();
+              final unitsPerLot = int.tryParse(_unitsPerLotController.text) ?? stockEmballage.unitsPerLot;
+              prixFinalUnitaire = (prixSaisi / (unitsPerLot > 0 ? unitsPerLot : 1)).round();
             } else {
               prixFinalUnitaire = prixSaisi;
             }
           }
 
-          // Enregistrer l'entrée
-          final unitsPerLot = _useLots ? (int.tryParse(_unitsPerLotController.text) ?? 1) : null;
-          
+          final unitsPerLot = _useLots ? (int.tryParse(_unitsPerLotController.text) ?? stockEmballage.unitsPerLot) : null;
           await stockController.recordPackagingEntry(
             packagingId: stockEmballage.id,
-            packagingType: 'Emballage',
+            packagingType: selectedProduct.name,
             quantite: quantite,
             prixUnitaire: prixFinalUnitaire,
             isInLots: _useLots,
             unitsPerLot: unitsPerLot,
-            fournisseur: _supplierController.text.isEmpty
-                ? null
-                : _supplierController.text,
+            fournisseur: _supplierController.text.isEmpty ? null : _supplierController.text,
             notes: _notesController.text.isEmpty ? null : _notesController.text,
           );
-          break;
       }
 
-      if (!mounted) {
-        AppLogger.debug('Widget not mounted after submission', name: 'StockEntryForm');
-        return false;
-      }
+      if (!mounted) return false;
       
-      AppLogger.debug('Submission successful, invalidating state', name: 'StockEntryForm');
       ref.invalidate(stockStateProvider);
-      // Invalider tous les providers de mouvements pour rafraîchir l'historique
       ref.invalidate(stockMovementsProvider);
       
-      final message = _selectedType == _StockEntryType.bobine
+      final message = isBobine
           ? '$quantite bobine(s) ajoutée(s)'
           : '$quantite emballage(s) ajouté(s)';
-      AppLogger.debug('Showing success message: $message', name: 'StockEntryForm');
       NotificationService.showSuccess(context, message);
-      
-      AppLogger.debug('Returning true - FormDialog will close', name: 'StockEntryForm');
-      // Ne pas fermer le dialog ici - le FormDialog le fera automatiquement
-      // si on retourne true
       return true;
     } catch (e, stackTrace) {
       if (!mounted) return false;
-      
-      // Capturer l'erreur originale avant qu'elle ne soit convertie
-      final originalErrorString = e.toString();
-      final errorType = e.runtimeType.toString();
-      
-      // Logger l'erreur complète pour le débogage avec plus de détails
       final appException = ErrorHandler.instance.handleError(e, stackTrace);
-      AppLogger.error(
-        '=== ERROR IN STOCK ENTRY FORM === Error type: $errorType, Message: ${appException.message}',
-        name: 'StockEntryForm',
-        error: e,
-        stackTrace: stackTrace,
-      );
-      
-      // Extraire le message utilisateur-friendly
-      String errorMessage;
-      if (e is AppException) {
-        errorMessage = e.message;
-        // Si c'est une UnknownException, essayer d'extraire le message original
-        if (e is UnknownException) {
-          // L'erreur originale a été convertie, mais on peut au moins donner un message plus utile
-          // Vérifier si c'est une erreur de parsing ou autre
-          if (originalErrorString.toLowerCase().contains('format') ||
-              originalErrorString.toLowerCase().contains('parse')) {
-            errorMessage = 'Format de données invalide. Vérifiez les valeurs saisies.';
-          } else if (originalErrorString.toLowerCase().contains('null')) {
-            errorMessage = 'Données manquantes. Veuillez remplir tous les champs requis.';
-          } else {
-            errorMessage = 'Erreur lors de l\'enregistrement. Vérifiez les données saisies et réessayez.';
-          }
-        }
-      } else {
-        // Si c'est une erreur de synchronisation mais que les données sont sauvegardées localement,
-        // on affiche un message d'avertissement plutôt qu'une erreur
-        final errorString = e.toString().toLowerCase();
-        if (errorString.contains('sync') || errorString.contains('synchronization')) {
-          // Vérifier si la connexion est disponible
-          final isOnline = ref.read(offline_providers.isOnlineProvider);
-          final message = isOnline
-              ? 'Données enregistrées localement. La synchronisation sera effectuée en arrière-plan.'
-              : 'Données enregistrées localement. La synchronisation se fera automatiquement quand la connexion sera disponible.';
-          
-          NotificationService.showWarning(context, message);
-          // Invalider quand même pour rafraîchir l'affichage
-          ref.invalidate(stockStateProvider);
-          // Ne pas fermer le dialog ici - le FormDialog le fera automatiquement
-          // si on retourne true
-          return true; // Considérer comme succès car données sauvegardées
-        }
-        
-        // Extraire un message plus lisible depuis l'erreur originale
-        errorMessage = originalErrorString
-            .replaceAll('Exception: ', '')
-            .replaceAll('Error: ', '')
-            .replaceAll('Une erreur inattendue s\'est produite. Veuillez réessayer.', '')
-            .trim();
-        
-        // Détecter des erreurs spécifiques
-        final lowerError = errorMessage.toLowerCase();
-        if (lowerError.contains('format') || lowerError.contains('parse')) {
-          errorMessage = 'Format de données invalide. Vérifiez les valeurs saisies.';
-        } else if (lowerError.contains('null') || lowerError.contains('missing')) {
-          errorMessage = 'Données manquantes. Veuillez remplir tous les champs requis.';
-        } else if (lowerError.contains('duplicate') || lowerError.contains('existe déjà')) {
-          errorMessage = 'Cette entrée existe déjà.';
-        } else if (errorMessage.isEmpty || errorMessage == '') {
-          errorMessage = 'Erreur lors de l\'enregistrement. Vérifiez les données saisies et réessayez.';
-        } else if (errorMessage.length > 150) {
-          errorMessage = '${errorMessage.substring(0, 150)}...';
-        }
-      }
-      
-      NotificationService.showError(context, errorMessage);
+      NotificationService.showError(context, appException.message);
       return false;
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -307,7 +196,6 @@ class StockEntryFormState extends ConsumerState<StockEntryForm> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Section Type d'Entrée
             ElyfCard(
               padding: const EdgeInsets.all(20),
               borderRadius: 24,
@@ -320,7 +208,7 @@ class StockEntryFormState extends ConsumerState<StockEntryForm> {
                       Icon(Icons.inventory_2_rounded, size: 18, color: colors.primary),
                       const SizedBox(width: 8),
                       Text(
-                        'Type d\'Entrée Stock',
+                        'Matière Première',
                         style: theme.textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: colors.primary,
@@ -329,37 +217,60 @@ class StockEntryFormState extends ConsumerState<StockEntryForm> {
                     ],
                   ),
                   const SizedBox(height: 20),
-                  Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: colors.surfaceContainerLow,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: colors.outline.withValues(alpha: 0.1)),
-                    ),
-                    child: Row(
-                      children: [
-                        _buildTypeSegment(
-                          type: _StockEntryType.bobine,
-                          label: 'Bobine',
-                          icon: Icons.album_rounded,
-                          isSelected: _selectedType == _StockEntryType.bobine,
+                  ref.watch(rawMaterialsProvider).when(
+                    data: (products) {
+                      if (products.isEmpty) {
+                        return Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Text(
+                              'Aucune matière première configurée dans le catalogue.',
+                              style: theme.textTheme.bodyMedium?.copyWith(fontStyle: FontStyle.italic),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        );
+                      }
+                      
+                      if (_selectedProduct == null && products.isNotEmpty) {
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (mounted) setState(() => _selectedProduct = products.first);
+                        });
+                      }
+
+                      return DropdownButtonFormField<Product>(
+                        initialValue: _selectedProduct,
+                        decoration: _buildInputDecoration(
+                          label: 'Sélectionner une matière',
+                          icon: Icons.category_rounded,
                         ),
-                        const SizedBox(width: 4),
-                        _buildTypeSegment(
-                          type: _StockEntryType.emballage,
-                          label: 'Emballage',
-                          icon: Icons.layers_rounded,
-                          isSelected: _selectedType == _StockEntryType.emballage,
-                        ),
-                      ],
-                    ),
+                        items: products.map((p) {
+                          return DropdownMenuItem<Product>(
+                            value: p,
+                            child: Text(p.name),
+                          );
+                        }).toList(),
+                        onChanged: (p) {
+                          setState(() {
+                             _selectedProduct = p;
+                             if (p != null) {
+                               // Pour l'emballage, on force l'utilisation des lots
+                               _useLots = p.name.toLowerCase().contains('emballage');
+                               // Charger le facteur de conversion du produit
+                               _unitsPerLotController.text = p.unitsPerLot.toString();
+                             }
+                          });
+                        },
+                        validator: (v) => v == null ? 'Requis' : null,
+                      );
+                    },
+                    loading: () => const Center(child: CircularProgressIndicator()),
+                    error: (e, _) => Text('Erreur: $e'),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 16),
-
-            // Section Date & Quantité
             ElyfCard(
               padding: const EdgeInsets.all(20),
               borderRadius: 24,
@@ -381,7 +292,6 @@ class StockEntryFormState extends ConsumerState<StockEntryForm> {
                     ],
                   ),
                   const SizedBox(height: 20),
-                  // Date Picker Premium
                   InkWell(
                     onTap: () async {
                       final picked = await showDatePicker(
@@ -389,12 +299,6 @@ class StockEntryFormState extends ConsumerState<StockEntryForm> {
                         initialDate: _selectedDate,
                         firstDate: DateTime(2020),
                         lastDate: DateTime.now(),
-                        builder: (context, child) => Theme(
-                          data: theme.copyWith(
-                            colorScheme: colors.copyWith(primary: colors.primary),
-                          ),
-                          child: child!,
-                        ),
                       );
                       if (picked != null) setState(() => _selectedDate = picked);
                     },
@@ -431,51 +335,6 @@ class StockEntryFormState extends ConsumerState<StockEntryForm> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  if (_selectedType == _StockEntryType.emballage) ...[
-                    // Toggle Lot vs Unité
-                    Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: colors.surfaceContainerLow.withValues(alpha: 0.3),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: colors.outline.withValues(alpha: 0.1)),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: _buildUnitToggleSegment(
-                              isSelected: !_useLots,
-                              label: 'Unités',
-                              onTap: () => setState(() => _useLots = false),
-                            ),
-                          ),
-                          Expanded(
-                            child: _buildUnitToggleSegment(
-                              isSelected: _useLots,
-                              label: 'Lots',
-                              onTap: () => setState(() => _useLots = true),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    if (_useLots) ...[
-                      TextFormField(
-                        controller: _unitsPerLotController,
-                        decoration: _buildInputDecoration(
-                          label: 'Unités par Lot',
-                          icon: Icons.scale_rounded,
-                          hintText: 'Ex: 1000',
-                          suffixText: 'unités/lot',
-                        ),
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                        validator: (v) => _useLots && (v?.isEmpty ?? true) ? 'Requis' : null,
-                      ),
-                      const SizedBox(height: 16),
-                    ],
-                  ],
                   TextFormField(
                     controller: _quantityController,
                     decoration: _buildInputDecoration(
@@ -486,8 +345,10 @@ class StockEntryFormState extends ConsumerState<StockEntryForm> {
                           ? 'lot${quantite > 1 ? 's' : ''}'
                           : 'unité${quantite > 1 ? 's' : ''}',
                     ),
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'^\d*[.,]?\d*')),
+                    ],
                     style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                     validator: (v) => v?.isEmpty ?? true ? 'Requis' : null,
                   ),
@@ -495,8 +356,6 @@ class StockEntryFormState extends ConsumerState<StockEntryForm> {
               ),
             ),
             const SizedBox(height: 16),
-
-            // Section Détails Supplémentaires
             ElyfCard(
               padding: const EdgeInsets.all(20),
               borderRadius: 24,
@@ -530,11 +389,11 @@ class StockEntryFormState extends ConsumerState<StockEntryForm> {
                   TextFormField(
                     controller: _priceController,
                     decoration: _buildInputDecoration(
-                      label: (_selectedType == _StockEntryType.emballage && _useLots)
+                      label: (_selectedProduct != null && _selectedProduct!.name.toLowerCase().contains('emballage') && _useLots)
                           ? 'Prix du lot total (FCFA, Optionnel)'
                           : 'Prix unitaire (FCFA, Optionnel)',
                       icon: Icons.payments_rounded,
-                      helperText: (_selectedType == _StockEntryType.emballage && _useLots)
+                      helperText: (_selectedProduct != null && _selectedProduct!.name.toLowerCase().contains('emballage') && _useLots)
                           ? 'Le système calculera automatiquement le prix à l\'unité'
                           : null,
                     ),
@@ -628,54 +487,6 @@ class StockEntryFormState extends ConsumerState<StockEntryForm> {
     );
   }
 
-  Widget _buildTypeSegment({
-    required _StockEntryType type,
-    required String label,
-    required IconData icon,
-    required bool isSelected,
-  }) {
-    final theme = Theme.of(context);
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => setState(() => _selectedType = type),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            color: isSelected ? Colors.indigo.shade600 : Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: Colors.indigo.withValues(alpha: 0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    )
-                  ]
-                : [],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                icon,
-                size: 18,
-                color: isSelected ? Colors.white : theme.colorScheme.onSurfaceVariant,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: theme.textTheme.labelLarge?.copyWith(
-                  color: isSelected ? Colors.white : theme.colorScheme.onSurfaceVariant,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
   Widget _buildUnitToggleSegment({
     required bool isSelected,
     required String label,

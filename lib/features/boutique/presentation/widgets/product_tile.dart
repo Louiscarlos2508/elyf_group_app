@@ -10,7 +10,7 @@ import '../../domain/entities/product.dart';
 
 class ProductTile extends StatelessWidget {
   const ProductTile({
-    Key? key,
+    super.key,
     required this.product,
     required this.onTap,
     this.onRestock,
@@ -19,7 +19,7 @@ class ProductTile extends StatelessWidget {
     this.onPriceHistory,
     this.showRestockButton = false,
     this.isEnabled = true,
-  }) : super(key: key);
+  });
 
   final Product product;
   final VoidCallback onTap;

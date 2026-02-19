@@ -78,8 +78,10 @@ class _GazExpensesScreenState extends ConsumerState<GazExpensesScreen>
     final isMobile = MediaQuery.of(context).size.width < 600;
     final expensesAsync = ref.watch(gazExpensesProvider);
 
+    final theme = Theme.of(context);
+
     return Container(
-      color: const Color(0xFFF9FAFB),
+      color: theme.colorScheme.surface,
       child: expensesAsync.when(
         data: (expenses) {
           // Utiliser le service pour les calculs

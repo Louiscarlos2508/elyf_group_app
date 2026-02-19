@@ -131,7 +131,7 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> {
                             border: OutlineInputBorder(),
                             prefixIcon: Icon(Icons.upload_outlined),
                           ),
-                          value: _fromCylinder,
+                          initialValue: _fromCylinder,
                           items: cylinders.map((c) => DropdownMenuItem(
                             value: c,
                             child: Text('${c.weight} kg'),
@@ -149,7 +149,7 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> {
                             border: OutlineInputBorder(),
                             prefixIcon: Icon(Icons.download_outlined),
                           ),
-                          value: _toCylinder,
+                          initialValue: _toCylinder,
                           items: cylinders.map((c) => DropdownMenuItem(
                             value: c,
                             child: Text('${c.weight} kg'),

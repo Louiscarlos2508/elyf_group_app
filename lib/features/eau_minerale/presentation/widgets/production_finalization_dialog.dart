@@ -159,8 +159,10 @@ class _ProductionFinalizationDialogState
         // Packs et emballages déjà gérés à l'enregistrement journalier → ne pas
         // ré-enregistrer à la finalisation (évite double produit fini / double
         // décrément emballages).
-        final aDejaJournalier = savedSession.productionDays
-            .any((d) => d.packsProduits > 0 || d.emballagesUtilises > 0);
+        final aDejaJournalier = savedSession.productionDays.any(
+          (d) => d.producedItems.isNotEmpty || d.consumptions.isNotEmpty,
+        );
+        
         if (aDejaJournalier) {
           AppLogger.info(
             'Stock pack/emballage déjà enregistré en journalier → skip '
@@ -169,18 +171,13 @@ class _ProductionFinalizationDialogState
           );
         }
 
-        // Les bobines finies ne nécessitent plus de retrait car elles sont gérées par quantité
-        // Le stock a déjà été décrémenté lors de l'installation
-        // Pas besoin d'enregistrer un retrait supplémentaire
-
-        // Ajouter les packs produits au stock de produits finis (sauf si déjà fait via journalier)
-        if (!aDejaJournalier && savedSession.quantiteProduite > 0) {
+        // Ajouter les produits finis produits au stock (sauf si déjà fait via journalier)
+        if (!aDejaJournalier) {
           try {
-            await stockController.recordFinishedGoodsProduction(
-              quantiteProduite: savedSession.quantiteProduite,
+            await stockController.recordCatalogProduction(
+              items: savedSession.producedItems,
               productionId: savedSession.id,
-              notes:
-                  'Production finalisée - ${savedSession.quantiteProduite} ${savedSession.quantiteProduiteUnite}(s) produits',
+              notes: 'Production finalisée - Enregistrement global du stock de produits finis',
             );
           } catch (e) {
             AppLogger.error(
@@ -242,7 +239,7 @@ class _ProductionFinalizationDialogState
               await stockController.recordPackagingUsage(
                 packagingId: stockEmballage.id,
                 packagingType: stockEmballage.type,
-                quantite: savedSession.emballagesUtilises!,
+                quantite: savedSession.emballagesUtilises!.toDouble(),
                 productionId: savedSession.id,
                 notes: 'Emballages utilisés lors de la production',
               );
@@ -267,7 +264,7 @@ class _ProductionFinalizationDialogState
                 await stockController.recordPackagingUsage(
                   packagingId: nouveauStock.id,
                   packagingType: nouveauStock.type,
-                  quantite: savedSession.emballagesUtilises!,
+                  quantite: savedSession.emballagesUtilises!.toDouble(),
                   productionId: savedSession.id,
                   notes: 'Emballages utilisés lors de la production',
                 );
@@ -324,7 +321,8 @@ class _ProductionFinalizationDialogState
       title: 'Finaliser la production',
       saveLabel: 'Finaliser',
       isLoading: _isLoading,
-      isGlass: true,
+      isGlass: false,
+      //backgroundColor: colors.surface,
       onSave: _submit,
       child: Form(
         key: _formKey,
@@ -335,7 +333,7 @@ class _ProductionFinalizationDialogState
             ElyfCard(
               padding: const EdgeInsets.all(20),
               borderRadius: 24,
-              backgroundColor: colors.surfaceContainerLow.withValues(alpha: 0.5),
+              backgroundColor: colors.surfaceContainerLow,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -370,7 +368,6 @@ class _ProductionFinalizationDialogState
                   ),
                   const SizedBox(height: 20),
                   _buildIndexCompteurFinalField(),
-                  _buildConsumptionPreview(),
                 ],
               ),
             ),
@@ -380,7 +377,7 @@ class _ProductionFinalizationDialogState
             ElyfCard(
               padding: const EdgeInsets.all(20),
               borderRadius: 24,
-              backgroundColor: colors.primary.withValues(alpha: 0.03),
+              backgroundColor: colors.surfaceContainerLow,
               borderColor: colors.primary.withValues(alpha: 0.1),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -414,15 +411,9 @@ class _ProductionFinalizationDialogState
                     ),
                   ),
                   const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _emballagesUtilisesController,
-                    readOnly: true,
-                    decoration: _buildInputDecoration(
-                      label: 'Total des emballages utilisés',
-                      icon: Icons.shopping_bag_rounded,
-                      isReadOnly: true,
-                    ),
-                  ),
+                  _buildDetailedConsumptionsSummary(theme, colors),
+                  const SizedBox(height: 24),
+                  _buildDetailedProductionSummary(theme, colors),
                 ],
               ),
             ),
@@ -459,7 +450,7 @@ class _ProductionFinalizationDialogState
       filled: true,
       fillColor: isReadOnly 
           ? colors.surfaceContainerHighest.withValues(alpha: 0.2)
-          : colors.surfaceContainerLow.withValues(alpha: 0.5),
+          : colors.surfaceContainerLow,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
     );
   }
@@ -518,93 +509,88 @@ class _ProductionFinalizationDialogState
     );
   }
 
-  Widget _buildConsumptionPreview() {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
-    final meterTypeAsync = ref.watch(electricityMeterTypeProvider);
+  Widget _buildDetailedProductionSummary(ThemeData theme, ColorScheme colors) {
+    final produced = widget.session.producedItems;
+    if (produced.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
-    return meterTypeAsync.when(
-      data: (meterType) {
-        if (widget.session.indexCompteurInitialKwh == null ||
-            _indexCompteurFinalKwhController.text.isEmpty) {
-          return const SizedBox.shrink();
-        }
-
-        // Accepter les nombres avec virgule ou point décimal
-        final cleanedValue = _indexCompteurFinalKwhController.text.replaceAll(
-          ',',
-          '.',
-        );
-        final finalValue = double.tryParse(cleanedValue);
-        if (finalValue == null) {
-          return const SizedBox.shrink();
-        }
-
-        final consommation = meterType.calculateConsumption(
-          widget.session.indexCompteurInitialKwh!.toDouble(),
-          finalValue,
-        );
-
-        return Column(
-          children: [
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    colors.primary.withValues(alpha: 0.1),
-                    colors.primary.withValues(alpha: 0.05),
-                  ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'Produits finis fabriqués :',
+          style: theme.textTheme.labelMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: colors.primary,
+          ),
+        ),
+        const SizedBox(height: 8),
+        ...produced.map(
+          (c) => Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.check_circle_outline,
+                  size: 14,
+                  color: Colors.green,
                 ),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: colors.primary.withValues(alpha: 0.2)),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: colors.primary.withValues(alpha: 0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.electric_bolt_rounded,
-                      size: 20,
-                      color: colors.primary,
-                    ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(c.productName, style: theme.textTheme.bodySmall),
+                ),
+                Text(
+                  '${c.quantity.toInt()} units',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.bold,
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'CONSO. ÉLECTRIQUE',
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: colors.onSurfaceVariant,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                        Text(
-                          '${consommation.toStringAsFixed(2)} ${meterType.unit}',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w900,
-                            color: colors.primary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        );
-      },
-      loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDetailedConsumptionsSummary(ThemeData theme, ColorScheme colors) {
+    final consumptions = widget.session.consumptions;
+    if (consumptions.isEmpty) {
+       return TextFormField(
+        controller: _emballagesUtilisesController,
+        readOnly: true,
+        decoration: _buildInputDecoration(
+          label: 'Total des emballages utilisés',
+          icon: Icons.shopping_bag_rounded,
+          isReadOnly: true,
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'Matières premières utilisées :',
+          style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold, color: colors.primary),
+        ),
+        const SizedBox(height: 8),
+        ...consumptions.map((c) => Padding(
+          padding: const EdgeInsets.only(bottom: 4),
+          child: Row(
+            children: [
+              const Icon(Icons.circle, size: 6, color: Colors.grey),
+              const SizedBox(width: 8),
+              Expanded(child: Text(c.productName, style: theme.textTheme.bodySmall)),
+              Text(
+                '${c.quantity} ${c.unit}',
+                style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+        )),
+      ],
     );
   }
 }

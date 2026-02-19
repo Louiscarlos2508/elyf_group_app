@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 import '../../application/providers.dart';
-import 'package:elyf_groupe_app/app/theme/app_colors.dart';
 
 class OpeningSessionDialog extends ConsumerStatefulWidget {
   const OpeningSessionDialog({super.key});

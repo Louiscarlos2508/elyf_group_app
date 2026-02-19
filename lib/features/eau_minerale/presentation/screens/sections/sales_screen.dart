@@ -32,35 +32,53 @@ class SalesScreen extends ConsumerWidget {
     );
   }
 
-  void _handleAction(BuildContext context, Sale sale, String action) {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return _SalesContent(
+      onNewSale: () => _showForm(context),
+      onActionTap: (sale, action) => _handleAction(context, ref, sale, action),
+    );
+  }
+
+  void _handleAction(BuildContext context, WidgetRef ref, Sale sale, String action) {
     if (action == 'view') {
       showDialog(
         context: context,
         builder: (context) => SaleDetailDialog(sale: sale),
       );
-    } else if (action == 'edit') {
-      final formKey = GlobalKey<SaleFormState>();
-      showDialog(
-        context: context,
-        builder: (context) => FormDialog(
-          title: 'Modifier la vente',
-          child: SaleForm(key: formKey),
-          onSave: () async {
-            final state = formKey.currentState;
-            if (state != null) {
-              await state.submit();
-            }
-          },
-        ),
-      );
+    } else if (action == 'edit' || action == 'void') {
+      _showVoidConfirmation(context, ref, sale);
     }
   }
 
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return _SalesContent(
-      onNewSale: () => _showForm(context),
-      onActionTap: (sale, action) => _handleAction(context, sale, action),
+  void _showVoidConfirmation(BuildContext context, WidgetRef ref, Sale sale) {
+    showDialog(
+      context: context,
+      builder: (context) => ConfirmDialog(
+        title: 'Annuler la vente',
+        message: 'Êtes-vous sûr de vouloir annuler cette vente ? Cette action est irréversible et restaurera le stock.',
+        confirmLabel: 'Annuler la vente',
+        confirmColor: Theme.of(context).colorScheme.error,
+        onConfirm: () async {
+          final scaffoldMessenger = ScaffoldMessenger.of(context);
+          try {
+            final userId = ref.read(currentUserIdProvider);
+            await ref.read(salesControllerProvider).voidSale(sale.id, userId);
+            
+            scaffoldMessenger.showSnackBar(
+              const SnackBar(content: Text('Vente annulée avec succès')),
+            );
+            
+            // Rafraîchir les données
+            ref.invalidate(salesStateProvider);
+            ref.invalidate(stockStateProvider);
+          } catch (e) {
+            scaffoldMessenger.showSnackBar(
+              SnackBar(content: Text('Erreur lors de l\'annulation : $e')),
+            );
+          }
+        },
+      ),
     );
   }
 }

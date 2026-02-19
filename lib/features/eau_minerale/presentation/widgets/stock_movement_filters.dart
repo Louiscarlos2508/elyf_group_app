@@ -10,6 +10,7 @@ class StockMovementFilters extends ConsumerStatefulWidget {
   final void Function({
     DateTime? startDate,
     DateTime? endDate,
+    DateTime? inventoryDate,
     StockMovementType? type,
     String? productName,
   })
@@ -23,6 +24,7 @@ class StockMovementFilters extends ConsumerStatefulWidget {
 class _StockMovementFiltersState extends ConsumerState<StockMovementFilters> {
   DateTime? _startDate;
   DateTime? _endDate;
+  DateTime? _inventoryDate;
   StockMovementType? _selectedType;
   String? _selectedProduct;
 
@@ -38,6 +40,7 @@ class _StockMovementFiltersState extends ConsumerState<StockMovementFilters> {
     widget.onFiltersChanged(
       startDate: _startDate,
       endDate: _endDate,
+      inventoryDate: _inventoryDate,
       type: _selectedType,
       productName: _selectedProduct,
     );
@@ -68,6 +71,25 @@ class _StockMovementFiltersState extends ConsumerState<StockMovementFilters> {
     if (picked != null) {
       setState(() {
         _endDate = picked;
+        _applyFilters();
+      });
+    }
+  }
+
+  Future<void> _selectInventoryDate(BuildContext context) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _inventoryDate ?? DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+      helpText: 'Date pour l\'état des stocks (Bilan)',
+    );
+    if (picked != null) {
+      setState(() {
+        _inventoryDate = picked;
+        // Aligner les filtres de mouvements sur cette date
+        _startDate = DateTime(picked.year, picked.month, picked.day);
+        _endDate = DateTime(picked.year, picked.month, picked.day, 23, 59, 59);
         _applyFilters();
       });
     }
@@ -107,6 +129,7 @@ class _StockMovementFiltersState extends ConsumerState<StockMovementFilters> {
     setState(() {
       _startDate = DateTime.now().subtract(const Duration(days: 30));
       _endDate = DateTime.now();
+      _inventoryDate = null;
       _selectedType = null;
       _selectedProduct = null;
       _applyFilters();
@@ -193,9 +216,11 @@ class _StockMovementFiltersState extends ConsumerState<StockMovementFilters> {
                     Expanded(
                       child: _buildDateField(
                         context,
-                        'Date fin',
-                        _endDate,
-                        _selectEndDate,
+                        'Date Bilan Stock',
+                        _inventoryDate,
+                        _selectInventoryDate,
+                        color: theme.colorScheme.secondary,
+                        icon: Icons.history,
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -227,7 +252,22 @@ class _StockMovementFiltersState extends ConsumerState<StockMovementFilters> {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    _buildTypeFilter(context),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildDateField(
+                            context,
+                            'Date Bilan Stock',
+                            _inventoryDate,
+                            _selectInventoryDate,
+                            color: theme.colorScheme.secondary,
+                            icon: Icons.history,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(child: _buildTypeFilter(context)),
+                      ],
+                    ),
                   ],
                 );
               }
@@ -297,18 +337,32 @@ class _StockMovementFiltersState extends ConsumerState<StockMovementFilters> {
     BuildContext context,
     String label,
     DateTime? date,
-    Future<void> Function(BuildContext) onTap,
-  ) {
+    Future<void> Function(BuildContext) onTap, {
+    Color? color,
+    IconData icon = Icons.calendar_today,
+  }) {
     final theme = Theme.of(context);
     return InkWell(
       onTap: () => onTap(context),
       child: InputDecorator(
         decoration: InputDecoration(
           labelText: label,
-          prefixIcon: const Icon(Icons.calendar_today, size: 20),
+          prefixIcon: Icon(icon, size: 20, color: color),
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          focusedBorder: color != null
+              ? OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: color, width: 2),
+                )
+              : null,
         ),
-        child: Text(_formatDate(date), style: theme.textTheme.bodyMedium),
+        child: Text(
+          _formatDate(date),
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: color,
+            fontWeight: color != null ? FontWeight.bold : null,
+          ),
+        ),
       ),
     );
   }

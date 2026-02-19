@@ -11,7 +11,6 @@ import 'stock_adjustment/cylinder_selector_field.dart';
 import 'stock_adjustment/current_stock_info.dart';
 import '../../../../shared.dart';
 import '../../../../../core/auth/providers.dart';
-import '../../../../../core/tenant/tenant_provider.dart' show activeEnterpriseProvider;
 
 /// Dialog pour ajuster le stock de bouteilles.
 class StockAdjustmentDialog extends ConsumerStatefulWidget {

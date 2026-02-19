@@ -19,38 +19,20 @@ class FinishedProductsCard extends StatelessWidget {
         .where((item) => item.type == StockType.finishedGoods)
         .toList();
 
-    // Pack uniquement (produits finis) — même Pack qu'en paramètres et ventes
-    StockItem pack;
-    if (finishedGoods.isEmpty) {
-      pack = StockItem(
-        id: packStockItemId,
-        enterpriseId: 'default',
-        name: packName,
-        quantity: 0,
-        unit: packUnit,
-        type: StockType.finishedGoods,
-        updatedAt: DateTime.now(),
-      );
-    } else {
-      final packs = finishedGoods
-          .where((item) => item.name.toLowerCase().contains('pack'))
-          .toList();
-      if (packs.any((i) => i.id == packStockItemId)) {
-        pack = packs.firstWhere((i) => i.id == packStockItemId);
-      } else if (packs.isNotEmpty) {
-        pack = packs.first;
-      } else {
-        pack = StockItem(
-          id: packStockItemId,
-          enterpriseId: 'default',
-          name: packName,
-          quantity: 0,
-          unit: packUnit,
-          type: StockType.finishedGoods,
-          updatedAt: DateTime.now(),
-        );
-      }
-    }
+    // Display all finished goods found in stock items
+    final displayedGoods = finishedGoods.isNotEmpty 
+        ? finishedGoods 
+        : [
+            StockItem(
+              id: packStockItemId,
+              enterpriseId: 'default',
+              name: packName,
+              quantity: 0,
+              unit: packUnit,
+              type: StockType.finishedGoods,
+              updatedAt: DateTime.now(),
+            )
+          ];
 
     return ElyfCard(
       isGlass: true,
@@ -83,13 +65,18 @@ class FinishedProductsCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 24),
-          _buildProductItem(
-            context,
-            packName,
-            'Production terminée • Prêt pour la vente',
-            pack.quantity,
-            pack.unit,
-          ),
+          ...displayedGoods.map((item) => Padding(
+            padding: const EdgeInsets.only(bottom: 12.0),
+            child: _buildProductItem(
+              context,
+              item.name,
+              item.id == packStockItemId 
+                  ? 'Production terminée • Prêt pour la vente'
+                  : 'Produit du catalogue',
+              item.quantity,
+              item.unit,
+            ),
+          )),
         ],
       ),
     );

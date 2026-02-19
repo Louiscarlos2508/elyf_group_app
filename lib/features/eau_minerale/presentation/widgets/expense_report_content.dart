@@ -22,6 +22,10 @@ class ExpenseReportContent extends ConsumerWidget {
         return Icons.build;
       case ExpenseCategory.achatsDivers:
         return Icons.shopping_cart;
+      case ExpenseCategory.salaires:
+        return Icons.people_alt;
+      case ExpenseCategory.achatMatieresPremieres:
+        return Icons.inventory_2;
       case ExpenseCategory.autres:
         return Icons.more_horiz;
     }

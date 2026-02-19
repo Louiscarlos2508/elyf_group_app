@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import 'package:flutter/services.dart';
 import 'package:elyf_groupe_app/features/boutique/application/providers.dart';
-import 'package:elyf_groupe_app/features/boutique/domain/entities/category.dart';
 
 class ProductFormFields extends ConsumerStatefulWidget {
   const ProductFormFields({
@@ -171,7 +170,7 @@ class _ProductFormFieldsState extends ConsumerState<ProductFormFields> {
         // Catégorie (Dropdown)
         categoriesAsync.when(
           data: (categories) => DropdownButtonFormField<String>(
-            value: widget.categoryController.text.isEmpty ? null : widget.categoryController.text,
+            initialValue: widget.categoryController.text.isEmpty ? null : widget.categoryController.text,
             decoration: const InputDecoration(
               labelText: 'Catégorie (optionnel)',
               prefixIcon: Icon(Icons.category),

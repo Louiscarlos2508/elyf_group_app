@@ -7,6 +7,7 @@ import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart
 import '../../domain/entities/production_session.dart';
 import '../../domain/entities/report_period.dart';
 import '../../domain/entities/sale.dart';
+import '../../domain/entities/expense_record.dart';
 import '../../domain/services/profitability_calculation_service.dart';
 import 'production_period_formatter.dart';
 import 'profitability/financial_summary_card.dart';
@@ -83,10 +84,13 @@ class ProfitabilityReportContent extends ConsumerWidget {
     final calculationService = ref.read(
       profitabilityCalculationServiceProvider,
     );
+    final electricityRate = ref.watch(electricityRateProvider).value;
+    
     final metrics = calculationService.calculateMetrics(
       sessions: sessions,
       sales: sales,
       totalExpenses: totalExpenses,
+      electricityRate: electricityRate,
     );
     final productAnalysis = calculationService.analyzeByProduct(sales);
 

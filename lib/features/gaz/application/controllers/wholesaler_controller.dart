@@ -1,5 +1,4 @@
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/wholesaler.dart';
 import '../../domain/services/wholesaler_service.dart';
 

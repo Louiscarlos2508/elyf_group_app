@@ -1,7 +1,5 @@
 import 'dart:io';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:path_provider/path_provider.dart';
-import 'package:intl/intl.dart';
 import '../../../../core/logging/app_logger.dart';
 import '../../features/boutique/domain/entities/closing.dart';
 import '../../features/boutique/domain/entities/report_data.dart';

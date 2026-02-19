@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
-import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
-import '../widgets/contract_card_helpers.dart';
 
 class DashboardChartsSection extends StatelessWidget {
   const DashboardChartsSection({

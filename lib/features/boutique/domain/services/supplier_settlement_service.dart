@@ -1,6 +1,4 @@
 import 'package:rxdart/rxdart.dart';
-import '../entities/purchase.dart';
-import '../entities/supplier_settlement.dart';
 import '../repositories/purchase_repository.dart';
 import '../repositories/supplier_settlement_repository.dart';
 

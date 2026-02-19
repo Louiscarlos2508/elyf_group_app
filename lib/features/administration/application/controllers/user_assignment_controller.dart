@@ -121,10 +121,7 @@ class UserAssignmentController {
     }
     await _repository.assignUserToEnterprise(enterpriseModuleUser);
 
-    // Sync to Firestore
-    if (firestoreSync != null) {
-      await firestoreSync!.syncEnterpriseModuleUserToFirestore(enterpriseModuleUser);
-    }
+    // Sync is now handled by the repository via SyncManager queue (background)
 
     // Récupérer le nom de l'utilisateur pour l'audit trail
     final userDisplayName = await _getUserDisplayName(currentUserId);
@@ -197,10 +194,7 @@ class UserAssignmentController {
     for (final assignment in assignments) {
       await _repository.assignUserToEnterprise(assignment);
 
-      // Sync to Firestore
-      if (firestoreSync != null) {
-        await firestoreSync!.syncEnterpriseModuleUserToFirestore(assignment);
-      }
+      // Sync is now handled by the repository via SyncManager queue (background)
 
       // Log audit trail pour chaque assignation
       auditService?.logAction(
@@ -227,7 +221,7 @@ class UserAssignmentController {
     required String userId,
     required List<String> moduleIds,
     required List<String> enterpriseIds,
-    required List<String> roleIds,
+    required Map<String, List<String>> roleIdsByModule,
     required bool isActive,
     String? currentUserId,
   }) async {
@@ -317,6 +311,16 @@ class UserAssignmentController {
         continue;
       }
 
+      // Récupérer les rôles spécifiques pour ce module
+      final moduleRoleIds = roleIdsByModule[moduleId];
+      if (moduleRoleIds == null || moduleRoleIds.isEmpty) {
+         developer.log(
+          'Warning: No roles provided for module $moduleId, skipping assignments for this module',
+          name: 'user.assignment.controller',
+        );
+        continue;
+      }
+
       for (final enterpriseId in enterpriseIds) {
         // Vérifier que le type d'entreprise correspond au module
         final enterprise = enterprises
@@ -330,7 +334,7 @@ class UserAssignmentController {
               userId: userId,
               enterpriseId: enterpriseId,
               moduleId: moduleId,
-              roleIds: roleIds,
+              roleIds: moduleRoleIds, // Utiliser les rôles spécifiques au module
               isActive: isActive,
               createdAt: now,
               updatedAt: now,
@@ -356,10 +360,7 @@ class UserAssignmentController {
     for (final assignment in assignments) {
       await _repository.assignUserToEnterprise(assignment);
 
-      // Sync to Firestore
-      if (firestoreSync != null) {
-        await firestoreSync!.syncEnterpriseModuleUserToFirestore(assignment);
-      }
+      // Sync is now handled by the repository via SyncManager queue (background)
 
       // Log audit trail pour chaque assignation
       auditService?.logAction(
@@ -414,13 +415,7 @@ class UserAssignmentController {
       ),
     );
 
-    // Sync to Firestore
-    if (firestoreSync != null) {
-      await firestoreSync!.syncEnterpriseModuleUserToFirestore(
-        assignment,
-        isUpdate: true,
-      );
-    }
+    // Sync is now handled by the repository via SyncManager queue (background)
 
     // Récupérer le nom de l'utilisateur pour l'audit trail
     final userDisplayName = await _getUserDisplayName(currentUserId);
@@ -482,13 +477,7 @@ class UserAssignmentController {
       ),
     );
 
-    // Sync to Firestore
-    if (firestoreSync != null) {
-      await firestoreSync!.syncEnterpriseModuleUserToFirestore(
-        assignment,
-        isUpdate: true,
-      );
-    }
+    // Sync is now handled by the repository via SyncManager queue (background)
 
     // Récupérer le nom de l'utilisateur pour l'audit trail
     final userDisplayName = await _getUserDisplayName(currentUserId);

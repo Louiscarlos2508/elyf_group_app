@@ -81,22 +81,22 @@ class StockAlertsWidget extends ConsumerWidget {
                           ),
                         ],
                       ),
-                      if (percentage != null) ...[
-                        const SizedBox(height: 8),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(4),
-                          child: LinearProgressIndicator(
-                            value: percentage / 100,
-                            minHeight: 6,
-                            backgroundColor: Colors.orange.withValues(
-                              alpha: 0.1,
-                            ),
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.orange.shade600,
-                            ),
+                      ...[
+                      const SizedBox(height: 8),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: LinearProgressIndicator(
+                          value: percentage / 100,
+                          minHeight: 6,
+                          backgroundColor: Colors.orange.withValues(
+                            alpha: 0.1,
+                          ),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.orange.shade600,
                           ),
                         ),
-                      ],
+                      ),
+                    ],
                     ],
                   ),
                 );

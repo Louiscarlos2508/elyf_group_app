@@ -3,6 +3,7 @@ import 'package:elyf_groupe_app/shared/presentation/widgets/elyf_ui/organisms/el
 
 import '../../domain/entities/bobine_stock.dart';
 import '../../domain/entities/packaging_stock.dart';
+import '../../domain/entities/product.dart';
 import '../../domain/entities/stock_item.dart';
 
 /// Helper class pour regrouper les stocks de même type.
@@ -11,41 +12,43 @@ class _GroupedStock {
     required this.quantity,
     required this.isLowStock,
     this.seuilAlerte,
+    this.unitsPerLot = 1,
   });
 
   final int quantity;
   final bool isLowStock;
   final int? seuilAlerte;
+  final int unitsPerLot;
+
+  String get quantityLabel {
+    if (unitsPerLot <= 1) return '$quantity unités';
+    final lots = quantity / unitsPerLot;
+    return '${lots.toStringAsFixed(1)} lots ($quantity unités)';
+  }
 }
 
-/// Card displaying raw materials stock summary (including bobines and packaging).
 class RawMaterialsCard extends StatelessWidget {
+  final List<StockItem> items;
+  final List<Product>? products; // Optionnel pour enrichir les données
+  final int availableBobines; // Total pour compatibilité
+  final List<BobineStock> bobineStocks; // Stocks de bobines par type
+  final List<PackagingStock> packagingStocks;
+
   const RawMaterialsCard({
     super.key,
     required this.items,
+    this.products,
     required this.availableBobines,
     required this.bobineStocks,
     required this.packagingStocks,
   });
 
-  final List<StockItem> items;
-  final int availableBobines; // Total pour compatibilité
-  final List<BobineStock> bobineStocks; // Stocks de bobines par type
-  final List<PackagingStock> packagingStocks;
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    // Filter raw materials (excluding sachets which are managed as bobines, and bidons which are packaging)
-    final rawMaterials = items
-        .where(
-          (item) =>
-              item.type == StockType.rawMaterial &&
-              !item.name.toLowerCase().contains('sachet') &&
-              !item.name.toLowerCase().contains('bidon'),
-        )
-        .toList();
+    // List of raw materials from catalog (empty if catalog not loaded)
+    final rawMaterialProducts = products?.where((p) => p.isRawMaterial).toList() ?? [];
 
     return ElyfCard(
       isGlass: true,
@@ -78,80 +81,102 @@ class RawMaterialsCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 24),
-          // Afficher les bobines par type
-          if (bobineStocks.isNotEmpty) ...[
-            ...() {
-              final Map<String, _GroupedStock> groupedStocks = {};
-              for (final stock in bobineStocks) {
-                final existing = groupedStocks[stock.type];
-                if (existing == null) {
-                  groupedStocks[stock.type] = _GroupedStock(
-                    quantity: stock.quantity,
-                    isLowStock: stock.estStockFaible,
-                    seuilAlerte: stock.seuilAlerte,
-                  );
-                } else {
-                  groupedStocks[stock.type] = _GroupedStock(
-                    quantity: existing.quantity + stock.quantity,
-                    isLowStock: existing.isLowStock || stock.estStockFaible,
-                    seuilAlerte: existing.seuilAlerte ?? stock.seuilAlerte,
-                  );
-                }
-              }
-              
-              return groupedStocks.entries.map((entry) {
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 20),
-                  child: _buildPackagingItem(
-                    context,
-                    entry.key,
-                    'Bobines pour production • Déduction automatique',
-                    entry.value.quantity.toDouble(),
-                    'unité',
-                    entry.value.isLowStock,
-                    entry.value.seuilAlerte,
-                  ),
-                );
-              });
-            }(),
-          ],
           
-          // Afficher les emballages individuellement
-          if (packagingStocks.isNotEmpty) ...[
-            ...packagingStocks.map((stock) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 20),
-                child: _buildPackagingItem(
-                  context,
-                  stock.type, // Nom de l'emballage (ex: Préforme, Bouchon)
-                  stock.unitsPerLot > 1
-                      ? 'Format: ${stock.unitsPerLot} unités/lot'
-                      : 'Géré à l\'unité',
-                  stock.quantity.toDouble(),
-                  stock.unit,
-                  stock.estStockFaible,
-                  stock.seuilAlerte,
-                  customQuantityLabel: stock.quantityLabel,
-                ),
-              );
-            }),
-          ],
+          // 2. Afficher chaque matière première du catalogue
+          ...rawMaterialProducts.map((product) {
+            final nameLower = product.name.toLowerCase();
+            
+            // Chercher la quantité totale dans toutes les sources de stock
+            double totalQuantity = 0;
+            bool isLowStock = false;
+            int? seuilAlerte;
 
-          // Afficher les autres matières premières
-          if (rawMaterials.isNotEmpty) ...[
-            ...rawMaterials.map((item) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 20),
+            // a. Chercher dans packagingStocks
+            final pkgStocks = packagingStocks.where((s) => s.type.toLowerCase() == nameLower);
+            for (final s in pkgStocks) {
+              totalQuantity += s.quantity;
+              if (s.estStockFaible) isLowStock = true;
+              seuilAlerte = s.seuilAlerte;
+            }
+
+            // b. Chercher dans bobineStocks
+            final bbStocks = bobineStocks.where((s) => s.type.toLowerCase() == nameLower);
+            for (final s in bbStocks) {
+              totalQuantity += s.quantity;
+              if (s.estStockFaible) isLowStock = true;
+              seuilAlerte = s.seuilAlerte;
+            }
+
+            // c. Chercher dans les items génériques (si non déjà compté)
+            if (pkgStocks.isEmpty && bbStocks.isEmpty) {
+              final genericItems = items.where((i) => i.name.toLowerCase() == nameLower);
+              for (final i in genericItems) {
+                totalQuantity += i.quantity;
+                // Pas de seuil d'alerte sur les items génériques dans ce modèle
+              }
+            }
+
+            // Libellé de quantité
+            String quantityDisplay;
+            if (product.unitsPerLot > 1) {
+              final lots = totalQuantity / product.unitsPerLot;
+              quantityDisplay = '${lots.toStringAsFixed(1)} lots (${totalQuantity.toInt()} ${product.unit})';
+            } else {
+              quantityDisplay = '${totalQuantity.toInt()} ${product.unit}';
+            }
+
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 20),
+              child: _buildPackagingItem(
+                context,
+                product.name,
+                product.description ?? (product.unitsPerLot > 1 
+                  ? 'Format: ${product.unitsPerLot} ${product.unit}/lot' 
+                  : 'Géré à l\'unité'),
+                totalQuantity,
+                product.unit,
+                isLowStock,
+                seuilAlerte,
+                customQuantityLabel: quantityDisplay,
+              ),
+            );
+          }),
+
+          // 3. Optionnel: Afficher les stocks qui ne sont PAS dans le catalogue (cas d'erreur/legacy)
+          ...() {
+            final catalogNames = rawMaterialProducts.map((p) => p.name.toLowerCase()).toSet();
+            final legacyItems = items.where((i) => 
+              i.type == StockType.rawMaterial && 
+              !catalogNames.contains(i.name.toLowerCase()) &&
+              !i.name.toLowerCase().contains('sachet') // Sachet est géré en interne
+            ).toList();
+
+            if (legacyItems.isEmpty) return <Widget>[];
+
+            return [
+              const Divider(height: 32),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Text(
+                  'Autres articles (Hors Catalogue)',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
+              ...legacyItems.map((item) => Padding(
+                padding: const EdgeInsets.only(bottom: 16),
                 child: _buildMaterialItem(
                   context,
                   item.name,
-                  'Matière gérée manuellement',
+                  'Article non défini dans le catalogue',
                   item.quantity,
                   item.unit,
                 ),
-              );
-            }),
-          ],
+              )),
+            ];
+          }(),
         ],
       ),
     );

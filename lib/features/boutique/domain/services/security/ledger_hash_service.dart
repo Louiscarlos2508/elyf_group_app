@@ -57,8 +57,9 @@ class LedgerHashService {
   /// Verifies a single entity against its previous hash.
   static bool verify(dynamic entity, String? previousHash, String shopSecret) {
     String? currentHash;
-    if (entity is Sale) currentHash = entity.ticketHash;
-    else if (entity is TreasuryOperation) currentHash = entity.hash;
+    if (entity is Sale) {
+      currentHash = entity.ticketHash;
+    } else if (entity is TreasuryOperation) currentHash = entity.hash;
     else if (entity is Expense) currentHash = entity.hash;
     else if (entity is Purchase) currentHash = entity.hash;
     else if (entity is SupplierSettlement) currentHash = entity.hash;

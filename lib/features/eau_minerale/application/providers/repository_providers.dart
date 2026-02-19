@@ -1,9 +1,11 @@
 import '../../../../core/logging/app_logger.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'permission_providers.dart' show currentUserIdProvider;
 
 import '../../../../core/offline/drift_service.dart';
 import '../../../../core/offline/providers.dart';
 import '../../../../core/tenant/tenant_provider.dart';
+import '../../../../features/audit_trail/application/providers.dart';
 import '../../data/repositories/activity_offline_repository.dart';
 import '../../data/repositories/bobine_stock_quantity_offline_repository.dart';
 import '../../data/repositories/credit_offline_repository.dart';
@@ -19,6 +21,9 @@ import '../../data/repositories/machine_offline_repository.dart';
 import '../../data/repositories/product_offline_repository.dart';
 import '../../data/repositories/production_session_offline_repository.dart';
 import '../../data/repositories/sale_offline_repository.dart';
+import '../../data/repositories/supplier_offline_repository.dart';
+import '../../data/repositories/purchase_offline_repository.dart';
+import '../../data/repositories/closing_offline_repository.dart';
 import '../../domain/repositories/activity_repository.dart';
 import '../../domain/repositories/bobine_stock_quantity_repository.dart';
 import '../../domain/repositories/credit_repository.dart';
@@ -34,6 +39,11 @@ import '../../domain/repositories/report_repository.dart';
 import '../../domain/repositories/sale_repository.dart';
 import '../../domain/repositories/salary_repository.dart';
 import '../../domain/repositories/stock_repository.dart';
+import '../../domain/repositories/supplier_repository.dart';
+import '../../domain/repositories/purchase_repository.dart';
+import '../../domain/repositories/closing_repository.dart';
+import '../../domain/repositories/treasury_repository.dart';
+import '../../data/repositories/treasury_offline_repository.dart';
 
 // Repository Providers
 final saleRepositoryProvider = Provider<SaleRepository>((ref) {
@@ -291,5 +301,57 @@ final reportRepositoryProvider = Provider<ReportRepository>((ref) {
     financeRepository: financeRepo,
     salaryRepository: salaryRepo,
     creditRepository: creditRepo,
+  );
+});
+
+final supplierRepositoryProvider = Provider<SupplierRepository>((ref) {
+  final enterpriseId = ref.watch(activeEnterpriseIdProvider).value ?? 'default';
+  final auditTrailRepo = ref.watch(auditTrailRepositoryProvider);
+  return SupplierOfflineRepository(
+    driftService: DriftService.instance,
+    syncManager: ref.watch(syncManagerProvider),
+    connectivityService: ref.watch(connectivityServiceProvider),
+    enterpriseId: enterpriseId,
+    auditTrailRepository: auditTrailRepo,
+  );
+});
+
+final purchaseRepositoryProvider = Provider<PurchaseRepository>((ref) {
+  final enterpriseId = ref.watch(activeEnterpriseIdProvider).value ?? 'default';
+  final auditTrailRepo = ref.watch(auditTrailRepositoryProvider);
+  return PurchaseOfflineRepository(
+    driftService: DriftService.instance,
+    syncManager: ref.watch(syncManagerProvider),
+    connectivityService: ref.watch(connectivityServiceProvider),
+    enterpriseId: enterpriseId,
+    auditTrailRepository: auditTrailRepo,
+  );
+});
+
+final closingRepositoryProvider = Provider<ClosingRepository>((ref) {
+  final enterpriseId = ref.watch(activeEnterpriseIdProvider).value ?? 'default';
+  final auditTrailRepo = ref.watch(auditTrailRepositoryProvider);
+  return ClosingOfflineRepository(
+    driftService: DriftService.instance,
+    syncManager: ref.watch(syncManagerProvider),
+    connectivityService: ref.watch(connectivityServiceProvider),
+    enterpriseId: enterpriseId,
+    auditTrailRepository: auditTrailRepo,
+  );
+});
+
+final treasuryRepositoryProvider = Provider<TreasuryRepository>((ref) {
+  final enterpriseId = ref.watch(activeEnterpriseIdProvider).value ?? 'default';
+  final auditTrailRepo = ref.watch(auditTrailRepositoryProvider);
+  final userId = ref.watch(currentUserIdProvider);
+
+  return TreasuryOfflineRepository(
+    driftService: DriftService.instance,
+    syncManager: ref.watch(syncManagerProvider),
+    connectivityService: ref.watch(connectivityServiceProvider),
+    enterpriseId: enterpriseId,
+    moduleType: 'eau_minerale',
+    auditTrailRepository: auditTrailRepo,
+    userId: userId ?? 'unknown',
   );
 });

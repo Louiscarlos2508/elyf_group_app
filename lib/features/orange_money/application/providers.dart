@@ -2,7 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 export 'providers/permission_providers.dart';
 export 'providers/section_providers.dart';
-import '../../../../core/auth/providers.dart' hide currentUserIdProvider;
 import '../../audit_trail/application/providers.dart';
 import '../../administration/application/providers.dart';
 

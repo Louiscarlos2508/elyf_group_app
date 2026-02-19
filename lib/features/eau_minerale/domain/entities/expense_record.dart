@@ -1,3 +1,5 @@
+import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
+
 /// Represents a charge associated with water production or distribution.
 class ExpenseRecord {
   const ExpenseRecord({
@@ -14,6 +16,7 @@ class ExpenseRecord {
     this.deletedAt,
     this.deletedBy,
     this.receiptPath,
+    this.paymentMethod = PaymentMethod.cash,
   });
 
   final String id;
@@ -29,6 +32,7 @@ class ExpenseRecord {
   final DateTime? deletedAt;
   final String? deletedBy;
   final String? receiptPath;
+  final PaymentMethod paymentMethod;
 
   bool get isDeleted => deletedAt != null;
   bool get estLieeAProduction => productionId != null;
@@ -47,6 +51,7 @@ class ExpenseRecord {
     DateTime? deletedAt,
     String? deletedBy,
     String? receiptPath,
+    PaymentMethod? paymentMethod,
   }) {
     return ExpenseRecord(
       id: id ?? this.id,
@@ -62,6 +67,7 @@ class ExpenseRecord {
       deletedAt: deletedAt ?? this.deletedAt,
       deletedBy: deletedBy ?? this.deletedBy,
       receiptPath: receiptPath ?? this.receiptPath,
+      paymentMethod: paymentMethod ?? this.paymentMethod,
     );
   }
 
@@ -80,6 +86,9 @@ class ExpenseRecord {
       deletedAt: map['deletedAt'] != null ? DateTime.parse(map['deletedAt'] as String) : null,
       deletedBy: map['deletedBy'] as String?,
       receiptPath: map['receiptPath'] as String?,
+      paymentMethod: map['paymentMethod'] != null
+          ? PaymentMethod.values.byName(map['paymentMethod'] as String)
+          : PaymentMethod.cash,
     );
   }
 
@@ -98,6 +107,7 @@ class ExpenseRecord {
       'deletedAt': deletedAt?.toIso8601String(),
       'deletedBy': deletedBy,
       'receiptPath': receiptPath,
+      'paymentMethod': paymentMethod.name,
     };
   }
 }
@@ -112,6 +122,12 @@ enum ExpenseCategory {
   /// Achats divers
   achatsDivers,
 
+  /// Salaires et payes
+  salaires,
+
+  /// Achat de matières premières
+  achatMatieresPremieres,
+
   /// Autres dépenses
   autres,
 }
@@ -125,6 +141,10 @@ extension ExpenseCategoryExtension on ExpenseCategory {
         return 'Réparations';
       case ExpenseCategory.achatsDivers:
         return 'Achats divers';
+      case ExpenseCategory.salaires:
+        return 'Salaires';
+      case ExpenseCategory.achatMatieresPremieres:
+        return 'Achat Matières Premières';
       case ExpenseCategory.autres:
         return 'Autres';
     }

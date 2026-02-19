@@ -33,8 +33,6 @@ class PaymentCardHelpers {
         return Icons.phone_android;
       case PaymentMethod.both:
         return Icons.payment;
-      case PaymentMethod.card:
-        return Icons.credit_card;
       case PaymentMethod.credit:
         return Icons.timer_outlined;
     }

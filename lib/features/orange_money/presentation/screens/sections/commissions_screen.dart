@@ -8,13 +8,10 @@ import '../../widgets/commission_alerts_card.dart';
 import '../../widgets/commission_declaration_dialog.dart';
 import '../../widgets/commission_status_badge.dart';
 import '../../widgets/commission_validation_dialog.dart';
-import '../../widgets/kpi_card.dart';
 import '../../../domain/services/commission_calculation_service.dart';
 import '../../widgets/commission_form_dialog.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../../../shared/providers/storage_provider.dart';
-import '../../../../../shared/utils/currency_formatter.dart';
-import '../../../../../shared/utils/notification_service.dart';
 import '../../widgets/orange_money_header.dart';
 
 /// Screen for managing commissions.

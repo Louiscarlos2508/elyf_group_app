@@ -2,7 +2,6 @@
 import 'dart:convert';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
-import 'package:elyf_groupe_app/shared.dart';
 
 class SignaturePad extends StatefulWidget {
   const SignaturePad({

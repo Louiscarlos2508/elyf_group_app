@@ -50,16 +50,10 @@ class GasController extends ChangeNotifier {
   }
 
   Future<void> addSale(GasSale sale) async {
-    final cylinder = await _repository.getCylinderById(sale.cylinderId);
-    if (cylinder == null) {
-      throw BusinessException('Bouteille introuvable');
-    }
-    if (sale.quantity > cylinder.stock) {
-      throw BusinessException(
-        'Stock insuffisant pour ${cylinder.label}. Disponible: ${cylinder.stock}',
-      );
-    }
-    await _repository.addSale(sale);
+    _isLoading = true;
+    notifyListeners();
+
+    await _repository.executeSaleTransaction(sale);
 
     // Audit Log
     try {

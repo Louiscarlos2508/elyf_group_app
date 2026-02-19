@@ -10,6 +10,7 @@ class StockMovement {
     required this.reason,
     required this.quantity,
     required this.unit,
+    this.quantityLabel,
     this.productionId,
     this.notes,
     this.createdAt,
@@ -26,6 +27,7 @@ class StockMovement {
   final String reason;
   final double quantity;
   final String unit;
+  final String? quantityLabel;
   final String? productionId; // ID de la production si lié à une production
   final String? notes; // Notes additionnelles
   final DateTime? createdAt;
@@ -42,6 +44,7 @@ class StockMovement {
     String? reason,
     double? quantity,
     String? unit,
+    String? quantityLabel,
     String? productionId,
     String? notes,
     DateTime? createdAt,
@@ -58,6 +61,7 @@ class StockMovement {
       reason: reason ?? this.reason,
       quantity: quantity ?? this.quantity,
       unit: unit ?? this.unit,
+      quantityLabel: quantityLabel ?? this.quantityLabel,
       productionId: productionId ?? this.productionId,
       notes: notes ?? this.notes,
       createdAt: createdAt ?? this.createdAt,
@@ -77,6 +81,7 @@ class StockMovement {
       reason: map['reason'] as String? ?? '',
       quantity: (map['quantity'] as num?)?.toDouble() ?? 0.0,
       unit: map['unit'] as String? ?? '',
+      quantityLabel: map['quantityLabel'] as String?,
       productionId: map['productionId'] as String?,
       notes: map['notes'] as String?,
       createdAt: map['createdAt'] != null
@@ -102,6 +107,7 @@ class StockMovement {
       'reason': reason,
       'quantity': quantity,
       'unit': unit,
+      'quantityLabel': quantityLabel,
       'productionId': productionId,
       'notes': notes,
       'createdAt': createdAt?.toIso8601String(),

@@ -1,4 +1,5 @@
-import '../logging/app_logger.dart';
+import 'dart:convert';
+import 'package:rxdart/rxdart.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -6,7 +7,9 @@ import '../auth/providers.dart';
 import '../auth/entities/enterprise_module_user.dart';
 import '../../features/administration/domain/entities/enterprise.dart';
 import '../../features/administration/application/providers.dart';
-import '../offline/providers.dart' show sharedPreferencesProvider;
+import '../logging/app_logger.dart';
+import '../offline/providers.dart' show sharedPreferencesProvider, driftServiceProvider;
+import '../offline/drift/app_database.dart';
 
 const String _activeEnterpriseIdKey = 'active_enterprise_id';
 
@@ -70,222 +73,144 @@ final activeEnterpriseProvider = FutureProvider<Enterprise?>((ref) async {
   );
 });
 
-/// Provider pour récupérer les entreprises accessibles à l'utilisateur actuel
+/// Provider pour les affectations utilisateur (EnterpriseModuleUser)
 ///
-/// Récupère toutes les entreprises où l'utilisateur a un accès actif
-final userAccessibleEnterprisesProvider = FutureProvider<List<Enterprise>>((
-  ref,
-) async {
-  // Add timeout to prevent infinite loading
-  try {
-    return await _fetchUserAccessibleEnterprises(ref).timeout(
-      const Duration(seconds: 10),
-      onTimeout: () {
-        AppLogger.warning(
-          'userAccessibleEnterprisesProvider: Timeout after 10 seconds',
-          name: 'userAccessibleEnterprisesProvider',
-        );
-        return <Enterprise>[];
-      },
-    );
-  } catch (e, stackTrace) {
-    AppLogger.error(
-      'userAccessibleEnterprisesProvider: Error - $e',
-      name: 'userAccessibleEnterprisesProvider',
-      error: e,
-      stackTrace: stackTrace,
-    );
-    return <Enterprise>[];
-  }
-});
-
-/// Internal function to fetch user accessible enterprises
-Future<List<Enterprise>> _fetchUserAccessibleEnterprises(Ref ref) async {
-  // Récupérer l'ID de l'utilisateur connecté depuis l'auth
+/// Surveille les affectations en temps réel pour l'utilisateur actuel
+final userAssignmentsProvider = StreamProvider<List<EnterpriseModuleUser>>((ref) {
   final currentUserId = ref.watch(currentUserIdProvider);
-
-  // Si aucun utilisateur n'est connecté, retourner une liste vide
-  if (currentUserId == null) {
-    AppLogger.warning(
-      'userAccessibleEnterprisesProvider: No current user ID',
-      name: 'userAccessibleEnterprisesProvider',
-    );
-    return [];
-  }
+  if (currentUserId == null) return Stream.value([]);
 
   final adminRepo = ref.watch(adminRepositoryProvider);
-  final enterpriseController = ref.watch(enterpriseControllerProvider);
+  return adminRepo.watchEnterpriseModuleUsers().map((allAccesses) {
+    return allAccesses.where((access) => access.userId == currentUserId).toList();
+  });
+});
 
-  // Récupérer tous les accès de l'utilisateur
-  final userAccesses = await adminRepo.getUserEnterpriseModuleUsers(
-    currentUserId,
+/// Provider pour toutes les entreprises (normales + points de vente)
+///
+/// Surveille les deux collections d'entreprises en temps réel
+final allEnterprisesStreamProvider = StreamProvider<List<Enterprise>>((ref) {
+  final enterpriseRepo = ref.watch(enterpriseRepositoryProvider);
+  final driftService = ref.watch(driftServiceProvider);
+
+  // Écouter les entreprises normales
+  final enterprisesStream = enterpriseRepo.watchAllEnterprises();
+
+  // Sous-entités (Dépôts, Points de vente, Usines, etc. considérés comme des espaces dans le sélecteur)
+  // On surveille TOUS les espaces, quel que soit le module
+  final subEntitiesStream = driftService.db.watchRecordsByCollection('pointOfSale');
+
+  return Rx.combineLatest2<List<Enterprise>, List<OfflineRecord>, List<Enterprise>>(
+    enterprisesStream,
+    subEntitiesStream,
+    (enterprises, subEntityRecords) {
+      final all = <Enterprise>[...enterprises];
+      
+      // Convertir les records de sous-entités en objets Enterprise
+      for (final record in subEntityRecords) {
+        try {
+          final map = Map<String, dynamic>.from(jsonDecode(record.dataJson));
+          
+          final id = record.remoteId ?? record.localId;
+          final name = map['name'] as String? ?? 'Espace sans nom';
+          final parentId = map['parentEnterpriseId'] as String? ?? map['enterpriseId'] as String?;
+          final parent = enterprises.where((e) => e.id == parentId).firstOrNull;
+          
+          if (parent == null) {
+             // AppLogger.debug('allEnterprisesStreamProvider: sub-entity $name (id: $id) has no matching parent ($parentId).', name: 'tenant');
+          }
+
+          all.add(Enterprise(
+            id: id,
+            name: name,
+            type: parent?.type ?? EnterpriseType.pointOfSale,
+            parentEnterpriseId: parentId,
+            description: map['description'] as String? ?? map['address'] as String?,
+            isActive: map['isActive'] as bool? ?? true,
+          ));
+        } catch (e) {
+          AppLogger.error('allEnterprisesStreamProvider: error parsing sub-entity: $e', name: 'tenant');
+        }
+      }
+      
+      // Dédupliquer par ID au cas où
+      final unique = <String, Enterprise>{};
+      for (final ent in all) {
+        unique[ent.id] = ent;
+      }
+      final result = unique.values.toList();
+      return result;
+    },
   );
+});
 
-  AppLogger.debug(
-    'userAccessibleEnterprisesProvider: ${userAccesses.length} accès trouvés pour l\'utilisateur $currentUserId',
-    name: 'userAccessibleEnterprisesProvider',
+/// Provider pour récupérer les entreprises accessibles à l'utilisateur actuel
+///
+/// Récupère toutes les entreprises où l'utilisateur a un accès actif.
+/// Désormais réactif aux changements d'affectation et d'entreprise.
+final userAccessibleEnterprisesProvider = StreamProvider<List<Enterprise>>((ref) {
+  final assignmentsAsync = ref.watch(userAssignmentsProvider);
+  final enterprisesAsync = ref.watch(allEnterprisesStreamProvider);
+
+  return assignmentsAsync.when(
+    data: (assignments) {
+      return enterprisesAsync.when(
+        data: (enterprises) {
+          final activeEnterpriseIds = assignments
+              .where((a) => a.isActive)
+              .map((a) => a.enterpriseId)
+              .toSet();
+
+          final accessible = enterprises
+              .where((e) => activeEnterpriseIds.contains(e.id) && e.isActive)
+              .toList();
+          
+          return Stream.value(accessible);
+        },
+        loading: () => const Stream.empty(),
+        error: (e, s) => Stream.error(e, s),
+      );
+    },
+    loading: () => const Stream.empty(),
+    error: (e, s) => Stream.error(e, s),
   );
-
-  // Log détaillé de tous les accès
-  for (final access in userAccesses) {
-    AppLogger.debug(
-      'userAccessibleEnterprisesProvider: Accès - enterpriseId=${access.enterpriseId}, moduleId=${access.moduleId}, isActive=${access.isActive}',
-      name: 'userAccessibleEnterprisesProvider',
-    );
-  }
-
-  // Filtrer uniquement les accès actifs et récupérer les entreprises uniques
-  final activeEnterpriseIds = userAccesses
-      .where((access) => access.isActive)
-      .map((access) => access.enterpriseId)
-      .toSet();
-
-  AppLogger.debug(
-    'userAccessibleEnterprisesProvider: ${activeEnterpriseIds.length} entreprises uniques accessibles (IDs: ${activeEnterpriseIds.join(", ")})',
-    name: 'userAccessibleEnterprisesProvider',
-  );
-
-  // Récupérer les entreprises correspondantes via le controller (qui déduplique)
-  // getAllEnterprises() inclut les entreprises normales ET les points de vente
-  final allEnterprises = await enterpriseController.getAllEnterprises();
-
-  // Log détaillé de toutes les entreprises récupérées
-  final posCount = allEnterprises.where((e) => e.description?.contains("Point de vente") ?? false).length;
-  AppLogger.debug(
-    'userAccessibleEnterprisesProvider: ${allEnterprises.length} entreprises récupérées au total (dont $posCount points de vente)',
-    name: 'userAccessibleEnterprisesProvider',
-  );
-  
-  // Log des IDs de toutes les entreprises
-  final allEnterpriseIds = allEnterprises.map((e) => e.id).toList();
-  AppLogger.debug(
-    'userAccessibleEnterprisesProvider: IDs de toutes les entreprises: ${allEnterpriseIds.join(", ")}',
-    name: 'userAccessibleEnterprisesProvider',
-  );
-
-  // Filtrer les entreprises accessibles et actives, puis dédupliquer par ID
-  final accessibleEnterprises = allEnterprises
-      .where(
-        (enterprise) =>
-            activeEnterpriseIds.contains(enterprise.id) && enterprise.isActive,
-      )
-      .toList();
-
-  AppLogger.debug(
-    'userAccessibleEnterprisesProvider: ${accessibleEnterprises.length} entreprises accessibles après filtrage',
-    name: 'userAccessibleEnterprisesProvider',
-  );
-  
-  // Log détaillé des entreprises accessibles
-  for (final enterprise in accessibleEnterprises) {
-    final isPos = enterprise.description?.contains("Point de vente") ?? false;
-    AppLogger.debug(
-      'userAccessibleEnterprisesProvider: Entreprise accessible - id=${enterprise.id}, name=${enterprise.name}, isPointOfSale=$isPos',
-      name: 'userAccessibleEnterprisesProvider',
-    );
-  }
-  
-  // Log des entreprises non trouvées
-  final notFoundIds = activeEnterpriseIds.where((id) => !allEnterpriseIds.contains(id)).toList();
-  if (notFoundIds.isNotEmpty) {
-    AppLogger.warning(
-      'userAccessibleEnterprisesProvider: ${notFoundIds.length} IDs d\'entreprises non trouvées dans la liste: ${notFoundIds.join(", ")}',
-      name: 'userAccessibleEnterprisesProvider',
-    );
-  }
-
-  // Dédupliquer par ID pour éviter les doublons (double sécurité)
-  final uniqueEnterprises = <String, Enterprise>{};
-  for (final enterprise in accessibleEnterprises) {
-    if (!uniqueEnterprises.containsKey(enterprise.id)) {
-      uniqueEnterprises[enterprise.id] = enterprise;
-    }
-  }
-
-  return uniqueEnterprises.values.toList();
-}
+});
 
 /// Provider pour récupérer les modules accessibles à l'utilisateur pour l'entreprise active
 ///
-/// Filtre les modules selon les accès EnterpriseModuleUser ET vérifie que l'utilisateur
-/// a au moins la permission viewDashboard pour chaque module.
-///
-/// Inclut un mécanisme de retry pour attendre que la synchronisation initiale
-/// soit terminée si les données ne sont pas encore disponibles.
-final userAccessibleModulesForActiveEnterpriseProvider = FutureProvider<List<String>>((
+/// Désormais réactif aux changements d'affectation via userAssignmentsProvider.
+final userAccessibleModulesForActiveEnterpriseProvider = StreamProvider<List<String>>((
   ref,
-) async {
-  // Récupérer l'ID de l'utilisateur connecté
-  final currentUserId = ref.watch(currentUserIdProvider);
-  if (currentUserId == null) return [];
-
+) {
   // Récupérer l'entreprise active
   final activeEnterpriseIdAsync = ref.watch(activeEnterpriseIdProvider);
-  final activeEnterpriseId = activeEnterpriseIdAsync.when(
-    data: (id) => id,
-    loading: () => null,
-    error: (_, __) => null,
+  final activeEnterpriseId = activeEnterpriseIdAsync.value;
+
+  if (activeEnterpriseId == null) return Stream.value([]);
+
+  // Surveiller les accès via userAssignmentsProvider
+  final assignmentsAsync = ref.watch(userAssignmentsProvider);
+
+  return assignmentsAsync.when(
+    data: (userAccesses) {
+      // Filtrer les accès actifs pour l'entreprise active
+      final activeAccesses = userAccesses
+          .where(
+            (access) =>
+                access.enterpriseId == activeEnterpriseId && access.isActive,
+          )
+          .toList();
+
+      final moduleIds = activeAccesses
+          .map((access) => access.moduleId)
+          .toSet()
+          .toList();
+
+      return Stream.value(moduleIds);
+    },
+    loading: () => const Stream.empty(),
+    error: (e, s) => Stream.error(e, s),
   );
-
-  if (activeEnterpriseId == null) return [];
-
-  // Récupérer les accès utilisateur pour l'entreprise active avec retry
-  // pour attendre que la synchronisation soit terminée
-  final adminRepo = ref.watch(adminRepositoryProvider);
-  List<EnterpriseModuleUser> userAccesses = [];
-
-  // Essayer de récupérer les données avec retry (maximum 3 tentatives)
-  int maxRetries = 3;
-  int retryCount = 0;
-  Duration retryDelay = const Duration(milliseconds: 500);
-
-  while (retryCount < maxRetries) {
-    try {
-      userAccesses = await adminRepo.getUserEnterpriseModuleUsers(
-        currentUserId,
-      );
-
-      // Si on a des données, on arrête le retry
-      if (userAccesses.isNotEmpty || retryCount == maxRetries - 1) {
-        break;
-      }
-
-      // Attendre un peu avant de réessayer (données pas encore synchronisées)
-      await Future.delayed(retryDelay);
-      retryCount++;
-      retryDelay = Duration(
-        milliseconds: retryDelay.inMilliseconds * 2,
-      ); // Exponential backoff
-    } catch (e) {
-      // Si c'est la dernière tentative, on retourne ce qu'on a
-      if (retryCount == maxRetries - 1) {
-        break;
-      }
-      await Future.delayed(retryDelay);
-      retryCount++;
-      retryDelay = Duration(milliseconds: retryDelay.inMilliseconds * 2);
-    }
-  }
-
-  // Filtrer les accès actifs pour l'entreprise active
-  // Même logique que dans login_screen.dart : si l'utilisateur a un EnterpriseModuleUser
-  // actif pour cette entreprise et ce module, il a accès au module.
-  // La vérification des permissions détaillées se fait au niveau du module.
-  final activeAccesses = userAccesses
-      .where(
-        (access) =>
-            access.enterpriseId == activeEnterpriseId && access.isActive,
-      )
-      .toList();
-
-  // Retourner directement les modules pour lesquels l'utilisateur a un accès actif
-  // (sans vérification de permissions détaillées, comme dans login_screen.dart)
-  final accessibleModuleIds = activeAccesses
-      .map((access) => access.moduleId)
-      .toSet()
-      .toList();
-
-  return accessibleModuleIds;
 });
 
 /// Provider qui gère la sélection automatique de l'entreprise

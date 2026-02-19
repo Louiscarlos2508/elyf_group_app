@@ -29,10 +29,10 @@ class LeakListItem extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: Colors.black.withValues(alpha: 0.1),
+          color: theme.colorScheme.outline.withValues(alpha: 0.1),
           width: 1.3,
         ),
       ),
@@ -58,7 +58,7 @@ class LeakListItem extends StatelessWidget {
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontSize: 16,
                     fontWeight: FontWeight.normal,
-                    color: const Color(0xFF101828),
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -66,7 +66,7 @@ class LeakListItem extends StatelessWidget {
                   'ID: ${leak.cylinderId}',
                   style: theme.textTheme.bodyMedium?.copyWith(
                     fontSize: 14,
-                    color: const Color(0xFF4A5565),
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
                 const SizedBox(height: 8),

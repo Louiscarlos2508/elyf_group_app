@@ -1,5 +1,4 @@
 import '../entities/liquidity_checkpoint.dart';
-import '../entities/transaction.dart';
 
 /// Repository interface for managing liquidity checkpoints with theoretical calculations.
 abstract class LiquidityRepository {

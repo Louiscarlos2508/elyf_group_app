@@ -10,11 +10,13 @@ class CylinderSaleCard extends StatelessWidget {
     required this.cylinder,
     required this.stock,
     required this.onTap,
+    this.onQuickExchange,
   });
 
   final Cylinder cylinder;
   final int stock;
   final VoidCallback onTap;
+  final VoidCallback? onQuickExchange;
 
   Color _getGradientColor(int weight) {
     switch (weight) {
@@ -80,7 +82,7 @@ class CylinderSaleCard extends StatelessWidget {
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontSize: 24,
                     fontWeight: FontWeight.normal,
-                    color: const Color(0xFF0A0A0A),
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
                 Container(
@@ -89,7 +91,7 @@ class CylinderSaleCard extends StatelessWidget {
                     vertical: 3,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFECEEF2),
+                    color: theme.colorScheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: Colors.transparent, width: 1.3),
                   ),
@@ -97,7 +99,7 @@ class CylinderSaleCard extends StatelessWidget {
                     '$stock en stock',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       fontSize: 14,
-                      color: const Color(0xFF030213),
+                      color: theme.colorScheme.onSurface,
                     ),
                   ),
                 ),
@@ -178,7 +180,7 @@ class CylinderSaleCard extends StatelessWidget {
                         'Prix unitaire',
                         style: theme.textTheme.bodyMedium?.copyWith(
                           fontSize: 14,
-                          color: const Color(0xFF4A5565),
+                          color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -197,7 +199,7 @@ class CylinderSaleCard extends StatelessWidget {
                         'FCFA',
                         style: theme.textTheme.bodySmall?.copyWith(
                           fontSize: 14,
-                          color: const Color(0xFF6A7282),
+                          color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
                         ),
                       ),
                     ],
@@ -229,6 +231,41 @@ class CylinderSaleCard extends StatelessWidget {
                     ),
                   ),
                 ),
+                if (hasStock && onQuickExchange != null) ...[
+                  const SizedBox(height: 12),
+                  GestureDetector(
+                    onTap: onQuickExchange,
+                    child: Container(
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.secondaryContainer,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: theme.colorScheme.secondary.withValues(alpha: 0.2),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.bolt,
+                            size: 18,
+                            color: theme.colorScheme.secondary,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Échange Rapide (1)',
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: theme.colorScheme.onSecondaryContainer,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

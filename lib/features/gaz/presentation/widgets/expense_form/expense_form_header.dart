@@ -15,10 +15,10 @@ class ExpenseFormHeader extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.red.withValues(alpha: 0.1),
+            color: theme.colorScheme.error.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: const Icon(Icons.receipt_long, color: Colors.red),
+          child: Icon(Icons.receipt_long, color: theme.colorScheme.error),
         ),
         const SizedBox(width: 16),
         Expanded(

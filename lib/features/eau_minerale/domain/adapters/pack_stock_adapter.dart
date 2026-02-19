@@ -10,4 +10,12 @@ abstract class PackStockAdapter {
     String? reason,
     String? notes,
   });
+  
+  /// Enregistre une entrée de stock pour le Pack ou un produit spécifique (ex: annulation de vente).
+  Future<void> recordPackEntry(
+    int quantity, {
+    String? productId,
+    String? reason,
+    String? notes,
+  });
 }

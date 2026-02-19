@@ -10,9 +10,14 @@ import 'retail_kpi_section.dart';
 
 /// Onglet nouvelle vente pour la vente au détail.
 class RetailNewSaleTab extends ConsumerWidget {
-  const RetailNewSaleTab({super.key, required this.onCylinderTap});
+  const RetailNewSaleTab({
+    super.key,
+    required this.onCylinderTap,
+    this.onQuickExchange,
+  });
 
   final ValueChanged<Cylinder> onCylinderTap;
+  final ValueChanged<Cylinder>? onQuickExchange;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -41,7 +46,7 @@ class RetailNewSaleTab extends ConsumerWidget {
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontSize: 20,
                     fontWeight: FontWeight.normal,
-                    color: const Color(0xFF101828),
+                    color: theme.colorScheme.onSurface,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -50,7 +55,7 @@ class RetailNewSaleTab extends ConsumerWidget {
                   'Sélectionnez la bouteille pour commencer la vente',
                   style: theme.textTheme.bodyLarge?.copyWith(
                     fontSize: 16,
-                    color: const Color(0xFF4A5565),
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -66,6 +71,7 @@ class RetailNewSaleTab extends ConsumerWidget {
               cylinders: cylinders,
               enterpriseId: enterpriseId,
               onCylinderTap: onCylinderTap,
+              onQuickExchange: onQuickExchange,
             ),
             loading: () => SliverFillRemaining(
               child: AppShimmers.list(context),

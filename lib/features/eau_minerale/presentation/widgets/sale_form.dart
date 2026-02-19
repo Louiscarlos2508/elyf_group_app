@@ -6,6 +6,7 @@ import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../domain/entities/sale.dart';
 import '../../domain/entities/product.dart';
+import '../../domain/entities/closing.dart';
 import '../../domain/pack_constants.dart';
 import '../../domain/repositories/customer_repository.dart';
 import 'sale_product_selector.dart';
@@ -109,11 +110,10 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
     });
   }
 
-  void _onSplitChanged(int cashAmount, int orangeMoneyAmount, int cardAmount) {
+  void _onSplitChanged(int cashAmount, int orangeMoneyAmount) {
     setState(() {
       _cashAmount = cashAmount;
       _orangeMoneyAmount = orangeMoneyAmount;
-      // Note: Eau Minerale module might not use cardAmount yet, but callback requires it.
     });
   }
 
@@ -165,8 +165,11 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
   }
 
   Widget _buildQuantityField(BuildContext context, WidgetRef ref) {
-    final packStockAsync = ref.watch(packStockQuantityProvider);
-    return packStockAsync.when(
+    final productStockAsync = _selectedProduct != null 
+        ? ref.watch(productStockQuantityProvider(_selectedProduct!.name))
+        : null;
+        
+    return productStockAsync != null ? productStockAsync.when(
       data: (stock) {
         final stockError = _quantity != null && stock < _quantity!;
         return TextFormField(
@@ -214,10 +217,81 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
         ),
         enabled: false,
       ),
+    ) : TextFormField(
+        controller: _quantityController,
+        decoration: _buildInputDecoration(
+          context,
+          label: 'Quantité',
+          icon: Icons.inventory_2_rounded,
+          helperText: 'Sélectionnez d\'abord un produit',
+        ),
+        readOnly: true,
+      );
+  }
+
+  Widget _buildSessionWarning(BuildContext context, WidgetRef ref) {
+    final sessionAsync = ref.watch(currentClosingSessionProvider);
+    final theme = Theme.of(context);
+
+    return sessionAsync.maybeWhen(
+      data: (session) {
+        if (session != null && session.status == ClosingStatus.open) {
+          return const SizedBox.shrink();
+        }
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 24),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.errorContainer.withValues(alpha: 0.8),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: theme.colorScheme.error.withValues(alpha: 0.3)),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: theme.colorScheme.error),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Session de trésorerie fermée',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onErrorContainer,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Vous devez ouvrir une session dans l\'onglet "Trésorerie" avant de pouvoir enregistrer une vente.',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onErrorContainer,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+      orElse: () => const SizedBox.shrink(),
     );
   }
 
   Future<void> submit() async {
+    // 0. Vérifier la session de trésorerie
+    final currentSession = await ref.read(currentClosingSessionProvider.future);
+    if (currentSession == null || currentSession.status != ClosingStatus.open) {
+      if (!mounted) return;
+      NotificationService.showError(
+        context,
+        'La session de trésorerie est fermée. Veuillez l\'ouvrir avant de vendre.',
+      );
+      return;
+    }
+
     if (_selectedProduct == null) {
       NotificationService.showWarning(
         context,
@@ -235,9 +309,7 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
     }
 
     final saleService = ref.read(saleServiceProvider);
-    final packStock = _selectedProduct!.id == packProductId
-        ? await ref.read(packStockQuantityProvider.future)
-        : null;
+    final stock = await ref.read(productStockQuantityProvider(_selectedProduct!.name).future);
     final validationError = await saleService.validateSale(
       productId: _selectedProduct!.id,
       quantity: _quantity,
@@ -246,7 +318,7 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
       customerId: _selectedCustomer?.id,
       customerName: _customerNameController.text,
       customerPhone: _customerPhoneController.text,
-      packStockOverride: packStock,
+      packStockOverride: stock,
     );
 
     if (!mounted) return;
@@ -287,12 +359,8 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
         );
 
         final product = _selectedProduct!;
-        final productId = product.id == packProductId
-            ? packProductId
-            : product.id;
-        final productName = product.id == packProductId
-            ? packName
-            : product.name;
+        final productId = product.id;
+        final productName = product.name;
         final enterpriseId = ref.read(activeEnterpriseIdProvider).value ?? '';
 
         final sale = Sale(
@@ -346,7 +414,10 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: _buildLeftColumn(context),
+                    children: [
+                      _buildSessionWarning(context, ref),
+                      ..._buildLeftColumn(context),
+                    ],
                   ),
                 ),
                 const SizedBox(width: 24),
@@ -363,6 +434,7 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                _buildSessionWarning(context, ref),
                 ..._buildLeftColumn(context),
                 const SizedBox(height: 16),
                 ..._buildRightColumn(context),
@@ -476,19 +548,7 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
               ],
             ),
             const SizedBox(height: 20),
-            if (_selectedProduct != null)
-              _buildQuantityField(context, ref)
-            else
-              TextFormField(
-                controller: _quantityController,
-                decoration: _buildInputDecoration(
-                  context,
-                  label: 'Quantité',
-                  icon: Icons.inventory_2_rounded,
-                  helperText: 'Sélectionnez d\'abord un produit',
-                ),
-                readOnly: true,
-              ),
+            _buildQuantityField(context, ref),
             const SizedBox(height: 24),
             if (_totalPrice != null) ...[
               Container(

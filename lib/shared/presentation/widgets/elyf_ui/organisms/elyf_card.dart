@@ -99,6 +99,7 @@ class ElyfStatsCard extends StatelessWidget {
     this.trendLabel,
     this.color,
     this.isGlass = true,
+    this.onTap,
   });
 
   final String label;
@@ -109,6 +110,7 @@ class ElyfStatsCard extends StatelessWidget {
   final String? trendLabel;
   final Color? color;
   final bool isGlass;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -119,6 +121,7 @@ class ElyfStatsCard extends StatelessWidget {
       isGlass: isGlass,
       padding: const EdgeInsets.all(AppSpacing.md),
       elevation: isGlass ? 0 : 2,
+      onTap: onTap,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

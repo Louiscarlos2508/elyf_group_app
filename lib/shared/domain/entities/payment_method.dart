@@ -14,9 +14,6 @@ enum PaymentMethod {
   /// Les deux méthodes (cash + mobile money) - pour répartition
   both,
 
-  /// Paiement par carte bancaire
-  card,
-
   /// Vente à crédit
   credit,
 }
@@ -32,8 +29,6 @@ extension PaymentMethodExtension on PaymentMethod {
         return 'Mobile Money';
       case PaymentMethod.both:
         return 'Les deux';
-      case PaymentMethod.card:
-        return 'Carte';
       case PaymentMethod.credit:
         return 'Crédit';
     }
@@ -48,8 +43,6 @@ extension PaymentMethodExtension on PaymentMethod {
         return 'account_balance_wallet';
       case PaymentMethod.both:
         return 'payment';
-      case PaymentMethod.card:
-        return 'credit_card';
       case PaymentMethod.credit:
         return 'timer_outlined';
     }

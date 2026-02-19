@@ -185,7 +185,7 @@ class StoreController {
         type: TreasuryOperationType.supply,
         toAccount: sale.paymentMethod,
         date: sale.date,
-        notes: 'Vente ${saleNumber}',
+        notes: 'Vente $saleNumber',
         reason: 'Vente directe',
       ));
     }
@@ -592,7 +592,7 @@ class StoreController {
       type: TreasuryOperationType.removal,
       fromAccount: expense.paymentMethod,
       date: expense.date,
-      notes: 'Dépense ${expenseNumber}: ${expense.label}',
+      notes: 'Dépense $expenseNumber: ${expense.label}',
       reason: 'Dépense boutique',
     ));
 
@@ -827,7 +827,6 @@ class StoreController {
       mobileMoneyDiscrepancy: 0,
       digitalCashRevenue: 0,
       digitalMobileMoneyRevenue: 0,
-      digitalCardRevenue: 0,
       status: ClosingStatus.open,
       openingNotes: notes,
     );

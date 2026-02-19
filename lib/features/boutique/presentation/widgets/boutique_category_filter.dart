@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:elyf_groupe_app/app/theme/app_colors.dart';
 import 'package:elyf_groupe_app/features/boutique/domain/entities/category.dart';
-import '../../domain/entities/category.dart';
 
 class BoutiqueCategoryFilter extends StatelessWidget {
   const BoutiqueCategoryFilter({
@@ -62,7 +60,7 @@ class BoutiqueCategoryFilter extends StatelessWidget {
         selectedColor: isSelected && color != null ? color.withValues(alpha: 0.2) : colorScheme.primaryContainer,
         labelStyle: TextStyle(
           color: isSelected 
-              ? (color != null ? color : colorScheme.onPrimaryContainer) 
+              ? (color ?? colorScheme.onPrimaryContainer) 
               : colorScheme.onSurface,
           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
         ),

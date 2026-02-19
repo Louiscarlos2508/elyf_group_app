@@ -336,8 +336,21 @@ class RoleController {
   }
 
   /// Surveille tous les rôles (Stream).
+  /// Surveille tous les rôles (Stream).
   Stream<List<UserRole>> watchAllRoles() {
-    return _repository.watchAllRoles();
+    return _repository.watchAllRoles().map((roles) {
+      // Dédupliquer les rôles par ID pour éviter les duplications
+      // (peut arriver si la synchronisation crée des doublons dans Drift)
+      final uniqueRoles = <String, UserRole>{};
+      for (final role in roles) {
+        // Garder le premier rôle trouvé avec chaque ID
+        if (!uniqueRoles.containsKey(role.id)) {
+          uniqueRoles[role.id] = role;
+        }
+      }
+
+      return uniqueRoles.values.toList();
+    });
   }
 
   /// Surveille le statut de synchronisation (Stream).

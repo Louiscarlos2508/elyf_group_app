@@ -35,7 +35,6 @@ class _CheckoutDialogState extends ConsumerState<CheckoutDialog>
   PaymentMethod _paymentMethod = PaymentMethod.cash;
   int _cashAmount = 0;
   int _mobileMoneyAmount = 0;
-  int _cardAmount = 0;
   bool _isLoading = false;
   Sale? _completedSale;
 
@@ -45,7 +44,6 @@ class _CheckoutDialogState extends ConsumerState<CheckoutDialog>
     _amountPaidController.text = widget.total.toString();
     _cashAmount = widget.total;
     _mobileMoneyAmount = 0;
-    _cardAmount = 0;
   }
 
   void _onPaymentMethodChanged(PaymentMethod method) {
@@ -55,19 +53,12 @@ class _CheckoutDialogState extends ConsumerState<CheckoutDialog>
       if (method == PaymentMethod.cash) {
         _cashAmount = amountPaid;
         _mobileMoneyAmount = 0;
-        _cardAmount = 0;
       } else if (method == PaymentMethod.mobileMoney) {
         _cashAmount = 0;
         _mobileMoneyAmount = amountPaid;
-        _cardAmount = 0;
-      } else if (method == PaymentMethod.card) {
-        _cashAmount = 0;
-        _mobileMoneyAmount = 0;
-        _cardAmount = amountPaid;
       } else if (method == PaymentMethod.both) {
         _cashAmount = 0;
         _mobileMoneyAmount = 0;
-        _cardAmount = 0;
       }
     });
   }
@@ -80,26 +71,19 @@ class _CheckoutDialogState extends ConsumerState<CheckoutDialog>
           if (_paymentMethod == PaymentMethod.cash) {
             _cashAmount = amount;
             _mobileMoneyAmount = 0;
-            _cardAmount = 0;
           } else if (_paymentMethod == PaymentMethod.mobileMoney) {
             _cashAmount = 0;
             _mobileMoneyAmount = amount;
-            _cardAmount = 0;
-          } else if (_paymentMethod == PaymentMethod.card) {
-            _cashAmount = 0;
-            _mobileMoneyAmount = 0;
-            _cardAmount = amount;
           }
         });
       }
     });
   }
 
-  void _onSplitChanged(int cashAmount, int mobileMoneyAmount, int cardAmount) {
+  void _onSplitChanged(int cashAmount, int mobileMoneyAmount) {
     setState(() {
       _cashAmount = cashAmount;
       _mobileMoneyAmount = mobileMoneyAmount;
-      _cardAmount = cardAmount;
     });
   }
 
@@ -139,14 +123,14 @@ class _CheckoutDialogState extends ConsumerState<CheckoutDialog>
       onSubmit: () async {
         // Calculer le montant payé selon la méthode
         final amountPaid = _paymentMethod == PaymentMethod.both
-            ? (_cashAmount + _mobileMoneyAmount + _cardAmount)
+            ? (_cashAmount + _mobileMoneyAmount)
             : (_amountPaid ?? 0);
 
         // Validation pour paiement mixte
         if (_paymentMethod == PaymentMethod.both) {
-          if (_cashAmount + _mobileMoneyAmount + _cardAmount != widget.total) {
+          if (_cashAmount + _mobileMoneyAmount != widget.total) {
             throw ValidationException(
-              'La somme des montants (${CurrencyFormatter.formatFCFA(_cashAmount + _mobileMoneyAmount + _cardAmount)}) doit être égale au total (${CurrencyFormatter.formatFCFA(widget.total)})',
+              'La somme des montants (${CurrencyFormatter.formatFCFA(_cashAmount + _mobileMoneyAmount)}) doit être égale au total (${CurrencyFormatter.formatFCFA(widget.total)})',
               'PAYMENT_AMOUNT_MISMATCH',
             );
           }
@@ -178,7 +162,6 @@ class _CheckoutDialogState extends ConsumerState<CheckoutDialog>
           paymentMethod: _paymentMethod,
           cashAmount: _cashAmount,
           mobileMoneyAmount: _mobileMoneyAmount,
-          cardAmount: _cardAmount,
         );
 
         final createdSale = await ref.read(storeControllerProvider).createSale(sale);
@@ -293,14 +276,6 @@ class _CheckoutDialogState extends ConsumerState<CheckoutDialog>
                         ));
                       }
                       
-                      if (enabledMethods.contains('card')) {
-                        segments.add(const ButtonSegment(
-                          value: PaymentMethod.card,
-                          label: Text('Carte'),
-                          icon: Icon(Icons.credit_card),
-                        ));
-                      }
-                      
                       // Enable Mixte if at least 2 methods are enabled
                       if (enabledMethods.length >= 2) {
                         segments.add(const ButtonSegment(
@@ -356,7 +331,7 @@ class _CheckoutDialogState extends ConsumerState<CheckoutDialog>
                           return 'Le montant ne peut pas dépasser ${CurrencyFormatter.formatFCFA(widget.total)}';
                         }
                         if (amount < widget.total &&
-                            (_paymentMethod == PaymentMethod.cash || _paymentMethod == PaymentMethod.card)) {
+                            (_paymentMethod == PaymentMethod.cash)) {
                           return 'Le crédit n\'est pas supporté ici';
                         }
                         return null;
@@ -370,7 +345,6 @@ class _CheckoutDialogState extends ConsumerState<CheckoutDialog>
                       onSplitChanged: _onSplitChanged,
                       initialCashAmount: _cashAmount,
                       initialMobileMoneyAmount: _mobileMoneyAmount,
-                      initialCardAmount: _cardAmount,
                     ),
                   ],
                   const SizedBox(height: 24),

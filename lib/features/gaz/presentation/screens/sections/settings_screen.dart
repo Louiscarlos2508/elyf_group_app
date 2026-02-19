@@ -53,9 +53,9 @@ class GazSettingsScreen extends ConsumerWidget {
             final theme = Theme.of(context);
             final isMobile = MediaQuery.of(context).size.width < 800;
 
-            return Container(
-              color: const Color(0xFFF9FAFB),
-              child: CustomScrollView(
+            return Scaffold(
+              backgroundColor: theme.colorScheme.surface,
+              body: CustomScrollView(
                 slivers: [
                   const GazHeader(
                     title: 'ADMINISTRATION',
@@ -123,7 +123,7 @@ class GazSettingsScreen extends ConsumerWidget {
   }) {
     return Card(
       elevation: 0,
-      color: Colors.white,
+      color: theme.colorScheme.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(color: theme.colorScheme.outlineVariant),
@@ -138,7 +138,7 @@ class GazSettingsScreen extends ConsumerWidget {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF2F4F7),
+                    color: theme.colorScheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(
@@ -222,7 +222,7 @@ class GazSettingsScreen extends ConsumerWidget {
   }) {
     return Card(
       elevation: 0,
-      color: Colors.white,
+      color: theme.colorScheme.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(color: theme.colorScheme.outlineVariant),
@@ -237,7 +237,7 @@ class GazSettingsScreen extends ConsumerWidget {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF2F4F7),
+                    color: theme.colorScheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(
@@ -355,7 +355,7 @@ class GazSettingsScreen extends ConsumerWidget {
 
     return Card(
       elevation: 0,
-      color: Colors.white,
+      color: theme.colorScheme.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(color: theme.colorScheme.outlineVariant),
@@ -370,7 +370,7 @@ class GazSettingsScreen extends ConsumerWidget {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFEF3F2),
+                    color: theme.colorScheme.errorContainer.withValues(alpha: 0.4),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(
@@ -514,7 +514,7 @@ class GazSettingsScreen extends ConsumerWidget {
 
     return Card(
       elevation: 0,
-      color: Colors.white,
+      color: theme.colorScheme.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(color: theme.colorScheme.outlineVariant),
@@ -529,7 +529,7 @@ class GazSettingsScreen extends ConsumerWidget {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE0F2FE),
+                    color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(

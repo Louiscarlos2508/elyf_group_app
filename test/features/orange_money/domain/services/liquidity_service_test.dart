@@ -1,8 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
-import 'package:elyf_groupe_app/features/orange_money/domain/entities/liquidity_checkpoint.dart';
-import 'package:elyf_groupe_app/features/orange_money/domain/entities/orange_money_settings.dart';
 import 'package:elyf_groupe_app/features/orange_money/domain/entities/transaction.dart';
 import 'package:elyf_groupe_app/features/orange_money/domain/repositories/liquidity_repository.dart';
 import 'package:elyf_groupe_app/features/orange_money/domain/repositories/settings_repository.dart';

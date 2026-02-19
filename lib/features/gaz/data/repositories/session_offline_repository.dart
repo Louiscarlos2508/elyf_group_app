@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:drift/drift.dart';
 import '../../../../core/offline/drift/app_database.dart';
-import '../../../../shared.dart';
 import '../../domain/entities/gaz_session.dart';
 import '../../domain/repositories/session_repository.dart';
 

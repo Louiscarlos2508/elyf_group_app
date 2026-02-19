@@ -20,6 +20,10 @@ subprojects {
     val applyNamespaceFix = {
         if (project.hasProperty("android")) {
             val android = project.extensions.getByName("android") as com.android.build.gradle.BaseExtension
+
+            // Force compileSdkVersion to 36 to satisfy dependency requirements
+            android.compileSdkVersion(36)
+
             if (android.namespace == null) {
                 val manifestFile = project.file("src/main/AndroidManifest.xml")
                 if (manifestFile.exists()) {

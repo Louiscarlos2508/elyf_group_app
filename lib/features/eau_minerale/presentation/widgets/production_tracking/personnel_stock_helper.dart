@@ -1,74 +1,76 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../application/providers.dart';
-import '../../../domain/entities/packaging_stock.dart';
 import '../../../domain/entities/production_day.dart';
 import '../../../domain/entities/stock_item.dart';
+import '../../../domain/entities/material_consumption.dart';
 
-const String _typeEmballage = 'Emballage';
-
-/// Récupère le stock d'emballages utilisé pour l'enregistrement journalier.
-Future<PackagingStock?> _fetchEmballageStock(WidgetRef ref) async {
-  final packaging = ref.read(packagingStockControllerProvider);
-  var stock = await packaging.fetchByType(_typeEmballage);
-  if (stock != null) return stock;
-  final all = await packaging.fetchAll();
-  return all.isNotEmpty ? all.first : null;
-}
-
-/// Enregistre l'effet des emballages sur le stock (mouvement + sync).
-Future<void> _applyEmballages(
+/// Enregistre les consommations et productions sur le stock.
+Future<void> _applyConsumptions(
   WidgetRef ref,
-  int delta,
+  List<MaterialConsumption> newCons,
+  List<MaterialConsumption> oldCons,
+  List<MaterialConsumption> newProduced,
+  List<MaterialConsumption> oldProduced,
   String sessionId,
-  PackagingStock stock,
   bool isCorrection,
 ) async {
   final ctrl = ref.read(stockControllerProvider);
-  if (delta > 0) {
-    await ctrl.recordPackagingUsage(
-      packagingId: stock.id,
-      packagingType: stock.type,
-      quantite: delta,
+  
+  // 1. Inverser les anciennes consommations (réintégrer le stock)
+  if (oldCons.isNotEmpty) {
+     final returns = oldCons.map((c) => c.copyWith(quantity: -c.quantity)).toList();
+     await ctrl.recordMaterialConsumptions(
+        consumptions: returns,
+        productionId: sessionId,
+        notes: 'Correction consommation journalière (réintégration)',
+     );
+  }
+
+  // 2. Appliquer les nouvelles consommations
+  if (newCons.isNotEmpty) {
+    await ctrl.recordMaterialConsumptions(
+      consumptions: newCons,
       productionId: sessionId,
-      notes: isCorrection ? null : 'Enregistrement journalier',
+      notes: isCorrection ? 'Correction consommation journalière' : 'Enregistrement journalier',
     );
-  } else {
-    await ctrl.recordPackagingEntry(
-      packagingId: stock.id,
-      packagingType: stock.type,
-      quantite: -delta,
-      notes: 'Réintégration (correction enregistrement journalier)',
+  }
+
+  // 3. Appliquer les productions (Produits Finis du catalogue)
+  await _applyProductions(ref, newProduced, oldProduced, sessionId, isCorrection);
+}
+
+Future<void> _applyProductions(
+  WidgetRef ref,
+  List<MaterialConsumption> newProduced,
+  List<MaterialConsumption> oldProduced,
+  String sessionId,
+  bool isCorrection,
+) async {
+  final ctrl = ref.read(stockControllerProvider);
+
+  // 1. Inverser les anciennes productions (retirer du stock)
+  if (oldProduced.isNotEmpty) {
+    final returns = oldProduced.map((c) => c.copyWith(quantity: -c.quantity)).toList();
+    await ctrl.recordCatalogProduction(
+      items: returns,
+      productionId: sessionId,
+      notes: 'Correction production journalière (ajustement négatif)',
+    );
+  }
+
+  // 2. Appliquer les nouvelles productions
+  if (newProduced.isNotEmpty) {
+    await ctrl.recordCatalogProduction(
+      items: newProduced,
+      productionId: sessionId,
+      notes: isCorrection ? 'Correction production journalière' : 'Enregistrement journalier',
     );
   }
 }
 
-/// Enregistre l'effet des packs sur le stock (mouvement + sync via recordItemMovement).
-Future<void> _applyPacks(
-  WidgetRef ref,
-  int delta,
-  StockItem pack,
-  bool isCorrection,
-) async {
-  if (delta == 0) return;
-  final ctrl = ref.read(stockControllerProvider);
-  final type = delta > 0 ? StockMovementType.entry : StockMovementType.exit;
-  final qty = delta.abs().toDouble();
-  final reason = isCorrection
-      ? 'Réintégration (correction enregistrement journalier)'
-      : 'Enregistrement journalier';
-  await ctrl.recordItemMovement(
-    itemId: pack.id,
-    itemName: pack.name,
-    type: type,
-    quantity: qty,
-    unit: pack.unit,
-    reason: reason,
-    notes: 'Packs produits',
-  );
-}
 
-/// Enregistre pack + emballage sur le stock lors de la sauvegarde d'un jour
+/// Enregistre pack + emballages sur le stock lors de la sauvegarde d'un jour
 /// (création ou mise à jour). Mouvements enregistrés et synchronisés.
 Future<void> applyStockOnSave(
   WidgetRef ref,
@@ -80,63 +82,44 @@ Future<void> applyStockOnSave(
   final oldPacks = existingDay?.packsProduits ?? 0;
   final deltaPacks = newPacks - oldPacks;
 
-  final newEmb = productionDay.emballagesUtilises;
-  final oldEmb = existingDay?.emballagesUtilises ?? 0;
-  final deltaEmb = newEmb - oldEmb;
+  final newCons = productionDay.consumptions;
+  final oldCons = existingDay?.consumptions ?? [];
+  final newProduced = productionDay.producedItems;
+  final oldProduced = existingDay?.producedItems ?? [];
 
-  if (deltaPacks == 0 && deltaEmb == 0) return;
+  if (deltaPacks == 0 && newCons.isEmpty && oldCons.isEmpty && newProduced.isEmpty && oldProduced.isEmpty) return;
 
-  if (deltaPacks != 0) {
-    final pack = await ref.read(stockControllerProvider).ensurePackStockItem();
-    await _applyPacks(ref, deltaPacks, pack, existingDay != null);
-  }
-
-  if (deltaEmb != 0) {
-    final emb = await _fetchEmballageStock(ref);
-    if (emb == null) {
-      throw StateError(
-        'Aucun stock d\'emballages (Emballage) trouvé. '
-        'Créez-en un avant d\'enregistrer la production.',
-      );
-    }
-    await _applyEmballages(ref, deltaEmb, sessionId, emb, existingDay != null);
-  }
+  // Gestion des Consommations et Productions (Catalogue)
+  await _applyConsumptions(ref, newCons, oldCons, newProduced, oldProduced, sessionId, existingDay != null);
 }
 
-/// Réintègre emballages et retire les packs du stock lorsqu'un jour est supprimé.
+/// Réintègre les consommations et retire les packs du stock lorsqu'un jour est supprimé.
 Future<void> addBackStockOnDayDelete(WidgetRef ref, ProductionDay day) async {
-  final hasEmb = day.emballagesUtilises > 0;
+  final hasCons = day.consumptions.isNotEmpty;
+  final hasProduced = day.producedItems.isNotEmpty;
   final hasPacks = day.packsProduits > 0;
-  if (!hasEmb && !hasPacks) return;
+  
+  if (!hasCons && !hasPacks && !hasProduced) return;
 
   final stockController = ref.read(stockControllerProvider);
 
-  if (hasEmb) {
-    final emb = await _fetchEmballageStock(ref);
-    if (emb == null) {
-      throw StateError(
-        'Aucun stock d\'emballages (Emballage) trouvé. '
-        'Impossible de réintégrer les emballages.',
-      );
-    }
-    await stockController.recordPackagingEntry(
-      packagingId: emb.id,
-      packagingType: emb.type,
-      quantite: day.emballagesUtilises,
+  // 1. Inverser les consommations
+  if (hasCons) {
+    final returns = day.consumptions.map((c) => c.copyWith(quantity: -c.quantity)).toList();
+    await stockController.recordMaterialConsumptions(
+      consumptions: returns,
+      productionId: day.productionId,
       notes: 'Réintégration (suppression jour de production)',
     );
   }
 
-  if (hasPacks) {
-    final pack = await stockController.ensurePackStockItem();
-    await stockController.recordItemMovement(
-      itemId: pack.id,
-      itemName: pack.name,
-      type: StockMovementType.exit,
-      quantity: day.packsProduits.toDouble(),
-      unit: pack.unit,
-      reason: 'Réintégration (suppression jour de production)',
-      notes: 'Packs produits',
+  // 2. Inverser les productions
+  if (hasProduced) {
+    final returns = day.producedItems.map((c) => c.copyWith(quantity: -c.quantity)).toList();
+    await stockController.recordCatalogProduction(
+      items: returns,
+      productionId: day.productionId,
+      notes: 'Réintégration production (suppression jour)',
     );
   }
 }

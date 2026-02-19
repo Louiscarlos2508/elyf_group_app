@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import '../../../domain/entities/tour.dart';
-import '../../../domain/entities/stock_alert.dart';
 import 'closure_expense_item.dart';
 import '../../../../../../core/auth/providers.dart';
 import '../../../../../../core/logging/app_logger.dart';

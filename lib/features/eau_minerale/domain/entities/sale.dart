@@ -182,4 +182,4 @@ class Sale {
       (cashAmount + orangeMoneyAmount) == amountPaid;
 }
 
-enum SaleStatus { validated, fullyPaid }
+enum SaleStatus { validated, fullyPaid, voided }

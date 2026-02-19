@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import '../entities/cylinder.dart';
-import '../entities/cylinder_stock.dart';
-import '../entities/gaz_settings.dart';
 import '../entities/stock_alert.dart';
 import '../repositories/gaz_settings_repository.dart';
 import '../repositories/cylinder_stock_repository.dart';

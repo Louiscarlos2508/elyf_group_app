@@ -12,6 +12,7 @@ import 'package:elyf_groupe_app/core/offline/sync_manager.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/gas_sale.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/repositories/gas_repository.dart';
+import 'package:elyf_groupe_app/features/gaz/domain/repositories/cylinder_stock_repository.dart';
 
 /// Offline-first repository for Gas entities (gaz module).
 ///
@@ -22,12 +23,14 @@ class GasOfflineRepository implements GasRepository {
     required this.syncManager,
     required this.connectivityService,
     required this.enterpriseId,
+    required this.cylinderStockRepository,
   });
 
   final DriftService driftService;
   final SyncManager syncManager;
   final ConnectivityService connectivityService;
   final String enterpriseId;
+  final CylinderStockRepository cylinderStockRepository;
 
   // Collections séparées pour chaque type d'entité
   static const String _cylindersCollection = 'cylinders';
@@ -636,6 +639,60 @@ class GasOfflineRepository implements GasRepository {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       AppLogger.error(
         'Error deleting sale: ${appException.message}',
+        name: 'GasOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> executeSaleTransaction(GasSale sale) async {
+    try {
+      // 1. Enregistrer la vente
+      await addSale(sale);
+
+      // 2. Mettre à jour le stock bi-modal
+      final cylinders = await getCylinders();
+      final cylinder = cylinders.firstWhere((c) => c.id == sale.cylinderId);
+      
+      // Récupérer les stocks actuels (Pleines et Vides)
+      final allStocks = await cylinderStockRepository.getAllForEnterprise(enterpriseId);
+      
+      // Stock Pleines
+      final fullStock = allStocks.firstWhere(
+        (s) => s.cylinderId == sale.cylinderId && s.status == CylinderStatus.full,
+        orElse: () => throw BusinessException('Stock plein introuvable pour cette bouteille'),
+      );
+
+      // Mettre à jour les Pleines (décrémenter)
+      await cylinderStockRepository.updateStockQuantity(
+        fullStock.id,
+        fullStock.quantity - sale.quantity,
+      );
+
+      // Si c'est un échange, mettre à jour les Vides (incrémenter)
+      if (sale.isExchange) {
+        final emptyStock = allStocks.firstWhere(
+          (s) => s.cylinderId == sale.cylinderId && s.status == CylinderStatus.emptyAtStore,
+          orElse: () => throw BusinessException('Stock vide introuvable pour cette bouteille'),
+        );
+
+        await cylinderStockRepository.updateStockQuantity(
+          emptyStock.id,
+          emptyStock.quantity + sale.emptyReturnedQuantity,
+        );
+      }
+      
+      AppLogger.info(
+        'Vente exécutée avec succès - Bouteille: ${cylinder.weight}kg, Qté: ${sale.quantity}, Type: ${sale.dealType.label}',
+        name: 'GasOfflineRepository',
+      );
+    } catch (error, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
+      AppLogger.error(
+        'Erreur lors de l\'exécution de la transaction de vente: ${appException.message}',
         name: 'GasOfflineRepository',
         error: error,
         stackTrace: stackTrace,

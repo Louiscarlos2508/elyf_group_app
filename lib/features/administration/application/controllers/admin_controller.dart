@@ -137,18 +137,19 @@ class AdminController {
   );
 
   /// Assigne un utilisateur à plusieurs modules et plusieurs entreprises avec le même rôle.
+  /// Assigne un utilisateur à plusieurs modules et plusieurs entreprises avec le même rôle.
   Future<void> batchAssignUserToModulesAndEnterprises({
     required String userId,
     required List<String> moduleIds,
     required List<String> enterpriseIds,
-    required List<String> roleIds,
+    required Map<String, List<String>> roleIdsByModule,
     required bool isActive,
     String? currentUserId,
   }) => _userAssignmentController.batchAssignUserToModulesAndEnterprises(
     userId: userId,
     moduleIds: moduleIds,
     enterpriseIds: enterpriseIds,
-    roleIds: roleIds,
+    roleIdsByModule: roleIdsByModule,
     isActive: isActive,
     currentUserId: currentUserId,
   );

@@ -34,6 +34,7 @@ import 'controllers/admin_controller.dart';
 import 'controllers/user_controller.dart';
 import 'controllers/enterprise_controller.dart';
 import 'controllers/audit_controller.dart';
+import 'controllers/user_assignment_controller.dart';
 import '../../../core/auth/services/auth_service.dart';
 import '../../../core/firebase/providers.dart' show firestoreProvider;
 import '../data/repositories/admin_firestore_repository.dart';
@@ -210,6 +211,20 @@ final enterpriseControllerProvider = Provider<EnterpriseController>(
     permissionValidator: ref.watch(permissionValidatorServiceProvider),
     userRepository: ref.watch(userRepositoryProvider),
     adminRepository: ref.watch(adminRepositoryProvider),
+  ),
+);
+
+/// Provider for user assignment controller
+///
+/// Includes audit trail, Firestore sync and permission validation for assignments.
+final userAssignmentControllerProvider = Provider<UserAssignmentController>(
+  (ref) => UserAssignmentController(
+    ref.watch(adminRepositoryProvider),
+    auditService: ref.watch(auditServiceProvider),
+    firestoreSync: ref.watch(firestoreSyncServiceProvider),
+    permissionValidator: ref.watch(permissionValidatorServiceProvider),
+    userRepository: ref.watch(userRepositoryProvider),
+    enterpriseRepository: ref.watch(enterpriseRepositoryProvider),
   ),
 );
 

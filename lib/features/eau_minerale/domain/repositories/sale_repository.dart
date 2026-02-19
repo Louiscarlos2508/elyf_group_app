@@ -20,6 +20,7 @@ abstract class SaleRepository {
   Future<List<Sale>> fetchRecentSales({int limit = 50});
   Future<Sale?> getSale(String id);
   Future<String> createSale(Sale sale);
+  Future<void> updateSale(Sale sale);
   Future<void> deleteSale(String saleId);
 
   /// Updates the amount paid for a sale (used when recording credit payments).

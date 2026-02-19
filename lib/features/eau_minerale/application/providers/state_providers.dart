@@ -2,37 +2,36 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
 import 'package:rxdart/rxdart.dart';
 
-import '../../../../core/errors/app_exceptions.dart';
-import '../../../../core/domain/entities/expense_balance_data.dart';
-import '../../domain/adapters/expense_balance_adapter.dart';
-import '../../domain/entities/daily_worker.dart';
-import '../../domain/entities/electricity_meter_type.dart';
-import '../../domain/entities/expense_record.dart';
-import '../../domain/entities/expense_report_data.dart';
-import '../../domain/entities/machine.dart';
-import '../../domain/entities/product.dart';
-import '../../domain/entities/product_sales_summary.dart';
-import '../../domain/entities/production_report_data.dart';
-import '../../domain/entities/production_session.dart';
-import '../../domain/entities/report_data.dart';
-import '../../domain/entities/report_period.dart';
-import '../../domain/entities/salary_report_data.dart';
-import '../../domain/entities/sale.dart';
-import '../../domain/entities/stock_item.dart';
-import '../../domain/entities/stock_movement.dart';
-import '../../domain/entities/credit_payment.dart';
-import '../../domain/entities/worker_monthly_stat.dart';
-import '../../domain/pack_constants.dart';
-import 'controller_providers.dart';
-import 'repository_providers.dart';
-import 'service_providers.dart';
-import '../../domain/entities/customer_credit.dart';
-import '../../domain/repositories/customer_repository.dart';
-import '../../domain/entities/weekly_salary_info.dart';
-import '../../domain/services/dashboard_calculation_service.dart';
-import '../controllers/sales_controller.dart';
-import '../controllers/finances_controller.dart';
-import '../controllers/salary_controller.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/application/controllers/salary_controller.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/daily_worker.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/expense_record.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/production_session.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/report_period.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/sale.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/credit_payment.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/stock_item.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/machine.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/product.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/report_data.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/product_sales_summary.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/production_report_data.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/expense_report_data.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/salary_report_data.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/worker_monthly_stat.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/weekly_salary_info.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/customer_credit.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/treasury_movement.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/adapters/expense_balance_adapter.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/services/dashboard_calculation_service.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/repositories/customer_repository.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/application/controllers/finances_controller.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/application/controllers/sales_controller.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/pack_constants.dart';
+import 'package:elyf_groupe_app/core/domain/entities/expense_balance_data.dart';
+import 'package:elyf_groupe_app/core/errors/app_exceptions.dart';
+import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
+import 'package:elyf_groupe_app/shared/domain/entities/treasury_operation.dart';
 
 /// Provider pour récupérer le type de compteur configuré
 final electricityMeterTypeProvider =
@@ -65,7 +64,7 @@ final activityStateProvider = FutureProvider.autoDispose(
   (ref) async => ref.watch(activityControllerProvider).fetchTodaySummary(),
 );
 
-final salesStateProvider = StreamProvider.autoDispose(
+final salesStateProvider = StreamProvider.autoDispose<SalesState>(
   (ref) => ref.watch(salesControllerProvider).watchRecentSales(),
 );
 
@@ -73,37 +72,44 @@ final stockStateProvider = FutureProvider.autoDispose(
   (ref) async => ref.watch(stockControllerProvider).fetchSnapshot(),
 );
 
-/// Stock Pack (produits finis). Même source que Stock / Dashboard.
-/// À utiliser pour les ventes au lieu de getCurrentStock.
-final packStockQuantityProvider = FutureProvider.autoDispose<int>((ref) async {
+final historicalStockStateProvider = FutureProvider.autoDispose
+    .family<StockState, DateTime>((ref, date) async {
+  return ref.watch(stockControllerProvider).fetchStockStateAtDate(date);
+});
+
+/// Stock d'un produit spécifique par son nom.
+final productStockQuantityProvider = FutureProvider.autoDispose.family<int, String>((ref, productName) async {
   final state = await ref.watch(stockStateProvider.future);
   
-  // 1. Chercher ID pack-1 ou nom contenant 'pack'
-  final fg = state.items
+  // Chercher par nom exact ou contenant le nom (cas insensible à la casse)
+  final items = state.items
       .where((i) =>
           i.type == StockType.finishedGoods &&
-          (i.id == packStockItemId || i.name.toLowerCase().contains(packName.toLowerCase())))
+          (i.name.toLowerCase() == productName.toLowerCase() ||
+           i.name.toLowerCase().contains(productName.toLowerCase())))
       .toList();
       
-  if (fg.isNotEmpty) {
-    final pack = fg.any((i) => i.id == packStockItemId)
-        ? fg.firstWhere((i) => i.id == packStockItemId)
-        : fg.first;
-    return pack.quantity.toInt();
+  if (items.isNotEmpty) {
+    // Priorité au nom exact si possible
+    final exactMatch = items.where((i) => i.name.toLowerCase() == productName.toLowerCase()).toList();
+    return (exactMatch.isNotEmpty ? exactMatch.first : items.first).quantity.toInt();
   }
 
-  // 2. Fallback: Si un seul item fini existe, c'est lui le "Pack"
-  final allFG = state.items.where((i) => i.type == StockType.finishedGoods).toList();
-  if (allFG.length == 1) return allFG.first.quantity.toInt();
-
   return 0;
+});
+
+/// Stock Pack (produits finis). Même source que Stock / Dashboard.
+/// À utiliser pour les ventes au lieu de getCurrentStock.
+/// @deprecated Utilisez productStockQuantityProvider(packName)
+final packStockQuantityProvider = FutureProvider.autoDispose<int>((ref) async {
+  return ref.watch(productStockQuantityProvider(packName).future);
 });
 
 final clientsStateProvider = FutureProvider.autoDispose(
   (ref) async => ref.watch(clientsControllerProvider).fetchCustomers(),
 );
 
-final financesStateProvider = StreamProvider.autoDispose(
+final financesStateProvider = StreamProvider.autoDispose<FinancesState>(
   (ref) => ref.watch(financesControllerProvider).watchRecentExpenses(),
 );
 
@@ -119,6 +125,27 @@ final eauMineraleExpenseBalanceProvider =
 
 final productsProvider = FutureProvider.autoDispose<List<Product>>(
   (ref) async => ref.watch(productControllerProvider).fetchProducts(),
+);
+
+final rawMaterialsProvider = FutureProvider.autoDispose<List<Product>>((ref) async {
+  final products = await ref.watch(productsProvider.future);
+  return products.where((p) => p.type == ProductType.rawMaterial).toList();
+});
+
+final suppliersProvider = StreamProvider.autoDispose(
+  (ref) => ref.watch(supplierControllerProvider).watchSuppliers(),
+);
+
+final purchasesProvider = StreamProvider.autoDispose(
+  (ref) => ref.watch(purchaseControllerProvider).watchPurchases(),
+);
+
+final currentClosingSessionProvider = StreamProvider.autoDispose(
+  (ref) => ref.watch(closingControllerProvider).watchCurrentSession(),
+);
+
+final closingHistoryProvider = FutureProvider.autoDispose(
+  (ref) => ref.watch(closingControllerProvider).fetchHistory(),
 );
 
 final productionPeriodConfigProvider = FutureProvider.autoDispose(
@@ -216,7 +243,26 @@ final ventesParSessionProvider = FutureProvider.autoDispose
           .read(saleRepositoryProvider)
           .fetchSales(startDate: startOfDay, endDate: endOfDay);
 
-      return allSales;
+      // Filter sales belonging to this session
+      return allSales.where((sale) {
+        // 1. Explicit linkage (highest priority)
+        if (sale.productionSessionId == sessionId) return true;
+        
+        // 2. If the sale is explicitly linked to ANOTHER session, exclude it
+        if (sale.productionSessionId != null && sale.productionSessionId != '') return false;
+
+        // 3. Chronological fallback: check if sale happened during the session window
+        final isAfterStart = sale.date.isAfter(session.heureDebut) || 
+                           sale.date.isAtSameMomentAs(session.heureDebut);
+        
+        // If session is still active, we include sales up to now
+        final sessionEnd = session.heureFin;
+        final isBeforeEnd = sessionEnd == null 
+            ? true 
+            : (sale.date.isBefore(sessionEnd) || sale.date.isAtSameMomentAs(sessionEnd));
+
+        return isAfterStart && isBeforeEnd;
+      }).toList();
     });
 
 final salaryStateProvider = FutureProvider.autoDispose(
@@ -327,17 +373,23 @@ final dailyDashboardSummaryProvider = StreamProvider.autoDispose<DailyDashboardM
     startDate: startOfDay,
     endDate: endOfDay,
   );
+  final expensesStream = ref.watch(financeRepositoryProvider).watchExpenses();
+  final treasuryStream = ref.watch(treasuryControllerProvider).watchOperations();
 
-  return Rx.combineLatest3(
+  return Rx.combineLatest5(
     salesStream,
     paymentsStream,
     sessionsStream,
-    (List<Sale> sales, List<CreditPayment> payments, List<ProductionSession> sessions) {
+    expensesStream,
+    treasuryStream,
+    (List<Sale> sales, List<CreditPayment> payments, List<ProductionSession> sessions, List<ExpenseRecord> expenses, List<TreasuryOperation> operations) {
       final calculationService = ref.read(dashboardCalculationServiceProvider);
       return calculationService.calculateDailyMetrics(
         sales: sales,
         creditPayments: payments,
         sessions: sessions,
+        expenses: expenses,
+        treasuryOperations: operations,
       );
     },
   ).debounceTime(const Duration(milliseconds: 500));
@@ -786,3 +838,136 @@ final weeklySalariesProvider = FutureProvider.autoDispose.family<List<WeeklySala
   }
   return salaries.values.toList();
 });
+
+/// Provider pour l'historique de la trésorerie (Ventes + Décaisssements + Recouvrements)
+final treasuryHistoryProvider = StreamProvider.autoDispose<List<TreasuryMovement>>((ref) {
+  final salesStream = ref.watch(salesControllerProvider).watchRecentSales().map((state) => state.sales);
+  final paymentsStream = ref.watch(clientsControllerProvider).watchAllCreditPayments();
+  final expensesStream = ref.watch(financesControllerProvider).watchExpenses();
+  final manualOpsStream = ref.watch(treasuryControllerProvider).watchOperations();
+
+  return Rx.combineLatest4(
+    salesStream,
+    paymentsStream,
+    expensesStream,
+    manualOpsStream,
+    (List<Sale> sales, List<CreditPayment> payments, List<ExpenseRecord> expenses, List<TreasuryOperation> manualOps) {
+      final movements = <TreasuryMovement>[];
+
+      // 1. Ajouter les ventes (peuvent être splittées Cash/MM)
+      for (final sale in sales) {
+        if (sale.cashAmount > 0) {
+          movements.add(TreasuryMovement(
+            id: 'sale_cash_${sale.id}',
+            date: sale.date,
+            amount: sale.cashAmount,
+            label: 'Vente: ${sale.customerName}',
+            category: 'Vente',
+            method: PaymentMethod.cash,
+            isIncome: true,
+            originalEntity: sale,
+          ));
+        }
+        if (sale.orangeMoneyAmount > 0) {
+          movements.add(TreasuryMovement(
+            id: 'sale_mm_${sale.id}',
+            date: sale.date,
+            amount: sale.orangeMoneyAmount,
+            label: 'Vente: ${sale.customerName}',
+            category: 'Vente',
+            method: PaymentMethod.mobileMoney,
+            isIncome: true,
+            originalEntity: sale,
+          ));
+        }
+      }
+
+      // 2. Ajouter les recouvrements de crédits
+      for (final payment in payments) {
+        if (payment.cashAmount > 0) {
+          movements.add(TreasuryMovement(
+            id: 'pay_cash_${payment.id}',
+            date: payment.date,
+            amount: payment.cashAmount,
+            label: 'Recouvrement',
+            category: 'Crédit',
+            method: PaymentMethod.cash,
+            isIncome: true,
+            originalEntity: payment,
+          ));
+        }
+        if (payment.orangeMoneyAmount > 0) {
+          movements.add(TreasuryMovement(
+            id: 'pay_mm_${payment.id}',
+            date: payment.date,
+            amount: payment.orangeMoneyAmount,
+            label: 'Recouvrement',
+            category: 'Crédit',
+            method: PaymentMethod.mobileMoney,
+            isIncome: true,
+            originalEntity: payment,
+          ));
+        }
+      }
+
+      // 3. Ajouter les dépenses
+      for (final expense in expenses) {
+        movements.add(TreasuryMovement(
+          id: 'exp_${expense.id}',
+          date: expense.date,
+          amount: expense.amountCfa,
+          label: expense.label,
+          category: 'Dépense',
+          method: expense.paymentMethod,
+          isIncome: false,
+          originalEntity: expense,
+        ));
+      }
+
+      // 4. Ajouter les opérations manuelles (Filtrer les liens pour éviter les doublons)
+      for (final op in manualOps) {
+        // On ignore les opérations liées à une entité métier (vente, dépense, etc.)
+        // car elles sont déjà ajoutées par les flux spécifiques ci-dessus.
+        if (op.referenceEntityId != null && op.referenceEntityId!.isNotEmpty) {
+          continue;
+        }
+
+        final isIncome = op.type == TreasuryOperationType.supply || 
+                        (op.type == TreasuryOperationType.transfer && op.toAccount != null && op.fromAccount == null);
+        
+        movements.add(TreasuryMovement(
+          id: 'manual_${op.id}',
+          date: op.date,
+          amount: op.amount,
+          label: op.reason ?? _getManualOpLabel(op.type),
+          category: 'Trésorerie',
+          method: op.toAccount ?? op.fromAccount ?? PaymentMethod.cash,
+          isIncome: isIncome,
+          originalEntity: op,
+        ));
+      }
+
+      // Trier par date décroissante
+      movements.sort((a, b) => b.date.compareTo(a.date));
+
+      return movements.take(100).toList();
+    },
+  ).debounceTime(const Duration(milliseconds: 500));
+});
+
+String _getManualOpLabel(TreasuryOperationType type) {
+  switch (type) {
+    case TreasuryOperationType.supply: return 'Apport';
+    case TreasuryOperationType.removal: return 'Retrait';
+    case TreasuryOperationType.transfer: return 'Transfert';
+    case TreasuryOperationType.adjustment: return 'Ajustement';
+  }
+}
+
+final treasuryOperationsProvider = StreamProvider.autoDispose<List<TreasuryOperation>>(
+  (ref) => ref.watch(treasuryControllerProvider).watchOperations(),
+);
+
+final treasuryBalancesProvider = StreamProvider.autoDispose<Map<String, int>>(
+  (ref) => ref.watch(treasuryControllerProvider).watchBalances(),
+);

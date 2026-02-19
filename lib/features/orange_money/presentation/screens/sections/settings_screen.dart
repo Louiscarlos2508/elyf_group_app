@@ -72,8 +72,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Future<void> _saveSettings() async {
-    if (widget.enterpriseId == null || !_hasChanges || _settings == null)
+    if (widget.enterpriseId == null || !_hasChanges || _settings == null) {
       return;
+    }
 
     setState(() {
       _isLoading = true;
