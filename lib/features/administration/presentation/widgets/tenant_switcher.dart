@@ -121,6 +121,7 @@ class TenantSwitcher extends ConsumerWidget {
         break;
       case EnterpriseType.gasPointOfSale:
       case EnterpriseType.waterPointOfSale:
+      case EnterpriseType.pointOfSale:
         iconData = Icons.store;
         color = theme.colorScheme.secondary;
         break;

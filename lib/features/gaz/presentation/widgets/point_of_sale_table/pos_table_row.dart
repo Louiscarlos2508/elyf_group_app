@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
-import '../../../domain/entities/point_of_sale.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
+import 'package:elyf_groupe_app/features/administration/application/providers.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import '../point_of_sale_form_dialog.dart';
 import 'pos_stock_dialog.dart';
@@ -12,12 +13,12 @@ import 'pos_types_dialog.dart';
 class PosTableRow extends ConsumerWidget {
   const PosTableRow({
     super.key,
-    required this.pointOfSale,
+    required this.enterprise,
     required this.enterpriseId,
     required this.moduleId,
   });
 
-  final PointOfSale pointOfSale;
+  final Enterprise enterprise;
   final String enterpriseId;
   final String moduleId;
 
@@ -25,7 +26,7 @@ class PosTableRow extends ConsumerWidget {
     await showDialog(
       context: context,
       builder: (dialogContext) =>
-          PosStockDialog(pointOfSale: pointOfSale, enterpriseId: enterpriseId),
+          PosStockDialog(enterprise: enterprise, enterpriseId: enterpriseId),
     );
   }
 
@@ -33,7 +34,7 @@ class PosTableRow extends ConsumerWidget {
     await showDialog(
       context: context,
       builder: (dialogContext) => PosTypesDialog(
-        pointOfSale: pointOfSale,
+        enterprise: enterprise,
         enterpriseId: enterpriseId,
         moduleId: moduleId,
       ),
@@ -44,7 +45,7 @@ class PosTableRow extends ConsumerWidget {
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => PointOfSaleFormDialog(
-        pointOfSale: pointOfSale,
+        enterprise: enterprise,
         enterpriseId: enterpriseId,
         moduleId: moduleId,
       ),
@@ -62,7 +63,7 @@ class PosTableRow extends ConsumerWidget {
       builder: (context) => AlertDialog(
         title: const Text('Supprimer le point de vente'),
         content: Text(
-          'Êtes-vous sûr de vouloir supprimer "${pointOfSale.name}" ?\n\nCette action est irréversible.',
+          'Êtes-vous sûr de vouloir supprimer "${enterprise.name}" ?\n\nCette action est irréversible.',
         ),
         actions: [
           ElyfButton(
@@ -83,13 +84,13 @@ class PosTableRow extends ConsumerWidget {
     if (confirmed != true) return;
 
     try {
-      final controller = ref.read(pointOfSaleControllerProvider);
-      await controller.deletePointOfSale(pointOfSale.id);
+      final controller = ref.read(enterpriseControllerProvider);
+      await controller.deleteEnterprise(enterprise.id);
 
       if (!context.mounted) return;
 
       ref.invalidate(
-        pointsOfSaleProvider((enterpriseId: enterpriseId, moduleId: moduleId)),
+        enterprisesByParentAndTypeProvider((parentId: enterpriseId, type: EnterpriseType.gasPointOfSale)),
       );
 
       NotificationService.showSuccess(
@@ -127,7 +128,7 @@ class PosTableRow extends ConsumerWidget {
         children: [
           Expanded(
             child: Text(
-              pointOfSale.name,
+              enterprise.name,
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: theme.colorScheme.onSurface,
@@ -139,14 +140,14 @@ class PosTableRow extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: pointOfSale.isActive ? theme.colorScheme.primary : theme.colorScheme.outline,
+              color: enterprise.isActive ? theme.colorScheme.primary : theme.colorScheme.outline,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
-              pointOfSale.isActive ? 'Actif' : 'Inactif',
+              enterprise.isActive ? 'Actif' : 'Inactif',
               style: theme.textTheme.bodySmall?.copyWith(
                 fontSize: 10,
-                color: pointOfSale.isActive ? theme.colorScheme.onPrimary : theme.colorScheme.onSurface,
+                color: enterprise.isActive ? theme.colorScheme.onPrimary : theme.colorScheme.onSurface,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -157,12 +158,12 @@ class PosTableRow extends ConsumerWidget {
         TextSpan(
           children: [
             TextSpan(
-              text: pointOfSale.address,
+              text: enterprise.address ?? 'Aucune adresse',
               style: const TextStyle(fontWeight: FontWeight.w500),
             ),
             const TextSpan(text: '  •  '),
             TextSpan(
-              text: pointOfSale.contact,
+              text: enterprise.phone ?? 'Aucun contact',
               style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
             ),
           ],

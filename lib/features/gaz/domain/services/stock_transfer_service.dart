@@ -114,7 +114,10 @@ class StockTransferService {
       throw ValidationException('Le transfert doit être expédié pour être reçu', 'INVALID_STATUS');
     }
 
-    final cylinders = await gasRepository.getCylinders();
+    final cylinders = await gasRepository.getCylindersForEnterprises([
+      transfer.fromEnterpriseId,
+      transfer.toEnterpriseId,
+    ]);
     final destCylinders = cylinders.where((c) => c.enterpriseId == transfer.toEnterpriseId).toList();
 
     // 1. Add stock to destination
@@ -190,7 +193,7 @@ class StockTransferService {
           await stockRepository.updateStockQuantity(stock.id, stock.quantity + item.quantity);
         } else {
            // This shouldn't happen as it was just deducted, but for safety:
-           final cylinder = (await gasRepository.getCylinders())
+           final cylinder = (await gasRepository.getCylindersForEnterprises([transfer.fromEnterpriseId]))
               .where((c) => c.enterpriseId == transfer.fromEnterpriseId && c.weight == item.weight)
               .firstOrNull;
            if (cylinder != null) {

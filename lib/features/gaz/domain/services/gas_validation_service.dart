@@ -1,7 +1,7 @@
 import 'package:elyf_groupe_app/shared.dart';
 
 import '../entities/cylinder.dart';
-import 'gas_calculation_service.dart';
+import 'gaz_calculation_service.dart';
 
 /// Service for gas sale validation logic.
 ///
@@ -68,7 +68,7 @@ class GasValidationService {
     final cylinderError = validateCylinderSelection(cylinder);
     if (cylinderError != null) errors.add(cylinderError);
 
-    final quantityError = GasCalculationService.validateQuantity(
+    final quantityError = GazCalculationService.validateQuantity(
       quantity: quantity,
       availableStock: availableStock,
     );

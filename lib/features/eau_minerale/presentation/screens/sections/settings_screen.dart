@@ -6,7 +6,6 @@ import '../../widgets/centralized_permission_guard.dart';
 import '../../widgets/electricity_meter_config_card.dart';
 import '../../widgets/machine_breakdown_report_card.dart';
 import '../../widgets/machine_management_card.dart';
-import '../../widgets/machine_management_card.dart';
 
 /// Settings screen for the Eau Minérale module.
 class SettingsScreen extends ConsumerWidget {

@@ -12,13 +12,9 @@ class TourCard extends StatelessWidget {
 
   Color _getStatusColor(BuildContext context, TourStatus status) {
     switch (status) {
-      case TourStatus.collection:
+      case TourStatus.open:
         return const Color(0xFF3B82F6); // Blue
-      case TourStatus.transport:
-        return const Color(0xFFF59E0B); // Amber
-      case TourStatus.return_:
-        return const Color(0xFF8B5CF6); // Violet
-      case TourStatus.closure:
+      case TourStatus.closed:
         return const Color(0xFF10B981); // Emerald
       case TourStatus.cancelled:
         return Theme.of(context).colorScheme.error;
@@ -81,7 +77,7 @@ class TourCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${tour.totalBottlesToLoad} collectées • Étape: ${tour.status.label}',
+                      '${tour.totalBottlesToLoad} chargés • Étape: ${tour.status.label}',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
@@ -102,7 +98,7 @@ class TourCard extends StatelessWidget {
                   border: Border.all(color: statusColor),
                 ),
                 child: Text(
-                  tour.status == TourStatus.closure ? 'Terminé' : 'En cours',
+                  tour.status == TourStatus.closed ? 'Terminé' : 'En cours',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: statusColor,
                     fontWeight: FontWeight.bold,

@@ -387,7 +387,7 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
   Future<void> deleteSale(String id, {String? deletedBy}) async {
     final sale = await getSale(id);
     if (sale != null) {
-      await save(sale.copyWith(deletedAt: DateTime.now(), deletedBy: deletedBy));
+      await save(sale.copyWith(deletedAt: DateTime.now(), updatedAt: DateTime.now(), deletedBy: deletedBy));
     }
   }
 
@@ -395,7 +395,7 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
   Future<void> restoreSale(String id) async {
      final sale = await getSale(id);
     if (sale != null) {
-      await save(sale.copyWith(deletedAt: null)); // Validation logic handled in save/entity
+      await save(sale.copyWith(deletedAt: null, updatedAt: DateTime.now())); // Validation logic handled in save/entity
     }
   }
 

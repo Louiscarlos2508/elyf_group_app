@@ -208,6 +208,7 @@ class PropertyExpenseOfflineRepository extends OfflineRepository<PropertyExpense
       if (expense != null) {
         await save(expense.copyWith(
           deletedAt: DateTime.now(),
+          updatedAt: DateTime.now(),
           deletedBy: 'system',
         ));
       }

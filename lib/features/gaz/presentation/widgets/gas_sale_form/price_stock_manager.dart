@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
-import '../../../domain/services/gas_calculation_service.dart';
+import '../../../domain/services/gaz_calculation_service.dart';
 import '../../../domain/entities/cylinder.dart';
 
 /// Gestionnaire de prix et stock pour le formulaire de vente.
@@ -14,30 +14,29 @@ class PriceStockManager {
     required Cylinder? cylinder,
     required String? enterpriseId,
     required bool isWholesale,
-    String tier = 'default',
   }) async {
     if (cylinder == null || enterpriseId == null) {
       return 0.0;
     }
 
-    // Pour les ventes en gros, utiliser le prix en gros des settings pour le tier choisi
-    if (isWholesale) {
-      try {
-        final settings = await ref.read(gazSettingsRepositoryProvider(enterpriseId)).getSettings(
-          enterpriseId: enterpriseId,
-          moduleId: 'gaz',
-        );
-        
-        return GasCalculationService.determineWholesalePrice(
+    // Pour les ventes en gros, utiliser le prix en gros des settings
+    try {
+      final settings = await ref.read(gazSettingsRepositoryProvider(enterpriseId)).getSettings(
+            enterpriseId: enterpriseId,
+            moduleId: 'gaz',
+          );
+
+      if (isWholesale) {
+        return GazCalculationService.determineWholesalePrice(
           cylinder: cylinder,
           settings: settings,
-          tier: tier,
         );
-      } catch (e) {
-        return cylinder.sellPrice;
+      } else {
+        // Pour les ventes au détail, utiliser le prix détail des settings
+        final retailPrice = settings?.getRetailPrice(cylinder.weight);
+        return retailPrice ?? cylinder.sellPrice;
       }
-    } else {
-      // Pour les ventes au détail, utiliser le prix de vente normal
+    } catch (e) {
       return cylinder.sellPrice;
     }
   }

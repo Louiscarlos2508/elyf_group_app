@@ -35,7 +35,7 @@ class ToursListTab extends ConsumerWidget {
       data: (tours) {
         // Si tourStatus est null, filtrer les tours non clôturés
         final filteredTours = tourStatus == null
-            ? tours.where((t) => t.status != TourStatus.closure).toList()
+            ? tours.where((t) => t.status != TourStatus.closed).toList()
             : tours;
 
         return Container(

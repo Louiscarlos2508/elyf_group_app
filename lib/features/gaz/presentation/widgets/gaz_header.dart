@@ -73,7 +73,7 @@ class GazHeader extends ConsumerWidget {
           ),
           // Content
           Padding(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -87,12 +87,12 @@ class GazHeader extends ConsumerWidget {
                           if (activeEnterprise != null)
                             Container(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 4,
+                                horizontal: 8,
+                                vertical: 2,
                               ),
                               decoration: BoxDecoration(
                                 color: theme.colorScheme.onPrimary.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(20),
+                                borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
                                   color: theme.colorScheme.onPrimary.withValues(alpha: 0.2),
                                 ),
@@ -102,23 +102,24 @@ class GazHeader extends ConsumerWidget {
                                 style: theme.textTheme.labelSmall?.copyWith(
                                   color: theme.colorScheme.onPrimary,
                                   fontWeight: FontWeight.w800,
-                                  letterSpacing: 1.2,
-                                  fontSize: 10,
+                                  letterSpacing: 1.0,
+                                  fontSize: 9,
                                 ),
                               ),
                             ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 4),
                           Text(
                             title,
-                            style: theme.textTheme.headlineMedium?.copyWith(
+                            style: theme.textTheme.headlineSmall?.copyWith(
                               fontWeight: FontWeight.w900,
                               color: theme.colorScheme.onPrimary,
-                              letterSpacing: -1.0,
+                              letterSpacing: -0.5,
+                              height: 1.1,
                             ),
                           ),
                           Text(
                             subtitle,
-                            style: theme.textTheme.bodyMedium?.copyWith(
+                            style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.onPrimary.withValues(alpha: 0.8),
                               fontWeight: FontWeight.w500,
                             ),
@@ -129,7 +130,7 @@ class GazHeader extends ConsumerWidget {
                   ],
                 ),
                 if (additionalActions != null || bottom != null) ...[
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 12),
                   if (additionalActions != null)
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,

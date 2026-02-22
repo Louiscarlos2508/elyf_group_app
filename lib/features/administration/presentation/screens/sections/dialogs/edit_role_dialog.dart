@@ -207,7 +207,7 @@ class _EditRoleDialogState extends ConsumerState<EditRoleDialog>
                       // Sélecteur de Module
                       if (!widget.role.isSystemRole) ...[
                         DropdownButtonFormField<String>(
-                          value: _selectedModuleId,
+                          initialValue: _selectedModuleId,
                           decoration: _buildInputDecoration(
                             theme,
                             'Module associé *',

@@ -12,21 +12,21 @@ class TourDetailHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final statusLabel = tour.status == TourStatus.closure
+    final statusLabel = tour.status == TourStatus.closed
         ? 'Terminé'
-        : tour.status == TourStatus.collection
-        ? 'Préparation'
-        : 'En cours';
-    final statusBgColor = tour.status == TourStatus.closure
+        : tour.status == TourStatus.open
+        ? 'En cours'
+        : 'Annulé';
+    final statusBgColor = tour.status == TourStatus.closed
         ? const Color(0xFFECEEF2)
-        : tour.status == TourStatus.collection
-        ? const Color(0xFFECEEF2)
-        : const Color(0xFF030213);
-    final statusTextColor = tour.status == TourStatus.closure
+        : tour.status == TourStatus.open
         ? const Color(0xFF030213)
-        : tour.status == TourStatus.collection
+        : const Color(0xFFFEE2E2);
+    final statusTextColor = tour.status == TourStatus.closed
         ? const Color(0xFF030213)
-        : Colors.white;
+        : tour.status == TourStatus.open
+        ? Colors.white
+        : const Color(0xFF991B1B);
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -75,7 +75,7 @@ class TourDetailHeader extends StatelessWidget {
                       children: [
                         Flexible(
                           child: Text(
-                            '${tour.totalBottlesToLoad} collectées',
+                            '${tour.totalBottlesToLoad} chargés',
                             style: theme.textTheme.bodySmall?.copyWith(
                               fontSize: isVerySmall ? 10 : 12,
                               color: const Color(0xFF4A5565),

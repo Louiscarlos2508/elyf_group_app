@@ -2,18 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
-import 'package:elyf_groupe_app/features/gaz/application/point_of_sale_stock_provider.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
+import 'package:elyf_groupe_app/features/administration/application/providers.dart';
+import '../../../domain/entities/cylinder_stock.dart';
+import '../../../domain/entities/cylinder.dart';
 import '../../../application/providers.dart';
 import '../../../domain/entities/collection.dart';
 import '../../../domain/entities/wholesaler.dart';
-import '../../../domain/repositories/wholesaler_repository.dart';
 import '../../../../../../core/errors/error_handler.dart';
 import '../../../../../../core/logging/app_logger.dart';
 import '../collection_form/bottle_list_display.dart';
 import '../collection_form/bottle_manager.dart';
 import '../collection_form/bottle_quantity_input.dart';
 import '../collection_form/client_selector.dart';
-import '../collection_form/collection_form_header.dart';
 import '../collection_form/collection_type_selector.dart';
 import '../../../../../../core/auth/providers.dart';
 
@@ -30,7 +31,7 @@ class IndependentCollectionDialog extends ConsumerStatefulWidget {
 
 class _IndependentCollectionDialogState extends ConsumerState<IndependentCollectionDialog> {
   final _formKey = GlobalKey<FormState>();
-  CollectionType _collectionType = CollectionType.wholesaler;
+  CollectionType _collectionType = CollectionType.pointOfSale;
   Client? _selectedClient;
   final Map<int, int> _bottles = {}; // poids -> quantité
 
@@ -71,9 +72,9 @@ class _IndependentCollectionDialogState extends ConsumerState<IndependentCollect
     } else {
       // Récupérer les points de vente depuis la base de données
       final pointsOfSaleAsync = ref.watch(
-        pointsOfSaleProvider((
-          enterpriseId: widget.enterpriseId,
-          moduleId: 'gaz',
+        enterprisesByParentAndTypeProvider((
+          parentId: widget.enterpriseId,
+          type: EnterpriseType.gasPointOfSale,
         )),
       );
       return pointsOfSaleAsync.when(
@@ -82,20 +83,23 @@ class _IndependentCollectionDialogState extends ConsumerState<IndependentCollect
               .map(
                 (pos) {
                   // Récupérer le stock réel du point de vente
-                  final stockAsync = ref.watch(pointOfSaleStockProvider(pos.id));
-                  final stock = stockAsync.value ?? {};
+                  final stockAsync = ref.watch(cylinderStocksProvider((
+                    enterpriseId: widget.enterpriseId,
+                    status: null,
+                    siteId: pos.id,
+                  )));
+                  final stockList = stockAsync.value ?? [];
                   final stockInt = <int, int>{};
-                  stock.forEach((key, value) {
-                    final weight = int.tryParse(key);
-                    if (weight != null) {
-                      stockInt[weight] = value;
+                  for (final item in stockList) {
+                    if ((item.status == CylinderStatus.emptyAtStore || item.status == CylinderStatus.emptyInTransit) && item.weight != null) {
+                       stockInt[item.weight!] = (stockInt[item.weight!] ?? 0) + item.quantity;
                     }
-                  });
+                  }
 
                   return Client(
                     id: pos.id,
                     name: pos.name,
-                    phone: pos.contact,
+                    phone: pos.phone ?? '',
                     address: pos.address,
                     emptyStock: stockInt,
                   );
@@ -266,7 +270,8 @@ class _IndependentCollectionDialogState extends ConsumerState<IndependentCollect
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // Type de collecte
+                      // Type de collecte (Masqué ou simplifié car seulement POS maintenant)
+                      /* 
                       CollectionTypeSelector(
                         selectedType: _collectionType,
                         onTypeChanged: (type) {
@@ -275,6 +280,14 @@ class _IndependentCollectionDialogState extends ConsumerState<IndependentCollect
                             _selectedClient = null;
                           });
                         },
+                      ),
+                      */
+                      Text(
+                        'Source de collecte : Point de Vente',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(height: 16),
                       // Sélection client
@@ -335,18 +348,13 @@ class _IndependentCollectionDialogState extends ConsumerState<IndependentCollect
   }
 
   Widget _buildClientSelector() {
-    // Si on est en mode ajout de grossiste, afficher le formulaire
-    if (_collectionType == CollectionType.wholesaler && _isAddingNewWholesaler) {
-      return _buildNewWholesalerForm();
-    }
-
     final clients = _getAvailableClients(ref);
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        clients.isEmpty && !_isAddingNewWholesaler
-            ? Container(
+        if (clients.isEmpty)
+            Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: Colors.orange[50],
@@ -363,14 +371,15 @@ class _IndependentCollectionDialogState extends ConsumerState<IndependentCollect
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Aucun grossiste trouvé. Ajoutez-en un nouveau.',
-                        style: TextStyle(color: Colors.orange[900], fontSize: 12),
+                        'Aucun point de vente trouvé.',
+                        style: TextStyle(color: Colors.orange, fontSize: 12),
                       ),
                     ),
                   ],
                 ),
               )
-            : ClientSelector(
+            else
+              ClientSelector(
                 selectedClient: _selectedClient,
                 clients: clients,
                 collectionType: _collectionType,
@@ -380,21 +389,6 @@ class _IndependentCollectionDialogState extends ConsumerState<IndependentCollect
                   });
                 },
               ),
-        // Bouton pour ajouter un nouveau grossiste (seulement pour les grossistes)
-        if (_collectionType == CollectionType.wholesaler) ...[
-          const SizedBox(height: 8),
-          ElyfButton(
-            onPressed: () {
-              setState(() {
-                _isAddingNewWholesaler = true;
-                _selectedClient = null;
-              });
-            },
-            icon: Icons.add,
-            variant: ElyfButtonVariant.outlined,
-            child: const Text('Ajouter un nouveau grossiste'),
-          ),
-        ],
       ],
     );
   }
@@ -503,6 +497,7 @@ class _IndependentCollectionDialogState extends ConsumerState<IndependentCollect
                     name: name,
                     phone: phone,
                     address: address.isNotEmpty ? address : null,
+                    tier: 'default',
                     createdAt: DateTime.now(),
                     updatedAt: DateTime.now(),
                   );

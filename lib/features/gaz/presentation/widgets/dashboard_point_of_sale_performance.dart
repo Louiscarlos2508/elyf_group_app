@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:elyf_groupe_app/shared/presentation/widgets/elyf_ui/organisms/elyf_card.dart';
 import '../../../../../shared/utils/currency_formatter.dart';
-import '../../domain/entities/point_of_sale.dart';
+import '../../../../features/administration/domain/entities/enterprise.dart';
 
 /// Widget displaying performance by point of sale for today.
 class DashboardPointOfSalePerformance extends StatelessWidget {
@@ -13,7 +13,7 @@ class DashboardPointOfSalePerformance extends StatelessWidget {
     this.salesCountByPos,
   });
 
-  final List<PointOfSale> pointsOfSale;
+  final List<Enterprise> pointsOfSale;
   final Map<String, double> salesByPos; // posId -> sales amount
   final Map<String, int> stockByPos; // posId -> stock count
   final Map<String, int>? salesCountByPos; // posId -> sales count

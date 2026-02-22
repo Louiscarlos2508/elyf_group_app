@@ -86,10 +86,11 @@ class BobineStockQuantityOfflineRepository
   @override
   Future<void> deleteFromLocal(BobineStock entity) async {
     // Soft-delete
-    final deletedStock = entity.copyWith(
+    final deletedBobine = entity.copyWith(
       deletedAt: DateTime.now(),
+      updatedAt: DateTime.now(),
     );
-    await saveToLocal(deletedStock);
+    await saveToLocal(deletedBobine);
     
     AppLogger.info(
       'Soft-deleted bobine stock: ${entity.id}',
@@ -342,14 +343,10 @@ class BobineStockQuantityOfflineRepository
       var stock = await fetchById(movement.bobineId);
       
       // 2. Chercher par productId si non trouvé (le mouvement bobineId peut être le productId)
-      if (stock == null) {
-        stock = await fetchByProductId(movement.bobineId);
-      }
+      stock ??= await fetchByProductId(movement.bobineId);
 
       // 3. Fallback: Chercher par type si non trouvé par ID
-      if (stock == null) {
-        stock = await fetchByType(movement.bobineReference);
-      }
+      stock ??= await fetchByType(movement.bobineReference);
       
       if (stock == null) {
         // 2. Si le stock n'existe pas du tout, le créer

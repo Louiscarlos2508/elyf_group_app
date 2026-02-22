@@ -2,8 +2,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/gaz_session.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder_stock.dart';
-import 'package:elyf_groupe_app/features/gaz/domain/entities/gas_sale.dart';
-import 'package:elyf_groupe_app/features/gaz/domain/entities/expense.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/services/gaz_calculation_service.dart';
 import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
 

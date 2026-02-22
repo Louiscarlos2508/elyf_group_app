@@ -12,12 +12,9 @@ class GazReportTabsV2 extends StatelessWidget {
   final void Function(int) onTabChanged;
 
   static const _tabs = [
-    _TabInfo('Ventes', Icons.local_fire_department_outlined),
-    _TabInfo('Dépenses', Icons.receipt_long_outlined),
-    _TabInfo('Bénéfices', Icons.trending_up),
-    _TabInfo('Stock', Icons.inventory_2_outlined),
-    _TabInfo('Financier', Icons.account_balance),
-    _TabInfo('Clôtures', Icons.lock_clock_outlined),
+    _TabInfo('Activité', Icons.local_fire_department_outlined),
+    _TabInfo('Trésorerie', Icons.account_balance_wallet_outlined),
+    _TabInfo('Stocks', Icons.inventory_2_outlined),
   ];
 
   @override

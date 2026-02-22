@@ -68,10 +68,11 @@ class SalaryOfflineRepository extends OfflineRepository<Employee>
   @override
   Future<void> deleteFromLocal(Employee entity) async {
     // Soft-delete
-    final deletedEmployee = entity.copyWith(
+    final deletedSalary = entity.copyWith(
       deletedAt: DateTime.now(),
+      updatedAt: DateTime.now(),
     );
-    await saveToLocal(deletedEmployee);
+    await saveToLocal(deletedSalary);
     
     AppLogger.info(
       'Soft-deleted employee: ${entity.id}',
@@ -246,7 +247,7 @@ class SalaryOfflineRepository extends OfflineRepository<Employee>
       if (record != null) {
         final map = jsonDecode(record.dataJson) as Map<String, dynamic>;
         final payment = ProductionPayment.fromMap(map);
-        final deletedPayment = payment.copyWith(deletedAt: DateTime.now());
+        final deletedPayment = payment.copyWith(deletedAt: DateTime.now(), updatedAt: DateTime.now());
         
         await driftService.records.upsert(
           collectionName: productionPaymentsCollection,

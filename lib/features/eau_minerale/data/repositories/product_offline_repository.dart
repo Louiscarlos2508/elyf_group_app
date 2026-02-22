@@ -66,6 +66,7 @@ class ProductOfflineRepository extends OfflineRepository<Product>
     // Soft-delete
     final deletedProduct = entity.copyWith(
       deletedAt: DateTime.now(),
+      updatedAt: DateTime.now(),
     );
     await saveToLocal(deletedProduct);
     

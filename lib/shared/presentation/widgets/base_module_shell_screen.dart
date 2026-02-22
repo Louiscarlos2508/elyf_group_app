@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'widgets.dart';
-import '../../../core/tenant/tenant_provider.dart';
 
 // Re-export NavigationSection so subclasses can use it
 export 'adaptive_navigation_scaffold.dart' show NavigationSection;

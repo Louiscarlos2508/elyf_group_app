@@ -6,7 +6,7 @@ import '../../../../../../../shared/utils/currency_formatter.dart';
 import '../../../../application/providers.dart';
 import '../../../../domain/entities/gas_sale.dart';
 import '../../../../domain/services/gaz_calculation_service.dart';
-import '../../../widgets/retail_kpi_card.dart';
+import '../../../widgets/gaz_kpi_card.dart';
 
 /// Section des KPI cards pour la vente au détail.
 class RetailKpiSection extends ConsumerWidget {
@@ -14,6 +14,7 @@ class RetailKpiSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
     final salesAsync = ref.watch(gasSalesProvider);
 
     return SliverToBoxAdapter(
@@ -42,19 +43,21 @@ class RetailKpiSection extends ConsumerWidget {
                   return Row(
                     children: [
                       Expanded(
-                        child: RetailKpiCard(
+                        child: GazKpiCard(
                           title: 'Ventes aujourd\'hui',
                           value: '${todaySales.length}',
-                          icon: Icons.shopping_cart,
+                          icon: Icons.shopping_basket_outlined,
+                          color: theme.colorScheme.primary,
                         ),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
-                        child: RetailKpiCard(
+                        child: GazKpiCard(
                           title: 'Total du jour',
                           value: CurrencyFormatter.formatDouble(totalToday),
                           subtitle: 'FCFA',
-                          icon: Icons.attach_money,
+                          icon: Icons.payments_outlined,
+                          color: theme.colorScheme.secondary,
                         ),
                       ),
                     ],
@@ -64,17 +67,19 @@ class RetailKpiSection extends ConsumerWidget {
                 // Mobile: stack vertically
                 return Column(
                   children: [
-                    RetailKpiCard(
+                    GazKpiCard(
                       title: 'Ventes aujourd\'hui',
                       value: '${todaySales.length}',
-                      icon: Icons.shopping_cart,
+                      icon: Icons.shopping_basket_outlined,
+                      color: theme.colorScheme.primary,
                     ),
-                    const SizedBox(height: 16),
-                    RetailKpiCard(
+                    const SizedBox(height: 12),
+                    GazKpiCard(
                       title: 'Total du jour',
                       value: CurrencyFormatter.formatDouble(totalToday),
                       subtitle: 'FCFA',
-                      icon: Icons.attach_money,
+                      icon: Icons.payments_outlined,
+                      color: theme.colorScheme.secondary,
                     ),
                   ],
                 );

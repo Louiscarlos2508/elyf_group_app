@@ -68,10 +68,11 @@ class StockOfflineRepository extends OfflineRepository<StockMovement>
   @override
   Future<void> deleteFromLocal(StockMovement entity) async {
     // Soft-delete
-    final deletedMovement = entity.copyWith(
+    final deletedStock = entity.copyWith(
       deletedAt: DateTime.now(),
+      updatedAt: DateTime.now(),
     );
-    await saveToLocal(deletedMovement);
+    await saveToLocal(deletedStock);
     
     AppLogger.info(
       'Soft-deleted stock movement: ${entity.id}',

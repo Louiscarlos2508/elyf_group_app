@@ -7,13 +7,12 @@ import 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder_leak.dart'
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import 'package:elyf_groupe_app/features/gaz/presentation/widgets/leak_report_dialog.dart';
 import 'package:elyf_groupe_app/features/gaz/presentation/widgets/supplier_claim_dialog.dart';
-import 'cylinder_leak/leak_filters.dart';
-import 'cylinder_leak/leak_header.dart';
-import 'cylinder_leak/leak_list_item.dart';
+import '../cylinder_leak/leak_filters.dart';
+import '../cylinder_leak/leak_header.dart';
+import '../cylinder_leak/leak_list_item.dart';
 
-/// Écran de gestion des bouteilles avec fuites.
-class CylinderLeakScreen extends ConsumerStatefulWidget {
-  const CylinderLeakScreen({
+class LeakTrackingTab extends ConsumerStatefulWidget {
+  const LeakTrackingTab({
     super.key,
     required this.enterpriseId,
     required this.moduleId,
@@ -23,10 +22,10 @@ class CylinderLeakScreen extends ConsumerStatefulWidget {
   final String moduleId;
 
   @override
-  ConsumerState<CylinderLeakScreen> createState() => _CylinderLeakScreenState();
+  ConsumerState<LeakTrackingTab> createState() => _LeakTrackingTabState();
 }
 
-class _CylinderLeakScreenState extends ConsumerState<CylinderLeakScreen> {
+class _LeakTrackingTabState extends ConsumerState<LeakTrackingTab> {
   LeakStatus? _filterStatus;
 
   void _showLeakDialog() {
@@ -47,7 +46,7 @@ class _CylinderLeakScreenState extends ConsumerState<CylinderLeakScreen> {
     } catch (e) {
       AppLogger.error(
         'Erreur lors de l\'ouverture du dialog de fuite: $e',
-        name: 'gaz.cylinder_leak',
+        name: 'gaz.inventory.leaks',
         error: e,
       );
       if (mounted) {
@@ -85,15 +84,35 @@ class _CylinderLeakScreenState extends ConsumerState<CylinderLeakScreen> {
 
     return CustomScrollView(
       slivers: [
-        // Header
         SliverToBoxAdapter(
-          child: LeakHeader(
-            isMobile: isMobile,
-            onReportLeak: _showLeakDialog,
-            onGenerateClaim: _showClaimDialog,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg,
+              vertical: AppSpacing.md,
+            ),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              alignment: WrapAlignment.end,
+              children: [
+                ElyfButton(
+                  onPressed: _showClaimDialog,
+                  icon: Icons.assignment_outlined,
+                  variant: ElyfButtonVariant.outlined,
+                  size: ElyfButtonSize.small,
+                  child: const Text('Réclamation Fournisseur'),
+                ),
+                ElyfButton(
+                  onPressed: _showLeakDialog,
+                  icon: Icons.add,
+                  variant: ElyfButtonVariant.filled,
+                  size: ElyfButtonSize.small,
+                  child: const Text('Signaler une fuite'),
+                ),
+              ],
+            ),
           ),
         ),
-        // Filters
         SliverToBoxAdapter(
           child: LeakFilters(
             filterStatus: _filterStatus,

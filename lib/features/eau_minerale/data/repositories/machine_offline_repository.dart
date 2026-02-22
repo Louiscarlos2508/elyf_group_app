@@ -68,6 +68,7 @@ class MachineOfflineRepository extends OfflineRepository<Machine>
     // Soft-delete
     final deletedMachine = entity.copyWith(
       deletedAt: DateTime.now(),
+      updatedAt: DateTime.now(),
     );
     await saveToLocal(deletedMachine);
     

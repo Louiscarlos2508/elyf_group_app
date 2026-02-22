@@ -2,7 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../application/providers.dart';
 import '../../../domain/entities/production_day.dart';
-import '../../../domain/entities/stock_item.dart';
 import '../../../domain/entities/material_consumption.dart';
 
 /// Enregistre les consommations et productions sur le stock.

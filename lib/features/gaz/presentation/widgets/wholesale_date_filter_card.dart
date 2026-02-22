@@ -44,14 +44,14 @@ class WholesaleDateFilterCard extends StatelessWidget {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: theme.colorScheme.outline.withValues(alpha: 0.1),
+          color: theme.colorScheme.primary.withAlpha(40),
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
+            color: theme.colorScheme.primary.withAlpha(10),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -64,7 +64,7 @@ class WholesaleDateFilterCard extends StatelessWidget {
           Row(
             children: [
               Icon(
-                Icons.calendar_month,
+                Icons.calendar_month_outlined,
                 size: 20,
                 color: theme.colorScheme.primary,
               ),
@@ -89,9 +89,9 @@ class WholesaleDateFilterCard extends StatelessWidget {
                   children: [
                     Text(
                       'Date de début',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        fontSize: 14,
-                        color: theme.colorScheme.onSurface,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -101,10 +101,10 @@ class WholesaleDateFilterCard extends StatelessWidget {
                         height: 48,
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         decoration: BoxDecoration(
-                          color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                          color: theme.colorScheme.surface,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: theme.colorScheme.outline.withValues(alpha: 0.05),
+                            color: theme.colorScheme.primary.withAlpha(30),
                           ),
                         ),
                         child: Row(
@@ -123,9 +123,9 @@ class WholesaleDateFilterCard extends StatelessWidget {
                               ),
                             ),
                             Icon(
-                              Icons.calendar_today,
+                              Icons.calendar_today_outlined,
                               size: 16,
-                              color: theme.colorScheme.onSurfaceVariant,
+                              color: theme.colorScheme.primary.withAlpha(150),
                             ),
                           ],
                         ),
@@ -141,9 +141,9 @@ class WholesaleDateFilterCard extends StatelessWidget {
                   children: [
                     Text(
                       'Date de fin',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        fontSize: 14,
-                        color: theme.colorScheme.onSurface,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -153,10 +153,10 @@ class WholesaleDateFilterCard extends StatelessWidget {
                         height: 48,
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         decoration: BoxDecoration(
-                          color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                          color: theme.colorScheme.surface,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: theme.colorScheme.outline.withValues(alpha: 0.05),
+                            color: theme.colorScheme.primary.withAlpha(30),
                           ),
                         ),
                         child: Row(
@@ -175,9 +175,9 @@ class WholesaleDateFilterCard extends StatelessWidget {
                               ),
                             ),
                             Icon(
-                              Icons.calendar_today,
+                              Icons.calendar_today_outlined,
                               size: 16,
-                              color: theme.colorScheme.onSurfaceVariant,
+                              color: theme.colorScheme.primary.withAlpha(150),
                             ),
                           ],
                         ),

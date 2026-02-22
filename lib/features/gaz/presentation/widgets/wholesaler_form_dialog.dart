@@ -28,7 +28,7 @@ class _WholesalerFormDialogState extends ConsumerState<WholesalerFormDialog> {
   late String _tier;
   bool _isLoading = false;
 
-  final List<String> _tiers = ['default', 'bronze', 'silver', 'gold'];
+  final List<String> _tiers = ['default'];
 
   @override
   void initState() {
@@ -87,22 +87,7 @@ class _WholesalerFormDialogState extends ConsumerState<WholesalerFormDialog> {
                 maxLines: 2,
               ),
               const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                initialValue: _tier,
-                decoration: const InputDecoration(
-                  labelText: 'Palier Tarifaire',
-                  border: OutlineInputBorder(),
-                ),
-                items: _tiers
-                    .map((t) => DropdownMenuItem(
-                          value: t,
-                          child: Text(t.toUpperCase()),
-                        ))
-                    .toList(),
-                onChanged: (v) {
-                  if (v != null) setState(() => _tier = v);
-                },
-              ),
+              /* Dropdown de palier supprimé car prix unique */
             ],
           ),
         ),

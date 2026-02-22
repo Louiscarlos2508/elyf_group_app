@@ -1,3 +1,4 @@
+import 'package:equatable/equatable.dart';
 import 'package:cloud_firestore/cloud_firestore.dart' show Timestamp;
 import 'package:flutter/material.dart' show IconData, Color, Colors, Icons;
 
@@ -125,7 +126,7 @@ enum EnterpriseType {
 }
 
 /// Représente une entreprise du groupe ELYF avec support multi-tenant N-niveaux
-class Enterprise {
+class Enterprise extends Equatable {
   const Enterprise({
     required this.id,
     required this.name,
@@ -322,4 +323,26 @@ class Enterprise {
     }
     return null;
   }
+
+  @override
+  List<Object?> get props => [
+        id,
+        name,
+        type,
+        parentEnterpriseId,
+        hierarchyLevel,
+        hierarchyPath,
+        ancestorIds,
+        moduleId,
+        metadata,
+        latitude,
+        longitude,
+        description,
+        address,
+        phone,
+        email,
+        isActive,
+        createdAt,
+        updatedAt,
+      ];
 }

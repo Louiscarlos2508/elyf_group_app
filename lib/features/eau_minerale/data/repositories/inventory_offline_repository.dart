@@ -66,10 +66,11 @@ class InventoryOfflineRepository extends OfflineRepository<StockItem>
   @override
   Future<void> deleteFromLocal(StockItem entity) async {
     // Soft-delete
-    final deletedItem = entity.copyWith(
+    final deletedInventory = entity.copyWith(
       deletedAt: DateTime.now(),
+      updatedAt: DateTime.now(),
     );
-    await saveToLocal(deletedItem);
+    await saveToLocal(deletedInventory);
     
     AppLogger.info(
       'Soft-deleted stock item: ${entity.id}',

@@ -17,6 +17,7 @@ class ProductionPayment {
     this.signature,
     this.signerName, // Nom du signataire
     this.createdAt,
+    this.updatedAt,
     this.deletedAt,
     this.deletedBy,
   });
@@ -46,6 +47,7 @@ class ProductionPayment {
   final String? signerName;
 
   final DateTime? createdAt;
+  final DateTime? updatedAt;
   final DateTime? deletedAt;
   final String? deletedBy;
 
@@ -66,6 +68,7 @@ class ProductionPayment {
     Uint8List? signature,
     String? signerName,
     DateTime? createdAt,
+    DateTime? updatedAt,
     DateTime? deletedAt,
     String? deletedBy,
   }) {
@@ -83,6 +86,7 @@ class ProductionPayment {
       signature: signature ?? this.signature,
       signerName: signerName ?? this.signerName,
       createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
       deletedAt: deletedAt ?? this.deletedAt,
       deletedBy: deletedBy ?? this.deletedBy,
     );
@@ -113,6 +117,9 @@ class ProductionPayment {
       createdAt: map['createdAt'] != null
           ? DateTime.parse(map['createdAt'] as String)
           : null,
+      updatedAt: map['updatedAt'] != null
+          ? DateTime.parse(map['updatedAt'] as String)
+          : null,
       deletedAt: map['deletedAt'] != null
           ? DateTime.parse(map['deletedAt'] as String)
           : null,
@@ -134,6 +141,7 @@ class ProductionPayment {
       'signature': signature?.toList(),
       'signerName': signerName,
       'createdAt': createdAt?.toIso8601String(),
+      'updatedAt': updatedAt?.toIso8601String(),
       'deletedAt': deletedAt?.toIso8601String(),
       'deletedBy': deletedBy,
     };

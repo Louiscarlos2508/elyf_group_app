@@ -325,22 +325,45 @@ class _GazReportsScreenState extends ConsumerState<GazReportsScreen> {
     );
 
     switch (_selectedTab) {
-      case 0:
-        return GazSalesReportContentV2(
-          startDate: _startDate,
-          endDate: _endDate,
+      case 0: // Activité
+        return Column(
+          children: [
+            GazSalesReportContentV2(
+              startDate: _startDate,
+              endDate: _endDate,
+            ),
+            const SizedBox(height: 24),
+            GazProfitReportContentV2(
+              startDate: _startDate,
+              endDate: _endDate,
+            ),
+          ],
         );
-      case 1:
-        return GazExpensesReportContentV2(
-          startDate: _startDate,
-          endDate: _endDate,
+      case 1: // Trésorerie
+        return Column(
+          children: [
+            GazExpensesReportContentV2(
+              startDate: _startDate,
+              endDate: _endDate,
+            ),
+            const SizedBox(height: 24),
+            reportDataAsync.when(
+              data: (reportData) => GazFinancialReportContentV2(
+                startDate: _startDate,
+                endDate: _endDate,
+                totalRevenue: reportData.salesRevenue,
+              ),
+              loading: () => AppShimmers.list(context),
+              error: (_, __) => const SizedBox.shrink(),
+            ),
+            const SizedBox(height: 24),
+            GazSessionsReportContent(
+              startDate: _startDate,
+              endDate: _endDate,
+            ),
+          ],
         );
-      case 2:
-        return GazProfitReportContentV2(
-          startDate: _startDate,
-          endDate: _endDate,
-        );
-      case 3:
+      case 2: // Stocks
         final activeEnterpriseAsync = ref.watch(activeEnterpriseProvider);
         final enterpriseId = activeEnterpriseAsync.when(
           data: (e) => e?.id ?? '',
@@ -352,27 +375,13 @@ class _GazReportsScreenState extends ConsumerState<GazReportsScreen> {
         return Column(
           children: [
             GazStockSummaryContent(enterpriseId: enterpriseId),
+            const SizedBox(height: 24),
             GazStockHistoryContent(
               enterpriseId: enterpriseId,
               startDate: _startDate,
               endDate: _endDate,
             ),
           ],
-        );
-      case 4:
-        return reportDataAsync.when(
-          data: (reportData) => GazFinancialReportContentV2(
-            startDate: _startDate,
-            endDate: _endDate,
-            totalRevenue: reportData.salesRevenue,
-          ),
-          loading: () => AppShimmers.list(context),
-          error: (_, __) => const SizedBox.shrink(),
-        );
-      case 5:
-        return GazSessionsReportContent(
-          startDate: _startDate,
-          endDate: _endDate,
         );
       default:
         return const SizedBox.shrink();

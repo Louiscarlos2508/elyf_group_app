@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 
-import '../../../domain/entities/point_of_sale.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import '../stock_transfer_dialog.dart';
 
 /// En-tête de la carte de stock d'un point de vente.
 class PosStockHeader extends StatelessWidget {
-  const PosStockHeader({super.key, required this.pointOfSale});
+  const PosStockHeader({super.key, required this.enterprise});
 
-  final PointOfSale pointOfSale;
+  final Enterprise enterprise;
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +41,7 @@ class PosStockHeader extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      pointOfSale.name,
+                      enterprise.name,
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontSize: 16,
                         fontWeight: FontWeight.normal,
@@ -48,7 +50,7 @@ class PosStockHeader extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      pointOfSale.address,
+                      enterprise.address ?? 'Aucune adresse',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         fontSize: 14,
                         color: const Color(0xFF6A7282),
@@ -56,7 +58,7 @@ class PosStockHeader extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '📞 ${pointOfSale.contact}',
+                      '📞 ${enterprise.phone ?? "Aucun téléphone"}',
                       style: theme.textTheme.bodySmall?.copyWith(
                         fontSize: 12,
                         color: const Color(0xFF99A1AF),
@@ -68,20 +70,39 @@ class PosStockHeader extends StatelessWidget {
             ],
           ),
         ),
-        // Status badge
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
-          decoration: BoxDecoration(
-            color: const Color(0xFF030213),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Text(
-            'Actif',
-            style: theme.textTheme.bodySmall?.copyWith(
-              fontSize: 12,
-              color: Colors.white,
+        // Status badge & Actions
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+              decoration: BoxDecoration(
+                color: const Color(0xFF030213),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                enterprise.isActive ? 'Actif' : 'Inactif',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontSize: 12,
+                  color: Colors.white,
+                ),
+              ),
             ),
-          ),
+            const SizedBox(height: 8),
+            ElyfButton(
+              onPressed: () => showDialog(
+                context: context,
+                builder: (context) => StockTransferDialog(
+                  fromEnterpriseId: enterprise.parentEnterpriseId ?? '',
+                  initialToEnterpriseId: enterprise.id,
+                ),
+              ),
+              variant: ElyfButtonVariant.outlined,
+              size: ElyfButtonSize.small,
+              icon: Icons.local_shipping,
+              child: const Text('Ravitaillement'),
+            ),
+          ],
         ),
       ],
     );

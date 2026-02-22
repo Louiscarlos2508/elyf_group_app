@@ -164,13 +164,31 @@ class SyncConflictResolver {
     }
 
     // Compare timestamps
-    final useLocal = localUpdatedAt.isAfter(serverUpdatedAt);
+    var useLocal = localUpdatedAt.isAfter(serverUpdatedAt);
+    
+    // Safety check: if local has a deletion and server doesn't, 
+    // favor local even if server is slightly newer (clock drift protection)
+    // unless server is newer by more than 5 seconds.
+    final localIsDeleted = localData['deletedAt'] != null;
+    final serverIsDeleted = serverData['deletedAt'] != null;
+    
+    if (localIsDeleted && !serverIsDeleted) {
+      final driftDifference = serverUpdatedAt.difference(localUpdatedAt).inSeconds;
+      if (driftDifference >= 0 && driftDifference < 5) {
+        useLocal = true;
+        AppLogger.debug(
+          'Conflict resolution: Favoring local deletion over slightly newer server version (${driftDifference}s diff)',
+          name: 'sync.conflict',
+        );
+      }
+    }
+
     return ConflictResolution(
       resolvedData: useLocal ? localData : serverData,
       strategy: strategy,
       wasConflict: true,
       conflictDetails: useLocal
-          ? 'Local is newer (${localUpdatedAt.toIso8601String()})'
+          ? 'Local is newer or prioritized (${localUpdatedAt.toIso8601String()})'
           : 'Server is newer (${serverUpdatedAt.toIso8601String()})',
     );
   }

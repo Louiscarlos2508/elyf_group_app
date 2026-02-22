@@ -74,7 +74,7 @@ class LoadingUnloadingFeesSection extends StatelessWidget {
                     style: TextStyle(fontSize: 14, color: Color(0xFF4A5565)),
                   ),
                   Text(
-                    '${tour.totalBottlesToLoad} × ${tour.unloadingFeePerBottle.toStringAsFixed(0)} F',
+                    '${tour.totalBottlesReceived} × ${tour.unloadingFeePerBottle.toStringAsFixed(0)} F',
                     style: const TextStyle(
                       fontSize: 14,
                       color: Color(0xFF0A0A0A),

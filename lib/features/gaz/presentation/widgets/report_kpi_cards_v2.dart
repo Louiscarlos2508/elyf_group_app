@@ -32,7 +32,7 @@ class GazReportKpiCardsV2 extends ConsumerWidget {
       )),
     );
 
-    if (selectedTab == 3) {
+    if (selectedTab == 2) {
       return _buildStockKpis(context, ref);
     }
 

@@ -6,8 +6,6 @@ import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../domain/entities/sale.dart';
 import '../../domain/entities/product.dart';
-import '../../domain/entities/closing.dart';
-import '../../domain/pack_constants.dart';
 import '../../domain/repositories/customer_repository.dart';
 import 'sale_product_selector.dart';
 import 'sale_customer_selector.dart';

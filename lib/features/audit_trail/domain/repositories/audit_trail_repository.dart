@@ -12,6 +12,17 @@ abstract class AuditTrailRepository {
     String? userId,
   });
 
+  /// Fetches audit records for multiple enterprises.
+  Future<List<AuditRecord>> fetchRecordsForEnterprises({
+    required List<String> enterpriseIds,
+    DateTime? startDate,
+    DateTime? endDate,
+    String? module,
+    String? action,
+    String? entityId,
+    String? userId,
+  });
+
   /// Saves a new audit record.
   Future<String> log(AuditRecord record);
 

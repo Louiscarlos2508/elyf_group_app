@@ -33,14 +33,13 @@ class GazSettingsController {
   Future<void> saveSettings(GazSettings settings) async {
     await repository.saveSettings(settings);
   }
-
-  /// Définit le prix en gros pour un poids et un tier donnés.
-  Future<void> setWholesalePrice({
+  
+  /// Définit le prix détail pour un poids donné.
+  Future<void> setRetailPrice({
     required String enterpriseId,
     required String moduleId,
     required int weight,
     required double price,
-    String tier = 'default',
   }) async {
     final existing = await repository.getSettings(
       enterpriseId: enterpriseId,
@@ -48,21 +47,64 @@ class GazSettingsController {
     );
 
     final updated = existing != null
-        ? existing.setWholesalePrice(weight, price, tier: tier)
+        ? existing.setRetailPrice(weight, price)
         : GazSettings(
             enterpriseId: enterpriseId,
             moduleId: moduleId,
-          ).setWholesalePrice(weight, price, tier: tier);
+          ).setRetailPrice(weight, price);
 
     await repository.saveSettings(updated);
   }
 
-  /// Supprime le prix en gros pour un poids et un tier donnés.
+  /// Définit le prix d'achat pour un poids donné.
+  Future<void> setPurchasePrice({
+    required String enterpriseId,
+    required String moduleId,
+    required int weight,
+    required double price,
+  }) async {
+    final existing = await repository.getSettings(
+      enterpriseId: enterpriseId,
+      moduleId: moduleId,
+    );
+
+    final updated = existing != null
+        ? existing.setPurchasePrice(weight, price)
+        : GazSettings(
+            enterpriseId: enterpriseId,
+            moduleId: moduleId,
+          ).setPurchasePrice(weight, price);
+
+    await repository.saveSettings(updated);
+  }
+
+  /// Définit le prix en gros pour un poids donné.
+  Future<void> setWholesalePrice({
+    required String enterpriseId,
+    required String moduleId,
+    required int weight,
+    required double price,
+  }) async {
+    final existing = await repository.getSettings(
+      enterpriseId: enterpriseId,
+      moduleId: moduleId,
+    );
+
+    final updated = existing != null
+        ? existing.setWholesalePrice(weight, price)
+        : GazSettings(
+            enterpriseId: enterpriseId,
+            moduleId: moduleId,
+          ).setWholesalePrice(weight, price);
+
+    await repository.saveSettings(updated);
+  }
+
+  /// Supprime le prix en gros pour un poids donné.
   Future<void> removeWholesalePrice({
     required String enterpriseId,
     required String moduleId,
     required int weight,
-    String tier = 'default',
   }) async {
     final existing = await repository.getSettings(
       enterpriseId: enterpriseId,
@@ -70,23 +112,26 @@ class GazSettingsController {
     );
 
     if (existing != null) {
-      final updated = existing.removeWholesalePrice(weight, tier: tier);
-      await repository.saveSettings(updated);
+      final updated = Map<int, double>.from(existing.wholesalePrices);
+      updated.remove(weight);
+      await repository.saveSettings(existing.copyWith(
+        wholesalePrices: updated,
+        updatedAt: DateTime.now(),
+      ));
     }
   }
 
-  /// Récupère le prix en gros pour un poids et un tier donnés.
+  /// Récupère le prix en gros pour un poids donné.
   Future<double?> getWholesalePrice({
     required String enterpriseId,
     required String moduleId,
     required int weight,
-    String tier = 'default',
   }) async {
     final settings = await repository.getSettings(
       enterpriseId: enterpriseId,
       moduleId: moduleId,
     );
-    return settings?.getWholesalePrice(weight, tier: tier);
+    return settings?.getWholesalePrice(weight);
   }
 
   /// Définit le seuil d'alerte pour un poids donné.
@@ -129,6 +174,28 @@ class GazSettingsController {
             enterpriseId: enterpriseId,
             moduleId: moduleId,
           ).setDepositRate(weight, rate);
+
+    await repository.saveSettings(updated);
+  }
+
+  /// Définit le stock nominal pour un poids donné.
+  Future<void> setNominalStock({
+    required String enterpriseId,
+    required String moduleId,
+    required int weight,
+    required int quantity,
+  }) async {
+    final existing = await repository.getSettings(
+      enterpriseId: enterpriseId,
+      moduleId: moduleId,
+    );
+
+    final updated = existing != null
+        ? existing.setNominalStock(weight, quantity)
+        : GazSettings(
+            enterpriseId: enterpriseId,
+            moduleId: moduleId,
+          ).setNominalStock(weight, quantity);
 
     await repository.saveSettings(updated);
   }

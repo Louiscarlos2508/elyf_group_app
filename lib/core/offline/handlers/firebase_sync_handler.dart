@@ -238,10 +238,12 @@ class FirebaseSyncHandler implements SyncOperationHandler {
           : null;
 
       // Si Firestore est plus récent que la version locale, ne pas écraser
-      // Mettre à jour la version locale avec Firestore à la place
+      // sauf si c'est une suppression locale (dans ce cas on veut résoudre le conflit)
+      final localIsDeleted = localData['deletedAt'] != null;
       if (serverUpdatedAt != null &&
           localUpdatedAt != null &&
-          serverUpdatedAt.isAfter(localUpdatedAt)) {
+          serverUpdatedAt.isAfter(localUpdatedAt) &&
+          !localIsDeleted) {
       AppLogger.debug(
         'Conflict detected: Firestore version is newer than local for ${operation.documentId}. '
         'Updating local data instead of overwriting Firestore.',

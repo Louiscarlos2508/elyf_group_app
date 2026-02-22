@@ -5,6 +5,8 @@ import 'package:elyf_groupe_app/core/logging/app_logger.dart';
 
 
 import '../../../../../../core/tenant/tenant_provider.dart' show activeEnterpriseProvider;
+import 'package:elyf_groupe_app/features/administration/application/providers.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import '../../widgets/bottle_price_table.dart';
 import '../../widgets/cylinder_form_dialog.dart';
 import '../../widgets/point_of_sale_form_dialog.dart';
@@ -61,43 +63,54 @@ class GazSettingsScreen extends ConsumerWidget {
                     title: 'ADMINISTRATION',
                     subtitle: 'Paramètres Gaz',
                   ),
-                  SliverPadding(
-                    padding: const EdgeInsets.all(24),
-                    sliver: SliverList(
-                      delegate: SliverChildListDelegate([
-                        _buildPriceConfigurationSection(
-                          context: context,
-                          theme: theme,
-                          enterpriseId: effectiveEnterpriseId,
-                          moduleId: effectiveModuleId,
-                          isMobile: isMobile,
-                        ),
-                        const SizedBox(height: 24),
-                        _buildPointOfSaleSection(
-                          context: context,
-                          ref: ref,
-                          theme: theme,
-                          enterpriseId: effectiveEnterpriseId,
-                          moduleId: effectiveModuleId,
-                          isMobile: isMobile,
-                        ),
-                        const SizedBox(height: 24),
-                        _buildStockAlertSection(
-                          context: context,
-                          ref: ref,
-                          theme: theme,
-                          enterpriseId: effectiveEnterpriseId,
-                        ),
-                        const SizedBox(height: 24),
-                        _buildDepositSection(
-                          context: context,
-                          ref: ref,
-                          theme: theme,
-                          enterpriseId: effectiveEnterpriseId,
-                        ),
-                      ]),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+                      child: _buildPriceConfigurationSection(
+                        context: context,
+                        theme: theme,
+                        enterpriseId: effectiveEnterpriseId,
+                        moduleId: effectiveModuleId,
+                        isMobile: isMobile,
+                      ),
                     ),
                   ),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+                      child: _buildPointOfSaleSection(
+                        context: context,
+                        ref: ref,
+                        theme: theme,
+                        enterpriseId: effectiveEnterpriseId,
+                        moduleId: effectiveModuleId,
+                        isMobile: isMobile,
+                      ),
+                    ),
+                  ),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+                      child: _buildStockAlertSection(
+                        context: context,
+                        ref: ref,
+                        theme: theme,
+                        enterpriseId: effectiveEnterpriseId,
+                      ),
+                    ),
+                  ),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+                      child: _buildNominalStockSection(
+                        context: context,
+                        ref: ref,
+                        theme: theme,
+                        enterpriseId: effectiveEnterpriseId,
+                      ),
+                    ),
+                  ),
+                  const SliverPadding(padding: EdgeInsets.only(bottom: 60)),
                 ],
               ),
             );
@@ -181,7 +194,10 @@ class GazSettingsScreen extends ConsumerWidget {
                   onPressed: () {
                     showDialog(
                       context: context,
-                      builder: (context) => const CylinderFormDialog(),
+                      builder: (context) => CylinderFormDialog(
+                        enterpriseId: enterpriseId,
+                        moduleId: moduleId,
+                      ),
                     );
                   },
                   size: ElyfButtonSize.small,
@@ -192,7 +208,10 @@ class GazSettingsScreen extends ConsumerWidget {
                         onPressed: () {
                           showDialog(
                             context: context,
-                            builder: (context) => const CylinderFormDialog(),
+                            builder: (context) => CylinderFormDialog(
+                              enterpriseId: enterpriseId,
+                              moduleId: moduleId,
+                            ),
                           );
                         },
                         icon: Icons.add,
@@ -290,9 +309,9 @@ class GazSettingsScreen extends ConsumerWidget {
 
                     if (result == true && context.mounted) {
                       ref.invalidate(
-                        pointsOfSaleProvider((
-                          enterpriseId: enterpriseId,
-                          moduleId: moduleId,
+                        enterprisesByParentAndTypeProvider((
+                          parentId: enterpriseId,
+                          type: EnterpriseType.gasPointOfSale,
                         )),
                       );
                     }
@@ -320,10 +339,10 @@ class GazSettingsScreen extends ConsumerWidget {
 
                           if (result == true && context.mounted) {
                             ref.invalidate(
-                              pointsOfSaleProvider((
-                                enterpriseId: enterpriseId,
-                                moduleId: moduleId,
-                              )),
+                                enterprisesByParentAndTypeProvider((
+                                  parentId: enterpriseId,
+                                  type: EnterpriseType.gasPointOfSale,
+                                )),
                             );
                           }
                         },
@@ -502,8 +521,9 @@ class GazSettingsScreen extends ConsumerWidget {
     );
   }
 
-  /// Construit la section de gestion des consignes (Story 3.3).
-  Widget _buildDepositSection({
+
+  /// Construit la section de gestion du stock nominal (bouteilles possédées).
+  Widget _buildNominalStockSection({
     required BuildContext context,
     required WidgetRef ref,
     required ThemeData theme,
@@ -529,11 +549,11 @@ class GazSettingsScreen extends ConsumerWidget {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+                    color: theme.colorScheme.primaryContainer.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(
-                    Icons.account_balance_wallet_outlined,
+                    Icons.inventory_2_outlined,
                     size: 20,
                     color: theme.colorScheme.primary,
                   ),
@@ -545,14 +565,14 @@ class GazSettingsScreen extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Gestion des consignes',
+                        'Inventaire Fixe (Stock Nominal)',
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w600,
                           fontSize: 16,
                         ),
                       ),
                       Text(
-                        'Tarifs des dépôts pour les nouvelles bouteilles',
+                        'Quantité totale de bouteilles possédées par format',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
@@ -581,21 +601,21 @@ class GazSettingsScreen extends ConsumerWidget {
                       separatorBuilder: (context, index) => const Divider(),
                       itemBuilder: (context, index) {
                         final weight = weights[index];
-                        final rate = settings?.getDepositRate(weight) ?? 0.0;
+                        final nominal = settings?.getNominalStock(weight) ?? 0;
 
                         return ListTile(
                           contentPadding: EdgeInsets.zero,
                           title: Text('$weight kg'),
-                          subtitle: Text('Taux de consigne : ${rate.toStringAsFixed(0)} FCFA'),
+                          subtitle: Text('Total possédé : $nominal bouteilles'),
                           trailing: SizedBox(
                             width: 100,
                             child: ElyfButton(
-                              onPressed: () => _showDepositEditDialog(
+                              onPressed: () => _showNominalStockEditDialog(
                                 context,
                                 ref,
                                 enterpriseId,
                                 weight,
-                                rate,
+                                nominal,
                               ),
                               size: ElyfButtonSize.small,
                               child: const Text('Modifier'),
@@ -618,24 +638,24 @@ class GazSettingsScreen extends ConsumerWidget {
     );
   }
 
-  void _showDepositEditDialog(
+  void _showNominalStockEditDialog(
     BuildContext context,
     WidgetRef ref,
     String enterpriseId,
     int weight,
-    double currentRate,
+    int currentNominal,
   ) {
-    final controller = TextEditingController(text: currentRate.toStringAsFixed(0));
+    final controller = TextEditingController(text: currentNominal.toString());
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Tarif de consigne ($weight kg)'),
+        title: Text('Stock Nominal ($weight kg)'),
         content: TextField(
           controller: controller,
           keyboardType: TextInputType.number,
           decoration: const InputDecoration(
-            labelText: 'Montant (FCFA)',
-            helperText: 'Prix du dépôt pour une nouvelle bouteille',
+            labelText: 'Total de bouteilles possédées',
+            helperText: 'Fixez la quantité totale pour ce format',
           ),
         ),
         actions: [
@@ -645,12 +665,12 @@ class GazSettingsScreen extends ConsumerWidget {
           ),
           ElevatedButton(
             onPressed: () async {
-              final newRate = double.tryParse(controller.text) ?? 0.0;
-              await ref.read(gazSettingsControllerProvider).setDepositRate(
+              final newNominal = int.tryParse(controller.text) ?? 0;
+              await ref.read(gazSettingsControllerProvider).setNominalStock(
                 enterpriseId: enterpriseId,
                 moduleId: 'gaz',
                 weight: weight,
-                rate: newRate,
+                quantity: newNominal,
               );
               if (context.mounted) Navigator.pop(context);
             },

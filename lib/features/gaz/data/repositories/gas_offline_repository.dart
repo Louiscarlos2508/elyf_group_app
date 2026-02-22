@@ -81,6 +81,40 @@ class GasOfflineRepository implements GasRepository {
   }
 
   @override
+  Future<List<Cylinder>> getCylindersForEnterprises(List<String> enterpriseIds) async {
+    try {
+      final rows = await driftService.records.listForEnterprises(
+        collectionName: _cylindersCollection,
+        enterpriseIds: enterpriseIds,
+        moduleType: 'gaz',
+      );
+
+      return rows
+          .map((row) {
+            try {
+              final map = jsonDecode(row.dataJson) as Map<String, dynamic>;
+              return _cylinderFromMap(map).copyWith(id: row.localId);
+            } catch (e) {
+              return null;
+            }
+          })
+          .whereType<Cylinder>()
+          .where((c) => !c.isDeleted)
+          .toList()
+        ..sort((a, b) => a.weight.compareTo(b.weight));
+    } catch (error, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
+      AppLogger.error(
+        'Error getting cylinders for multiple enterprises: ${appException.message}',
+        name: 'GasOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return [];
+    }
+  }
+
+  @override
   Stream<List<Cylinder>> watchCylinders() {
     return driftService.records
         .watchForEnterprise(
@@ -117,8 +151,8 @@ class GasOfflineRepository implements GasRepository {
       for (final row in rows) {
         try {
           final map = jsonDecode(row.dataJson) as Map<String, dynamic>;
-          final cylinder = _cylinderFromMap(map);
-          if (cylinder.id == id && !cylinder.isDeleted) {
+          final cylinder = _cylinderFromMap(map).copyWith(id: row.localId);
+          if ((cylinder.id == id || row.localId == id || row.remoteId == id) && !cylinder.isDeleted) {
             return cylinder;
           }
         } catch (_) {
@@ -201,8 +235,13 @@ class GasOfflineRepository implements GasRepository {
         }
       }
 
-      final map = _cylinderToMap(cylinder)..['localId'] = localId..['id'] = localId;
-
+      final newCylinder = cylinder.copyWith(
+        id: localId,
+        createdAt: cylinder.createdAt ?? DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+      final map = _cylinderToMap(newCylinder);
+      
       await driftService.records.upsert(
         collectionName: _cylindersCollection,
         localId: localId,
@@ -238,10 +277,16 @@ class GasOfflineRepository implements GasRepository {
       String localId;
       String? remoteId;
       
-      // Si l'ID commence par 'local_', c'est déjà un localId
+      // Si l'ID commence par 'local_', c'est déjà un localId, mais on doit récupérer le vrai remoteId
       if (cylinder.id.startsWith('local_')) {
         localId = cylinder.id;
-        remoteId = null;
+        final existingRecord = await driftService.records.findByLocalId(
+          collectionName: _cylindersCollection,
+          localId: localId,
+          enterpriseId: enterpriseId,
+          moduleType: 'gaz',
+        );
+        remoteId = existingRecord?.remoteId;
       } else {
         remoteId = cylinder.id;
         
@@ -259,32 +304,7 @@ class GasOfflineRepository implements GasRepository {
           // Chercher par l'ID
           final existingCylinder = await getCylinderById(cylinder.id);
           if (existingCylinder != null) {
-            if (existingCylinder.id.startsWith('local_')) {
-              localId = existingCylinder.id;
-            } else {
-              // Chercher dans la base pour trouver le localId
-              final rows = await driftService.records.listForEnterprise(
-                collectionName: _cylindersCollection,
-                enterpriseId: enterpriseId,
-                moduleType: 'gaz',
-              );
-              final found = rows.firstWhere(
-                (r) {
-                  try {
-                    final map = jsonDecode(r.dataJson) as Map<String, dynamic>;
-                    final cyl = _cylinderFromMap(map);
-                    return cyl.id == cylinder.id;
-                  } catch (_) {
-                    return false;
-                  }
-                },
-                orElse: () => throw NotFoundException(
-                  'Cylinder not found',
-                  'CYLINDER_NOT_FOUND',
-                ),
-              );
-              localId = found.localId;
-            }
+            localId = existingCylinder.id;
           } else {
             // Si on ne trouve pas par ID, chercher par weight + enterpriseId
             final rows = await driftService.records.listForEnterprise(
@@ -313,7 +333,10 @@ class GasOfflineRepository implements GasRepository {
         }
       }
 
-      final map = _cylinderToMap(cylinder)..['localId'] = localId..['id'] = localId;
+      final updatedCylinder = cylinder.copyWith(
+        updatedAt: DateTime.now(),
+      );
+      final map = _cylinderToMap(updatedCylinder)..['localId'] = localId..['id'] = localId;
 
       await driftService.records.upsert(
         collectionName: _cylindersCollection,
@@ -356,13 +379,21 @@ class GasOfflineRepository implements GasRepository {
       final cylinder = await getCylinderById(id);
       if (cylinder == null) return;
 
-      // Soft-delete: update with deletedAt instead of actual deletion
+      // Soft-delete: update with deletedAt and updatedAt instead of actual deletion
       final deletedCylinder = cylinder.copyWith(
         deletedAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+      
+      final existingRecord = await driftService.records.findByLocalId(
+        collectionName: _cylindersCollection,
+        localId: cylinder.id,
+        enterpriseId: enterpriseId,
+        moduleType: 'gaz',
       );
       
       final localId = deletedCylinder.id;
-      final remoteId = cylinder.id.startsWith('local_') ? null : cylinder.id;
+      final remoteId = existingRecord?.remoteId ?? (cylinder.id.startsWith('local_') ? null : cylinder.id);
       final map = _cylinderToMap(deletedCylinder);
 
       await driftService.records.upsert(
@@ -565,12 +596,30 @@ class GasOfflineRepository implements GasRepository {
   @override
   Future<void> updateSale(GasSale sale) async {
     try {
-      final localId = sale.id.startsWith('local_')
-          ? sale.id
-          : LocalIdGenerator.generate();
-      final remoteId = sale.id.startsWith('local_') ? null : sale.id;
+      String localId;
+      String? remoteId;
 
-      final map = _gasSaleToMap(sale)..['localId'] = localId;
+      if (sale.id.startsWith('local_')) {
+        localId = sale.id;
+        final existingRecord = await driftService.records.findByLocalId(
+          collectionName: _salesCollection,
+          localId: localId,
+          enterpriseId: enterpriseId,
+          moduleType: 'gaz',
+        );
+        remoteId = existingRecord?.remoteId;
+      } else {
+        remoteId = sale.id;
+        final byRemote = await driftService.records.findByRemoteId(
+          collectionName: _salesCollection,
+          remoteId: remoteId,
+          enterpriseId: enterpriseId,
+          moduleType: 'gaz',
+        );
+        localId = byRemote?.localId ?? sale.id;
+      }
+
+      final map = _gasSaleToMap(sale)..['localId'] = localId..['id'] = localId;
 
       await driftService.records.upsert(
         collectionName: _salesCollection,
@@ -611,10 +660,18 @@ class GasOfflineRepository implements GasRepository {
       // Soft-delete
       final deletedSale = sale.copyWith(
         deletedAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
+      final existingRecord = await driftService.records.findByLocalId(
+        collectionName: _salesCollection,
+        localId: sale.id,
+        enterpriseId: enterpriseId,
+        moduleType: 'gaz',
       );
 
       final localId = deletedSale.id;
-      final remoteId = sale.id.startsWith('local_') ? null : sale.id;
+      final remoteId = existingRecord?.remoteId ?? (sale.id.startsWith('local_') ? null : sale.id);
       final map = _gasSaleToMap(deletedSale);
 
       await driftService.records.upsert(

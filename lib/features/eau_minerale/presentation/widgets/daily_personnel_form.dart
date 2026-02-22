@@ -938,7 +938,7 @@ class _MaterialSelectionDialogState extends State<_MaterialSelectionDialog> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             DropdownButtonFormField<Product>(
-              value: _selectedProduct,
+              initialValue: _selectedProduct,
               isExpanded: true,
               items: widget.products.map((p) => DropdownMenuItem<Product>(
                 value: p,

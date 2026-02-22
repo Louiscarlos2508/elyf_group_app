@@ -76,6 +76,7 @@ class TourOfflineRepository extends OfflineRepository<Tour>
     // Soft-delete
     final deletedTour = entity.copyWith(
       deletedAt: DateTime.now(),
+      updatedAt: DateTime.now(),
     );
     await saveToLocal(deletedTour);
     
@@ -402,31 +403,18 @@ class TourOfflineRepository extends OfflineRepository<Tour>
       
       // Logger les données existantes pour vérifier qu'elles sont préservées
       AppLogger.debug(
-        'Tour récupéré - Collections: ${tour.collections.length}, TransportExpenses: ${tour.transportExpenses.length}',
+        'Tour récupéré - EmptyLoaded: ${tour.emptyBottlesLoaded.length}, TransportExpenses: ${tour.transportExpenses.length}',
         name: 'TourOfflineRepository.updateStatus',
       );
       
       Tour updated;
       switch (status) {
-        case TourStatus.collection:
+        case TourStatus.open:
           updated = tour.copyWith(status: status);
           break;
-        case TourStatus.transport:
+        case TourStatus.closed:
           updated = tour.copyWith(
             status: status,
-            collectionCompletedDate: DateTime.now(),
-          );
-          break;
-        case TourStatus.return_:
-          updated = tour.copyWith(
-            status: status,
-            transportCompletedDate: DateTime.now(),
-          );
-          break;
-        case TourStatus.closure:
-          updated = tour.copyWith(
-            status: status,
-            returnCompletedDate: DateTime.now(),
             closureDate: DateTime.now(),
           );
           break;
@@ -438,12 +426,10 @@ class TourOfflineRepository extends OfflineRepository<Tour>
           break;
       }
       
-      // Update updatedAt
       updated = updated.copyWith(updatedAt: DateTime.now());
       
-      // Vérifier que les données sont préservées
       AppLogger.debug(
-        'Tour mis à jour - Collections: ${updated.collections.length}, TransportExpenses: ${updated.transportExpenses.length}, Status: ${updated.status}',
+        'Tour mis à jour - EmptyLoaded: ${updated.emptyBottlesLoaded.length}, TransportExpenses: ${updated.transportExpenses.length}, Status: ${updated.status}',
         name: 'TourOfflineRepository.updateStatus',
       );
       

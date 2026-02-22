@@ -24,6 +24,10 @@ class GazSession {
     this.openingFullStock = const {},
     this.openingEmptyStock = const {},
     this.openingCash = 0.0,
+    this.openingMobileMoney = 0.0,
+    this.theoreticalMobileMoney = 0.0,
+    this.physicalMobileMoney = 0.0,
+    this.discrepancyMobileMoney = 0.0,
   });
 
   final String id;
@@ -48,6 +52,10 @@ class GazSession {
   final Map<int, int> openingFullStock;
   final Map<int, int> openingEmptyStock;
   final double openingCash;
+  final double openingMobileMoney;
+  final double theoreticalMobileMoney;
+  final double physicalMobileMoney;
+  final double discrepancyMobileMoney;
 
   bool get isOpen => status == GazSessionStatus.open;
   bool get isClosed => status == GazSessionStatus.closed;
@@ -65,9 +73,12 @@ class GazSession {
     Map<int, int> openingFullStock = const {},
     Map<int, int> openingEmptyStock = const {},
     double openingCash = 0.0,
+    double openingMobileMoney = 0.0,
+    double physicalMobileMoney = 0.0,
     String? notes,
   }) {
     final theoretical = metrics.theoreticalCash;
+    final theoreticalMM = metrics.theoreticalMobileMoney;
     final stockReconciliation = <int, int>{};
     for (final weight in metrics.salesByCylinderWeight.keys) {
       final theoreticalQty = metrics.theoreticalStock[weight] ?? 0;
@@ -106,6 +117,10 @@ class GazSession {
       openingFullStock: openingFullStock,
       openingEmptyStock: openingEmptyStock,
       openingCash: openingCash,
+      openingMobileMoney: openingMobileMoney,
+      theoreticalMobileMoney: theoreticalMM,
+      physicalMobileMoney: physicalMobileMoney,
+      discrepancyMobileMoney: physicalMobileMoney - theoreticalMM,
     );
   }
 
@@ -132,6 +147,10 @@ class GazSession {
       'openingFullStock': openingFullStock.map((k, v) => MapEntry(k.toString(), v)),
       'openingEmptyStock': openingEmptyStock.map((k, v) => MapEntry(k.toString(), v)),
       'openingCash': openingCash,
+      'openingMobileMoney': openingMobileMoney,
+      'theoreticalMobileMoney': theoreticalMobileMoney,
+      'physicalMobileMoney': physicalMobileMoney,
+      'discrepancyMobileMoney': discrepancyMobileMoney,
     };
   }
 
@@ -170,6 +189,10 @@ class GazSession {
               ?.map((k, v) => MapEntry(int.parse(k), v as int)) ??
           {},
       openingCash: (map['openingCash'] as num?)?.toDouble() ?? 0.0,
+      openingMobileMoney: (map['openingMobileMoney'] as num?)?.toDouble() ?? 0.0,
+      theoreticalMobileMoney: (map['theoreticalMobileMoney'] as num?)?.toDouble() ?? 0.0,
+      physicalMobileMoney: (map['physicalMobileMoney'] as num?)?.toDouble() ?? 0.0,
+      discrepancyMobileMoney: (map['discrepancyMobileMoney'] as num?)?.toDouble() ?? 0.0,
     );
   }
 
@@ -196,6 +219,10 @@ class GazSession {
     Map<int, int>? openingFullStock,
     Map<int, int>? openingEmptyStock,
     double? openingCash,
+    double? openingMobileMoney,
+    double? theoreticalMobileMoney,
+    double? physicalMobileMoney,
+    double? discrepancyMobileMoney,
   }) {
     return GazSession(
       id: id ?? this.id,
@@ -220,6 +247,10 @@ class GazSession {
       openingFullStock: openingFullStock ?? this.openingFullStock,
       openingEmptyStock: openingEmptyStock ?? this.openingEmptyStock,
       openingCash: openingCash ?? this.openingCash,
+      openingMobileMoney: openingMobileMoney ?? this.openingMobileMoney,
+      theoreticalMobileMoney: theoreticalMobileMoney ?? this.theoreticalMobileMoney,
+      physicalMobileMoney: physicalMobileMoney ?? this.physicalMobileMoney,
+      discrepancyMobileMoney: discrepancyMobileMoney ?? this.discrepancyMobileMoney,
     );
   }
 }

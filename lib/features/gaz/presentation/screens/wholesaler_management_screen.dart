@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/wholesaler.dart';
 import '../widgets/wholesaler_form_dialog.dart';
-import '../../../../../shared/presentation/widgets/elyf_ui/atoms/elyf_button.dart';
 import '../../../../../shared/presentation/widgets/elyf_ui/atoms/elyf_icon_button.dart';
 import '../../../../../core/tenant/tenant_provider.dart';
 import 'package:elyf_groupe_app/shared.dart';

@@ -69,6 +69,7 @@ class CylinderStockOfflineRepository extends OfflineRepository<CylinderStock>
     // Soft-delete
     final deletedStock = entity.copyWith(
       deletedAt: DateTime.now(),
+      updatedAt: DateTime.now(),
     );
     await saveToLocal(deletedStock);
     

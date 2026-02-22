@@ -3,20 +3,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../shared/presentation/widgets/elyf_ui/atoms/elyf_button.dart';
 
+import 'package:elyf_groupe_app/features/administration/application/providers.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
-import '../../../domain/entities/point_of_sale.dart';
 
 /// Dialog pour associer des types de bouteilles à un point de vente.
 class PosAssociateCylindersDialog extends ConsumerStatefulWidget {
   const PosAssociateCylindersDialog({
     super.key,
-    required this.pointOfSale,
+    required this.enterprise,
     required this.enterpriseId,
     required this.moduleId,
     required this.dialogContext,
   });
 
-  final PointOfSale pointOfSale;
+  final Enterprise enterprise;
   final String enterpriseId;
   final String moduleId;
   final BuildContext dialogContext;
@@ -34,9 +35,8 @@ class _PosAssociateCylindersDialogState
   @override
   void initState() {
     super.initState();
-    _currentSelectedCylinderIds = Set<String>.from(
-      widget.pointOfSale.cylinderIds,
-    );
+    final cylinderIds = widget.enterprise.metadata['cylinderIds'] as List<dynamic>? ?? [];
+    _currentSelectedCylinderIds = Set<String>.from(cylinderIds.map((e) => e.toString()));
   }
 
   Future<void> _save() async {
@@ -47,24 +47,28 @@ class _PosAssociateCylindersDialogState
     try {
       if (!mounted) return;
 
-      final controller = ref.read(pointOfSaleControllerProvider);
-      final updatedPos = widget.pointOfSale.copyWith(
-        cylinderIds: _currentSelectedCylinderIds.toList(),
+      final controller = ref.read(enterpriseControllerProvider);
+      
+      final currentMetadata = Map<String, dynamic>.from(widget.enterprise.metadata);
+      currentMetadata['cylinderIds'] = _currentSelectedCylinderIds.toList();
+      
+      final updatedPos = widget.enterprise.copyWith(
+        metadata: currentMetadata,
       );
 
-      await controller.updatePointOfSale(updatedPos);
+      await controller.updateEnterprise(updatedPos);
 
       if (!mounted) return;
 
       ref.invalidate(
-        pointsOfSaleProvider((
-          enterpriseId: widget.enterpriseId,
-          moduleId: widget.moduleId,
+        enterprisesByParentAndTypeProvider((
+          parentId: widget.enterpriseId,
+          type: EnterpriseType.gasPointOfSale,
         )),
       );
       ref.invalidate(
         pointOfSaleCylindersProvider((
-          pointOfSaleId: widget.pointOfSale.id,
+          pointOfSaleId: widget.enterprise.id,
           enterpriseId: widget.enterpriseId,
           moduleId: widget.moduleId,
         )),
@@ -108,7 +112,7 @@ class _PosAssociateCylindersDialogState
 
     return allCylindersAsync.when(
       data: (allCylinders) => AlertDialog(
-        title: Text('Associer des types - ${widget.pointOfSale.name}'),
+        title: Text('Associer des types - ${widget.enterprise.name}'),
         content: ConstrainedBox(
           constraints: const BoxConstraints(maxHeight: 400),
           child: SizedBox(

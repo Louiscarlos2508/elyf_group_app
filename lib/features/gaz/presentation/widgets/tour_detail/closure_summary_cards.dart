@@ -2,19 +2,19 @@ import 'package:flutter/material.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
 
-/// Cartes de résumé pour l'étape de clôture.
+/// Cartes de résumé pour l'étape de clôture du tour fournisseur.
 class ClosureSummaryCards extends StatelessWidget {
   const ClosureSummaryCards({
     super.key,
-    required this.totalCollected,
+    required this.totalEmpty,
+    required this.totalFull,
     required this.totalExpenses,
-    required this.netProfit,
     required this.isMobile,
   });
 
-  final double totalCollected;
+  final int totalEmpty;
+  final int totalFull;
   final double totalExpenses;
-  final double netProfit;
   final bool isMobile;
 
   @override
@@ -25,23 +25,25 @@ class ClosureSummaryCards extends StatelessWidget {
         ? Column(
             children: [
               _SummaryCard(
-                title: 'Total encaissé',
-                amount: totalCollected,
+                title: 'Vides envoyés',
+                value: '$totalEmpty',
+                suffix: ' bouteilles',
+                color: theme.colorScheme.primary,
+                theme: theme,
+              ),
+              const SizedBox(height: 16),
+              _SummaryCard(
+                title: 'Pleins reçus',
+                value: '$totalFull',
+                suffix: ' bouteilles',
                 color: AppColors.success,
                 theme: theme,
               ),
               const SizedBox(height: 16),
               _SummaryCard(
-                title: 'Total dépenses',
-                amount: totalExpenses,
+                title: 'Dépenses totales',
+                value: CurrencyFormatter.formatDouble(totalExpenses),
                 color: theme.colorScheme.error,
-                theme: theme,
-              ),
-              const SizedBox(height: 16),
-              _SummaryCard(
-                title: 'Bénéfice net',
-                amount: netProfit,
-                color: AppColors.success,
                 theme: theme,
               ),
             ],
@@ -50,8 +52,19 @@ class ClosureSummaryCards extends StatelessWidget {
             children: [
               Expanded(
                 child: _SummaryCard(
-                  title: 'Total encaissé',
-                  amount: totalCollected,
+                  title: 'Vides envoyés',
+                  value: '$totalEmpty',
+                  suffix: ' btlles',
+                  color: theme.colorScheme.primary,
+                  theme: theme,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _SummaryCard(
+                  title: 'Pleins reçus',
+                  value: '$totalFull',
+                  suffix: ' btlles',
                   color: AppColors.success,
                   theme: theme,
                 ),
@@ -59,18 +72,9 @@ class ClosureSummaryCards extends StatelessWidget {
               const SizedBox(width: 16),
               Expanded(
                 child: _SummaryCard(
-                  title: 'Total dépenses',
-                  amount: totalExpenses,
+                  title: 'Dépenses totales',
+                  value: CurrencyFormatter.formatDouble(totalExpenses),
                   color: theme.colorScheme.error,
-                  theme: theme,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _SummaryCard(
-                  title: 'Bénéfice net',
-                  amount: netProfit,
-                  color: AppColors.success,
                   theme: theme,
                 ),
               ),
@@ -82,13 +86,15 @@ class ClosureSummaryCards extends StatelessWidget {
 class _SummaryCard extends StatelessWidget {
   const _SummaryCard({
     required this.title,
-    required this.amount,
+    required this.value,
+    this.suffix = '',
     required this.color,
     required this.theme,
   });
 
   final String title;
-  final double amount;
+  final String value;
+  final String suffix;
   final Color color;
   final ThemeData theme;
 
@@ -117,18 +123,31 @@ class _SummaryCard extends StatelessWidget {
             title,
             style: theme.textTheme.bodyMedium?.copyWith(
               fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: theme.colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w500,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ),
-          ),
-          const SizedBox(height: 42),
-          Text(
-            CurrencyFormatter.formatDouble(amount),
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontSize: 24,
-            fontWeight: FontWeight.w700,
-            color: color,
-          ),
+          const SizedBox(height: 12),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(
+                value,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  color: color,
+                ),
+              ),
+              if (suffix.isNotEmpty)
+                Text(
+                  suffix,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+            ],
           ),
         ],
       ),

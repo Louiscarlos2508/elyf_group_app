@@ -207,6 +207,7 @@ class PropertyOfflineRepository extends OfflineRepository<Property>
       if (property != null) {
         await save(property.copyWith(
           deletedAt: DateTime.now(),
+          updatedAt: DateTime.now(),
           deletedBy: 'system',
         ));
       }

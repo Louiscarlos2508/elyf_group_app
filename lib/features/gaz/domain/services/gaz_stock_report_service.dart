@@ -14,13 +14,13 @@ class GazStockReportService {
 
   /// Récupère l'historique des mouvements de stock pour une période donnée.
   Future<List<StockMovement>> getStockHistory({
-    required String enterpriseId,
-    required DateTime startDate,
-    required DateTime endDate,
+    required List<String> enterpriseIds,
+    DateTime? startDate,
+    DateTime? endDate,
     String? siteId,
   }) async {
-    final records = await auditRepository.fetchRecords(
-      enterpriseId: enterpriseId,
+    final records = await auditRepository.fetchRecordsForEnterprises(
+      enterpriseIds: enterpriseIds,
       startDate: startDate,
       endDate: endDate,
       module: 'gaz',
@@ -45,7 +45,7 @@ class GazStockReportService {
 
         movements.add(StockMovement(
           id: '${record.id}_${movements.length}',
-          enterpriseId: enterpriseId,
+          enterpriseId: record.enterpriseId,
           timestamp: record.timestamp,
           type: type,
           cylinderId: moveMap['cylinderId'] as String? ?? metadata['cylinderId'] as String? ?? 'N/A',
@@ -67,10 +67,10 @@ class GazStockReportService {
 
   /// Calcule un résumé du stock actuel (global ou par site).
   Future<Map<int, Map<CylinderStatus, int>>> getStockSummary({
-    required String enterpriseId,
+    required List<String> enterpriseIds,
     String? siteId,
   }) async {
-    final stocks = await stockRepository.getAllForEnterprise(enterpriseId);
+    final stocks = await stockRepository.getAllForEnterprises(enterpriseIds);
     
     final summary = <int, Map<CylinderStatus, int>>{};
 

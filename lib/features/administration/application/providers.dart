@@ -526,6 +526,20 @@ final enterprisesByTypeProvider = FutureProvider.autoDispose
           ref.watch(enterpriseControllerProvider).getEnterprisesByType(type),
     );
 
+/// Provider pour récupérer les entreprises par parent et par type (Stream)
+///
+/// Écoute les changements en temps réel.
+final enterprisesByParentAndTypeProvider = StreamProvider.autoDispose
+    .family<List<Enterprise>, ({String parentId, EnterpriseType type})>(
+      (ref, params) {
+        return ref.watch(enterpriseControllerProvider).watchAllEnterprises().map(
+          (enterprises) => enterprises
+              .where((e) => e.parentEnterpriseId == params.parentId && e.type == params.type)
+              .toList()
+        );
+      },
+    );
+
 /// Provider pour récupérer une entreprise par ID
 ///
 /// Utilise le controller pour respecter l'architecture.

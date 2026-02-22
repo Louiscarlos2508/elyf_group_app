@@ -16,48 +16,99 @@ class StockTransferScreen extends ConsumerWidget {
 
     final transfersAsync = ref.watch(stockTransfersProvider(activeEnterprise.id));
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Transferts de Stock'),
-        actions: [
-          IconButton(
-            onPressed: () => ref.invalidate(stockTransfersProvider(activeEnterprise.id)),
-            icon: const Icon(Icons.refresh),
+    return DefaultTabController(
+      length: 3,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Transferts de Stock'),
+          bottom: const TabBar(
+            tabs: [
+              Tab(text: 'À traiter'),
+              Tab(text: 'En attente'),
+              Tab(text: 'Historique'),
+            ],
           ),
-        ],
-      ),
-      body: transfersAsync.when(
-        data: (transfers) {
-          if (transfers.isEmpty) {
-            return const Center(child: Text('Aucun transfert enregistré'));
-          }
-          // Sort by date (newest first)
-          final sortedTransfers = [...transfers]..sort((a, b) {
-            final dateA = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-            final dateB = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-            return dateB.compareTo(dateA);
-          });
-
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: sortedTransfers.length,
-            itemBuilder: (context, index) {
-              final transfer = sortedTransfers[index];
-              return _TransferCard(transfer: transfer, currentEnterpriseId: activeEnterprise.id);
-            },
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Erreur: $e')),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => showDialog(
-          context: context,
-          builder: (context) => StockTransferDialog(fromEnterpriseId: activeEnterprise.id),
+          actions: [
+            IconButton(
+              onPressed: () => ref.invalidate(stockTransfersProvider(activeEnterprise.id)),
+              icon: const Icon(Icons.refresh),
+            ),
+          ],
         ),
-        label: const Text('Nouveau Transfert'),
-        icon: const Icon(Icons.add),
+        body: transfersAsync.when(
+          data: (transfers) {
+            // Sort by date (newest first)
+            final sortedTransfers = [...transfers]..sort((a, b) {
+              final dateA = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+              final dateB = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+              return dateB.compareTo(dateA);
+            });
+
+            final toProcess = sortedTransfers.where((t) {
+              final isOutgoing = t.fromEnterpriseId == activeEnterprise.id;
+              return (isOutgoing && t.status == StockTransferStatus.pending) ||
+                     (!isOutgoing && t.status == StockTransferStatus.shipped);
+            }).toList();
+
+            final waiting = sortedTransfers.where((t) {
+              final isOutgoing = t.fromEnterpriseId == activeEnterprise.id;
+              return (!isOutgoing && t.status == StockTransferStatus.pending) ||
+                     (isOutgoing && t.status == StockTransferStatus.shipped);
+            }).toList();
+
+            final history = sortedTransfers.where((t) => 
+              t.status == StockTransferStatus.received || 
+              t.status == StockTransferStatus.cancelled
+            ).toList();
+
+            return TabBarView(
+              children: [
+                _TransferList(transfers: toProcess, currentEnterpriseId: activeEnterprise.id, emptyMessage: 'Aucune action requise'),
+                _TransferList(transfers: waiting, currentEnterpriseId: activeEnterprise.id, emptyMessage: 'Aucun transfert en attente'),
+                _TransferList(transfers: history, currentEnterpriseId: activeEnterprise.id, emptyMessage: 'Historique vide'),
+              ],
+            );
+          },
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, _) => Center(child: Text('Erreur: $e')),
+        ),
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: () => showDialog(
+            context: context,
+            builder: (context) => StockTransferDialog(fromEnterpriseId: activeEnterprise.id),
+          ),
+          label: const Text('Nouveau Transfert'),
+          icon: const Icon(Icons.add),
+        ),
       ),
+    );
+  }
+}
+
+class _TransferList extends StatelessWidget {
+  const _TransferList({required this.transfers, required this.currentEnterpriseId, required this.emptyMessage});
+  final List<StockTransfer> transfers;
+  final String currentEnterpriseId;
+  final String emptyMessage;
+
+  @override
+  Widget build(BuildContext context) {
+    if (transfers.isEmpty) {
+      return Center(
+        child: Text(
+          emptyMessage,
+          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      );
+    }
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: transfers.length,
+      itemBuilder: (context, index) {
+        return _TransferCard(transfer: transfers[index], currentEnterpriseId: currentEnterpriseId);
+      },
     );
   }
 }

@@ -51,7 +51,7 @@ class BoutiqueSettingsOfflineRepository extends OfflineRepository<BoutiqueSettin
   @override
   Future<void> deleteFromLocal(BoutiqueSettings entity) async {
     // Soft delete if needed, but per-module settings usually aren't deleted
-    await saveToLocal(entity.copyWith(deletedAt: DateTime.now()));
+    await saveToLocal(entity.copyWith(deletedAt: DateTime.now(), updatedAt: DateTime.now()));
   }
 
   @override

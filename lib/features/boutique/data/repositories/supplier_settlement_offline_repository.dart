@@ -146,8 +146,8 @@ class SupplierSettlementOfflineRepository extends OfflineRepository<SupplierSett
 
     final updated = settlement.copyWith(
       deletedAt: DateTime.now(),
-      deletedBy: deletedBy,
       updatedAt: DateTime.now(),
+      deletedBy: deletedBy,
     );
     await save(updated);
 

@@ -1,30 +1,35 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
+import '../../application/providers.dart';
 import '../../domain/entities/gas_sale.dart';
 
-class WholesaleSaleCard extends StatelessWidget {
+class WholesaleSaleCard extends ConsumerWidget {
   const WholesaleSaleCard({super.key, required this.sale});
 
   final GasSale sale;
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final dateFormat = DateFormat('dd/MM/yyyy à HH:mm');
+    final cylinders = ref.watch(cylindersProvider).value ?? [];
+    final cylinder = cylinders.where((c) => c.id == sale.cylinderId).firstOrNull;
+    final cylinderLabel = cylinder?.label ?? 'Bouteille';
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: theme.colorScheme.outline.withValues(alpha: 0.1),
+          color: theme.colorScheme.primary.withAlpha(30),
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
+            color: theme.colorScheme.primary.withAlpha(5),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -41,12 +46,31 @@ class WholesaleSaleCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      dateFormat.format(sale.saleDate),
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontSize: 14,
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
+                    Row(
+                      children: [
+                        Text(
+                          dateFormat.format(sale.saleDate),
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontSize: 14,
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                         Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            cylinderLabel,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     if (sale.wholesalerName != null) ...[
                       const SizedBox(height: 4),
@@ -80,7 +104,7 @@ class WholesaleSaleCard extends StatelessWidget {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            'Tour d\'approvisionnement',
+                            'Approvisionnement',
                             style: theme.textTheme.bodySmall?.copyWith(
                               fontSize: 12,
                               color: theme.colorScheme.onSurfaceVariant,
@@ -98,15 +122,18 @@ class WholesaleSaleCard extends StatelessWidget {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF10B981).withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  color: (sale.saleType == SaleType.wholesale ? theme.colorScheme.secondary : theme.colorScheme.primary).withAlpha(20),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: (sale.saleType == SaleType.wholesale ? theme.colorScheme.secondary : theme.colorScheme.primary).withAlpha(40),
+                  ),
                 ),
                 child: Text(
                   CurrencyFormatter.formatDouble(sale.totalAmount),
                   style: theme.textTheme.titleMedium?.copyWith(
-                    fontSize: 16,
+                    fontSize: 15,
                     fontWeight: FontWeight.bold,
-                    color: const Color(0xFF10B981),
+                    color: sale.saleType == SaleType.wholesale ? theme.colorScheme.secondary : theme.colorScheme.primary,
                   ),
                 ),
               ),

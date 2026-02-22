@@ -2,14 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
+import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
 import 'package:elyf_groupe_app/shared/domain/entities/treasury_operation.dart';
-import 'package:elyf_groupe_app/features/gaz/presentation/widgets/gaz_header.dart';
 import 'package:elyf_groupe_app/features/gaz/presentation/widgets/treasury_operation_dialog.dart';
 import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
-import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
 
-class GazTreasuryScreen extends ConsumerWidget {
-  const GazTreasuryScreen({super.key});
+class TreasuryTab extends ConsumerWidget {
+  const TreasuryTab({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -20,118 +19,105 @@ class GazTreasuryScreen extends ConsumerWidget {
     final operationsAsync = ref.watch(gazTreasuryOperationsStreamProvider(activeEnterprise.id));
     final theme = Theme.of(context);
 
-    return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          GazHeader(
-            title: 'TRÉSORERIE',
-            subtitle: 'Gestion des Comptes & Flux',
-            additionalActions: [
-              IconButton(
-                icon: const Icon(Icons.refresh, color: Colors.white),
-                onPressed: () => ref.invalidate(gazTreasuryBalanceProvider(activeEnterprise.id)),
-              ),
-            ],
-          ),
-
-          // Multi-Account Balances
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: balancesAsync.when(
-                data: (balances) => Row(
-                  children: [
-                    Expanded(
-                      child: _BalanceCard(
-                        label: 'Caisse (Espèces)',
-                        amount: balances['cash'] ?? 0,
-                        color: theme.colorScheme.primary,
-                        icon: Icons.payments_outlined,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: _BalanceCard(
-                        label: 'Mobile Money',
-                        amount: balances['mobileMoney'] ?? 0,
-                        color: theme.colorScheme.secondary,
-                        icon: Icons.account_balance_wallet_outlined,
-                      ),
-                    ),
-                  ],
-                ),
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (e, __) => Text('Erreur: $e'),
-              ),
-            ),
-          ),
-
-          // Action Chips
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Wrap(
-                spacing: 8,
+    return CustomScrollView(
+      slivers: [
+        // Balances
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: balancesAsync.when(
+              data: (balances) => Row(
                 children: [
-                  ActionChip(
-                    avatar: const Icon(Icons.add, size: 16),
-                    label: const Text('Apport'),
-                    onPressed: () => _showOperationDialog(context, TreasuryOperationType.supply),
+                  Expanded(
+                    child: _BalanceCard(
+                      label: 'Caisse (Espèces)',
+                      amount: balances['cash'] ?? 0,
+                      color: theme.colorScheme.primary,
+                      icon: Icons.payments_outlined,
+                    ),
                   ),
-                  ActionChip(
-                    avatar: const Icon(Icons.remove, size: 16),
-                    label: const Text('Retrait'),
-                    onPressed: () => _showOperationDialog(context, TreasuryOperationType.removal),
-                  ),
-                  ActionChip(
-                    avatar: const Icon(Icons.swap_horiz, size: 16),
-                    label: const Text('Transfert'),
-                    onPressed: () => _showOperationDialog(context, TreasuryOperationType.transfer),
-                  ),
-                  ActionChip(
-                    avatar: const Icon(Icons.tune, size: 16),
-                    label: const Text('Ajustement'),
-                    onPressed: () => _showOperationDialog(context, TreasuryOperationType.adjustment),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _BalanceCard(
+                      label: 'Mobile Money',
+                      amount: balances['mobileMoney'] ?? 0,
+                      color: theme.colorScheme.secondary,
+                      icon: Icons.account_balance_wallet_outlined,
+                    ),
                   ),
                 ],
               ),
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, __) => Text('Erreur: $e'),
             ),
           ),
+        ),
 
-          const SliverPadding(
-            padding: EdgeInsets.fromLTRB(16, 24, 16, 8),
-            sliver: SliverToBoxAdapter(
-              child: Text(
-                'Opérations Récentes',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
+        // Quick Actions
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Wrap(
+              spacing: 8,
+              children: [
+                ActionChip(
+                  avatar: const Icon(Icons.add, size: 16),
+                  label: const Text('Apport'),
+                  onPressed: () => _showOperationDialog(context, TreasuryOperationType.supply),
+                ),
+                ActionChip(
+                  avatar: const Icon(Icons.remove, size: 16),
+                  label: const Text('Retrait'),
+                  onPressed: () => _showOperationDialog(context, TreasuryOperationType.removal),
+                ),
+                ActionChip(
+                  avatar: const Icon(Icons.swap_horiz, size: 16),
+                  label: const Text('Transfert'),
+                  onPressed: () => _showOperationDialog(context, TreasuryOperationType.transfer),
+                ),
+                ActionChip(
+                  avatar: const Icon(Icons.tune, size: 16),
+                  label: const Text('Ajustement'),
+                  onPressed: () => _showOperationDialog(context, TreasuryOperationType.adjustment),
+                ),
+              ],
             ),
           ),
+        ),
 
-          // Operations List
-          operationsAsync.when(
-            data: (ops) => ops.isEmpty
-                ? const SliverFillRemaining(
-                    child: Center(child: Text('Aucune opération enregistrée')),
-                  )
-                : SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final op = ops[index];
-                        return _OperationTile(operation: op);
-                      },
-                      childCount: ops.length,
-                    ),
+        const SliverPadding(
+          padding: EdgeInsets.fromLTRB(16, 24, 16, 8),
+          sliver: SliverToBoxAdapter(
+            child: Text(
+              'Opérations Récentes',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ),
+
+        // Operations List
+        operationsAsync.when(
+          data: (ops) => ops.isEmpty
+              ? const SliverFillRemaining(
+                  child: Center(child: Text('Aucune opération enregistrée')),
+                )
+              : SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final op = ops[index];
+                      return _OperationTile(operation: op);
+                    },
+                    childCount: ops.length,
                   ),
-            loading: () => const SliverFillRemaining(
-              child: Center(child: CircularProgressIndicator()),
-            ),
-            error: (e, __) => SliverFillRemaining(
-              child: Center(child: Text('Erreur: $e')),
-            ),
+                ),
+          loading: () => const SliverFillRemaining(
+            child: Center(child: CircularProgressIndicator()),
           ),
-        ],
-      ),
+          error: (e, __) => SliverFillRemaining(
+            child: Center(child: Text('Erreur: $e')),
+          ),
+        ),
+      ],
     );
   }
 
@@ -201,7 +187,7 @@ class _OperationTile extends StatelessWidget {
     final isNegative = operation.type == TreasuryOperationType.removal ||
                        (operation.type == TreasuryOperationType.transfer && 
                         operation.fromAccount != null && 
-                        operation.toAccount == null); // Transfer logic in list can be complex, usually we just show the amount and accounts
+                        operation.toAccount == null); 
     
     IconData icon;
     Color color;

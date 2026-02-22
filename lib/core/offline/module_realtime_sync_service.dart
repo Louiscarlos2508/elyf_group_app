@@ -61,11 +61,25 @@ class ModuleRealtimeSyncService {
   }
 
   Future<String> _resolveLocalId({
+    required Map<String, dynamic> data,
     required String collectionName,
     required String documentId,
     required String enterpriseId,
     required String moduleId,
   }) async {
+    final embeddedLocalId = data['localId'] as String?;
+    if (embeddedLocalId != null && embeddedLocalId.isNotEmpty) {
+      final existingByLocalId = await driftService.records.findByLocalId(
+        collectionName: collectionName,
+        localId: embeddedLocalId,
+        enterpriseId: enterpriseId,
+        moduleType: moduleId,
+      );
+      if (existingByLocalId != null) {
+        return embeddedLocalId;
+      }
+    }
+
     final existingRecord = await driftService.records.findByRemoteId(
       collectionName: collectionName,
       remoteId: documentId,
@@ -305,6 +319,7 @@ class ModuleRealtimeSyncService {
                   // and we are getting the server echo.
                   
                   final localId = await _resolveLocalId(
+                    data: sanitizedData,
                     collectionName: collectionName,
                     documentId: documentId,
                     enterpriseId: storageEnterpriseId,

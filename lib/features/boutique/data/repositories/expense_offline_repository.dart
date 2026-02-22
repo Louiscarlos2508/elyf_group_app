@@ -253,8 +253,8 @@ class ExpenseOfflineRepository extends OfflineRepository<Expense>
       // Soft delete: marquer comme supprimé au lieu de supprimer physiquement
       final deletedExpense = expense.copyWith(
         deletedAt: DateTime.now(),
-        deletedBy: deletedBy,
         updatedAt: DateTime.now(),
+        deletedBy: deletedBy,
       );
       await save(deletedExpense);
 

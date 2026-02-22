@@ -5,22 +5,27 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/core/logging/app_logger.dart';
 import '../../../../core/tenant/tenant_provider.dart' show activeEnterpriseProvider;
-import '../../application/providers.dart' as gaz_providers;
-import '../../domain/entities/point_of_sale.dart';
 import '../../../../features/administration/application/providers.dart'
-    show enterprisesProvider, enterprisesByTypeProvider, enterpriseByIdProvider, adminStatsProvider;
+    show
+        enterpriseControllerProvider,
+        enterprisesProvider,
+        enterprisesByTypeProvider,
+        enterpriseByIdProvider,
+        adminStatsProvider;
+import '../../../../features/administration/domain/entities/enterprise.dart';
+import '../../../../shared/presentation/widgets/elyf_ui/atoms/elyf_icon_button.dart';
 import '../../../../shared/presentation/widgets/elyf_ui/atoms/elyf_icon_button.dart';
 
 /// Dialogue pour créer ou modifier un point de vente.
 class PointOfSaleFormDialog extends ConsumerStatefulWidget {
   const PointOfSaleFormDialog({
     super.key,
-    this.pointOfSale,
+    this.enterprise,
     this.enterpriseId,
     this.moduleId,
   });
 
-  final PointOfSale? pointOfSale;
+  final Enterprise? enterprise;
   final String? enterpriseId;
   final String? moduleId;
 
@@ -44,16 +49,19 @@ class _PointOfSaleFormDialogState extends ConsumerState<PointOfSaleFormDialog>
   void initState() {
     super.initState();
     AppLogger.debug(
-      'PointOfSaleFormDialog.initState: pointOfSale=${widget.pointOfSale?.id ?? "null"}, enterpriseId=${widget.enterpriseId}, moduleId=${widget.moduleId}',
+      'PointOfSaleFormDialog.initState: enterprise=${widget.enterprise?.id ?? "null"}, enterpriseId=${widget.enterpriseId}, moduleId=${widget.moduleId}',
       name: 'PointOfSaleFormDialog',
     );
     
-    if (widget.pointOfSale != null) {
-      _nameController.text = widget.pointOfSale!.name;
-      _addressController.text = widget.pointOfSale!.address;
-      _contactController.text = widget.pointOfSale!.contact;
-      _enterpriseId = widget.pointOfSale!.parentEnterpriseId;
-      _moduleId = widget.pointOfSale!.moduleId;
+    if (widget.enterprise != null) {
+      _nameController.text = widget.enterprise!.name;
+      _addressController.text = widget.enterprise!.address ?? '';
+      _contactController.text = widget.enterprise!.phone ?? '';
+      _enterpriseId = widget.enterprise!.parentEnterpriseId;
+      _moduleId = widget.enterprise!.moduleId;
+    } else {
+      _enterpriseId = widget.enterpriseId;
+      _moduleId = widget.moduleId;
     }
   }
 
@@ -79,38 +87,36 @@ class _PointOfSaleFormDialogState extends ConsumerState<PointOfSaleFormDialog>
       formKey: _formKey,
       onLoadingChanged: (isLoading) => setState(() => _isLoading = isLoading),
       onSubmit: () async {
-        final currentUserId = ref.read(gaz_providers.currentUserIdProvider);
+        final controller = ref.read(enterpriseControllerProvider);
 
-        if (widget.pointOfSale == null) {
+        if (widget.enterprise == null) {
           final parentEnterpriseId = _enterpriseId!;
-          final service = ref.read(gaz_providers.pointOfSaleServiceProvider);
-          await service.createPointOfSaleWithEnterprise(
+          
+          final pointOfSale = Enterprise(
+            id: 'pos_${parentEnterpriseId}_${DateTime.now().millisecondsSinceEpoch}',
             name: _nameController.text.trim(),
-            address: _addressController.text.trim(),
-            contact: _contactController.text.trim(),
+            type: EnterpriseType.gasPointOfSale,
             parentEnterpriseId: parentEnterpriseId,
-            createdByUserId: currentUserId,
-            cylinderIds: const [],
-          );
-        } else {
-          final controller = ref.read(gaz_providers.pointOfSaleControllerProvider);
-          final pointOfSale = widget.pointOfSale!.copyWith(
-            name: _nameController.text.trim(),
+            moduleId: _moduleId,
             address: _addressController.text.trim(),
-            contact: _contactController.text.trim(),
+            phone: _contactController.text.trim(),
+            createdAt: DateTime.now(),
             updatedAt: DateTime.now(),
           );
-          await controller.updatePointOfSale(pointOfSale);
+          
+          await controller.createEnterprise(pointOfSale);
+        } else {
+          final pointOfSale = widget.enterprise!.copyWith(
+            name: _nameController.text.trim(),
+            address: _addressController.text.trim(),
+            phone: _contactController.text.trim(),
+            updatedAt: DateTime.now(),
+          );
+          await controller.updateEnterprise(pointOfSale);
         }
 
         if (mounted) {
           await Future.delayed(const Duration(milliseconds: 300));
-          ref.invalidate(
-            gaz_providers.pointsOfSaleProvider((
-              enterpriseId: _enterpriseId!,
-              moduleId: _moduleId!,
-            )),
-          );
           ref.invalidate(enterprisesProvider);
           ref.invalidate(enterprisesByTypeProvider);
           ref.invalidate(enterpriseByIdProvider);
@@ -121,7 +127,7 @@ class _PointOfSaleFormDialogState extends ConsumerState<PointOfSaleFormDialog>
           }
         }
 
-        return widget.pointOfSale == null
+        return widget.enterprise == null
             ? 'Point de vente créé avec succès'
             : 'Point de vente mis à jour';
       },
@@ -168,7 +174,7 @@ class _PointOfSaleFormDialogState extends ConsumerState<PointOfSaleFormDialog>
                       children: [
                         Expanded(
                           child: Text(
-                            widget.pointOfSale == null
+                            widget.enterprise == null
                                 ? 'Nouveau Point de Vente'
                                 : 'Modifier le Point de Vente',
                             style: theme.textTheme.headlineSmall?.copyWith(

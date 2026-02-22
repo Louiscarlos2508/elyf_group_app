@@ -208,6 +208,7 @@ class ContractOfflineRepository extends OfflineRepository<Contract>
       if (contract != null) {
         await save(contract.copyWith(
           deletedAt: DateTime.now(),
+          updatedAt: DateTime.now(),
           deletedBy: 'system',
         ));
       }

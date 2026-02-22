@@ -68,10 +68,11 @@ class CreditOfflineRepository extends OfflineRepository<CreditPayment>
   @override
   Future<void> deleteFromLocal(CreditPayment entity) async {
     // Soft-delete
-    final deletedPayment = entity.copyWith(
+    final deletedCredit = entity.copyWith(
       deletedAt: DateTime.now(),
+      updatedAt: DateTime.now(),
     );
-    await saveToLocal(deletedPayment);
+    await saveToLocal(deletedCredit);
     
     AppLogger.info(
       'Soft-deleted credit payment: ${entity.id}',

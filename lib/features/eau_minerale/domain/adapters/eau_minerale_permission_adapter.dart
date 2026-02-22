@@ -1,5 +1,4 @@
 import 'package:elyf_groupe_app/core/permissions/services/permission_service.dart';
-import 'package:elyf_groupe_app/core/permissions/services/permission_registry.dart';
 import '../../../../core/permissions/modules/eau_minerale_permissions.dart';
 import '../../domain/entities/eau_minerale_section.dart';
 

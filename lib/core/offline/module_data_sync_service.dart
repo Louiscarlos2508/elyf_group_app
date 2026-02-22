@@ -259,13 +259,28 @@ class ModuleDataSyncService {
           String storageEnterpriseId = enterpriseId;
           // Note: specific logic for pointOfSale remains as is but integrated into batch
           
-          // Vérifier si un enregistrement avec le même remoteId existe déjà
-          final existingRecord = await driftService.records.findByRemoteId(
-            collectionName: collectionName,
-            remoteId: documentId,
-            enterpriseId: storageEnterpriseId,
-            moduleType: moduleId,
-          );
+          // Vérifier si un enregistrement avec le même localId embarqué existe d'abord
+          final embeddedLocalId = sanitizedData['localId'] as String?;
+          OfflineRecord? existingRecord;
+
+          if (embeddedLocalId != null && embeddedLocalId.isNotEmpty) {
+            existingRecord = await driftService.records.findByLocalId(
+              collectionName: collectionName,
+              localId: embeddedLocalId,
+              enterpriseId: storageEnterpriseId,
+              moduleType: moduleId,
+            );
+          }
+
+          // Si pas trouvé par localId embarqué, chercher par remoteId
+          if (existingRecord == null) {
+            existingRecord = await driftService.records.findByRemoteId(
+              collectionName: collectionName,
+              remoteId: documentId,
+              enterpriseId: storageEnterpriseId,
+              moduleType: moduleId,
+            );
+          }
 
           // Utiliser le localId existant si trouvé, sinon utiliser documentId
           final localIdToUse = existingRecord?.localId ?? documentId;

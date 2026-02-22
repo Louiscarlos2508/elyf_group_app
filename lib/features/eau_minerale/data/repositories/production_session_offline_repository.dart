@@ -91,6 +91,7 @@ class ProductionSessionOfflineRepository
     // Soft-delete
     final deletedSession = entity.copyWith(
       deletedAt: DateTime.now(),
+      updatedAt: DateTime.now(),
     );
     await saveToLocal(deletedSession);
     

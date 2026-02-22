@@ -5,18 +5,14 @@ import 'package:elyf_groupe_app/core/logging/app_logger.dart';
 import 'package:elyf_groupe_app/core/permissions/modules/gaz_permissions.dart';
 import '../../../../../core/tenant/tenant_provider.dart'
     show activeEnterpriseProvider;
-import '../../presentation/screens/sections/approvisionnement_screen.dart';
-import '../../presentation/screens/sections/cylinder_leak_screen.dart';
 import '../../presentation/screens/sections/dashboard_screen.dart';
-import '../../presentation/screens/sections/expenses_screen.dart';
 import '../../presentation/screens/sections/profile_screen.dart';
 import '../../presentation/screens/sections/reports_screen.dart';
-import '../../presentation/screens/sections/retail_screen.dart';
 import '../../presentation/screens/sections/settings_screen.dart';
-import '../../presentation/screens/sections/stock_screen.dart';
-import '../../presentation/screens/sections/wholesale_screen.dart';
 import '../../presentation/screens/sections/inventory_screen.dart';
-import '../../presentation/screens/sections/treasury_screen.dart';
+import '../../presentation/screens/sections/sales_screen.dart';
+import '../../presentation/screens/sections/finance_screen.dart';
+import '../../presentation/screens/sections/logistics_screen.dart';
 import 'permission_providers.dart';
 
 /// Provider pour récupérer les sections accessibles selon les permissions.
@@ -52,42 +48,38 @@ final accessibleGazSectionsProvider = FutureProvider<List<NavigationSection>>((
         ),
         (
           section: NavigationSection(
-            label: 'Détail',
-            icon: Icons.store_outlined,
-            builder: () => const GazRetailScreen(),
+            label: 'Ventes',
+            icon: Icons.shopping_cart_outlined,
+            builder: () => const GazSalesScreen(),
             isPrimary: true,
             enterpriseId: enterpriseId,
             moduleId: moduleId,
           ),
-          requiredPermissions: {GazPermissions.viewSales.id},
-        ),
-        (
-          section: NavigationSection(
-            label: 'En gros',
-            icon: Icons.local_shipping_outlined,
-            builder: () => const GazWholesaleScreen(),
-            isPrimary: true,
-            enterpriseId: enterpriseId,
-            moduleId: moduleId,
-          ),
-          requiredPermissions: {GazPermissions.viewWholesale.id},
+          requiredPermissions: {
+            GazPermissions.viewSales.id,
+            GazPermissions.viewWholesale.id,
+          },
         ),
         (
           section: NavigationSection(
             label: 'Stock',
             icon: Icons.inventory_2_outlined,
-            builder: () => const GazStockScreen(),
+            builder: () => const GazInventoryScreen(),
             isPrimary: true,
             enterpriseId: enterpriseId,
             moduleId: moduleId,
           ),
-          requiredPermissions: {GazPermissions.viewStock.id},
+          requiredPermissions: {
+            GazPermissions.viewStock.id,
+            GazPermissions.viewLeaks.id,
+            GazPermissions.manageInventory.id,
+          },
         ),
         (
           section: NavigationSection(
-            label: 'Appro',
-            icon: Icons.inventory_outlined,
-            builder: () => const ApprovisionnementScreen(),
+            label: 'Logistique',
+            icon: Icons.local_shipping_outlined,
+            builder: () => const GazLogisticsScreen(),
             isPrimary: true,
             enterpriseId: enterpriseId,
             moduleId: moduleId,
@@ -96,36 +88,16 @@ final accessibleGazSectionsProvider = FutureProvider<List<NavigationSection>>((
         ),
         (
           section: NavigationSection(
-            label: 'Fuites',
-            icon: Icons.warning_outlined,
-            builder: () => CylinderLeakScreen(
-              enterpriseId: enterpriseId,
-              moduleId: moduleId,
-            ),
-            enterpriseId: enterpriseId,
-            moduleId: moduleId,
-          ),
-          requiredPermissions: {GazPermissions.viewLeaks.id},
-        ),
-        (
-          section: NavigationSection(
-            label: 'Dépenses',
-            icon: Icons.receipt_long_outlined,
-            builder: () => const GazExpensesScreen(),
-            enterpriseId: enterpriseId,
-            moduleId: moduleId,
-          ),
-          requiredPermissions: {GazPermissions.viewExpenses.id},
-        ),
-        (
-          section: NavigationSection(
-            label: 'Trésorerie',
+            label: 'Finances',
             icon: Icons.account_balance_wallet_outlined,
-            builder: () => const GazTreasuryScreen(),
+            builder: () => const GazFinanceScreen(),
             enterpriseId: enterpriseId,
             moduleId: moduleId,
           ),
-          requiredPermissions: {GazPermissions.viewTreasury.id},
+          requiredPermissions: {
+            GazPermissions.viewExpenses.id,
+            GazPermissions.viewTreasury.id,
+          },
         ),
         (
           section: NavigationSection(
@@ -156,16 +128,6 @@ final accessibleGazSectionsProvider = FutureProvider<List<NavigationSection>>((
             moduleId: moduleId,
           ),
           requiredPermissions: {GazPermissions.viewProfile.id},
-        ),
-        (
-          section: NavigationSection(
-            label: 'Inventaire',
-            icon: Icons.fact_check_outlined,
-            builder: () => const GazInventoryScreen(),
-            enterpriseId: enterpriseId,
-            moduleId: moduleId,
-          ),
-          requiredPermissions: {GazPermissions.manageInventory.id},
         ),
       ];
 

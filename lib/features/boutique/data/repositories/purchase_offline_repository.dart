@@ -342,8 +342,8 @@ class PurchaseOfflineRepository extends OfflineRepository<Purchase>
       if (purchase != null && !purchase.isDeleted) {
         final deletedPurchase = purchase.copyWith(
           deletedAt: DateTime.now(),
-          deletedBy: deletedBy,
           updatedAt: DateTime.now(),
+          deletedBy: deletedBy,
         );
         await save(deletedPurchase);
 

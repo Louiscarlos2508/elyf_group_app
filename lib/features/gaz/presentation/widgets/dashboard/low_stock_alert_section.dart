@@ -140,14 +140,7 @@ class _AlertCard extends StatelessWidget {
                   ],
                 ),
               ),
-              IconButton.filled(
-                onPressed: () => ReplenishmentDialog.show(context),
-                icon: const Icon(Icons.add_shopping_cart, size: 20),
-                style: IconButton.styleFrom(
-                  backgroundColor: colorScheme.error,
-                  foregroundColor: colorScheme.onError,
-                ),
-              ),
+
             ],
           ),
         ],

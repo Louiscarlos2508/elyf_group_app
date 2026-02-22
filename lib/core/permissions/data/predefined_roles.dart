@@ -1,239 +1,328 @@
 import 'package:elyf_groupe_app/core/permissions/entities/user_role.dart';
 import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 
-/// Rôles prédéfinis pour tous les modules de l'application
-/// Organisés par module et niveau hiérarchique
+/// Rôles prédéfinis alignés strictement sur les personas des PRD.
+/// Chaque module métier définit ses propres personas — aucun rôle global.
 class PredefinedRoles {
   PredefinedRoles._();
 
   // ========================================
-  // MODULE GAZ
+  // MODULE GAZ (PRD: 2 personas)
   // ========================================
 
-  /// Directeur Régional Gaz (Niveau Société)
-  /// Supervise plusieurs points de vente, accès aux statistiques consolidées
-  static final directeurRegionalGaz = UserRole(
-    id: 'directeur_regional_gaz',
-    name: 'Directeur Régional',
+  /// Gaz Enterprise Manager (PRD Persona: Enterprise / Module Level)
+  /// Full Module Sovereignty: stock, pricing, POS networks, staff, reporting.
+  static final gazEnterpriseManager = UserRole(
+    id: 'gaz_enterprise_manager',
+    name: 'Responsable Gaz',
     description:
-        'Supervise plusieurs points de vente, accès aux statistiques consolidées et gestion des tours',
+        'Souveraineté totale sur le module : stock, prix, réseau POS, personnel et rapports',
     moduleId: 'gaz',
     allowedEnterpriseTypes: {EnterpriseType.gasCompany},
     permissions: {
-      // Visualisation
+      // Dashboard & Reports
       'view_dashboard',
       'view_reports',
+      'download_reports',
+      // Sales (retail + wholesale)
       'view_sales',
+      'create_sale',
+      'edit_sale',
+      'delete_sale',
+      'view_wholesale',
+      'create_wholesale',
+      // Stock & Cylinders
       'view_stock',
+      'edit_stock',
+      'view_cylinders',
+      'manage_cylinders',
+      'manage_inventory',
+      // Tours & Logistics
+      'view_tours',
+      'create_tour',
+      'edit_tour',
+      // Leaks
+      'view_leaks',
+      'report_leak',
+      // Expenses
       'view_expenses',
-
-      // Gestion globale
-      'manage_tours',
-      'view_all_pos',
-      'compare_pos_performance',
-      'manage_suppliers',
+      'create_expense',
+      'edit_expense',
+      'delete_expense',
+      // Treasury
+      'view_treasury',
+      'manage_treasury',
+      // Settings
+      'view_settings',
+      'edit_settings',
+      // Deliveries
+      'view_deliveries',
+      // Profile
+      'view_profile',
+      'edit_profile',
+      'change_password',
     },
     isSystemRole: true,
   );
 
-  /// Gestionnaire Logistique Gaz (Niveau Société)
-  /// Gère les approvisionnements et tours pour tous les points de vente
-  static final gestionnaireLogistiqueGaz = UserRole(
-    id: 'gestionnaire_logistique_gaz',
-    name: 'Gestionnaire Logistique',
+  /// Gas Retail Seller (PRD Persona: Operational Level)
+  /// Front-line execution: high-speed sales, local stock, receipt printing.
+  /// No access to management, settings, or global reports.
+  static final gazRetailSeller = UserRole(
+    id: 'gaz_retail_seller',
+    name: 'Vendeur Gaz',
     description:
-        'Gère les approvisionnements, tours et transferts de stock entre points de vente',
-    moduleId: 'gaz',
-    allowedEnterpriseTypes: {EnterpriseType.gasCompany},
-    permissions: {
-      'manage_tours',
-      'view_stock',
-      'transfer_stock',
-      'manage_suppliers',
-      'view_dashboard',
-      'view_reports',
-    },
-    isSystemRole: true,
-  );
-
-  /// Gérant Point de Vente Gaz (Niveau POS)
-  /// Gestion complète d'un point de vente spécifique
-  static final gerantPosGaz = UserRole(
-    id: 'gerant_pos_gaz',
-    name: 'Gérant Point de Vente',
-    description:
-        'Gestion complète d\'un point de vente : ventes, stock, dépenses, personnel',
+        'Exécution terrain : ventes rapides, consultation stock local, impression reçus',
     moduleId: 'gaz',
     allowedEnterpriseTypes: {EnterpriseType.gasPointOfSale},
     permissions: {
       'view_dashboard',
       'create_sale',
       'view_sales',
-      'manage_local_stock',
       'view_stock',
-      'create_expense',
-      'view_expenses',
-      'view_tours',
-      'manage_pos_staff',
+      'view_deliveries',
+      'report_leak',
+      'view_leaks',
+      'view_profile',
+      'edit_profile',
+      'change_password',
     },
     isSystemRole: true,
   );
 
-  /// Vendeur Gaz (Niveau POS)
-  /// Effectue les ventes et consulte le stock
-  static final vendeurGaz = UserRole(
-    id: 'vendeur_gaz',
-    name: 'Vendeur',
-    description: 'Effectue les ventes et consulte le stock disponible',
-    moduleId: 'gaz',
-    allowedEnterpriseTypes: {EnterpriseType.gasPointOfSale},
-    permissions: {'create_sale', 'view_sales', 'view_stock', 'view_dashboard'},
-    isSystemRole: true,
-  );
-
   // ========================================
-  // MODULE EAU MINÉRALE
+  // MODULE EAU MINÉRALE (PRD: 2 personas)
   // ========================================
 
-  /// Directeur Eau Minérale (Niveau Société)
-  /// Supervise la production et la distribution
-  static final directeurEau = UserRole(
-    id: 'directeur_eau',
-    name: 'Directeur Eau Minérale',
+  /// Water Manager (PRD Persona: Enterprise Level)
+  /// Supervision complète: production, stocks, fournisseurs, trésorerie.
+  static final waterManager = UserRole(
+    id: 'water_manager',
+    name: 'Responsable Eau Minérale',
     description:
-        'Supervise la production, les ventes et la distribution d\'eau minérale',
+        'Supervision complète : production, stocks, fournisseurs, trésorerie et rapports',
     moduleId: 'eau_minerale',
     allowedEnterpriseTypes: {EnterpriseType.waterEntity},
     permissions: {
+      // Dashboard & Reports
       'view_dashboard',
       'view_reports',
+      'download_reports',
+      // Production
       'view_production',
+      'create_production',
+      'edit_production',
+      'delete_production',
+      'configure_production',
+      // Sales
       'view_sales',
+      'create_sale',
+      'edit_sale',
+      'delete_sale',
+      // Stock
       'view_stock',
-      'view_expenses',
-      'view_salaries',
+      'edit_stock',
+      // Credits
+      'view_credits',
+      'collect_payment',
+      'view_credit_history',
+      // Suppliers & Purchases
+      'view_suppliers',
       'manage_suppliers',
-    },
-    isSystemRole: true,
-  );
-
-  /// Responsable Production (Niveau Usine)
-  /// Gère les sessions de production
-  static final responsableProduction = UserRole(
-    id: 'responsable_production',
-    name: 'Responsable Production',
-    description:
-        'Gère les sessions de production, le personnel et les équipements',
-    moduleId: 'eau_minerale',
-    allowedEnterpriseTypes: {EnterpriseType.waterFactory},
-    permissions: {
-      'view_dashboard',
-      'create_production_session',
-      'manage_production',
-      'view_production',
-      'manage_local_stock',
-      'view_stock',
+      'view_purchases',
+      'create_purchase',
+      'validate_po',
+      // Treasury & Sessions
+      'close_session',
+      'view_treasury',
+      // Finances
+      'view_finances',
       'create_expense',
-      'view_expenses',
-      'manage_salaries',
+      'edit_expense',
+      'delete_expense',
+      // Salaries
       'view_salaries',
-    },
-    isSystemRole: true,
-  );
-
-  /// Gérant Point de Vente Eau (Niveau POS)
-  /// Gestion d'un point de vente d'eau
-  static final gerantPosEau = UserRole(
-    id: 'gerant_pos_eau',
-    name: 'Gérant Point de Vente Eau',
-    description: 'Gestion complète d\'un point de vente d\'eau minérale',
-    moduleId: 'eau_minerale',
-    allowedEnterpriseTypes: {EnterpriseType.waterPointOfSale},
-    permissions: {
-      'view_dashboard',
-      'create_sale',
-      'view_sales',
-      'manage_local_stock',
-      'view_stock',
-      'create_expense',
-      'view_expenses',
-      'manage_credits',
-    },
-    isSystemRole: true,
-  );
-
-  /// Vendeur Eau (Niveau POS)
-  /// Effectue les ventes d'eau
-  static final vendeurEau = UserRole(
-    id: 'vendeur_eau',
-    name: 'Vendeur Eau',
-    description: 'Effectue les ventes d\'eau minérale',
-    moduleId: 'eau_minerale',
-    allowedEnterpriseTypes: {EnterpriseType.waterPointOfSale},
-    permissions: {'create_sale', 'view_sales', 'view_stock', 'view_dashboard'},
-    isSystemRole: true,
-  );
-
-  // ========================================
-  // MODULE BOUTIQUE
-  // ========================================
-
-  /// Gérant Boutique (Niveau Principal)
-  /// Gestion complète de la boutique
-  static final gerantBoutique = UserRole(
-    id: 'gerant_boutique',
-    name: 'Gérant Boutique',
-    description:
-        'Gestion complète de la boutique : produits, ventes, stock, commandes',
-    moduleId: 'boutique',
-    allowedEnterpriseTypes: {EnterpriseType.shop},
-    permissions: {
-      'view_dashboard',
+      'create_salary',
+      'edit_salary',
+      'delete_salary',
+      // Settings & Products
+      'view_settings',
+      'edit_settings',
       'manage_products',
-      'create_sale',
-      'view_sales',
-      'manage_stock',
-      'view_stock',
-      'manage_orders',
-      'view_orders',
-      'create_expense',
-      'view_expenses',
-      'manage_customers',
+      // Profile
+      'view_profile',
+      'edit_profile',
+      'change_password',
     },
     isSystemRole: true,
   );
 
-  /// Vendeur Boutique (Niveau Principal)
-  /// Effectue les ventes en boutique
-  static final vendeurBoutique = UserRole(
-    id: 'vendeur_boutique',
-    name: 'Vendeur Boutique',
-    description: 'Effectue les ventes et gère les commandes clients',
+  /// Water Field Agent / Seller (PRD Persona: Operational Level)
+  /// Vente directe, encaissement crédits, petite caisse.
+  static final waterFieldAgent = UserRole(
+    id: 'water_field_agent',
+    name: 'Agent Terrain Eau',
+    description:
+        'Vente directe sur le terrain, encaissement crédits, gestion petite caisse',
+    moduleId: 'eau_minerale',
+    allowedEnterpriseTypes: {
+      EnterpriseType.waterPointOfSale,
+      EnterpriseType.waterFactory,
+    },
+    permissions: {
+      'view_dashboard',
+      'create_sale',
+      'view_sales',
+      'view_stock',
+      'view_credits',
+      'collect_payment',
+      'view_credit_history',
+      'create_expense',
+      'view_finances',
+      'view_profile',
+      'edit_profile',
+      'change_password',
+    },
+    isSystemRole: true,
+  );
+
+  // ========================================
+  // MODULE BOUTIQUE (PRD: 1 persona)
+  // ========================================
+
+  /// Boutique Owner (PRD Persona: Manager / Agent — single-persona model)
+  /// Total Ownership: catalogue, inventaire, approvisionnement, vente POS.
+  static final boutiqueOwner = UserRole(
+    id: 'boutique_owner',
+    name: 'Propriétaire Boutique',
+    description:
+        'Propriété totale : catalogue, inventaire, approvisionnement et caisse POS',
     moduleId: 'boutique',
     allowedEnterpriseTypes: {EnterpriseType.shop},
     permissions: {
-      'create_sale',
-      'view_sales',
-      'view_products',
-      'view_stock',
-      'create_order',
-      'view_orders',
+      // Dashboard & Reports
       'view_dashboard',
+      'view_reports',
+      'download_reports',
+      // Sales & POS
+      'view_sales',
+      'create_sale',
+      'edit_sale',
+      'delete_sale',
+      'use_pos',
+      // Products
+      'view_products',
+      'create_product',
+      'edit_product',
+      'delete_product',
+      // Stock
+      'view_stock',
+      'edit_stock',
+      // Purchases
+      'view_purchases',
+      'create_purchase',
+      'edit_purchase',
+      // Expenses
+      'view_expenses',
+      'create_expense',
+      'edit_expense',
+      'delete_expense',
+      // Treasury
+      'view_treasury',
+      'edit_treasury',
+      // Suppliers
+      'view_suppliers',
+      'edit_suppliers',
+      // Settings
+      'view_settings',
+      // Profile
+      'view_profile',
+      'edit_profile',
+      'change_password',
     },
     isSystemRole: true,
   );
 
   // ========================================
-  // MODULE MOBILE MONEY
+  // MODULE IMMOBILIER (PRD: 1 persona)
   // ========================================
 
-  /// Administrateur Orange Money (Agent Principal)
-  /// Gère tout le réseau, transactions, liquidité et commissions
-  static final omAdmin = UserRole(
-    id: 'om_admin',
-    name: 'Administrateur Orange Money',
+  /// Immobilier Manager (PRD Persona: Enterprise / Operational)
+  /// Full Sovereignty: portfolio, contrats, encaissements, maintenance.
+  static final immobilierManager = UserRole(
+    id: 'immobilier_manager',
+    name: 'Responsable Immobilier',
     description:
-        'Gestion complète du réseau Orange Money : transactions, sous-agents, commissions, liquidité',
+        'Souveraineté totale : portfolio, contrats, encaissements loyers, maintenance et rapports',
+    moduleId: 'immobilier',
+    allowedEnterpriseTypes: {EnterpriseType.realEstateAgency},
+    permissions: {
+      // Dashboard & Reports
+      'view_dashboard',
+      'view_reports',
+      'download_reports',
+      // Properties
+      'view_properties',
+      'create_property',
+      'edit_property',
+      'delete_property',
+      // Tenants
+      'view_tenants',
+      'create_tenant',
+      'edit_tenant',
+      'delete_tenant',
+      // Contracts
+      'view_contracts',
+      'create_contract',
+      'edit_contract',
+      'terminate_contract',
+      'delete_contract',
+      // Payments
+      'view_payments',
+      'create_payment',
+      'edit_payment',
+      'delete_payment',
+      // Expenses
+      'view_expenses',
+      'create_expense',
+      'edit_expense',
+      'delete_expense',
+      // Maintenance
+      'view_maintenance',
+      'create_maintenance',
+      'edit_maintenance',
+      'delete_maintenance',
+      // Treasury
+      'view_treasury',
+      'create_treasury_operation',
+      // Trash & Restore
+      'view_trash',
+      'restore_property',
+      'restore_tenant',
+      'restore_contract',
+      'restore_payment',
+      'restore_expense',
+      // Settings
+      'manage_settings',
+      // Profile
+      'view_profile',
+      'edit_profile',
+      'change_password',
+    },
+    isSystemRole: true,
+  );
+
+  // ========================================
+  // MODULE ORANGE MONEY (PRD: 2 personas)
+  // ========================================
+
+  /// OM Manager (PRD Persona: Enterprise Level)
+  /// Gestion réseau: transactions, float, commissions, sous-agents.
+  static final omManager = UserRole(
+    id: 'om_manager',
+    name: 'Responsable Orange Money',
+    description:
+        'Gestion complète du réseau : transactions, sous-agents, commissions, liquidité et rapports',
     moduleId: 'orange_money',
     allowedEnterpriseTypes: {EnterpriseType.mobileMoneyAgent},
     permissions: {
@@ -241,173 +330,90 @@ class PredefinedRoles {
       'view_network_dashboard',
       'create_transaction',
       'view_transactions',
+      'edit_transaction',
+      'cancel_transaction',
       'view_child_transactions',
-      'manage_float',
-      'view_float',
-      'manage_sub_agents',
+      // Agents
+      'view_agents',
+      'create_agent',
+      'edit_agent',
+      'delete_agent',
+      // Float & Liquidity
+      'view_liquidity',
+      'create_checkpoint',
+      'validate_liquidity_discrepancy',
+      // Commissions
       'view_commissions',
       'calculate_commissions',
       'pay_commissions',
-      'validate_liquidity_discrepancy',
+      // Reports
       'view_reports',
-      'create_checkpoint',
-      'view_liquidity',
+      'download_reports',
+      // Settings
+      'view_settings',
+      'edit_settings',
+      // Profile
+      'view_profile',
+      'edit_profile',
+      'change_password',
     },
     isSystemRole: true,
   );
 
-  /// Superviseur Orange Money
-  /// Valide les commissions et surveille le réseau
-  static final omSupervisor = UserRole(
-    id: 'om_supervisor',
-    name: 'Superviseur Orange Money',
-    description:
-        'Supervision du réseau, validation des commissions et écarts de liquidité',
-    moduleId: 'orange_money',
-    allowedEnterpriseTypes: {EnterpriseType.mobileMoneyAgent},
-    permissions: {
-      'view_dashboard',
-      'view_network_dashboard',
-      'view_transactions',
-      'view_child_transactions',
-      'view_float',
-      'view_commissions',
-      'validate_commissions',
-      'validate_liquidity_discrepancy',
-      'view_reports',
-      'view_liquidity',
-    },
-    isSystemRole: true,
-  );
-
-  /// Agent Orange Money (Sous-Agent/Vendeur)
-  /// Effectue les transactions et déclare ses commissions
+  /// OM Agent (PRD Persona: Operational Level)
+  /// Front-line: transactions, gestion caisse, déclaration commissions.
   static final omAgent = UserRole(
     id: 'om_agent',
     name: 'Agent Orange Money',
     description: 'Effectue les transactions et gère sa caisse',
     moduleId: 'orange_money',
-    allowedEnterpriseTypes: {EnterpriseType.mobileMoneySubAgent, EnterpriseType.mobileMoneyKiosk},
+    allowedEnterpriseTypes: {
+      EnterpriseType.mobileMoneySubAgent,
+      EnterpriseType.mobileMoneyKiosk,
+    },
     permissions: {
       'view_dashboard',
       'create_transaction',
       'view_transactions',
-      'view_float',
-      'create_checkpoint',
       'view_liquidity',
+      'create_checkpoint',
       'declare_commission',
       'view_commissions',
+      'view_profile',
+      'edit_profile',
+      'change_password',
     },
     isSystemRole: true,
   );
 
   // ========================================
-  // RÔLES GÉNÉRIQUES (Tous modules)
-  // ========================================
-
-  /// Administrateur (Tous niveaux)
-  /// Accès complet à toutes les fonctionnalités
-  static final administrateur = UserRole(
-    id: 'administrateur',
-    name: 'Administrateur',
-    description: 'Accès complet à toutes les fonctionnalités du système',
-    moduleId: 'administration',
-    allowedEnterpriseTypes: {}, // Tous niveaux
-    permissions: {
-      // Administration
-      'manage_users',
-      'manage_roles',
-      'manage_enterprises',
-      'manage_modules',
-
-      // Toutes les permissions métier
-      'view_dashboard',
-      'view_reports',
-      'manage_products',
-      'create_sale',
-      'view_sales',
-      'manage_stock',
-      'view_stock',
-      'create_expense',
-      'view_expenses',
-      'manage_tours',
-      'manage_production',
-      'manage_salaries',
-      'manage_suppliers',
-    },
-    isSystemRole: true,
-  );
-
-  /// Auditeur (Tous niveaux)
-  /// Accès en lecture seule pour audit
-  static final auditeur = UserRole(
-    id: 'auditeur',
-    name: 'Auditeur',
-    description: 'Accès en lecture seule pour audit et contrôle',
-    moduleId: 'administration',
-    allowedEnterpriseTypes: {}, // Tous niveaux
-    permissions: {
-      'view_dashboard',
-      'view_reports',
-      'view_sales',
-      'view_stock',
-      'view_expenses',
-      'view_production',
-      'view_salaries',
-      'view_transactions',
-    },
-    isSystemRole: true,
-  );
-
-  // ========================================
-  // LISTE COMPLÈTE DES RÔLES
+  // LISTES ET UTILITAIRES
   // ========================================
 
   /// Tous les rôles prédéfinis organisés par module
   static final Map<String, List<UserRole>> rolesByModule = {
-    'gaz': [
-      directeurRegionalGaz,
-      gestionnaireLogistiqueGaz,
-      gerantPosGaz,
-      vendeurGaz,
-    ],
-    'eau_minerale': [
-      directeurEau,
-      responsableProduction,
-      gerantPosEau,
-      vendeurEau,
-    ],
-    'boutique': [gerantBoutique, vendeurBoutique],
-    'orange_money': [omAdmin, omSupervisor, omAgent],
-    'administration': [administrateur, auditeur],
+    'gaz': [gazEnterpriseManager, gazRetailSeller],
+    'eau_minerale': [waterManager, waterFieldAgent],
+    'boutique': [boutiqueOwner],
+    'immobilier': [immobilierManager],
+    'orange_money': [omManager, omAgent],
   };
 
   /// Tous les rôles prédéfinis (liste plate)
   static final List<UserRole> allRoles = [
     // Gaz
-    directeurRegionalGaz,
-    gestionnaireLogistiqueGaz,
-    gerantPosGaz,
-    vendeurGaz,
-
+    gazEnterpriseManager,
+    gazRetailSeller,
     // Eau Minérale
-    directeurEau,
-    responsableProduction,
-    gerantPosEau,
-    vendeurEau,
-
+    waterManager,
+    waterFieldAgent,
     // Boutique
-    gerantBoutique,
-    vendeurBoutique,
-
-    // Mobile Money
-    omAdmin,
-    omSupervisor,
+    boutiqueOwner,
+    // Immobilier
+    immobilierManager,
+    // Orange Money
+    omManager,
     omAgent,
-
-    // Génériques
-    administrateur,
-    auditeur,
   ];
 
   /// Obtenir les rôles pour un module spécifique

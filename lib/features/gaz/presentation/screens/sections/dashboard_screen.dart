@@ -5,6 +5,8 @@ import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
 import 'package:elyf_groupe_app/core/permissions/modules/gaz_permissions.dart';
+import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import 'package:elyf_groupe_app/features/gaz/presentation/widgets/dashboard_stock_by_capacity.dart';
 import '../../widgets/permission_guard.dart';
 import 'dashboard/dashboard_kpi_section.dart';
@@ -197,6 +199,16 @@ class _DashboardKpiSliver extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final dashboardDataAsync = ref.watch(gazDashboardDataProvider);
+    final viewType = ref.watch(gazDashboardViewTypeProvider);
+    final activeEnterprise = ref.watch(activeEnterpriseProvider).value;
+    final enterpriseId = activeEnterprise?.id ?? '';
+    
+    final settingsAsync = ref.watch(
+      gazSettingsProvider((
+        enterpriseId: enterpriseId,
+        moduleId: 'gaz',
+      )),
+    );
 
     return dashboardDataAsync.when(
       data: (data) => DashboardKpiSection(
@@ -204,6 +216,8 @@ class _DashboardKpiSliver extends ConsumerWidget {
         expenses: data.expenses,
         cylinders: data.cylinders,
         stocks: data.stocks,
+        settings: settingsAsync.value,
+        viewType: viewType,
       ),
       loading: () => AppShimmers.statsGrid(context),
       error: (error, stackTrace) => ErrorDisplayWidget(
@@ -247,7 +261,10 @@ class _DashboardPosPerformanceSliver extends ConsumerWidget {
     final dashboardDataAsync = ref.watch(gazDashboardDataProvider);
 
     return dashboardDataAsync.when(
-      data: (data) => DashboardPosPerformanceSection(sales: data.sales),
+      data: (data) => DashboardPosPerformanceSection(
+        sales: data.sales,
+        stocks: data.stocks,
+      ),
       loading: () => AppShimmers.table(context, rows: 4),
       error: (error, stackTrace) => ErrorDisplayWidget(
         error: error,

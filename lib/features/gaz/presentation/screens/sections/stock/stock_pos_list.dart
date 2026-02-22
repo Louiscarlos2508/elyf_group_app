@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../domain/entities/cylinder_stock.dart';
-import '../../../../domain/entities/point_of_sale.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import '../../../../domain/services/gaz_calculation_service.dart';
 import '../../../widgets/point_of_sale_stock_card.dart';
 
@@ -13,16 +13,30 @@ class StockPosList extends StatelessWidget {
     required this.allStocks,
   });
 
-  final List<PointOfSale> activePointsOfSale;
+  final List<Enterprise> activePointsOfSale;
   final List<CylinderStock> allStocks;
 
   @override
   Widget build(BuildContext context) {
+    // Trier les points de vente par urgence de stock (moins de bouteilles pleines en premier)
+    final sortedPos = [...activePointsOfSale];
+    sortedPos.sort((a, b) {
+      final metricsA = GazCalculationService.calculatePosStockMetrics(
+        posId: a.id,
+        allStocks: allStocks,
+      );
+      final metricsB = GazCalculationService.calculatePosStockMetrics(
+        posId: b.id,
+        allStocks: allStocks,
+      );
+      return metricsA.totalFull.compareTo(metricsB.totalFull);
+    });
+
     return SliverList.separated(
-      itemCount: activePointsOfSale.length,
+      itemCount: sortedPos.length,
       separatorBuilder: (_, __) => const SizedBox(height: 24),
       itemBuilder: (context, index) {
-        final pos = activePointsOfSale[index];
+        final pos = sortedPos[index];
 
         // Use calculation service for business logic
         final metrics = GazCalculationService.calculatePosStockMetrics(
@@ -31,7 +45,7 @@ class StockPosList extends StatelessWidget {
         );
 
         return PointOfSaleStockCard(
-          pointOfSale: pos,
+          enterprise: pos,
           fullBottles: metrics.totalFull,
           emptyBottles: metrics.totalEmpty,
           stockByCapacity: metrics.stockByCapacity,

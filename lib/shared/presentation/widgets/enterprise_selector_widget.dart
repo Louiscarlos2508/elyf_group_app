@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../../features/administration/domain/entities/enterprise.dart';
 import '../../../core/tenant/tenant_provider.dart';
-import '../../../core/logging/app_logger.dart';
 
 /// Styles de présentation pour le sélecteur d'entreprise
 enum EnterpriseSelectorStyle {

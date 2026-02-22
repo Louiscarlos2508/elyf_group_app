@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
-import '../../../domain/entities/point_of_sale.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import 'pos_associate_cylinders_dialog.dart';
 import '../../../../../shared/presentation/widgets/elyf_ui/atoms/elyf_button.dart';
 import '../../../../../shared/presentation/widgets/elyf_ui/atoms/elyf_icon_button.dart';
@@ -11,12 +11,12 @@ import '../../../../../shared/presentation/widgets/elyf_ui/atoms/elyf_icon_butto
 class PosTypesDialog extends ConsumerWidget {
   const PosTypesDialog({
     super.key,
-    required this.pointOfSale,
+    required this.enterprise,
     required this.enterpriseId,
     required this.moduleId,
   });
 
-  final PointOfSale pointOfSale;
+  final Enterprise enterprise;
   final String enterpriseId;
   final String moduleId;
 
@@ -25,7 +25,7 @@ class PosTypesDialog extends ConsumerWidget {
     // Récupérer uniquement les types de bouteilles pour ce point de vente
     final cylindersAsync = ref.watch(
       pointOfSaleCylindersProvider((
-        pointOfSaleId: pointOfSale.id,
+        pointOfSaleId: enterprise.id,
         enterpriseId: enterpriseId,
         moduleId: moduleId,
       )),
@@ -61,7 +61,7 @@ class PosTypesDialog extends ConsumerWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        'Types - ${pointOfSale.name}',
+                        'Types - ${enterprise.name}',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
@@ -141,7 +141,7 @@ class PosTypesDialog extends ConsumerWidget {
                     await showDialog(
                       context: context,
                       builder: (dialogContext) => PosAssociateCylindersDialog(
-                        pointOfSale: pointOfSale,
+                        enterprise: enterprise,
                         enterpriseId: enterpriseId,
                         moduleId: moduleId,
                         dialogContext: dialogContext,
@@ -172,7 +172,7 @@ class PosTypesDialog extends ConsumerWidget {
           children: [
             Expanded(
               child: Text(
-                'Types - ${pointOfSale.name}',
+                'Types - ${enterprise.name}',
                 style: Theme.of(
                   context,
                 ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
@@ -201,7 +201,7 @@ class PosTypesDialog extends ConsumerWidget {
           children: [
             Expanded(
               child: Text(
-                'Types - ${pointOfSale.name}',
+                'Types - ${enterprise.name}',
                 style: Theme.of(
                   context,
                 ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),

@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
+import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 import '../../../domain/entities/wholesaler.dart';
-import '../../../domain/entities/collection.dart';
-import '../../../domain/entities/tour.dart';
 
 /// Widget pour sélectionner un tour et un grossiste (pour ventes en gros).
 ///
@@ -15,19 +15,15 @@ import '../../../domain/entities/tour.dart';
 class TourWholesalerSelectorWidget extends ConsumerStatefulWidget {
   const TourWholesalerSelectorWidget({
     super.key,
-    required this.selectedTour,
-    required this.selectedWholesalerId,
-    required this.selectedWholesalerName,
     required this.enterpriseId,
-    required this.onTourChanged,
     required this.onWholesalerChanged,
+    this.selectedWholesalerId,
+    this.selectedWholesalerName,
   });
 
-  final Tour? selectedTour;
   final String? selectedWholesalerId;
   final String? selectedWholesalerName;
   final String enterpriseId;
-  final ValueChanged<Tour?> onTourChanged;
   final ValueChanged<({String id, String name, String tier})?> onWholesalerChanged;
 
   @override
@@ -53,9 +49,6 @@ class _TourWholesalerSelectorWidgetState
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final toursAsync = ref.watch(
-      toursProvider((enterpriseId: widget.enterpriseId, status: null)),
-    );
     final allWholesalersAsync = ref.watch(
       allWholesalersProvider(widget.enterpriseId),
     );
@@ -63,95 +56,62 @@ class _TourWholesalerSelectorWidgetState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Sélection du tour
-        toursAsync.when(
-          data: (tours) {
-            // Filtrer les tours actifs (pas clôturés)
-            final activeTours = tours
-                .where(
-                  (t) =>
-                      t.status != TourStatus.closure &&
-                      t.status != TourStatus.cancelled,
-                )
-                .toList();
-
-            return DropdownButtonFormField<Tour?>(
-              initialValue: widget.selectedTour,
-              decoration: const InputDecoration(
-                labelText: 'Source de la vente *',
-                prefixIcon: Icon(Icons.local_shipping),
-                border: OutlineInputBorder(),
-                helperText: 'Enlèvement au dépôt ou Livraison par Tournée',
-              ),
-              items: [
-                DropdownMenuItem<Tour?>(
-                  value: null,
-                  child: Row(
+        // Information sur la source du stock (Dépôt ou POS)
+        ref.watch(activeEnterpriseProvider).when(
+          data: (enterprise) => Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerLow,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: theme.colorScheme.outline.withAlpha(50)),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  enterprise?.type == EnterpriseType.gasCompany 
+                    ? Icons.warehouse_outlined 
+                    : Icons.storefront_outlined,
+                  color: theme.colorScheme.secondary,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.warehouse, size: 20, color: theme.colorScheme.primary),
-                      SizedBox(width: 8),
-                      Text('Enlèvement au dépôt'),
+                      Text(
+                        'Provenance du Gaz',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      Text(
+                        enterprise?.name ?? 'Dépôt',
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ],
                   ),
                 ),
-                ...activeTours.map(
-                  (tour) => DropdownMenuItem<Tour?>(
-                    value: tour,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'Tournée: ${_formatDate(tour.tourDate)}',
-                          style: const TextStyle(fontWeight: FontWeight.w500),
-                        ),
-                        Text(
-                          '${tour.collections.where((c) => c.type == CollectionType.wholesaler).length} grossiste(s)',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.secondaryContainer,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    enterprise?.type == EnterpriseType.gasCompany ? 'DÉPÔT / ENTREPÔT' : 'POINT DE VENTE',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.onSecondaryContainer,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
               ],
-              onChanged: (value) {
-                widget.onTourChanged(value);
-                // Réinitialiser le grossiste sélectionné quand le tour change
-                widget.onWholesalerChanged(null);
-                setState(() {
-                  _isAddingNewWholesaler = false;
-                });
-              },
-              validator: (value) => null, // Optionnel (null = dépôt)
-            );
-          },
-          loading: () => const SizedBox(
-            height: 56,
-            child: Center(child: CircularProgressIndicator()),
-          ),
-          error: (e, _) => Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.errorContainer,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: theme.colorScheme.error.withValues(alpha: 0.2)),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.error_outline, color: theme.colorScheme.error, size: 20),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Erreur de chargement des tours: $e',
-                    style: TextStyle(color: theme.colorScheme.error, fontSize: 12),
-                  ),
-                ),
-              ],
             ),
           ),
+          loading: () => const LinearProgressIndicator(),
+          error: (_, __) => const SizedBox.shrink(),
         ),
         const SizedBox(height: 16),
 
@@ -176,74 +136,50 @@ class _TourWholesalerSelectorWidgetState
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    initialValue: widget.selectedWholesalerId,
-                    decoration: const InputDecoration(
-                      labelText: 'Grossiste *',
-                      prefixIcon: Icon(Icons.business),
-                      border: OutlineInputBorder(),
-                      helperText:
-                          'Sélectionnez un grossiste existant ou ajoutez-en un nouveau',
-                    ),
-                    items: [
-                      DropdownMenuItem<String>(
-                        value: null,
-                        child: Text('-- Sélectionner --'),
-                      ),
-                      ...allWholesalers.map((wholesaler) {
-                        return DropdownMenuItem<String>(
-                          value: wholesaler.id,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                wholesaler.name,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              if (wholesaler.phone != null)
-                                Text(
-                                  wholesaler.phone!,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: theme.colorScheme.onSurfaceVariant,
-                                  ),
-                                ),
-                            ],
-                          ),
-                        );
-                      }),
-                    ],
-                    onChanged: (value) {
-                      if (value != null) {
-                        final wholesaler = allWholesalers.firstWhere(
-                          (w) => w.id == value,
-                        );
-                        widget.onWholesalerChanged((
-                          id: wholesaler.id,
-                          name: wholesaler.name,
-                          tier: wholesaler.tier,
-                        ));
-                      } else {
-                        widget.onWholesalerChanged(null);
-                      }
-                    },
-                    validator: (value) {
-                      if (!_isAddingNewWholesaler &&
-                          (value == null || value.isEmpty)) {
-                        return 'Veuillez sélectionner un grossiste ou en ajouter un nouveau';
-                      }
-                      return null;
-                    },
+        Row(
+          children: [
+            Expanded(
+              child: DropdownButtonFormField<String>(
+                initialValue: widget.selectedWholesalerId,
+                dropdownColor: theme.colorScheme.surface,
+                style: theme.textTheme.bodyLarge,
+                decoration: InputDecoration(
+                  labelText: 'Trouver un Grossiste *',
+                  labelStyle: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.bold),
+                  prefixIcon: Icon(Icons.business_center_outlined, color: theme.colorScheme.primary),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: theme.colorScheme.outline.withAlpha(50)),
                   ),
+                  filled: true,
+                  fillColor: theme.colorScheme.surfaceContainerLow,
                 ),
-              ],
+                items: [
+                  ...allWholesalers.map((wholesaler) {
+                    return DropdownMenuItem<String>(
+                      value: wholesaler.id,
+                      child: Text(wholesaler.name),
+                    );
+                  }),
+                ],
+                onChanged: (value) {
+                  if (value != null) {
+                    final wholesaler = allWholesalers.firstWhere((w) => w.id == value);
+                    widget.onWholesalerChanged((
+                      id: wholesaler.id,
+                      name: wholesaler.name,
+                      tier: wholesaler.tier,
+                    ));
+                  } else {
+                    widget.onWholesalerChanged(null);
+                  }
+                },
+                validator: (value) => value == null ? 'Veuillez sélectionner un grossiste' : null,
+              ),
             ),
+          ],
+        ),
             const SizedBox(height: 8),
             OutlinedButton.icon(
               onPressed: () {
@@ -392,17 +328,6 @@ class _TourWholesalerSelectorWidgetState
                     tier: 'default',
                   ));
 
-                  // Si un tour est sélectionné, ajouter le grossiste au tour
-                  if (widget.selectedTour != null) {
-                    _addWholesalerToTour(
-                      widget.selectedTour!,
-                      newId,
-                      name,
-                      _wholesalerPhoneController.text.trim(),
-                      _wholesalerAddressController.text.trim(),
-                    );
-                  }
-
                   // Réinitialiser le formulaire
                   setState(() {
                     _isAddingNewWholesaler = false;
@@ -427,54 +352,4 @@ class _TourWholesalerSelectorWidgetState
     );
   }
 
-  Future<void> _addWholesalerToTour(
-    Tour tour,
-    String wholesalerId,
-    String wholesalerName,
-    String phone,
-    String address,
-  ) async {
-    final theme = Theme.of(context);
-    try {
-      final controller = ref.read(tourControllerProvider);
-
-      // Créer une nouvelle collection pour ce grossiste
-      final newCollection = Collection(
-        id: 'collection_${DateTime.now().millisecondsSinceEpoch}',
-        type: CollectionType.wholesaler,
-        clientId: wholesalerId,
-        clientName: wholesalerName,
-        clientPhone: phone,
-        clientAddress: address.isNotEmpty ? address : null,
-        emptyBottles: const {},
-        unitPrice: 0.0,
-      );
-
-      // Ajouter la collection au tour
-      final updatedCollections = [...tour.collections, newCollection];
-      final updatedTour = tour.copyWith(collections: updatedCollections);
-
-      // Mettre à jour le tour
-      await controller.updateTour(updatedTour);
-
-      // Invalider le provider pour rafraîchir la liste
-      if (!mounted) return;
-      ref.invalidate(allWholesalersProvider(widget.enterpriseId));
-      ref.invalidate(
-        toursProvider((enterpriseId: widget.enterpriseId, status: null)),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur lors de l\'ajout au tour: $e'),
-          backgroundColor: theme.colorScheme.error,
-        ),
-      );
-    }
-  }
-
-  String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year}';
-  }
 }

@@ -9,15 +9,18 @@ import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/core/auth/providers.dart';
 import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
+import 'package:elyf_groupe_app/features/administration/application/providers.dart';
 import 'package:elyf_groupe_app/core/offline/offline_repository.dart' show LocalIdGenerator;
 
 class StockTransferDialog extends ConsumerStatefulWidget {
   const StockTransferDialog({
     super.key,
     required this.fromEnterpriseId,
+    this.initialToEnterpriseId,
   });
 
   final String fromEnterpriseId;
+  final String? initialToEnterpriseId;
 
   @override
   ConsumerState<StockTransferDialog> createState() => _StockTransferDialogState();
@@ -28,39 +31,54 @@ class _StockTransferDialogState extends ConsumerState<StockTransferDialog> {
   bool _isLoading = false;
   Enterprise? _selectedDestEnterprise;
   final _notesController = TextEditingController();
-  final List<StockTransferItem> _items = [];
+  
+  // Storage for quantities and statuses: key is cylinder.id
+  final Map<String, int> _quantities = {};
+  final Map<String, CylinderStatus> _statuses = {};
 
-  // Temporary state for the "Add Item" section
-  Cylinder? _tempSelectedCylinder;
-  CylinderStatus _tempSelectedStatus = CylinderStatus.full;
-  final _tempQuantityController = TextEditingController(text: '1');
+  @override
+  void initState() {
+    super.initState();
+    // Pre-select target if provided
+    if (widget.initialToEnterpriseId != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        try {
+          final repo = ref.read(enterpriseRepositoryProvider);
+          final target = await repo.getEnterpriseById(widget.initialToEnterpriseId!);
+          if (target != null && mounted) {
+            setState(() => _selectedDestEnterprise = target);
+          }
+        } catch (e) {
+          // Fallback to searching in accessible list if repo fetch fails
+          final enterprises = await ref.read(userAccessibleEnterprisesProvider.future);
+          final initialTarget = enterprises.where((e) => e.id == widget.initialToEnterpriseId).firstOrNull;
+          if (initialTarget != null && mounted) {
+            setState(() => _selectedDestEnterprise = initialTarget);
+          }
+        }
+      });
+    }
+  }
 
   @override
   void dispose() {
     _notesController.dispose();
-    _tempQuantityController.dispose();
     super.dispose();
   }
 
-  void _addItem() {
-    if (_tempSelectedCylinder == null) return;
-    final quantity = int.tryParse(_tempQuantityController.text) ?? 0;
-    if (quantity <= 0) return;
-
+  void _updateQuantity(String cylinderId, int delta) {
     setState(() {
-      _items.add(StockTransferItem(
-        weight: _tempSelectedCylinder!.weight,
-        status: _tempSelectedStatus,
-        quantity: quantity,
-      ));
-      _tempSelectedCylinder = null;
-      _tempQuantityController.text = '1';
+      final current = _quantities[cylinderId] ?? 0;
+      final newValue = current + delta;
+      if (newValue >= 0) {
+        _quantities[cylinderId] = newValue;
+      }
     });
   }
 
-  void _removeItem(int index) {
+  void _setStatus(String cylinderId, CylinderStatus status) {
     setState(() {
-      _items.removeAt(index);
+      _statuses[cylinderId] = status;
     });
   }
 
@@ -69,8 +87,23 @@ class _StockTransferDialogState extends ConsumerState<StockTransferDialog> {
       NotificationService.showError(context, 'Veuillez sélectionner une destination');
       return;
     }
-    if (_items.isEmpty) {
-      NotificationService.showError(context, 'Veuillez ajouter au moins une bouteille');
+    // Build items list from maps
+    final cylinders = ref.read(cylindersProvider).value ?? [];
+    final List<StockTransferItem> transferItems = [];
+    
+    for (final cylinder in cylinders) {
+      final qty = _quantities[cylinder.id] ?? 0;
+      if (qty > 0) {
+        transferItems.add(StockTransferItem(
+          weight: cylinder.weight,
+          status: _statuses[cylinder.id] ?? CylinderStatus.full,
+          quantity: qty,
+        ));
+      }
+    }
+
+    if (transferItems.isEmpty) {
+      NotificationService.showError(context, 'Veuillez saisir au moins une quantité');
       return;
     }
 
@@ -84,7 +117,7 @@ class _StockTransferDialogState extends ConsumerState<StockTransferDialog> {
         id: LocalIdGenerator.generate(),
         fromEnterpriseId: widget.fromEnterpriseId,
         toEnterpriseId: _selectedDestEnterprise!.id,
-        items: _items,
+        items: transferItems,
         status: StockTransferStatus.pending,
         createdBy: userId,
         notes: _notesController.text.isEmpty ? null : _notesController.text,
@@ -110,6 +143,7 @@ class _StockTransferDialogState extends ConsumerState<StockTransferDialog> {
   Widget build(BuildContext context) {
     final accessibleEnterprisesAsync = ref.watch(userAccessibleEnterprisesProvider);
     final cylindersAsync = ref.watch(cylindersProvider);
+    final theme = Theme.of(context);
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -139,15 +173,25 @@ class _StockTransferDialogState extends ConsumerState<StockTransferDialog> {
                         // Destination Selection
                         accessibleEnterprisesAsync.when(
                           data: (enterprises) {
-                            final destOptions = enterprises
+                            final List<Enterprise> destOptions = enterprises
                                 .where((e) => e.id != widget.fromEnterpriseId)
                                 .toList();
+                            
+                            // CRITICAL: Ensure _selectedDestEnterprise is in the list
+                            if (_selectedDestEnterprise != null && 
+                                !destOptions.any((e) => e.id == _selectedDestEnterprise!.id)) {
+                              destOptions.insert(0, _selectedDestEnterprise!);
+                            }
+
+                            final isLocked = widget.initialToEnterpriseId != null;
                             return DropdownButtonFormField<Enterprise>(
-                              initialValue: _selectedDestEnterprise,
-                              decoration: const InputDecoration(
+                              value: _selectedDestEnterprise,
+                              decoration: InputDecoration(
                                 labelText: 'Enterprise de destination *',
-                                prefixIcon: Icon(Icons.business),
-                                border: OutlineInputBorder(),
+                                prefixIcon: const Icon(Icons.business),
+                                border: const OutlineInputBorder(),
+                                filled: isLocked,
+                                fillColor: isLocked ? theme.colorScheme.surfaceContainerHighest : null,
                               ),
                               items: destOptions.map((e) {
                                 return DropdownMenuItem(
@@ -155,7 +199,7 @@ class _StockTransferDialogState extends ConsumerState<StockTransferDialog> {
                                   child: Text(e.name),
                                 );
                               }).toList(),
-                              onChanged: (value) => setState(() => _selectedDestEnterprise = value),
+                              onChanged: isLocked ? null : (value) => setState(() => _selectedDestEnterprise = value),
                               validator: (value) => value == null ? 'Obligatoire' : null,
                             );
                           },
@@ -167,130 +211,135 @@ class _StockTransferDialogState extends ConsumerState<StockTransferDialog> {
                         // Items Section
                         Text(
                           'Contenu du transfert',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         const SizedBox(height: 12),
                         
-                        // Add Item Form
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha(76),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: Theme.of(context).dividerColor),
-                          ),
-                          child: Column(
-                            children: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                    flex: 2,
-                                    child: cylindersAsync.when(
-                                      data: (cylinders) {
-                                        return DropdownButtonFormField<Cylinder>(
-                                          initialValue: _tempSelectedCylinder,
-                                          decoration: const InputDecoration(
-                                            labelText: 'Bouteille',
-                                            border: OutlineInputBorder(),
-                                          ),
-                                          items: cylinders.map((c) {
-                                            return DropdownMenuItem(
-                                              value: c,
-                                              child: Text('${c.weight}kg'),
-                                            );
-                                          }).toList(),
-                                          onChanged: (value) => setState(() => _tempSelectedCylinder = value),
-                                        );
-                                      },
-                                      loading: () => const CircularProgressIndicator(),
-                                      error: (_, __) => const Icon(Icons.error),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    flex: 2,
-                                    child: DropdownButtonFormField<CylinderStatus>(
-                                      initialValue: _tempSelectedStatus,
-                                      decoration: const InputDecoration(
-                                        labelText: 'Statut',
-                                        border: OutlineInputBorder(),
-                                      ),
-                                      items: CylinderStatus.values.map((s) {
-                                        return DropdownMenuItem(
-                                          value: s,
-                                          child: Text(s.label),
-                                        );
-                                      }).toList(),
-                                      onChanged: (value) => setState(() => _tempSelectedStatus = value!),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    flex: 1,
-                                    child: TextFormField(
-                                      controller: _tempQuantityController,
-                                      decoration: const InputDecoration(
-                                        labelText: 'Qté',
-                                        border: OutlineInputBorder(),
-                                      ),
-                                      keyboardType: TextInputType.number,
-                                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  IconButton.filledTonal(
-                                    onPressed: _addItem,
-                                    icon: const Icon(Icons.add),
-                                  ),
-                                ],
+                        cylindersAsync.when(
+                          data: (cylinders) {
+                            if (cylinders.isEmpty) {
+                              return const Center(child: Text('Aucun type de bouteille trouvé'));
+                            }
+                            return Container(
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.surfaceContainerHighest.withAlpha(50),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: theme.dividerColor.withAlpha(50)),
                               ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 16),
+                              child: ListView.separated(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: cylinders.length,
+                                separatorBuilder: (_, __) => Divider(height: 1, color: theme.dividerColor.withAlpha(50)),
+                                itemBuilder: (context, index) {
+                                  final cylinder = cylinders[index];
+                                  final quantity = _quantities[cylinder.id] ?? 0;
+                                  final status = _statuses[cylinder.id] ?? CylinderStatus.full;
 
-                        // Items List
-                        if (_items.isEmpty)
-                          const Center(
-                            child: Padding(
-                              padding: EdgeInsets.symmetric(vertical: 24),
-                              child: Text('Aucun article ajouté'),
-                            ),
-                          )
-                        else
-                          ListView.separated(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: _items.length,
-                            separatorBuilder: (_, __) => const SizedBox(height: 8),
-                            itemBuilder: (context, index) {
-                              final item = _items[index];
-                              return ListTile(
-                                tileColor: Theme.of(context).colorScheme.surface,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  side: BorderSide(color: Theme.of(context).dividerColor),
-                                ),
-                                title: Text('${item.weight}kg (${item.status.label})'),
-                                trailing: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      'x${item.quantity}',
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                  return Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                    child: Row(
+                                      children: [
+                                        // Weight & Label
+                                        Expanded(
+                                          flex: 2,
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                '${cylinder.weight}kg',
+                                                style: theme.textTheme.titleMedium?.copyWith(
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                              Text(
+                                                cylinder.label ?? 'Standard',
+                                                style: theme.textTheme.labelSmall?.copyWith(
+                                                  color: theme.colorScheme.onSurfaceVariant,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        
+                                        // Status Toggle (Simplified)
+                                        Container(
+                                          decoration: BoxDecoration(
+                                            color: theme.colorScheme.surface,
+                                            borderRadius: BorderRadius.circular(8),
+                                            border: Border.all(color: theme.dividerColor.withAlpha(100)),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              _StatusToggleButton(
+                                                label: 'Pleine',
+                                                isSelected: status == CylinderStatus.full,
+                                                onTap: () => _setStatus(cylinder.id, CylinderStatus.full),
+                                              ),
+                                              Container(width: 1, height: 20, color: theme.dividerColor.withAlpha(100)),
+                                              _StatusToggleButton(
+                                                label: 'Vide',
+                                                isSelected: status == CylinderStatus.emptyAtStore,
+                                                onTap: () => _setStatus(cylinder.id, CylinderStatus.emptyAtStore),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        
+                                        const SizedBox(width: 16),
+                                        
+                                        // Quantity Controls
+                                        Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            _QtyBtn(
+                                              icon: Icons.remove,
+                                              onPressed: quantity > 0 ? () => _updateQuantity(cylinder.id, -1) : null,
+                                            ),
+                                            SizedBox(
+                                              width: 50,
+                                              child: TextFormField(
+                                                initialValue: quantity.toString(),
+                                                keyboardType: TextInputType.number,
+                                                textAlign: TextAlign.center,
+                                                style: theme.textTheme.titleMedium?.copyWith(
+                                                  fontWeight: FontWeight.bold,
+                                                  color: quantity > 0 ? theme.colorScheme.primary : theme.disabledColor,
+                                                ),
+                                                decoration: const InputDecoration(
+                                                  isDense: true,
+                                                  contentPadding: EdgeInsets.zero,
+                                                  border: InputBorder.none,
+                                                ),
+                                                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                                                onChanged: (val) {
+                                                  final newQty = int.tryParse(val) ?? 0;
+                                                  setState(() {
+                                                    _quantities[cylinder.id] = newQty;
+                                                  });
+                                                },
+                                              ),
+                                            ),
+                                            _QtyBtn(
+                                              icon: Icons.add,
+                                              onPressed: () => _updateQuantity(cylinder.id, 1),
+                                              isPrimary: true,
+                                            ),
+                                          ],
+                                        ),
+                                      ],
                                     ),
-                                    const SizedBox(width: 8),
-                                    IconButton(
-                                      onPressed: () => _removeItem(index),
-                                      icon: const Icon(Icons.delete_outline, color: Colors.red),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                          ),
+                                  );
+                                },
+                              ),
+                            );
+                          },
+                          loading: () => const Center(child: CircularProgressIndicator()),
+                          error: (e, _) => Text('Erreur cylinders: $e'),
+                        ),
                         const SizedBox(height: 24),
 
                         // Notes
@@ -325,7 +374,7 @@ class _StockTransferDialogState extends ConsumerState<StockTransferDialog> {
                       onPressed: _isLoading ? null : _submit,
                       isLoading: _isLoading,
                       icon: Icons.send,
-                      child: const Text('Initier'),
+                      child: const Text('Transférer'),
                     ),
                   ),
                 ],
@@ -334,6 +383,78 @@ class _StockTransferDialogState extends ConsumerState<StockTransferDialog> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _StatusToggleButton extends StatelessWidget {
+  const _StatusToggleButton({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? theme.colorScheme.primary : Colors.transparent,
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Text(
+          label,
+          style: theme.textTheme.labelMedium?.copyWith(
+            color: isSelected ? theme.colorScheme.onPrimary : theme.colorScheme.onSurfaceVariant,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _QtyBtn extends StatelessWidget {
+  const _QtyBtn({
+    required this.icon,
+    required this.onPressed,
+    this.isPrimary = false,
+  });
+
+  final IconData icon;
+  final VoidCallback? onPressed;
+  final bool isPrimary;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return IconButton(
+      onPressed: onPressed,
+      icon: Container(
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          color: isPrimary 
+              ? theme.colorScheme.primary.withAlpha(onPressed != null ? 255 : 50) 
+              : theme.colorScheme.surfaceContainerHighest,
+          shape: BoxShape.circle,
+        ),
+        child: Icon(
+          icon,
+          size: 18,
+          color: isPrimary && onPressed != null
+              ? theme.colorScheme.onPrimary
+              : theme.colorScheme.onSurfaceVariant,
+        ),
+      ),
+      constraints: const BoxConstraints(),
+      padding: const EdgeInsets.all(8),
     );
   }
 }

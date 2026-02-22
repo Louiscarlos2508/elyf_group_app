@@ -2,18 +2,19 @@ import 'package:flutter/material.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
 
-/// Widget pour saisir les informations du client (nom, téléphone, notes).
 class CustomerInfoWidget extends StatelessWidget {
+  final TextEditingController customerNameController;
+  final TextEditingController customerPhoneController;
+  final TextEditingController notesController;
+  final bool isRequired;
+
   const CustomerInfoWidget({
     super.key,
     required this.customerNameController,
     required this.customerPhoneController,
     required this.notesController,
+    this.isRequired = false,
   });
-
-  final TextEditingController customerNameController;
-  final TextEditingController customerPhoneController;
-  final TextEditingController notesController;
 
   @override
   Widget build(BuildContext context) {
@@ -23,25 +24,31 @@ class CustomerInfoWidget extends StatelessWidget {
         TextFormField(
           controller: customerNameController,
           decoration: InputDecoration(
-            labelText: 'Nom du client (optionnel)',
+            labelText: isRequired ? 'Nom du client *' : 'Nom du client (optionnel)',
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
             prefixIcon: const Icon(Icons.person),
           ),
+          validator: isRequired
+              ? (v) => (v == null || v.trim().isEmpty) ? 'Le nom est obligatoire' : null
+              : null,
         ),
         const SizedBox(height: 16),
         TextFormField(
           controller: customerPhoneController,
           decoration: InputDecoration(
-            labelText: 'Téléphone (optionnel)',
+            labelText: isRequired ? 'Téléphone *' : 'Téléphone (optionnel)',
             hintText: '+226 70 00 00 00',
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
             prefixIcon: const Icon(Icons.phone),
           ),
           keyboardType: TextInputType.phone,
-          validator: (v) =>
-              (v == null || v.trim().isEmpty)
-                  ? null
-                  : Validators.phoneBurkina(v),
+          validator: (v) {
+            if (isRequired && (v == null || v.trim().isEmpty)) {
+              return 'Le téléphone est obligatoire';
+            }
+            if (v == null || v.trim().isEmpty) return null;
+            return Validators.phoneBurkina(v);
+          },
         ),
         const SizedBox(height: 16),
         TextFormField(

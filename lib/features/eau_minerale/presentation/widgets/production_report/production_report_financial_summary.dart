@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../application/providers.dart';
-import '../../../domain/entities/expense_record.dart';
 import '../../../domain/entities/production_session.dart';
 import 'production_report_components.dart';
 import 'production_report_helpers.dart';

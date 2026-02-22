@@ -3,7 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../application/providers.dart';
 import '../../../../domain/entities/cylinder_stock.dart';
-import '../../../../domain/entities/point_of_sale.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
+import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 import '../../../../domain/services/gaz_calculation_service.dart';
 import '../../../widgets/stock_kpi_card.dart';
 
@@ -17,20 +18,28 @@ class StockKpiSection extends ConsumerWidget {
   });
 
   final List<CylinderStock> allStocks;
-  final List<PointOfSale> activePointsOfSale;
-  final List<PointOfSale> pointsOfSale;
+  final List<Enterprise> activePointsOfSale;
+  final List<Enterprise> pointsOfSale;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cylindersAsync = ref.watch(cylindersProvider);
+    final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+    final settingsAsync = ref.watch(gazSettingsProvider((
+      enterpriseId: enterpriseId,
+      moduleId: 'gaz',
+    )));
 
     return cylindersAsync.when(
       data: (cylinders) {
+        final viewType = ref.watch(gazDashboardViewTypeProvider);
+        
         // Use calculation service for business logic
         final metrics = GazCalculationService.calculateStockMetrics(
           stocks: allStocks,
           pointsOfSale: pointsOfSale,
           cylinders: cylinders,
+          settings: viewType == GazDashboardViewType.local ? settingsAsync.value : null,
         );
 
         return _StockKpiCards(
@@ -53,9 +62,24 @@ class StockKpiSection extends ConsumerWidget {
           emptyStocks,
         );
 
+        final viewType = ref.watch(gazDashboardViewTypeProvider);
+        final settings = settingsAsync.value;
+        if (viewType == GazDashboardViewType.local && settings != null && settings.nominalStocks.isNotEmpty) {
+          for (final weight in allWeights) {
+            final nominal = settings.getNominalStock(weight);
+            if (nominal > 0) {
+              final full = fullByWeight[weight] ?? 0;
+              emptyByWeight[weight] = (nominal - full).clamp(0, nominal);
+            }
+          }
+        }
+
+        final totalFull = fullByWeight.values.fold<int>(0, (sum, val) => sum + val);
+        final totalEmpty = emptyByWeight.values.fold<int>(0, (sum, val) => sum + val);
+
         final metrics = StockMetrics(
-          totalFull: fullStocks.fold<int>(0, (sum, s) => sum + s.quantity),
-          totalEmpty: emptyStocks.fold<int>(0, (sum, s) => sum + s.quantity),
+          totalFull: totalFull,
+          totalEmpty: totalEmpty,
           fullByWeight: fullByWeight,
           emptyByWeight: emptyByWeight,
           activePointsOfSaleCount: activePointsOfSale.length,

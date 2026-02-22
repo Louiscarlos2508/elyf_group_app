@@ -10,7 +10,7 @@ import 'package:elyf_groupe_app/features/gaz/domain/entities/gaz_settings.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/gas_sale.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/tour.dart';
-import 'package:elyf_groupe_app/features/gaz/domain/services/gas_calculation_service.dart';
+import 'package:elyf_groupe_app/features/gaz/domain/services/gaz_calculation_service.dart';
 import 'gas_sale_form/customer_info_widget.dart';
 import 'gas_sale_form/cylinder_selector_widget.dart';
 import 'gas_sale_form/gas_sale_submit_handler.dart';
@@ -44,7 +44,6 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
   Cylinder? _selectedCylinder;
   int _availableStock = 0;
   bool _isLoading = false;
-  Tour? _selectedTour;
   String? _selectedWholesalerId;
   String? _selectedWholesalerName;
   GasSale? _completedSale;
@@ -52,6 +51,7 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
   String _selectedTier = 'default';
   final PaymentMethod _selectedPaymentMethod = PaymentMethod.cash;
   bool _isInitialized = false;
+  bool _showAdvancedOptions = false;
 
   @override
   void initState() {
@@ -93,7 +93,7 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
       }
     }
 
-    return GasCalculationService.calculateTotalAmount(
+    return GazCalculationService.calculateTotalAmount(
       cylinder: _selectedCylinder,
       unitPrice: _unitPrice,
       quantity: quantity,
@@ -107,7 +107,6 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
       cylinder: _selectedCylinder,
       enterpriseId: enterpriseId,
       isWholesale: widget.saleType == SaleType.wholesale,
-      tier: _selectedTier,
     );
     if (mounted) {
       setState(() => _unitPrice = price);
@@ -161,7 +160,7 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
           : _notesController.text.trim(),
       totalAmount: _totalAmount,
       unitPrice: _unitPrice,
-      tourId: widget.saleType == SaleType.wholesale ? _selectedTour?.id : null,
+      tourId: null,
       wholesalerId: widget.saleType == SaleType.wholesale
           ? _selectedWholesalerId
           : null,
@@ -223,16 +222,6 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
       });
     }
 
-    // Vérification de la hiérarchie pour les ventes au détail (Epic 6)
-    final activeEnterprise = activeEnterpriseAsync.value;
-    final isRetailAndNotPOS = widget.saleType == SaleType.retail && 
-                             activeEnterprise != null && 
-                             activeEnterprise.type != EnterpriseType.gasPointOfSale;
-
-    if (isRetailAndNotPOS) {
-       return _buildPOSSelectionRequiredView(theme, activeEnterprise);
-    }
-
     try {
       return Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -271,17 +260,9 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
                     if (widget.saleType == SaleType.wholesale &&
                         enterpriseId != null)
                       TourWholesalerSelectorWidget(
-                        selectedTour: _selectedTour,
                         selectedWholesalerId: _selectedWholesalerId,
                         selectedWholesalerName: _selectedWholesalerName,
                         enterpriseId: enterpriseId,
-                        onTourChanged: (tour) {
-                          setState(() {
-                            _selectedTour = tour;
-                            _selectedWholesalerId = null;
-                            _selectedWholesalerName = null;
-                          });
-                        },
                         onWholesalerChanged: (wholesaler) {
                           setState(() {
                             if (wholesaler != null) {
@@ -358,12 +339,52 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
                       ),
                     ],
                     const SizedBox(height: 16),
-                    // Informations client
-                    CustomerInfoWidget(
-                      customerNameController: _customerNameController,
-                      customerPhoneController: _customerPhoneController,
-                      notesController: _notesController,
-                    ),
+                    // Afficher les options avancées (Client, Notes)
+                    if (widget.saleType == SaleType.retail) ...[
+                      const SizedBox(height: 8),
+                      InkWell(
+                        onTap: () => setState(() => _showAdvancedOptions = !_showAdvancedOptions),
+                        borderRadius: BorderRadius.circular(8),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: Row(
+                            children: [
+                              Icon(
+                                _showAdvancedOptions ? Icons.expand_less : Icons.expand_more,
+                                size: 20,
+                                color: theme.colorScheme.primary,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                _showAdvancedOptions ? 'Moins d\'options' : 'Plus d\'options (Client, Notes...)',
+                                style: theme.textTheme.labelMedium?.copyWith(
+                                  color: theme.colorScheme.primary,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      if (_showAdvancedOptions) ...[
+                        const SizedBox(height: 12),
+                        CustomerInfoWidget(
+                          customerNameController: _customerNameController,
+                          customerPhoneController: _customerPhoneController,
+                          notesController: _notesController,
+                          isRequired: false,
+                        ),
+                      ],
+                    ] else ...[
+                      // Wholesale: Toujours afficher les infos client
+                      const SizedBox(height: 16),
+                      CustomerInfoWidget(
+                        customerNameController: _customerNameController,
+                        customerPhoneController: _customerPhoneController,
+                        notesController: _notesController,
+                        isRequired: true,
+                      ),
+                    ],
                     if (_completedSale != null) ...[
                       const SizedBox(height: 24),
                       Container(

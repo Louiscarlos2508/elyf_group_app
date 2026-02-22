@@ -4,10 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../../../core/permissions/modules/eau_minerale_permissions.dart';
-import '../../../application/controllers/finances_controller.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../../domain/adapters/expense_balance_adapter.dart';
-import '../../../domain/entities/expense_record.dart';
 import '../../widgets/centralized_permission_guard.dart';
 import '../../widgets/daily_expense_summary_card.dart';
 import '../../widgets/expense_detail_dialog.dart';

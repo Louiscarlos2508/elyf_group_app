@@ -4,7 +4,6 @@ import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
-import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/expense_record.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/production_session.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/report_period.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/salary_payment.dart';

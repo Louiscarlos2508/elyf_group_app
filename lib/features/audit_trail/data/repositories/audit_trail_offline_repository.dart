@@ -134,6 +134,17 @@ class AuditTrailOfflineRepository extends OfflineRepository<AuditRecord>
         .toList();
   }
 
+  Future<List<AuditRecord>> getAllForEnterprises(List<String> enterpriseIds) async {
+    final rows = await driftService.records.listForEnterprises(
+      collectionName: collectionName,
+      enterpriseIds: enterpriseIds,
+      moduleType: 'audit_trail',
+    );
+    return rows
+        .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+        .toList();
+  }
+
   @override
   Future<List<AuditRecord>> fetchRecords({
     required String enterpriseId,
@@ -145,34 +156,83 @@ class AuditTrailOfflineRepository extends OfflineRepository<AuditRecord>
     String? userId,
   }) async {
     try {
-      var all = await getAllForEnterprise(enterpriseId);
-
-      if (startDate != null) {
-        all = all.where((r) => r.timestamp.isAfter(startDate)).toList();
-      }
-      if (endDate != null) {
-        all = all.where((r) => r.timestamp.isBefore(endDate)).toList();
-      }
-      if (module != null) {
-        all = all.where((r) => r.module == module).toList();
-      }
-      if (action != null) {
-        all = all.where((r) => r.action == action).toList();
-      }
-      if (entityId != null) {
-        all = all.where((r) => r.entityId == entityId).toList();
-      }
-      if (userId != null) {
-        all = all.where((r) => r.userId == userId).toList();
-      }
-
-      all.sort((a, b) => b.timestamp.compareTo(a.timestamp));
-      return all;
+      final all = await getAllForEnterprise(enterpriseId);
+      return _filterRecords(
+        all,
+        startDate: startDate,
+        endDate: endDate,
+        module: module,
+        action: action,
+        entityId: entityId,
+        userId: userId,
+      );
     } catch (e, stack) {
       final appException = ErrorHandler.instance.handleError(e, stack);
       AppLogger.error('Error fetching audit records', error: e, stackTrace: stack);
       throw appException;
     }
+  }
+
+  @override
+  Future<List<AuditRecord>> fetchRecordsForEnterprises({
+    required List<String> enterpriseIds,
+    DateTime? startDate,
+    DateTime? endDate,
+    String? module,
+    String? action,
+    String? entityId,
+    String? userId,
+  }) async {
+    try {
+      final all = await getAllForEnterprises(enterpriseIds);
+      return _filterRecords(
+        all,
+        startDate: startDate,
+        endDate: endDate,
+        module: module,
+        action: action,
+        entityId: entityId,
+        userId: userId,
+      );
+    } catch (e, stack) {
+      final appException = ErrorHandler.instance.handleError(e, stack);
+      AppLogger.error('Error fetching audit records for enterprises', error: e, stackTrace: stack);
+      throw appException;
+    }
+  }
+
+  List<AuditRecord> _filterRecords(
+    List<AuditRecord> records, {
+    DateTime? startDate,
+    DateTime? endDate,
+    String? module,
+    String? action,
+    String? entityId,
+    String? userId,
+  }) {
+    var filtered = List<AuditRecord>.from(records);
+
+    if (startDate != null) {
+      filtered = filtered.where((r) => r.timestamp.isAfter(startDate)).toList();
+    }
+    if (endDate != null) {
+      filtered = filtered.where((r) => r.timestamp.isBefore(endDate)).toList();
+    }
+    if (module != null) {
+      filtered = filtered.where((r) => r.module == module).toList();
+    }
+    if (action != null) {
+      filtered = filtered.where((r) => r.action == action).toList();
+    }
+    if (entityId != null) {
+      filtered = filtered.where((r) => r.entityId == entityId).toList();
+    }
+    if (userId != null) {
+      filtered = filtered.where((r) => r.userId == userId).toList();
+    }
+
+    filtered.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    return filtered;
   }
 
   @override

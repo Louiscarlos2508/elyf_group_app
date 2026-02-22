@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
-import '../../domain/entities/expense_record.dart';
 
 /// Widget displaying monthly expense summary.
 class MonthlyExpenseSummary extends ConsumerWidget {

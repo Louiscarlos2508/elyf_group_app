@@ -5,7 +5,6 @@ import '../../domain/entities/gas_sale.dart';
 import '../../domain/repositories/gas_repository.dart';
 import '../../../audit_trail/domain/services/audit_trail_service.dart';
 import '../../../../core/logging/app_logger.dart';
-import 'package:elyf_groupe_app/core/errors/app_exceptions.dart';
 
 /// Contrôleur pour la gestion des ventes de gaz.
 class GasController extends ChangeNotifier {

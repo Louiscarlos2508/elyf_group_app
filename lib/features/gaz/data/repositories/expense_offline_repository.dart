@@ -69,6 +69,7 @@ class GazExpenseOfflineRepository extends OfflineRepository<GazExpense>
     // Soft-delete
     final deletedExpense = entity.copyWith(
       deletedAt: DateTime.now(),
+      updatedAt: DateTime.now(),
     );
     await saveToLocal(deletedExpense);
     

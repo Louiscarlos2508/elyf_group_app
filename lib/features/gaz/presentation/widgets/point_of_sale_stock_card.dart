@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../domain/entities/point_of_sale.dart';
+import '../../../../features/administration/domain/entities/enterprise.dart';
 import 'point_of_sale_stock/pos_bottles_summary.dart';
 import 'point_of_sale_stock/pos_stock_header.dart';
 import 'point_of_sale_stock/pos_stock_table.dart';
@@ -9,13 +9,13 @@ import 'point_of_sale_stock/pos_stock_table.dart';
 class PointOfSaleStockCard extends StatelessWidget {
   const PointOfSaleStockCard({
     super.key,
-    required this.pointOfSale,
+    required this.enterprise,
     required this.fullBottles,
     required this.emptyBottles,
     required this.stockByCapacity,
   });
 
-  final PointOfSale pointOfSale;
+  final Enterprise enterprise;
   final int fullBottles;
   final int emptyBottles;
   final Map<int, ({int full, int empty})> stockByCapacity;
@@ -43,7 +43,7 @@ class PointOfSaleStockCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Header with POS info and status badge
-          PosStockHeader(pointOfSale: pointOfSale),
+          PosStockHeader(enterprise: enterprise),
           const SizedBox(height: 16),
           // Full and empty bottles cards
           PosBottlesSummary(

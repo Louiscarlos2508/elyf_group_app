@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 
 import '../../../../core/auth/providers.dart';
 import '../../application/onboarding_service.dart';
@@ -32,10 +33,13 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   void initState() {
     super.initState();
 
-    // Logo animation - longer and more dramatic
+    // Supprimer le splash screen natif dès que Flutter est prêt
+    FlutterNativeSplash.remove();
+
+    // Logo animation - speeded up for a more professional feel
     _logoController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2000),
+      duration: const Duration(milliseconds: 1200),
     );
     _logoScale = Tween<double>(begin: 0.8, end: 1.0).animate(
       CurvedAnimation(
@@ -50,10 +54,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       ),
     );
 
-    // Text animation - longer stagger with more effects
+    // Text animation - more responsive stagger
     _textController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2500),
+      duration: const Duration(milliseconds: 1500),
     );
     _textFade = Tween<double>(
       begin: 0.0,
@@ -65,7 +69,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       vsync: this,
       duration: const Duration(milliseconds: 2000),
     )..repeat(reverse: true);
-    _glowAnimation = Tween<double>(begin: 0.4, end: 1.0).animate(
+    _glowAnimation = Tween<double>(begin: 0.6, end: 1.0).animate(
       CurvedAnimation(parent: _glowController, curve: Curves.easeInOut),
     );
 
@@ -77,15 +81,14 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
     // Start animations in sequence
     _logoController.forward().then((_) {
-      Future.delayed(const Duration(milliseconds: 300), () {
-        _textController.forward();
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (mounted) _textController.forward();
       });
     });
 
-    // Navigate after all animations complete
-    // Animation du logo: 2000ms + délai 300ms + animation texte: 2500ms = ~4800ms
-    // On ajoute 2.5 secondes supplémentaires pour laisser le temps d'apprécier
-    _timer = Timer(const Duration(milliseconds: 7000), () {
+    // Durée totale réduite à 3 secondes (temps standard professionnel)
+    // L'utilisateur n'attend plus inutilement.
+    _timer = Timer(const Duration(milliseconds: 3000), () {
       if (mounted) {
         _navigateToNextScreen();
       }
@@ -95,17 +98,15 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   /// Navigate to the appropriate screen based on authentication status
   Future<void> _navigateToNextScreen() async {
     try {
-      // Wait for the authentication state to be ready
+      // Le bootstrap est déjà fait dans main.dart, donc l'auth est déjà prête
       final user = await ref.read(currentUserProvider.future);
       
       if (!mounted) return;
       
       if (user != null) {
-        // User is authenticated, go to modules
         context.go('/modules');
       } else {
-        // User is not authenticated, check onboarding status
-        final isOnboardingCompleted = 
+        final isOnboardingCompleted =
             await ref.read(onboardingServiceProvider).isCompleted();
         
         if (!mounted) return;
@@ -117,7 +118,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
         }
       }
     } catch (error) {
-      // On error, go to login
       if (mounted) context.go('/login');
     }
   }
@@ -165,8 +165,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                               color: colors.primary.withValues(
                                 alpha: _glowAnimation.value * 0.4,
                               ),
-                              blurRadius: 40 * _glowAnimation.value,
-                              spreadRadius: 10 * _glowAnimation.value,
+                              blurRadius: 30 * _glowAnimation.value,
+                              spreadRadius: 5 * _glowAnimation.value,
                               offset: const Offset(0, 10),
                             ),
                           ],
@@ -179,23 +179,23 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                       ),
                     ),
                   ),
-                  const SizedBox(height: 60),
-                  // Animated ELYF text (Premium Typography)
+                  const SizedBox(height: 40),
+                  // Animated ELYF text
                   _AnimatedElyfText(
                     fadeAnimation: _textFade,
                     glowAnimation: _glowAnimation,
                     colors: colors,
                     textTheme: textTheme,
                   ),
-                  const SizedBox(height: 16),
-                  // Subtitle (Premium Tracking)
+                  const SizedBox(height: 12),
+                  // Subtitle
                   Opacity(
                     opacity: _textFade.value * 0.8,
                     child: Text(
                       'GROUPE ELYF',
                       style: textTheme.titleMedium?.copyWith(
                         color: colors.onSurface.withValues(alpha: 0.7),
-                        letterSpacing: 8.0,
+                        letterSpacing: 6.0,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -232,14 +232,14 @@ class _AnimatedElyfText extends StatelessWidget {
         style: textTheme.displayLarge?.copyWith(
           color: colors.primary,
           fontWeight: FontWeight.w900,
-          fontSize: 84,
+          fontSize: 72, // Taille légèrement plus équilibrée
           letterSpacing: 4,
           height: 1.0,
           shadows: [
             Shadow(
               color: colors.primary.withValues(alpha: 0.2),
-              blurRadius: 30,
-              offset: const Offset(0, 10),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
             ),
           ],
         ),

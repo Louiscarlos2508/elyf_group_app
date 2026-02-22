@@ -64,6 +64,7 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
     // Soft-delete: update the record with deletedAt instead of removing it
     final deletedSale = entity.copyWith(
       deletedAt: DateTime.now(),
+      updatedAt: DateTime.now(),
       // deletedBy could be added here if we had the current user
     );
     await saveToLocal(deletedSale);

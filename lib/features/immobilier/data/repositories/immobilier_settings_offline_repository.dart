@@ -50,7 +50,7 @@ class ImmobilierSettingsOfflineRepository extends OfflineRepository<ImmobilierSe
 
   @override
   Future<void> deleteFromLocal(ImmobilierSettings entity) async {
-    await saveToLocal(entity.copyWith(deletedAt: DateTime.now()));
+    await saveToLocal(entity.copyWith(deletedAt: DateTime.now(), updatedAt: DateTime.now()));
   }
 
   @override

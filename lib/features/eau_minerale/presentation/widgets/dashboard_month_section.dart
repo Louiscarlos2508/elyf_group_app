@@ -3,8 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import '../../application/controllers/clients_controller.dart';
-import '../../application/controllers/finances_controller.dart';
-import '../../application/controllers/sales_controller.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../domain/entities/customer_account.dart';
 import 'dashboard_kpi_card.dart';

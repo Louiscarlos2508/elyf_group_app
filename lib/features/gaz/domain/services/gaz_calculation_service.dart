@@ -3,13 +3,138 @@ import '../entities/collection.dart';
 import '../entities/cylinder.dart';
 import '../entities/cylinder_stock.dart';
 import '../entities/gaz_session.dart';
+import '../entities/gaz_settings.dart';
 import '../entities/expense.dart';
 import '../entities/gas_sale.dart';
-import '../entities/point_of_sale.dart';
+import '../../../../features/administration/domain/entities/enterprise.dart';
 
 /// Service de calculs métier pour le module gaz.
 class GazCalculationService {
   GazCalculationService._();
+
+  // ============================================================
+  // MÉTHODES DE CALCUL DE BASE
+  // ============================================================
+
+  /// Calculates total amount for a gas sale.
+  ///
+  /// Returns 0.0 if cylinder is null or unitPrice is 0.0.
+  static double calculateTotalAmount({
+    required Cylinder? cylinder,
+    required double unitPrice,
+    required int quantity,
+    int emptyReturnedQuantity = 0,
+  }) {
+    if (cylinder == null || (unitPrice == 0.0 && cylinder.depositPrice == 0.0) || quantity < 0) {
+      return 0.0;
+    }
+    
+    final gasTotal = unitPrice * quantity;
+    final depositDifference = quantity - emptyReturnedQuantity;
+    final depositTotal = depositDifference * cylinder.depositPrice;
+    
+    return gasTotal + depositTotal;
+  }
+
+  /// Calculates total amount from quantity text input.
+  ///
+  /// Returns 0.0 if cylinder is null, unitPrice is 0.0, or quantityText is invalid.
+  static double calculateTotalAmountFromText({
+    required Cylinder? cylinder,
+    required double unitPrice,
+    required String? quantityText,
+    int emptyReturnedQuantity = 0,
+  }) {
+    if (cylinder == null ||
+        (unitPrice == 0.0 && cylinder.depositPrice == 0.0) ||
+        quantityText == null ||
+        quantityText.isEmpty) {
+      return 0.0;
+    }
+    final quantity = int.tryParse(quantityText) ?? 0;
+    return calculateTotalAmount(
+      cylinder: cylinder,
+      unitPrice: unitPrice,
+      quantity: quantity,
+      emptyReturnedQuantity: emptyReturnedQuantity,
+    );
+  }
+
+  /// Calculates profit for a gas sale.
+  ///
+  /// Returns 0.0 if purchase price is not available.
+  static double calculateProfit({
+    required double sellPrice,
+    required double? purchasePrice,
+    required int quantity,
+  }) {
+    if (purchasePrice == null || purchasePrice <= 0) {
+      return 0.0;
+    }
+    final profitPerUnit = sellPrice - purchasePrice;
+    return profitPerUnit * quantity;
+  }
+
+  /// Calculates profit margin percentage.
+  ///
+  /// Returns 0.0 if sellPrice is 0 or purchasePrice is null/invalid.
+  static double calculateProfitMargin({
+    required double sellPrice,
+    required double? purchasePrice,
+  }) {
+    if (sellPrice == 0 || purchasePrice == null || purchasePrice <= 0) {
+      return 0.0;
+    }
+    final profit = sellPrice - purchasePrice;
+    return (profit / purchasePrice) * 100;
+  }
+
+  /// Validates that quantity is within available stock.
+  ///
+  /// Returns null if valid, error message otherwise.
+  static String? validateQuantity({
+    required int? quantity,
+    required int availableStock,
+  }) {
+    if (quantity == null) {
+      return 'Veuillez entrer une quantité';
+    }
+    if (quantity <= 0) {
+      return 'Quantité invalide';
+    }
+    if (quantity > availableStock) {
+      return 'Stock insuffisant ($availableStock disponible)';
+    }
+    return null;
+  }
+
+  /// Validates that quantity text is valid.
+  ///
+  /// Returns null if valid, error message otherwise.
+  static String? validateQuantityText({
+    required String? quantityText,
+    required int availableStock,
+  }) {
+    if (quantityText == null || quantityText.isEmpty) {
+      return 'Veuillez entrer une quantité';
+    }
+    final quantity = int.tryParse(quantityText);
+    return validateQuantity(quantity: quantity, availableStock: availableStock);
+  }
+
+  /// Determines the wholesale price based on settings and tier.
+  /// 
+  /// Falls back to cylinder's sell price if no wholesale price is defined.
+  static double determineWholesalePrice({
+    required Cylinder cylinder,
+    required GazSettings? settings,
+  }) {
+    if (settings == null) {
+      return cylinder.sellPrice;
+    }
+    
+    return settings.getWholesalePrice(cylinder.weight) ?? cylinder.sellPrice;
+  }
 
   // ============================================================
   // MÉTHODES DE FILTRAGE
@@ -61,15 +186,16 @@ class GazCalculationService {
   // MÉTHODES DE CALCUL DES VENTES EN GROS
   // ============================================================
 
-  /// Calcule les métriques des ventes en gros pour une période.
+  /// Calcule les métriques des ventes pour une période.
   static WholesaleMetrics calculateWholesaleMetrics(
     List<GasSale> allSales, {
     DateTime? startDate,
     DateTime? endDate,
+    bool isWholesaleOnly = true,
   }) {
-    final wholesaleSales = filterWholesaleSales(allSales);
+    final baseSales = isWholesaleOnly ? filterWholesaleSales(allSales) : allSales;
     final filteredSales = filterSalesByDateRange(
-      wholesaleSales,
+      baseSales,
       startDate: startDate,
       endDate: endDate,
     );
@@ -90,6 +216,28 @@ class GazCalculationService {
       credit: credit,
       sales: filteredSales,
     );
+  }
+
+  /// Calcule les ventes du jour par type.
+  static List<GasSale> calculateTodaySalesByType(
+    List<GasSale> sales,
+    SaleType saleType,
+  ) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    return sales.where((s) {
+      final saleDate = DateTime(s.saleDate.year, s.saleDate.month, s.saleDate.day);
+      return s.saleType == saleType && saleDate.isAtSameMomentAs(today);
+    }).toList();
+  }
+
+  /// Calcule le revenu du jour par type.
+  static double calculateTodayRevenueByType(
+    List<GasSale> sales,
+    SaleType saleType,
+  ) {
+    final todaySales = calculateTodaySalesByType(sales, saleType);
+    return todaySales.fold<double>(0, (sum, s) => sum + s.totalAmount);
   }
 
   // ============================================================
@@ -134,17 +282,28 @@ class GazCalculationService {
   /// Calcule les métriques de stock complètes.
   static StockMetrics calculateStockMetrics({
     required List<CylinderStock> stocks,
-    required List<PointOfSale> pointsOfSale,
+    required List<Enterprise> pointsOfSale,
     required List<Cylinder> cylinders,
+    GazSettings? settings,
   }) {
     final fullStocks = filterFullStocks(stocks);
     final emptyStocks = filterEmptyStocks(stocks);
 
-    final totalFull = fullStocks.fold<int>(0, (sum, s) => sum + s.quantity);
-    final totalEmpty = emptyStocks.fold<int>(0, (sum, s) => sum + s.quantity);
-
     final fullByWeight = groupStocksByWeight(fullStocks);
     final emptyByWeight = groupStocksByWeight(emptyStocks);
+
+    if (settings != null && settings.nominalStocks.isNotEmpty) {
+      for (final cylinder in cylinders) {
+        final nominal = settings.getNominalStock(cylinder.weight);
+        if (nominal > 0) {
+          final full = fullByWeight[cylinder.weight] ?? 0;
+          emptyByWeight[cylinder.weight] = (nominal - full).clamp(0, nominal);
+        }
+      }
+    }
+
+    final totalFull = fullByWeight.values.fold<int>(0, (sum, val) => sum + val);
+    final totalEmpty = emptyByWeight.values.fold<int>(0, (sum, val) => sum + val);
 
     final activePointsOfSale = pointsOfSale.where((p) => p.isActive).toList();
 
@@ -246,26 +405,6 @@ class GazCalculationService {
     return todaySales.fold<double>(0, (sum, s) => sum + s.totalAmount);
   }
 
-  /// Calcule les ventes du jour par type.
-  static List<GasSale> calculateTodaySalesByType(
-    List<GasSale> sales,
-    SaleType saleType,
-  ) {
-    final todaySales = calculateTodaySales(sales);
-    return todaySales.where((s) => s.saleType == saleType).toList();
-  }
-
-  /// Calcule le revenu du jour par type.
-  static double calculateTodayRevenueByType(
-    List<GasSale> sales,
-    SaleType saleType,
-  ) {
-    final todaySalesByType = calculateTodaySalesByType(sales, saleType);
-    return todaySalesByType.fold<double>(
-      0.0,
-      (sum, sale) => sum + sale.totalAmount,
-    );
-  }
 
   /// Calcule les dépenses du jour.
   static List<GazExpense> calculateTodayExpenses(List<GazExpense> expenses) {
@@ -479,9 +618,9 @@ class GazCalculationService {
     required String posId,
     required List<CylinderStock> allStocks,
   }) {
-    // Filtrer les stocks pour ce point de vente
+    // Filtrer les stocks pour ce point de vente (basé sur l'ID entreprise)
     final posStocks =
-        allStocks.where((s) => s.siteId == posId || s.siteId == null).toList();
+        allStocks.where((s) => s.enterpriseId == posId).toList();
 
     // Calculer les totaux
     final fullStocks = posStocks
@@ -540,6 +679,7 @@ class GazCalculationService {
     required List<Cylinder> cylinders,
     List<CylinderStock> stocks = const [],
     double openingCash = 0.0,
+    double openingMobileMoney = 0.0,
   }) {
     final dayStart = DateTime(date.year, date.month, date.day);
     final dayEnd = dayStart.add(const Duration(days: 1));
@@ -577,6 +717,10 @@ class GazCalculationService {
     final cashSales = salesByPaymentMethod[PaymentMethod.cash] ?? 0.0;
     final theoreticalCash = openingCash + cashSales - totalExpenses;
 
+    // L'Orange Money théorique est: OM Initial + Total OM
+    final omSales = salesByPaymentMethod[PaymentMethod.mobileMoney] ?? 0.0;
+    final theoreticalMobileMoney = openingMobileMoney + omSales;
+
     // Ventes partagées par poids (quantité totale de bouteilles)
     final salesByCylinderWeight = <int, int>{};
     for (final cylinder in cylinders) {
@@ -613,6 +757,7 @@ class GazCalculationService {
       totalSales: totalSales,
       totalExpenses: totalExpenses,
       theoreticalCash: theoreticalCash,
+      theoreticalMobileMoney: theoreticalMobileMoney,
       salesByPaymentMethod: salesByPaymentMethod,
       salesByCylinderWeight: salesByCylinderWeight,
       theoreticalStock: theoreticalStock,
@@ -632,6 +777,7 @@ class GazCalculationService {
     Map<int, int> openingFullStock = const {},
     Map<int, int> openingEmptyStock = const {},
     double openingCash = 0.0,
+    double openingMobileMoney = 0.0,
     String? notes,
   }) {
     return GazSession.fromMetrics(
@@ -645,6 +791,7 @@ class GazCalculationService {
       openingFullStock: openingFullStock,
       openingEmptyStock: openingEmptyStock,
       openingCash: openingCash,
+      openingMobileMoney: openingMobileMoney,
       notes: notes,
     );
   }
@@ -737,6 +884,7 @@ class ReconciliationMetrics {
     required this.totalSales,
     required this.totalExpenses,
     required this.theoreticalCash,
+    this.theoreticalMobileMoney = 0.0,
     required this.salesByPaymentMethod,
     required this.salesByCylinderWeight,
     this.theoreticalStock = const {},
@@ -747,6 +895,7 @@ class ReconciliationMetrics {
   final double totalSales;
   final double totalExpenses;
   final double theoreticalCash; // Uniquement le cash (espèces)
+  final double theoreticalMobileMoney;
   final Map<PaymentMethod, double> salesByPaymentMethod;
   final Map<int, int> salesByCylinderWeight;
   final Map<int, int> theoreticalStock;

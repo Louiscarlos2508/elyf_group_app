@@ -10,10 +10,12 @@ class StockHeader extends StatelessWidget {
     super.key,
     required this.isMobile,
     required this.onAdjustStock,
+    required this.onFillCylinders,
   });
 
   final bool isMobile;
   final VoidCallback onAdjustStock;
+  final VoidCallback onFillCylinders;
 
   @override
   Widget build(BuildContext context) {
@@ -34,10 +36,17 @@ class StockHeader extends StatelessWidget {
         ),
         const SizedBox(width: 8),
         ElyfButton(
+          onPressed: onFillCylinders,
+          icon: Icons.gas_meter_outlined,
+          variant: ElyfButtonVariant.outlined,
+          child: const Text('Remplissage'),
+        ),
+        const SizedBox(width: 8),
+        ElyfButton(
           onPressed: onAdjustStock,
           icon: Icons.add,
           variant: ElyfButtonVariant.outlined,
-          child: const Text('Ajuster le stock'),
+          child: const Text('Ajuster'),
         ),
       ],
     );

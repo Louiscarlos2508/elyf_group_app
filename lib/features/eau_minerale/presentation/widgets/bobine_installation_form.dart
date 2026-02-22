@@ -413,7 +413,7 @@ class _BobineInstallationFormState
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<Product>(
-                value: products.contains(_selectedBobineProduct) ? _selectedBobineProduct : null,
+                initialValue: products.contains(_selectedBobineProduct) ? _selectedBobineProduct : null,
                 borderRadius: BorderRadius.circular(16),
                 decoration: InputDecoration(
                   prefixIcon: const Icon(Icons.inventory_2_outlined),

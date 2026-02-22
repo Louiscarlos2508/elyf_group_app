@@ -66,6 +66,7 @@ class FinanceOfflineRepository extends OfflineRepository<ExpenseRecord>
     // Soft-delete
     final deletedExpense = entity.copyWith(
       deletedAt: DateTime.now(),
+      updatedAt: DateTime.now(),
     );
     await saveToLocal(deletedExpense);
     

@@ -69,6 +69,7 @@ class FinancialReportOfflineRepository
     // Soft-delete
     final deletedReport = entity.copyWith(
       deletedAt: DateTime.now(),
+      updatedAt: DateTime.now(),
     );
     await saveToLocal(deletedReport);
     

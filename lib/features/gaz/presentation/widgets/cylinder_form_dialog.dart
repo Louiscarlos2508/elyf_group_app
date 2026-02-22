@@ -3,14 +3,22 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../core/tenant/tenant_provider.dart' show activeEnterpriseProvider;
 import '../../../../shared/presentation/widgets/elyf_ui/atoms/elyf_button.dart';
+import '../../application/providers.dart';
 import '../../domain/entities/cylinder.dart';
 import 'cylinder_form/cylinder_submit_handler.dart';
 
 /// Dialogue pour créer ou modifier une bouteille de gaz.
 class CylinderFormDialog extends ConsumerStatefulWidget {
-  const CylinderFormDialog({super.key, this.cylinder});
+  const CylinderFormDialog({
+    super.key, 
+    this.cylinder,
+    required this.enterpriseId,
+    required this.moduleId,
+  });
 
   final Cylinder? cylinder;
+  final String enterpriseId;
+  final String moduleId;
 
   @override
   ConsumerState<CylinderFormDialog> createState() => _CylinderFormDialogState();
@@ -20,10 +28,10 @@ class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
   final _formKey = GlobalKey<FormState>();
   final _weightController = TextEditingController();
   final _sellPriceController = TextEditingController();
+  final _wholesalePriceController = TextEditingController();
   final _buyPriceController = TextEditingController();
   final _initialFullStockController = TextEditingController();
   final _initialEmptyStockController = TextEditingController();
-  final _depositPriceController = TextEditingController();
 
   int? _selectedWeight;
   bool _isLoading = false;
@@ -34,15 +42,44 @@ class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
   void initState() {
     super.initState();
     // Les valeurs seront initialisées dans build() avec activeEnterpriseProvider
+    
+    _enterpriseId = widget.enterpriseId;
+    _moduleId = widget.moduleId;
 
     if (widget.cylinder != null) {
       _selectedWeight = widget.cylinder!.weight;
       _weightController.text = widget.cylinder!.weight.toString();
       _sellPriceController.text = widget.cylinder!.sellPrice.toStringAsFixed(0);
       _buyPriceController.text = widget.cylinder!.buyPrice.toStringAsFixed(0);
-      _depositPriceController.text = widget.cylinder!.depositPrice.toStringAsFixed(0);
-      _enterpriseId = widget.cylinder!.enterpriseId;
-      _moduleId = widget.cylinder!.moduleId;
+    }
+
+    // Initialiser tous les prix depuis les réglages (source de vérité prioritaire)
+    _loadSettingsPrices();
+  }
+
+  Future<void> _loadSettingsPrices() async {
+    if (widget.cylinder == null || _enterpriseId == null) return;
+    
+    final settings = await ref.read(gazSettingsControllerProvider).getSettings(
+      enterpriseId: _enterpriseId!,
+      moduleId: 'gaz',
+    );
+    
+    if (settings != null && mounted) {
+      final weight = widget.cylinder!.weight;
+      final retailPrice = settings.getRetailPrice(weight);
+      final wholesalePrice = settings.getWholesalePrice(weight);
+      final purchasePrice = settings.getPurchasePrice(weight);
+
+      if (retailPrice != null) {
+        _sellPriceController.text = retailPrice.toStringAsFixed(0);
+      }
+      if (wholesalePrice != null) {
+        _wholesalePriceController.text = wholesalePrice.toStringAsFixed(0);
+      }
+      if (purchasePrice != null) {
+        _buyPriceController.text = purchasePrice.toStringAsFixed(0);
+      }
     }
   }
 
@@ -50,10 +87,10 @@ class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
   void dispose() {
     _weightController.dispose();
     _sellPriceController.dispose();
+    _wholesalePriceController.dispose();
     _buyPriceController.dispose();
     _initialFullStockController.dispose();
     _initialEmptyStockController.dispose();
-    _depositPriceController.dispose();
     super.dispose();
   }
 
@@ -68,10 +105,10 @@ class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
       selectedWeight: _selectedWeight,
       weightText: _weightController.text,
       sellPriceText: _sellPriceController.text,
+      wholesalePriceText: _wholesalePriceController.text,
       buyPriceText: _buyPriceController.text,
       initialFullStockText: _initialFullStockController.text,
       initialEmptyStockText: _initialEmptyStockController.text,
-      depositPriceText: _depositPriceController.text,
       enterpriseId: _enterpriseId,
       moduleId: _moduleId,
       existingCylinder: widget.cylinder,
@@ -84,15 +121,6 @@ class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final activeEnterpriseAsync = ref.watch(activeEnterpriseProvider);
-    
-    activeEnterpriseAsync.whenData((enterprise) {
-      if (_enterpriseId == null && enterprise != null) {
-        _enterpriseId = enterprise.id;
-        _moduleId = 'gaz';
-      }
-    });
-    
     if (_enterpriseId == null) {
       return Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -202,7 +230,7 @@ class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
                   TextFormField(
                     controller: _sellPriceController,
                     decoration: InputDecoration(
-                      labelText: 'Prix de vente',
+                      labelText: 'Prix de vente (Détail)',
                       hintText: '0',
                       suffixText: 'FCFA',
                       border: OutlineInputBorder(
@@ -221,12 +249,40 @@ class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
                       return null;
                     },
                   ),
+                  const SizedBox(height: 16),
+
+                  // Prix en gros
+                  TextFormField(
+                    controller: _wholesalePriceController,
+                    decoration: InputDecoration(
+                      labelText: 'Prix de vente (Gros)',
+                      hintText: 'Optionnel (Détail par défaut)',
+                      suffixText: 'FCFA',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      prefixIcon: const Icon(Icons.business_center_outlined),
+                      filled: true,
+                      fillColor: Colors.grey.withAlpha(10),
+                    ),
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    validator: (value) {
+                      if (value != null && value.isNotEmpty) {
+                        final price = double.tryParse(value);
+                        if (price == null || price < 0) return 'Invalide';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+
                   // Prix d'achat
                   TextFormField(
                     controller: _buyPriceController,
                     decoration: InputDecoration(
-                      labelText: "Prix d'achat",
-                      hintText: 'Optionnel',
+                      labelText: "Prix d'achat (Fournisseur)",
+                      hintText: 'Utilisé pour les Appro/Tours',
                       suffixText: 'FCFA',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
@@ -241,41 +297,12 @@ class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
                       if (value != null && value.isNotEmpty) {
                         final price = double.tryParse(value);
                         if (price == null || price < 0) return 'Invalide';
-                        if (_sellPriceController.text.isNotEmpty) {
-                          final sellPrice = double.tryParse(_sellPriceController.text) ?? 0;
-                          if (price >= sellPrice) {
-                            return "Doit être inférieur au prix de vente";
-                          }
-                        }
                       }
                       return null;
                     },
                   ),
                   const SizedBox(height: 16),
                   
-                  // Prix de consigne
-                  TextFormField(
-                    controller: _depositPriceController,
-                    decoration: InputDecoration(
-                      labelText: 'Prix de la bouteille (Consigne)',
-                      hintText: 'Ex: 15000',
-                      suffixText: 'FCFA',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      prefixIcon: const Icon(Icons.inventory_outlined),
-                      filled: true,
-                      fillColor: Colors.grey.withAlpha(10),
-                    ),
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    validator: (value) {
-                      if (value == null || value.isEmpty) return 'Requis';
-                      final price = double.tryParse(value);
-                      if (price == null || price < 0) return 'Invalide';
-                      return null;
-                    },
-                  ),
                   const SizedBox(height: 16),
                   
                   if (widget.cylinder == null) ...[

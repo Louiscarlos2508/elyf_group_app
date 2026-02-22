@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
-import '../../../domain/entities/cylinder.dart';
-import '../../../domain/entities/point_of_sale.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
+import 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder.dart';
+import 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder_stock.dart';
 import '../point_of_sale_stock_card.dart';
 import '../../../../../shared/presentation/widgets/elyf_ui/atoms/elyf_icon_button.dart';
 
@@ -11,11 +12,11 @@ import '../../../../../shared/presentation/widgets/elyf_ui/atoms/elyf_icon_butto
 class PosStockDialog extends ConsumerWidget {
   const PosStockDialog({
     super.key,
-    required this.pointOfSale,
+    required this.enterprise,
     required this.enterpriseId,
   });
 
-  final PointOfSale pointOfSale;
+  final Enterprise enterprise;
   final String enterpriseId;
 
   @override
@@ -24,7 +25,7 @@ class PosStockDialog extends ConsumerWidget {
       cylinderStocksProvider((
         enterpriseId: enterpriseId,
         status: null, // Tous les statuts
-        siteId: pointOfSale.id,
+        siteId: enterprise.id,
       )),
     );
 
@@ -49,7 +50,7 @@ class PosStockDialog extends ConsumerWidget {
           data: (allStocks) {
             // Filtrer les stocks pour ce point de vente
             final posStocks = allStocks
-                .where((s) => s.siteId == pointOfSale.id || s.siteId == null)
+                .where((s) => s.siteId == enterprise.id || s.siteId == null)
                 .toList();
 
             // Calculer les totaux
@@ -96,7 +97,7 @@ class PosStockDialog extends ConsumerWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        'Stock - ${pointOfSale.name}',
+                        'Stock - ${enterprise.name}',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
@@ -115,7 +116,7 @@ class PosStockDialog extends ConsumerWidget {
                 Flexible(
                   child: SingleChildScrollView(
                     child: PointOfSaleStockCard(
-                      pointOfSale: pointOfSale,
+                      enterprise: enterprise,
                       fullBottles: posFull,
                       emptyBottles: posEmpty,
                       stockByCapacity: stockByCapacity,
@@ -133,7 +134,7 @@ class PosStockDialog extends ConsumerWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      'Stock - ${pointOfSale.name}',
+                      'Stock - ${enterprise.name}',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -167,7 +168,7 @@ class PosStockDialog extends ConsumerWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      'Stock - ${pointOfSale.name}',
+                      'Stock - ${enterprise.name}',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),

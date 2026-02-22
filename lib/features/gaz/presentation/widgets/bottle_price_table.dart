@@ -106,92 +106,198 @@ class BottlePriceTable extends ConsumerWidget {
           );
         }
 
-        return ListView.separated(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: cylinders.length,
-          separatorBuilder: (context, index) => Divider(
-            height: 1,
-            color: theme.colorScheme.outlineVariant,
-          ),
-          itemBuilder: (context, index) {
-            final cylinder = cylinders[index];
-            return ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                  borderRadius: BorderRadius.circular(8),
+        // Observer les réglages globalement pour ce module
+        final settingsAsync = ref.watch(gazSettingsProvider((
+          enterpriseId: enterpriseId,
+          moduleId: moduleId,
+        )));
+
+        return settingsAsync.when(
+          data: (settings) {
+            return Column(
+              children: [
+                // Header du tableau
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        flex: 2,
+                        child: Text(
+                          'FORMAT',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(
+                          'DÉTAIL',
+                          textAlign: TextAlign.right,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(
+                          'GROS',
+                          textAlign: TextAlign.right,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(
+                          'ACHAT',
+                          textAlign: TextAlign.right,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 40),
+                    ],
+                  ),
                 ),
-                child: Icon(
-                  Icons.propane_tank,
-                  size: 24,
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-              title: Text(
-                '${cylinder.weight} kg',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.onSurface,
-                ),
-              ),
-              subtitle: Text.rich(
-                TextSpan(
-                  children: [
-                    TextSpan(
-                      text: 'Vente: ${CurrencyFormatter.formatDouble(cylinder.sellPrice)} FCFA',
-                      style: const TextStyle(fontWeight: FontWeight.w500),
-                    ),
-                    const TextSpan(text: '  •  '),
-                    TextSpan(
-                      text: 'Achat: ${CurrencyFormatter.formatDouble(cylinder.buyPrice)} FCFA',
-                      style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
-                    ),
-                  ],
-                ),
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurface,
-                ),
-              ),
-              trailing: PopupMenuButton<String>(
-                icon: const Icon(Icons.more_vert),
-                onSelected: (value) {
-                  if (value == 'edit') {
-                    showDialog(
-                      context: context,
-                      builder: (context) => CylinderFormDialog(cylinder: cylinder),
+                Column(
+                  children: List.generate(cylinders.length, (index) {
+                    final cylinder = cylinders[index];
+                    
+                    // Priorité aux réglages (Settings), fallback sur l'entité Cylinder
+                    final retailPrice = settings?.getRetailPrice(cylinder.weight) ?? cylinder.sellPrice;
+                    final wholesalePrice = settings?.getWholesalePrice(cylinder.weight) ?? cylinder.sellPrice;
+                    final purchasePrice = settings?.getPurchasePrice(cylinder.weight) ?? cylinder.buyPrice;
+
+                    return Column(
+                      children: [
+                        if (index > 0)
+                          Divider(
+                            height: 1,
+                            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+                          ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: index % 2 == 0 
+                                ? Colors.transparent 
+                                : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.1),
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                flex: 2,
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.propane_tank_outlined,
+                                      size: 18,
+                                      color: theme.colorScheme.primary,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      '${cylinder.weight} kg',
+                                      style: theme.textTheme.bodyMedium?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  CurrencyFormatter.formatDouble(retailPrice),
+                                  textAlign: TextAlign.right,
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: theme.colorScheme.primary,
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  CurrencyFormatter.formatDouble(wholesalePrice),
+                                  textAlign: TextAlign.right,
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.orange.shade700,
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  CurrencyFormatter.formatDouble(purchasePrice),
+                                  textAlign: TextAlign.right,
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              SizedBox(
+                                width: 32,
+                                child: PopupMenuButton<String>(
+                                  icon: const Icon(Icons.more_vert, size: 20),
+                                  padding: EdgeInsets.zero,
+                                  onSelected: (value) {
+                                    if (value == 'edit') {
+                                      showDialog(
+                                        context: context,
+                                        builder: (context) => CylinderFormDialog(
+                                          cylinder: cylinder,
+                                          enterpriseId: enterpriseId,
+                                          moduleId: moduleId,
+                                        ),
+                                      );
+                                    } else if (value == 'delete') {
+                                      _deleteCylinder(context, ref, cylinder);
+                                    }
+                                  },
+                                  itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                                    const PopupMenuItem<String>(
+                                      value: 'edit',
+                                      child: Row(
+                                        children: [
+                                          Icon(Icons.edit_outlined, size: 18),
+                                          SizedBox(width: 12),
+                                          Text('Modifier'),
+                                        ],
+                                      ),
+                                    ),
+                                    const PopupMenuItem<String>(
+                                      value: 'delete',
+                                      child: Row(
+                                        children: [
+                                          Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                                          SizedBox(width: 12),
+                                          Text('Supprimer', style: TextStyle(color: Colors.red)),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     );
-                  } else if (value == 'delete') {
-                    _deleteCylinder(context, ref, cylinder);
-                  }
-                },
-                itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-                  const PopupMenuItem<String>(
-                    value: 'edit',
-                    child: Row(
-                      children: [
-                        Icon(Icons.edit_outlined, size: 20),
-                        SizedBox(width: 12),
-                        Text('Modifier'),
-                      ],
-                    ),
-                  ),
-                  const PopupMenuItem<String>(
-                    value: 'delete',
-                    child: Row(
-                      children: [
-                        Icon(Icons.delete_outline, size: 20, color: Colors.red),
-                        SizedBox(width: 12),
-                        Text('Supprimer', style: TextStyle(color: Colors.red)),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+                  }),
+                ),
+              ],
             );
           },
+          loading: () => AppShimmers.table(context, rows: 3),
+          error: (e, _) => Center(child: Text('Erreur réglages: $e')),
         );
       },
       loading: () => AppShimmers.table(context, rows: 3),

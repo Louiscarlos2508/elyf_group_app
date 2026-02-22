@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/product.dart';
-import 'package:elyf_groupe_app/features/eau_minerale/domain/pack_constants.dart';
 
 
 class SaleProductSelector extends ConsumerWidget {

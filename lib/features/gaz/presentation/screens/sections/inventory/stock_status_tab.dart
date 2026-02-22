@@ -3,69 +3,35 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
-import '../../../../../core/tenant/tenant_provider.dart' show activeEnterpriseProvider;
+import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart' show activeEnterpriseProvider;
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
-import '../../widgets/stock_adjustment_dialog.dart';
-import 'stock/stock_header.dart';
-import 'stock/stock_kpi_section.dart';
-import 'stock/stock_pos_list.dart';
+import 'package:elyf_groupe_app/features/administration/application/providers.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
+import '../../../widgets/stock_adjustment_dialog.dart';
+import '../../../widgets/cylinder_filling_dialog.dart';
+import '../stock/stock_kpi_section.dart';
+import '../stock/stock_pos_list.dart';
+import '../stock/stock_transfer_screen.dart';
 
-/// Écran de gestion du stock de bouteilles par point de vente - matches Figma design.
-class GazStockScreen extends ConsumerStatefulWidget {
-  const GazStockScreen({super.key});
+class StockStatusTab extends ConsumerWidget {
+  const StockStatusTab({super.key, required this.enterpriseId, required this.moduleId});
 
-  @override
-  ConsumerState<GazStockScreen> createState() => _GazStockScreenState();
-}
-
-class _GazStockScreenState extends ConsumerState<GazStockScreen> {
-  String? _enterpriseId;
-  String? _moduleId;
+  final String enterpriseId;
+  final String moduleId;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final isMobile = MediaQuery.of(context).size.width < 600;
 
-    // Récupérer l'entreprise active depuis le tenant provider
-    final activeEnterpriseAsync = ref.watch(activeEnterpriseProvider);
-    activeEnterpriseAsync.whenData((enterprise) {
-      if (_enterpriseId == null && enterprise != null) {
-        _enterpriseId = enterprise.id;
-        _moduleId = 'gaz';
-      }
-    });
-    
-    if (_enterpriseId == null) {
-      return Scaffold(
-        appBar: ElyfAppBar(
-          title: 'Stock',
-          actions: [
-            EnterpriseSelectorWidget(style: EnterpriseSelectorStyle.appBar),
-          ],
-        ),
-        body: const Center(
-          child: Text('Aucune entreprise active disponible'),
-        ),
-      );
-    }
-
-    // Récupérer les points de vente depuis le provider
     final pointsOfSaleAsync = ref.watch(
-      pointsOfSaleProvider((
-        enterpriseId: _enterpriseId!,
-        moduleId: _moduleId!,
+      enterprisesByParentAndTypeProvider((
+        parentId: enterpriseId,
+        type: EnterpriseType.gasPointOfSale,
       )),
     );
 
-    // Get all stocks
-    final allStocksAsync = ref.watch(
-      cylinderStocksProvider((
-        enterpriseId: _enterpriseId!,
-        status: null, // Get all statuses
-        siteId: null,
-      )),
-    );
+    final allStocksAsync = ref.watch(gazStocksProvider);
 
     return pointsOfSaleAsync.when(
       data: (pointsOfSale) {
@@ -75,23 +41,35 @@ class _GazStockScreenState extends ConsumerState<GazStockScreen> {
 
         return CustomScrollView(
           slivers: [
-            // Header
             SliverToBoxAdapter(
-              child: StockHeader(
-                isMobile: isMobile,
-                onAdjustStock: () {
-                  showDialog(
-                    context: context,
-                    builder: (context) => StockAdjustmentDialog(
-                      enterpriseId: _enterpriseId!,
-                      moduleId: _moduleId!,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.lg,
+                  vertical: AppSpacing.md,
+                ),
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  alignment: WrapAlignment.end,
+                  children: [
+                    ElyfButton(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(builder: (context) => StockTransferScreen()),
+                        );
+                      },
+                      icon: Icons.swap_horiz,
+                      variant: ElyfButtonVariant.outlined,
+                      size: ElyfButtonSize.small,
+                      child: const Text('Transferts'),
                     ),
-                  );
-                },
+
+
+                  ],
+                ),
               ),
             ),
 
-            // KPI Cards
             SliverToBoxAdapter(
               child: Padding(
                 padding: EdgeInsets.fromLTRB(
@@ -112,7 +90,48 @@ class _GazStockScreenState extends ConsumerState<GazStockScreen> {
               ),
             ),
 
-            // Tab section
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  0,
+                  AppSpacing.lg,
+                  AppSpacing.lg,
+                ),
+                child: Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surface,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.inventory_2, size: 18, color: theme.colorScheme.primary),
+                        const SizedBox(width: 8),
+                        Text(
+                          'INVENTAIRE DÉPÔT PRINCIPAL',
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.2,
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
             SliverToBoxAdapter(
               child: Padding(
                 padding: EdgeInsets.fromLTRB(
@@ -129,17 +148,17 @@ class _GazStockScreenState extends ConsumerState<GazStockScreen> {
                   ),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 9,
-                      vertical: 5,
+                      horizontal: 12,
+                      vertical: 8,
                     ),
                     decoration: BoxDecoration(
                       color: theme.colorScheme.surface,
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Text(
-                      'Points de vente actifs (${activePointsOfSale.length})',
+                      'Suivi Points de vente (${activePointsOfSale.length})',
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
                         color: theme.colorScheme.onSurface,
                       ),
                     ),
@@ -148,7 +167,6 @@ class _GazStockScreenState extends ConsumerState<GazStockScreen> {
               ),
             ),
 
-            // Points of sale cards
             SliverPadding(
               padding: EdgeInsets.fromLTRB(
                 AppSpacing.lg,
@@ -171,7 +189,7 @@ class _GazStockScreenState extends ConsumerState<GazStockScreen> {
                     message: 'Impossible de charger le stock.',
                     onRetry: () => ref.refresh(
                       cylinderStocksProvider((
-                        enterpriseId: _enterpriseId!,
+                        enterpriseId: enterpriseId,
                         status: null,
                         siteId: null,
                       )),
@@ -189,9 +207,9 @@ class _GazStockScreenState extends ConsumerState<GazStockScreen> {
         title: 'Erreur de chargement',
         message: 'Impossible de charger les points de vente.',
         onRetry: () => ref.refresh(
-          pointsOfSaleProvider((
-            enterpriseId: _enterpriseId!,
-            moduleId: _moduleId!,
+          enterprisesByParentAndTypeProvider((
+            parentId: enterpriseId,
+            type: EnterpriseType.gasPointOfSale,
           )),
         ),
       ),

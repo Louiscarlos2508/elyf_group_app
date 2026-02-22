@@ -30,8 +30,7 @@ void main() {
         id: 'local_123',
         enterpriseId: 'test_ent',
         tourDate: DateTime.now(),
-        status: TourStatus.collection,
-        collections: [],
+        status: TourStatus.open,
         loadingFeePerBottle: 0,
         unloadingFeePerBottle: 0,
       );
@@ -44,8 +43,7 @@ void main() {
         id: 'remote_abc_789', // Simulating a remote ID
         enterpriseId: 'test_ent',
         tourDate: DateTime.now(),
-        status: TourStatus.collection,
-        collections: [],
+        status: TourStatus.open,
         loadingFeePerBottle: 0,
         unloadingFeePerBottle: 0,
       );
@@ -58,8 +56,7 @@ void main() {
         id: '',
         enterpriseId: 'test_ent',
         tourDate: DateTime.now(),
-        status: TourStatus.collection,
-        collections: [],
+        status: TourStatus.open,
         loadingFeePerBottle: 0,
         unloadingFeePerBottle: 0,
       );

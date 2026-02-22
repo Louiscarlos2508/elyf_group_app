@@ -35,34 +35,7 @@ class RetailNewSaleTab extends ConsumerWidget {
       slivers: [
         // KPI Cards
         const RetailKpiSection(),
-        // Title and subtitle
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
-            child: Column(
-              children: [
-                Text(
-                  'Vente au Détail',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontSize: 20,
-                    fontWeight: FontWeight.normal,
-                    color: theme.colorScheme.onSurface,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Sélectionnez la bouteille pour commencer la vente',
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    fontSize: 16,
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
-        ),
+
         // Cylinder cards
         SliverPadding(
           padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),

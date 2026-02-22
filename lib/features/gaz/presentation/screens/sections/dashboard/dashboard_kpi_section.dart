@@ -6,7 +6,9 @@ import '../../../../domain/entities/cylinder.dart';
 import '../../../../domain/entities/cylinder_stock.dart';
 import '../../../../domain/entities/expense.dart';
 import '../../../../domain/entities/gas_sale.dart';
+import '../../../../domain/entities/gaz_settings.dart';
 import '../../../../domain/services/gaz_calculation_service.dart';
+import '../../../../application/providers.dart';
 
 /// Section des KPI cards pour le dashboard.
 class DashboardKpiSection extends ConsumerWidget {
@@ -16,12 +18,16 @@ class DashboardKpiSection extends ConsumerWidget {
     required this.expenses,
     required this.cylinders,
     required this.stocks,
+    this.settings,
+    this.viewType = GazDashboardViewType.consolidated,
   });
 
   final List<GasSale> sales;
   final List<GazExpense> expenses;
   final List<Cylinder> cylinders;
   final List<CylinderStock> stocks;
+  final GazSettings? settings;
+  final GazDashboardViewType viewType;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -44,10 +50,25 @@ class DashboardKpiSection extends ConsumerWidget {
     final fullBottles = GazCalculationService.calculateTotalFullCylinders(
       stocks,
     );
-    // Calculer les bouteilles vides (emptyAtStore + emptyInTransit)
-    final emptyBottles = GazCalculationService.calculateTotalEmptyCylinders(
-      stocks,
-    );
+    
+    // Calculer les bouteilles vides
+    int emptyBottles = 0;
+    final s = settings;
+    if (viewType == GazDashboardViewType.local && s != null) {
+      // En vue locale, le vide = Nominal - Plein
+      for (final weight in s.nominalStocks.keys) {
+        final nominal = s.getNominalStock(weight);
+        final fullForWeight = stocks
+            .where((s) => s.weight == weight && s.status == CylinderStatus.full)
+            .fold<int>(0, (sum, s) => sum + s.quantity);
+        emptyBottles += (nominal - fullForWeight).clamp(0, nominal).toInt();
+      }
+    } else {
+      // En vue consolidée, c'est le cumul du stock physique vide
+      emptyBottles = GazCalculationService.calculateTotalEmptyCylinders(
+        stocks,
+      );
+    }
 
     return LayoutBuilder(
           builder: (context, constraints) {

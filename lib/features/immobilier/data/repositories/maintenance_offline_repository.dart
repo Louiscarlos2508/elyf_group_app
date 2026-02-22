@@ -212,6 +212,7 @@ class MaintenanceOfflineRepository extends OfflineRepository<MaintenanceTicket>
       if (ticket != null) {
         await save(ticket.copyWith(
           deletedAt: DateTime.now(),
+          updatedAt: DateTime.now(),
           deletedBy: 'system',
         ));
       }

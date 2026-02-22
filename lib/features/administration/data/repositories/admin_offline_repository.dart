@@ -6,7 +6,6 @@ import '../../../../core/logging/app_logger.dart';
 import '../../../../core/auth/entities/enterprise_module_user.dart';
 import '../../../../core/offline/connectivity_service.dart';
 import '../../../../core/offline/drift_service.dart';
-import '../../../../core/offline/offline_repository.dart';
 import '../../../../core/offline/sync_manager.dart';
 import '../../../../core/offline/sync_status.dart';
 import '../../../../core/permissions/entities/user_role.dart';

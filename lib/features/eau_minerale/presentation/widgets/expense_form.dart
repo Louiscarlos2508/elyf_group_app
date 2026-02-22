@@ -5,8 +5,6 @@ import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../../../core/tenant/tenant_provider.dart';
-import '../../domain/entities/expense_record.dart';
-import '../../domain/entities/closing.dart';
 
 /// Form for creating/editing an expense record.
 class ExpenseForm extends ConsumerStatefulWidget {

@@ -34,7 +34,7 @@ class _DashboardReconciliationSectionState extends ConsumerState<DashboardReconc
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final sessionAsync = ref.watch(todayGazSessionProvider);
-    final dashboardDataAsync = ref.watch(gazDashboardDataProvider);
+    final dashboardDataAsync = ref.watch(gazLocalDashboardDataProvider);
 
     return sessionAsync.when(
       data: (session) {
@@ -49,11 +49,7 @@ class _DashboardReconciliationSectionState extends ConsumerState<DashboardReconc
               allSales: data.sales,
               allExpenses: data.expenses,
               cylinders: data.cylinders,
-              stocks: ref.read(cylinderStocksProvider((
-                enterpriseId: ref.read(activeEnterpriseProvider).value?.id ?? '',
-                status: CylinderStatus.full,
-                siteId: null, // Global
-              ))).value ?? [],
+              stocks: data.stocks.where((s) => s.status == CylinderStatus.full).toList(),
               openingCash: session.openingCash,
             );
 

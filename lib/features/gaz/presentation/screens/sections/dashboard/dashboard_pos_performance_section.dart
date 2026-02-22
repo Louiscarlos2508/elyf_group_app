@@ -3,15 +3,24 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../../../core/tenant/tenant_provider.dart' show activeEnterpriseProvider;
 import '../../../../application/providers.dart';
+import 'package:elyf_groupe_app/features/administration/application/providers.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import '../../../../domain/entities/gas_sale.dart';
 import '../../../../domain/services/gaz_calculation_service.dart';
+import '../../../../domain/entities/cylinder.dart';
+import '../../../../domain/entities/cylinder_stock.dart';
 import '../../../widgets/dashboard_point_of_sale_performance.dart';
 
 /// Section de performance par point de vente pour le dashboard.
 class DashboardPosPerformanceSection extends ConsumerWidget {
-  const DashboardPosPerformanceSection({super.key, required this.sales});
+  const DashboardPosPerformanceSection({
+    super.key,
+    required this.sales,
+    required this.stocks,
+  });
 
   final List<GasSale> sales;
+  final List<CylinderStock> stocks;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -29,41 +38,32 @@ class DashboardPosPerformanceSection extends ConsumerWidget {
 
         // Récupérer les points de vente depuis le provider
         final pointsOfSaleAsync = ref.watch(
-          pointsOfSaleProvider((enterpriseId: enterpriseId, moduleId: moduleId)),
+          enterprisesByParentAndTypeProvider((
+            parentId: enterpriseId,
+            type: EnterpriseType.gasPointOfSale,
+          )),
         );
 
         return pointsOfSaleAsync.when(
           data: (pointsOfSale) {
-            // Utiliser le service pour les calculs
-            final todaySales = GazCalculationService.calculateTodaySales(sales);
-
-            // Calculate sales and stock by POS
-            // Note: Pour l'instant, on distribue les ventes équitablement car
-            // les ventes ne sont pas encore associées à un point de vente spécifique.
-            // Dans le futur, avec la gestion des utilisateurs par point de vente,
-            // les ventes seront automatiquement associées au point de vente de l'utilisateur.
             final salesByPos = <String, double>{};
             final stockByPos = <String, int>{};
             final salesCountByPos = <String, int>{};
 
-            // Filtrer uniquement les ventes au détail
-            final retailSales = todaySales
-                .where((s) => s.saleType == SaleType.retail)
-                .toList();
+            // Filtrer uniquement les ventes du jour
+            final todaySales = GazCalculationService.calculateTodaySales(sales);
 
-        for (final pos in pointsOfSale) {
-          // Pour l'instant, distribuer équitablement les ventes au détail
-          // TODO: Quand les utilisateurs seront associés aux points de vente,
-          // les ventes seront automatiquement filtrées par point de vente
-          salesByPos[pos.id] = retailSales.isEmpty
-              ? 0.0
-              : (retailSales.fold<double>(0, (sum, s) => sum + s.totalAmount) /
-                    pointsOfSale.length);
-          salesCountByPos[pos.id] = retailSales.isEmpty
-              ? 0
-              : (retailSales.length / pointsOfSale.length).round();
-          stockByPos[pos.id] = 0; // TODO: Get actual stock from CylinderStock
-        }
+            for (final pos in pointsOfSale) {
+              final posSales = todaySales.where((s) => s.enterpriseId == pos.id).toList();
+              
+              salesByPos[pos.id] = posSales.fold<double>(0, (sum, s) => sum + s.totalAmount);
+              salesCountByPos[pos.id] = posSales.length;
+              
+              // Stock plein pour ce POS
+              stockByPos[pos.id] = stocks
+                  .where((s) => s.enterpriseId == pos.id && s.status == CylinderStatus.full)
+                  .fold<int>(0, (sum, s) => sum + s.quantity);
+            }
 
         return DashboardPointOfSalePerformance(
           pointsOfSale: pointsOfSale,

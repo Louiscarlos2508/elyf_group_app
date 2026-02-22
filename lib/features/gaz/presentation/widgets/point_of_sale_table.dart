@@ -3,7 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/logging/app_logger.dart';
 
-import '../../application/providers.dart';
+import '../../../../features/administration/application/providers.dart';
+import '../../../../features/administration/domain/entities/enterprise.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'point_of_sale_table/pos_table_row.dart';
 
@@ -22,7 +23,10 @@ class PointOfSaleTable extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final pointsOfSaleAsync = ref.watch(
-      pointsOfSaleProvider((enterpriseId: enterpriseId, moduleId: moduleId)),
+      enterprisesByParentAndTypeProvider((
+        parentId: enterpriseId,
+        type: EnterpriseType.gasPointOfSale,
+      )),
     );
 
     return pointsOfSaleAsync.when(
@@ -77,7 +81,7 @@ class PointOfSaleTable extends ConsumerWidget {
             color: theme.colorScheme.outlineVariant,
           ),
           itemBuilder: (context, index) => PosTableRow(
-            pointOfSale: pointsOfSale[index],
+            enterprise: pointsOfSale[index],
             enterpriseId: enterpriseId,
             moduleId: moduleId,
           ),

@@ -50,8 +50,7 @@ class _TourFormDialogState extends ConsumerState<TourFormDialog>
           id: '',
           enterpriseId: _enterpriseId!,
           tourDate: _selectedDate,
-          status: TourStatus.collection,
-          collections: const [],
+          status: TourStatus.open,
           loadingFeePerBottle:
               double.tryParse(_loadingFeeController.text) ?? 0.0,
           unloadingFeePerBottle:

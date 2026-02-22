@@ -82,10 +82,11 @@ class PackagingStockOfflineRepository extends OfflineRepository<PackagingStock>
   @override
   Future<void> deleteFromLocal(PackagingStock entity) async {
     // Soft-delete
-    final deletedStock = entity.copyWith(
+    final deletedPackaging = entity.copyWith(
       deletedAt: DateTime.now(),
+      updatedAt: DateTime.now(),
     );
-    await saveToLocal(deletedStock);
+    await saveToLocal(deletedPackaging);
     
     AppLogger.info(
       'Soft-deleted packaging stock: ${entity.id}',
@@ -424,9 +425,7 @@ class PackagingStockOfflineRepository extends OfflineRepository<PackagingStock>
       
       // 2. Fallback: Chercher par type si non trouvé par ID
       // Cela permet de récupérer les stocks créés avec l'ancienne logique (ID basé sur le type)
-      if (stock == null) {
-        stock = await fetchByType(movement.packagingType);
-      }
+      stock ??= await fetchByType(movement.packagingType);
       
       if (stock == null) {
         // Si le stock n'existe pas du tout, le créer

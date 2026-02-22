@@ -1,3 +1,4 @@
+import 'package:elyf_groupe_app/core/permissions/modules/gaz_permissions.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/administration/application/providers.dart'
@@ -33,4 +34,11 @@ final gazPermissionAdapterProvider = Provider<GazPermissionAdapter>(
 final userHasGazPermissionProvider = FutureProvider.family<bool, String>((ref, permission) async {
   final adapter = ref.watch(gazPermissionAdapterProvider);
   return await adapter.hasPermission(permission);
+});
+
+/// Provider to check if the current user has manager-level permissions in Gaz.
+final isGazManagerProvider = FutureProvider<bool>((ref) async {
+  final adapter = ref.watch(gazPermissionAdapterProvider);
+  // Un manager peut au moins gérer l'inventaire
+  return await adapter.hasPermission(GazPermissions.manageInventory.id);
 });

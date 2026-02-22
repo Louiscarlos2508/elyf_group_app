@@ -144,7 +144,9 @@ class _BreadcrumbItem extends ConsumerWidget {
         break;
       case EnterpriseType.gasPointOfSale:
       case EnterpriseType.waterPointOfSale:
+      case EnterpriseType.pointOfSale:
         iconData = Icons.store;
+        iconColor = theme.colorScheme.secondary;
         break;
       case EnterpriseType.gasWarehouse:
       case EnterpriseType.waterWarehouse:

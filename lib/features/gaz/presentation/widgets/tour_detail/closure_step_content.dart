@@ -4,7 +4,7 @@ import '../../../domain/entities/tour.dart';
 import 'closure_details_card.dart';
 import 'closure_summary_cards.dart';
 
-/// Contenu de l'étape de clôture du tour.
+/// Contenu de l'étape de clôture du tour fournisseur.
 class ClosureStepContent extends StatelessWidget {
   const ClosureStepContent({
     super.key,
@@ -19,33 +19,26 @@ class ClosureStepContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final totalCollected = tour.totalCollected;
-    final totalExpenses = tour.totalExpenses;
-    final netProfit = tour.netProfit;
-    final totalBottles = tour.totalBottlesToLoad;
-    final loadingFees = tour.totalLoadingFees;
-    final unloadingFees = tour.totalUnloadingFees;
-    final otherExpenses = tour.transportExpenses;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Cartes de résumé (Total encaissé, Total dépenses, Bénéfice net)
+        // Cartes de résumé
         ClosureSummaryCards(
-          totalCollected: totalCollected,
-          totalExpenses: totalExpenses,
-          netProfit: netProfit,
+          totalEmpty: tour.totalBottlesToLoad,
+          totalFull: tour.totalBottlesReceived,
+          totalExpenses: tour.totalExpenses,
           isMobile: isMobile,
         ),
         const SizedBox(height: 16),
         // Carte principale avec récapitulatif
         ClosureDetailsCard(
           tour: tour,
-          totalBottles: totalBottles,
-          loadingFees: loadingFees,
-          unloadingFees: unloadingFees,
-          otherExpenses: otherExpenses,
-          totalExpenses: totalExpenses,
+          totalBottles: tour.totalBottlesToLoad,
+          loadingFees: tour.totalLoadingFees,
+          unloadingFees: tour.totalUnloadingFees,
+          exchangeFees: tour.totalExchangeFees,
+          otherExpenses: tour.transportExpenses,
+          totalExpenses: tour.totalExpenses,
           enterpriseId: enterpriseId,
         ),
       ],

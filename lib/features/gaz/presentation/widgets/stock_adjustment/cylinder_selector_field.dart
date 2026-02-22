@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import '../../../domain/entities/cylinder.dart';
-import '../../../domain/entities/point_of_sale.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 
 /// Widget for selecting a cylinder type.
 class CylinderSelectorField extends ConsumerWidget {
@@ -19,7 +19,7 @@ class CylinderSelectorField extends ConsumerWidget {
 
   final String enterpriseId;
   final String moduleId;
-  final PointOfSale? selectedPointOfSale;
+  final Enterprise? selectedPointOfSale;
   final Cylinder? selectedCylinder;
   final ValueChanged<Cylinder?>? onCylinderChanged;
   final FormFieldValidator<Cylinder>? validator;

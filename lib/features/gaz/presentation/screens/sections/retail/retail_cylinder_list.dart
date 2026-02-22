@@ -54,18 +54,16 @@ class RetailCylinderList extends ConsumerWidget {
         builder: (context, constraints) {
           final isWide = constraints.maxWidth > 800;
           if (isWide) {
-            return Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
+            return Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 16,
+              runSpacing: 16,
               children: cylinders.map((cylinder) {
-                return Padding(
-                  padding: const EdgeInsets.only(right: 16),
-                  child: _CylinderCardWithStock(
-                    cylinder: cylinder,
-                    enterpriseId: enterpriseId,
-                    onTap: () => onCylinderTap(cylinder),
-                    onQuickExchange: onQuickExchange != null ? () => onQuickExchange!(cylinder) : null,
-                  ),
+                return _CylinderCardWithStock(
+                  cylinder: cylinder,
+                  enterpriseId: enterpriseId,
+                  onTap: () => onCylinderTap(cylinder),
+                  onQuickExchange: onQuickExchange != null ? () => onQuickExchange!(cylinder) : null,
                 );
               }).toList(),
             );
@@ -132,8 +130,8 @@ class _CylinderCardWithStock extends ConsumerWidget {
         );
       },
       loading: () => Container(
-        width: 325,
-        height: 512,
+        width: 260,
+        height: 400,
         decoration: BoxDecoration(
           color: theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(14),
@@ -145,8 +143,8 @@ class _CylinderCardWithStock extends ConsumerWidget {
         child: const Center(child: CircularProgressIndicator()),
       ),
       error: (_, __) => Container(
-        width: 325,
-        height: 512,
+        width: 260,
+        height: 400,
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(14),

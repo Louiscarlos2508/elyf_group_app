@@ -65,7 +65,7 @@ class PersonnelDayCard extends ConsumerWidget {
                   ),
                   if (day.consumptions.isNotEmpty)
                     Text(
-                      'Conso: ' + day.consumptions.map((c) => '${c.quantity} ${c.productName}').join(', '),
+                      'Conso: ${day.consumptions.map((c) => '${c.quantity} ${c.productName}').join(', ')}',
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),

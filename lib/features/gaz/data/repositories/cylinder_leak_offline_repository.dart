@@ -68,6 +68,7 @@ class CylinderLeakOfflineRepository extends OfflineRepository<CylinderLeak>
     // Soft-delete
     final deletedLeak = entity.copyWith(
       deletedAt: DateTime.now(),
+      updatedAt: DateTime.now(),
     );
     await saveToLocal(deletedLeak);
     

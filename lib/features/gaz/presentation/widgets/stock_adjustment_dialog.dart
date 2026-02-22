@@ -3,9 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/providers.dart';
+import 'package:elyf_groupe_app/features/administration/application/providers.dart';
 import '../../domain/entities/cylinder.dart';
 import '../../domain/entities/cylinder_stock.dart';
-import '../../domain/entities/point_of_sale.dart';
+import '../../../../features/administration/domain/entities/enterprise.dart';
 import 'stock_adjustment/stock_adjustment_header.dart';
 import 'stock_adjustment/cylinder_selector_field.dart';
 import 'stock_adjustment/current_stock_info.dart';
@@ -34,7 +35,7 @@ class _StockAdjustmentDialogState extends ConsumerState<StockAdjustmentDialog> {
   final _quantityController = TextEditingController();
   final _reasonController = TextEditingController();
 
-  PointOfSale? _selectedPointOfSale;
+  Enterprise? _selectedPointOfSale;
   Cylinder? _selectedCylinder;
   CylinderStatus? _selectedStatus;
   CylinderStock? _existingStock;
@@ -162,9 +163,9 @@ class _StockAdjustmentDialogState extends ConsumerState<StockAdjustmentDialog> {
   @override
   Widget build(BuildContext context) {
     final pointsOfSaleAsync = ref.watch(
-      pointsOfSaleProvider((
-        enterpriseId: widget.enterpriseId,
-        moduleId: widget.moduleId,
+      enterprisesByParentAndTypeProvider((
+        parentId: widget.enterpriseId,
+        type: EnterpriseType.gasPointOfSale,
       )),
     );
 
@@ -191,7 +192,7 @@ class _StockAdjustmentDialogState extends ConsumerState<StockAdjustmentDialog> {
                       final activePointsOfSale = pointsOfSale
                           .where((pos) => pos.isActive)
                           .toList();
-                      return DropdownButtonFormField<PointOfSale?>(
+                      return DropdownButtonFormField<Enterprise?>(
                         initialValue: _selectedPointOfSale,
                         decoration: const InputDecoration(
                           labelText: 'Point de vente (optionnel)',
@@ -201,12 +202,12 @@ class _StockAdjustmentDialogState extends ConsumerState<StockAdjustmentDialog> {
                               'Laissez vide pour ajuster le stock global',
                         ),
                         items: [
-                          const DropdownMenuItem<PointOfSale?>(
+                          const DropdownMenuItem<Enterprise?>(
                             value: null,
                             child: Text('Tous les points de vente'),
                           ),
                           ...activePointsOfSale.map(
-                            (pos) => DropdownMenuItem<PointOfSale?>(
+                            (pos) => DropdownMenuItem<Enterprise?>(
                               value: pos,
                               child: Text(pos.name),
                             ),

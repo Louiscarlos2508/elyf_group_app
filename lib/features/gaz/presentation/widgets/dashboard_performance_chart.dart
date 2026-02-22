@@ -1,6 +1,5 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:elyf_groupe_app/app/theme/app_colors.dart';
 import 'package:elyf_groupe_app/shared/presentation/widgets/elyf_ui/organisms/elyf_card.dart';
 
 /// Chart displaying performance over the last 7 days (Bénéfice, Dépenses, Ventes).

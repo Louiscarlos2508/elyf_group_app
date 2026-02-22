@@ -187,6 +187,7 @@ class TenantOfflineRepository extends OfflineRepository<Tenant>
       if (tenant != null) {
         await save(tenant.copyWith(
           deletedAt: DateTime.now(),
+          updatedAt: DateTime.now(),
           deletedBy: 'system',
         ));
       }

@@ -66,6 +66,7 @@ class DailyWorkerOfflineRepository extends OfflineRepository<DailyWorker>
     // Soft-delete
     final deletedWorker = entity.copyWith(
       deletedAt: DateTime.now(),
+      updatedAt: DateTime.now(),
     );
     await saveToLocal(deletedWorker);
     

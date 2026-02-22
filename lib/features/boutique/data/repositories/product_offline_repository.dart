@@ -264,8 +264,8 @@ class ProductOfflineRepository extends OfflineRepository<Product>
         // Soft delete: marquer comme supprimé au lieu de supprimer physiquement
         final deletedProduct = product.copyWith(
           deletedAt: DateTime.now(),
-          deletedBy: deletedBy,
           updatedAt: DateTime.now(),
+          deletedBy: deletedBy,
         );
         await save(deletedProduct);
 

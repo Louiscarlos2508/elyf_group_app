@@ -20,7 +20,6 @@ import 'package:elyf_groupe_app/features/gaz/domain/repositories/exchange_reposi
 import 'package:elyf_groupe_app/features/gaz/domain/repositories/gaz_settings_repository.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/repositories/inventory_audit_repository.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/repositories/expense_repository.dart';
-import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
 import 'package:elyf_groupe_app/shared/domain/entities/treasury_operation.dart';
 
 @GenerateNiceMocks([

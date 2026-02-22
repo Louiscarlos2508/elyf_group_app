@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../../core/tenant/tenant_provider.dart' show activeEnterpriseProvider;
+import 'package:elyf_groupe_app/features/administration/application/providers.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/cylinder.dart';
 import '../../domain/entities/gas_sale.dart';
-import '../../domain/entities/point_of_sale.dart';
+import '../../../../features/administration/domain/entities/enterprise.dart';
 import '../../domain/entities/report_data.dart';
 import 'sales_report/sales_report_cylinder_stats.dart';
 import 'sales_report/sales_report_header.dart';
@@ -43,7 +44,10 @@ class GazSalesReportContentV2 extends ConsumerWidget {
         final salesAsync = ref.watch(gasSalesProvider);
         final cylindersAsync = ref.watch(cylindersProvider);
         final pointsOfSaleAsync = ref.watch(
-          pointsOfSaleProvider((enterpriseId: enterpriseId, moduleId: moduleId)),
+          enterprisesByParentAndTypeProvider((
+            parentId: enterpriseId,
+            type: EnterpriseType.gasPointOfSale,
+          )),
         );
     final reportDataAsync = ref.watch(
       gazReportDataProvider(
@@ -149,7 +153,7 @@ class GazSalesReportContentV2 extends ConsumerWidget {
     ThemeData theme,
     List<GasSale> sales,
     List<Cylinder> cylinders,
-    List<PointOfSale> pointsOfSale,
+    List<Enterprise> pointsOfSale,
     GazReportData reportData,
     bool isWide,
   ) {

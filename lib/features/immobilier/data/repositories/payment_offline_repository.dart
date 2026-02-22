@@ -253,6 +253,7 @@ class PaymentOfflineRepository extends OfflineRepository<Payment>
       if (payment != null) {
         await save(payment.copyWith(
           deletedAt: DateTime.now(),
+          updatedAt: DateTime.now(),
           deletedBy: 'system',
         ));
       }

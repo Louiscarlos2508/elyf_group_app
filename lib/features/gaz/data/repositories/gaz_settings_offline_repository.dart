@@ -67,6 +67,7 @@ class GazSettingsOfflineRepository extends OfflineRepository<GazSettings>
     // Soft-delete
     final deletedSettings = entity.copyWith(
       deletedAt: DateTime.now(),
+      updatedAt: DateTime.now(),
     );
     await saveToLocal(deletedSettings);
     

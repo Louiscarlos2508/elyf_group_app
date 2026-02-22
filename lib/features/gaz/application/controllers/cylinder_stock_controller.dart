@@ -155,4 +155,19 @@ class CylinderStockController {
       siteId: siteId,
     );
   }
+
+  /// Exécute l'opération de remplissage interne (vides -> pleines).
+  Future<void> fillCylinders({
+    required String enterpriseId,
+    required String userId,
+    required Map<int, int> quantities,
+    String? notes,
+  }) async {
+    await _transactionService.executeFillingTransaction(
+      enterpriseId: enterpriseId,
+      userId: userId,
+      quantities: quantities,
+      notes: notes,
+    );
+  }
 }

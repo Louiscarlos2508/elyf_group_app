@@ -5,7 +5,6 @@ import 'package:rxdart/rxdart.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/controllers/salary_controller.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/daily_worker.dart';
-import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/expense_record.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/production_session.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/report_period.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/sale.dart';
@@ -25,11 +24,8 @@ import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/treasury_m
 import 'package:elyf_groupe_app/features/eau_minerale/domain/adapters/expense_balance_adapter.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/domain/services/dashboard_calculation_service.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/domain/repositories/customer_repository.dart';
-import 'package:elyf_groupe_app/features/eau_minerale/application/controllers/finances_controller.dart';
-import 'package:elyf_groupe_app/features/eau_minerale/application/controllers/sales_controller.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/domain/pack_constants.dart';
 import 'package:elyf_groupe_app/core/domain/entities/expense_balance_data.dart';
-import 'package:elyf_groupe_app/core/errors/app_exceptions.dart';
 import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
 import 'package:elyf_groupe_app/shared/domain/entities/treasury_operation.dart';
 

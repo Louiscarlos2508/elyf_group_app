@@ -5,6 +5,7 @@ import '../entities/gas_sale.dart';
 abstract class GasRepository {
   // Cylinders
   Future<List<Cylinder>> getCylinders();
+  Future<List<Cylinder>> getCylindersForEnterprises(List<String> enterpriseIds);
   Stream<List<Cylinder>> watchCylinders();
   Future<Cylinder?> getCylinderById(String id);
   Future<void> addCylinder(Cylinder cylinder);

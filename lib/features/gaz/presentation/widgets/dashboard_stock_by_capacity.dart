@@ -16,11 +16,11 @@ class DashboardStockByCapacity extends ConsumerWidget {
     final activeEnterprise = ref.watch(activeEnterpriseProvider).value;
     final enterpriseId = activeEnterprise?.id ?? 'default_enterprise';
 
-    final allStocksAsync = ref.watch(
-      cylinderStocksProvider((
+    final dashboardDataAsync = ref.watch(gazDashboardDataProvider);
+    final settingsAsync = ref.watch(
+      gazSettingsProvider((
         enterpriseId: enterpriseId,
-        status: null,
-        siteId: null,
+        moduleId: 'gaz',
       )),
     );
 
@@ -46,45 +46,7 @@ class DashboardStockByCapacity extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 20),
-          allStocksAsync.when(
-            data: (stocks) {
-              final weights = stocks.map((s) => s.weight).toSet().toList()..sort();
-              
-              if (weights.isEmpty) {
-                return Center(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 24),
-                    child: Text(
-                      'Aucun stock enregistré',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
-                  ),
-                );
-              }
-
-              return Column(
-                children: weights.map((weight) {
-                  final full = stocks
-                      .where((s) => s.weight == weight && s.status == CylinderStatus.full)
-                      .fold<int>(0, (sum, s) => sum + s.quantity);
-                  final empty = stocks
-                      .where((s) => s.weight == weight && 
-                                   (s.status == CylinderStatus.emptyAtStore || 
-                                    s.status == CylinderStatus.emptyInTransit))
-                      .fold<int>(0, (sum, s) => sum + s.quantity);
-                  
-                  return _CapacityItem(
-                    label: '${weight}kg',
-                    full: full,
-                    empty: empty,
-                    isLast: weight == weights.last,
-                  );
-                }).toList(),
-              );
-            },
+          settingsAsync.when(
             loading: () => Column(
               children: [
                 ElyfShimmer.listTile(),
@@ -93,6 +55,76 @@ class DashboardStockByCapacity extends ConsumerWidget {
               ],
             ),
             error: (_, __) => const SizedBox.shrink(),
+            data: (settings) => dashboardDataAsync.when(
+              data: (data) {
+                final stocks = data.stocks;
+                
+                // Combiner les poids issus du stock physique et du stock nominal
+                final weights = {
+                  ...stocks.map((s) => s.weight),
+                  if (settings != null) ...settings.nominalStocks.keys,
+                }.toList()..sort();
+                
+                if (weights.isEmpty) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 24),
+                      child: Text(
+                        'Aucun stock enregistré',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ),
+                  );
+                }
+
+                return Column(
+                  children: weights.map((weight) {
+                    final full = stocks
+                        .where((s) => s.weight == weight && s.status == CylinderStatus.full)
+                        .fold<int>(0, (sum, s) => sum + s.quantity);
+
+                    int empty = stocks
+                        .where((s) => s.weight == weight && 
+                                     (s.status == CylinderStatus.emptyAtStore || 
+                                      s.status == CylinderStatus.emptyInTransit))
+                        .fold<int>(0, (sum, s) => sum + s.quantity);
+
+                    // Appliquer la logique du stock nominal:
+                    // Si on est en vue locale OU si on est en vue consolidée mais que c'est
+                    // l'entreprise active (le dépôt) qui a défini ces capacités.
+                    final viewType = ref.watch(gazDashboardViewTypeProvider);
+                    
+                    if (settings != null) {
+                      final nominal = settings.getNominalStock(weight);
+                      // En vue locale, le nominal fait foi pour le vide
+                      // En vue groupe, on peut aussi l'utiliser si on n'a pas encore de records physiques
+                      // pour éviter d'afficher 0 vide alors qu'on a un nominal défini.
+                      if (nominal > 0 && (viewType == GazDashboardViewType.local || empty == 0)) {
+                        empty = (nominal - full).clamp(0, nominal).toInt();
+                      }
+                    }
+                    
+                    return _CapacityItem(
+                      label: '${weight}kg',
+                      full: full,
+                      empty: empty,
+                      isLast: weight == weights.last,
+                    );
+                  }).toList(),
+                );
+              },
+              loading: () => Column(
+                children: [
+                  ElyfShimmer.listTile(),
+                  const SizedBox(height: 8),
+                  ElyfShimmer.listTile(),
+                ],
+              ),
+              error: (_, __) => const SizedBox.shrink(),
+            ),
           ),
         ],
       ),

@@ -27,6 +27,7 @@ class GazSessionController {
     Map<int, int> openingFullStock = const {},
     Map<int, int> openingEmptyStock = const {},
     double openingCash = 0.0,
+    double openingMobileMoney = 0.0,
   }) async {
     final active = await getActiveSession();
     if (active != null) return; // Déjà une session ouverte
@@ -41,6 +42,7 @@ class GazSessionController {
       openingFullStock: openingFullStock,
       openingEmptyStock: openingEmptyStock,
       openingCash: openingCash,
+      openingMobileMoney: openingMobileMoney,
     );
 
     await sessionRepository.saveSession(session);

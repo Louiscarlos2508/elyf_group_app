@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/errors/error_handler.dart';
-import '../../../../core/errors/app_exceptions.dart';
 import '../../../../core/logging/app_logger.dart';
 
 import 'package:elyf_groupe_app/shared.dart';

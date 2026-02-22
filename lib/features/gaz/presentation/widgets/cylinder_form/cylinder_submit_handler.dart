@@ -16,10 +16,10 @@ class CylinderSubmitHandler {
     required int? selectedWeight,
     required String weightText,
     required String sellPriceText,
+    required String wholesalePriceText,
     required String buyPriceText,
     String? initialFullStockText,
     String? initialEmptyStockText,
-    String? depositPriceText,
     required String? enterpriseId,
     required String? moduleId,
     required Cylinder? existingCylinder,
@@ -37,10 +37,13 @@ class CylinderSubmitHandler {
     try {
       final controller = ref.read(cylinderControllerProvider);
       final stockController = ref.read(cylinderStockControllerProvider);
+      final settingsController = ref.read(gazSettingsControllerProvider);
+      
       final weight = int.tryParse(weightText) ?? selectedWeight;
       final sellPrice = double.tryParse(sellPriceText) ?? 0.0;
+      final wholesalePrice = double.tryParse(wholesalePriceText) ?? sellPrice;
       final buyPrice = double.tryParse(buyPriceText) ?? 0.0;
-      final depositPrice = double.tryParse(depositPriceText ?? '0') ?? 0.0;
+      const depositPrice = 0.0; // Plus de vente de bouteille, uniquement échange
 
       Cylinder cylinder;
       if (existingCylinder != null) {
@@ -63,6 +66,7 @@ class CylinderSubmitHandler {
         );
       }
 
+      // 1. Sauvegarder la bouteille
       if (existingCylinder == null) {
         await controller.addCylinder(cylinder);
 
@@ -98,6 +102,28 @@ class CylinderSubmitHandler {
       } else {
         await controller.updateCylinder(cylinder);
       }
+
+      // 2. Mettre à jour les prix dans les paramètres (Settings) pour la cohérence globale
+      await settingsController.setRetailPrice(
+        enterpriseId: enterpriseId,
+        moduleId: moduleId,
+        weight: weight,
+        price: sellPrice,
+      );
+      
+      await settingsController.setWholesalePrice(
+        enterpriseId: enterpriseId,
+        moduleId: moduleId,
+        weight: weight,
+        price: wholesalePrice,
+      );
+      
+      await settingsController.setPurchasePrice(
+        enterpriseId: enterpriseId,
+        moduleId: moduleId,
+        weight: weight,
+        price: buyPrice,
+      );
 
       if (!context.mounted) return false;
 

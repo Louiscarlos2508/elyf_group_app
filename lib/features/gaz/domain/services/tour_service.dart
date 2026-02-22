@@ -1,11 +1,10 @@
 import '../../../../core/errors/app_exceptions.dart';
 import '../entities/tour.dart';
 import '../repositories/tour_repository.dart';
-import '../entities/stock_alert.dart';
 
 import 'transaction_service.dart';
 
-/// Service de gestion des tours avec logique métier.
+/// Service de gestion des tours d'approvisionnement fournisseur.
 class TourService {
   const TourService({
     required this.tourRepository,
@@ -15,104 +14,48 @@ class TourService {
   final TourRepository tourRepository;
   final TransactionService transactionService;
 
-  /// Valide qu'on peut passer au statut suivant.
-  /// Retourne un message d'erreur si la transition n'est pas valide, sinon null.
-  String? validateStatusTransition(
-    TourStatus currentStatus,
-    TourStatus newStatus,
-  ) {
-    // Définir les transitions autorisées
-    final allowedTransitions = <TourStatus, List<TourStatus>>{
-      TourStatus.collection: [TourStatus.transport, TourStatus.cancelled],
-      TourStatus.transport: [TourStatus.return_, TourStatus.cancelled],
-      TourStatus.return_: [TourStatus.closure, TourStatus.cancelled],
-      TourStatus.closure: [TourStatus.cancelled],
-    };
-
-    final allowed = allowedTransitions[currentStatus] ?? [];
-    if (!allowed.contains(newStatus)) {
-      return 'Transition non autorisée de ${currentStatus.label} vers ${newStatus.label}';
-    }
-
-    return null;
-  }
-
-  /// Valide qu'un tour peut passer à l'étape suivante.
-  Future<String?> validateCanMoveToNextStep(Tour tour) async {
-    switch (tour.status) {
-      case TourStatus.collection:
-        if (tour.collections.isEmpty) {
-          return 'Ajoutez au moins une collecte avant de passer au transport';
-        }
-        break;
-      case TourStatus.transport:
-        // Pas de validation spécifique pour le transport
-        break;
-      case TourStatus.return_:
-        if (!tour.areAllCollectionsPaid) {
-          return 'Toutes les collectes doivent être payées avant la clôture';
-        }
-        break;
-      case TourStatus.closure:
-        // Déjà en clôture
-        break;
-      case TourStatus.cancelled:
-        return 'Un tour annulé ne peut pas être modifié';
-    }
-    return null;
-  }
-
-  /// Passe à l'étape suivante du workflow.
-  Future<void> moveToNextStep(String tourId) async {
+  /// Met à jour les bouteilles vides chargées.
+  Future<void> updateEmptyBottlesLoaded(String tourId, Map<int, int> quantities) async {
     final tour = await tourRepository.getTourById(tourId);
+    if (tour == null) throw NotFoundException('Tour introuvable', 'TOUR_NOT_FOUND');
+    if (tour.status != TourStatus.open) throw ValidationException('Le tour est clôturé', 'TOUR_CLOSED');
 
-    if (tour == null) {
-      throw NotFoundException(
-        'Tour introuvable',
-        'TOUR_NOT_FOUND',
-      );
-    }
-
-    // Valider qu'on peut passer à l'étape suivante
-    final validationError = await validateCanMoveToNextStep(tour);
-    if (validationError != null) {
-      throw ValidationException(
-        validationError,
-        'TOUR_VALIDATION_FAILED',
-      );
-    }
-
-    // Déterminer le prochain statut
-    final nextStatus = _getNextStatus(tour.status);
-    if (nextStatus == null) {
-      throw ValidationException(
-        'Aucune étape suivante disponible',
-        'NO_NEXT_STEP',
-      );
-    }
-
-    // Valider la transition
-    final transitionError = validateStatusTransition(tour.status, nextStatus);
-    if (transitionError != null) {
-      throw ValidationException(
-        transitionError,
-        'INVALID_STATUS_TRANSITION',
-      );
-    }
-
-    // Mettre à jour le statut
-    if (nextStatus == TourStatus.closure) {
-      // Pour la clôture, utiliser la transaction atomique (stocks + audit)
-      // Note: On assume que l'appelant fournit le userId via une extension ou un autre paramètre
-      // Pour l'instant, je vais modifier moveToNextStep pour accepter le userId.
-      throw ValidationException('La clôture doit être effectuée via closeTour', 'USE_CLOSE_TOUR');
-    }
-
-    await tourRepository.updateStatus(tourId, nextStatus);
+    final updated = tour.copyWith(
+      emptyBottlesLoaded: quantities,
+      loadingCompletedDate: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+    await tourRepository.updateTour(updated);
   }
 
-  /// Clôture un tour avec mise à jour des stocks et enregistrement financier.
-  Future<List<StockAlert>> closeTour(String tourId, String userId) async {
+  /// Met à jour les bouteilles pleines reçues.
+  Future<void> updateFullBottlesReceived(String tourId, Map<int, int> quantities, double? gasCost, String? supplier) async {
+    final tour = await tourRepository.getTourById(tourId);
+    if (tour == null) throw NotFoundException('Tour introuvable', 'TOUR_NOT_FOUND');
+    if (tour.status != TourStatus.open) throw ValidationException('Le tour est clôturé', 'TOUR_CLOSED');
+
+    final updated = tour.copyWith(
+      fullBottlesReceived: quantities,
+      gasPurchaseCost: gasCost,
+      supplierName: supplier,
+      receptionCompletedDate: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+    await tourRepository.updateTour(updated);
+  }
+
+  /// Clôture un tour avec mise à jour des stocks.
+  Future<List<dynamic>> closeTour(String tourId, String userId) async {
+    final tour = await tourRepository.getTourById(tourId);
+    if (tour == null) throw NotFoundException('Tour introuvable', 'TOUR_NOT_FOUND');
+    
+    if (tour.fullBottlesReceived.isEmpty) {
+      throw ValidationException(
+        'Saisissez les bouteilles pleines reçues avant la clôture',
+        'NO_FULLS_RECEIVED',
+      );
+    }
+
     final result = await transactionService.executeTourClosureTransaction(
       tourId: tourId,
       userId: userId,
@@ -120,24 +63,8 @@ class TourService {
     return result.alerts;
   }
 
-  /// Obtient le statut suivant.
-  TourStatus? _getNextStatus(TourStatus currentStatus) {
-    switch (currentStatus) {
-      case TourStatus.collection:
-        return TourStatus.transport;
-      case TourStatus.transport:
-        return TourStatus.return_;
-      case TourStatus.return_:
-        return TourStatus.closure;
-      case TourStatus.closure:
-        return null; // Déjà terminé
-      case TourStatus.cancelled:
-        return null; // Annulé
-    }
-  }
-
-  /// Calcule le total des frais de chargement/déchargement.
-  double calculateLoadingUnloadingFees(Tour tour) {
-    return tour.totalLoadingFees + tour.totalUnloadingFees;
+  /// Calcule le total des frais de chargement/déchargement/échange.
+  double calculateAllTourFees(Tour tour) {
+    return tour.totalLoadingFees + tour.totalUnloadingFees + tour.totalExchangeFees;
   }
 }

@@ -55,14 +55,20 @@ class TourController {
     await repository.updateTour(tour);
   }
 
-  /// Passe à l'étape suivante du workflow.
-  Future<void> moveToNextStep(String tourId) async {
-    await service.moveToNextStep(tourId);
+  /// Met à jour les bouteilles vides chargées.
+  Future<void> updateEmptyBottlesLoaded(String tourId, Map<int, int> quantities) async {
+    await service.updateEmptyBottlesLoaded(tourId, quantities);
+  }
+
+  /// Met à jour les bouteilles pleines reçues.
+  Future<void> updateFullBottlesReceived(String tourId, Map<int, int> quantities, double? gasCost, String? supplier) async {
+    await service.updateFullBottlesReceived(tourId, quantities, gasCost, supplier);
   }
 
   /// Clôture un tour avec mise à jour des stocks et enregistrement financier.
   Future<List<StockAlert>> closeTour(String tourId, String userId) async {
-    return await service.closeTour(tourId, userId);
+    final alerts = await service.closeTour(tourId, userId);
+    return alerts.cast<StockAlert>();
   }
 
   /// Annule un tour.
