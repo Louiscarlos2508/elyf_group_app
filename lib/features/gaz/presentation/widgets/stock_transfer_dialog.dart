@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/stock_transfer.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder.dart';
+import 'package:elyf_groupe_app/features/gaz/domain/services/gaz_calculation_service.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/core/auth/providers.dart';
 import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
@@ -35,6 +36,14 @@ class _StockTransferDialogState extends ConsumerState<StockTransferDialog> {
   // Storage for quantities and statuses: key is cylinder.id
   final Map<String, int> _quantities = {};
   final Map<String, CylinderStatus> _statuses = {};
+  final Map<String, TextEditingController> _controllers = {};
+
+  TextEditingController _getController(String cylinderId) {
+    return _controllers.putIfAbsent(
+      cylinderId,
+      () => TextEditingController(text: (_quantities[cylinderId] ?? 0).toString()),
+    );
+  }
 
   @override
   void initState() {
@@ -63,6 +72,9 @@ class _StockTransferDialogState extends ConsumerState<StockTransferDialog> {
   @override
   void dispose() {
     _notesController.dispose();
+    for (final controller in _controllers.values) {
+      controller.dispose();
+    }
     super.dispose();
   }
 
@@ -72,6 +84,7 @@ class _StockTransferDialogState extends ConsumerState<StockTransferDialog> {
       final newValue = current + delta;
       if (newValue >= 0) {
         _quantities[cylinderId] = newValue;
+        _controllers[cylinderId]?.text = newValue.toString();
       }
     });
   }
@@ -79,6 +92,40 @@ class _StockTransferDialogState extends ConsumerState<StockTransferDialog> {
   void _setStatus(String cylinderId, CylinderStatus status) {
     setState(() {
       _statuses[cylinderId] = status;
+      
+      // Re-calculate maxAvailable for the new status and clamp the existing quantity
+      final cylinders = ref.read(cylindersProvider).value ?? [];
+      final cylinder = cylinders.firstWhere((c) => c.id == cylinderId, orElse: () => cylinders.first);
+      final stocks = ref.read(cylinderStocksProvider((
+        enterpriseId: widget.fromEnterpriseId,
+        status: null,
+        siteId: null,
+      ))).value ?? [];
+      final settings = ref.read(gazSettingsProvider((
+        enterpriseId: widget.fromEnterpriseId,
+        moduleId: 'gaz',
+      ))).value;
+
+      final metrics = GazCalculationService.calculateStockMetrics(
+        stocks: stocks,
+        pointsOfSale: [],
+        cylinders: cylinders,
+        settings: settings,
+        targetEnterpriseId: widget.fromEnterpriseId,
+      );
+
+      int maxAvailable = 0;
+      if (status == CylinderStatus.full) {
+        maxAvailable = metrics.fullByWeight[cylinder.weight] ?? 0;
+      } else {
+        maxAvailable = metrics.emptyByWeight[cylinder.weight] ?? 0;
+      }
+
+      final current = _quantities[cylinderId] ?? 0;
+      if (current > maxAvailable) {
+        _quantities[cylinderId] = maxAvailable.clamp(0, 9999);
+        _controllers[cylinderId]?.text = _quantities[cylinderId].toString();
+      }
     });
   }
 
@@ -143,6 +190,19 @@ class _StockTransferDialogState extends ConsumerState<StockTransferDialog> {
   Widget build(BuildContext context) {
     final accessibleEnterprisesAsync = ref.watch(userAccessibleEnterprisesProvider);
     final cylindersAsync = ref.watch(cylindersProvider);
+    
+    // Watch source stocks for availability constraints
+    final sourceStocksAsync = ref.watch(cylinderStocksProvider((
+      enterpriseId: widget.fromEnterpriseId,
+      status: null,
+      siteId: null,
+    )));
+    
+    final sourceSettingsAsync = ref.watch(gazSettingsProvider((
+      enterpriseId: widget.fromEnterpriseId,
+      moduleId: 'gaz',
+    )));
+    
     final theme = Theme.of(context);
 
     return Dialog(
@@ -237,6 +297,22 @@ class _StockTransferDialogState extends ConsumerState<StockTransferDialog> {
                                   final cylinder = cylinders[index];
                                   final quantity = _quantities[cylinder.id] ?? 0;
                                   final status = _statuses[cylinder.id] ?? CylinderStatus.full;
+                                  
+                                  // Standardized availability calculation using Service
+                                  final stocks = sourceStocksAsync.value ?? [];
+                                  final settings = sourceSettingsAsync.value;
+
+                                  final metrics = GazCalculationService.calculateStockMetrics(
+                                    stocks: stocks,
+                                    pointsOfSale: [],
+                                    cylinders: cylinders,
+                                    settings: settings,
+                                    targetEnterpriseId: widget.fromEnterpriseId,
+                                  );
+                                  
+                                  final maxAvailable = status == CylinderStatus.full 
+                                    ? (metrics.fullByWeight[cylinder.weight] ?? 0)
+                                    : (metrics.emptyByWeight[cylinder.weight] ?? 0);
 
                                   return Padding(
                                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -255,9 +331,10 @@ class _StockTransferDialogState extends ConsumerState<StockTransferDialog> {
                                                 ),
                                               ),
                                               Text(
-                                                cylinder.label ?? 'Standard',
+                                                'Dispo: $maxAvailable',
                                                 style: theme.textTheme.labelSmall?.copyWith(
-                                                  color: theme.colorScheme.onSurfaceVariant,
+                                                  color: maxAvailable > 0 ? Colors.green : Colors.red,
+                                                  fontWeight: FontWeight.bold,
                                                 ),
                                               ),
                                             ],
@@ -302,7 +379,7 @@ class _StockTransferDialogState extends ConsumerState<StockTransferDialog> {
                                             SizedBox(
                                               width: 50,
                                               child: TextFormField(
-                                                initialValue: quantity.toString(),
+                                                controller: _getController(cylinder.id),
                                                 keyboardType: TextInputType.number,
                                                 textAlign: TextAlign.center,
                                                 style: theme.textTheme.titleMedium?.copyWith(
@@ -316,17 +393,26 @@ class _StockTransferDialogState extends ConsumerState<StockTransferDialog> {
                                                 ),
                                                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                                                 onChanged: (val) {
-                                                  final newQty = int.tryParse(val) ?? 0;
+                                                  final enteredQty = int.tryParse(val) ?? 0;
+                                                  final newQty = enteredQty.clamp(0, maxAvailable).toInt();
+                                                  
                                                   setState(() {
                                                     _quantities[cylinder.id] = newQty;
                                                   });
+                                                  
+                                                  if (newQty != enteredQty) {
+                                                    _controllers[cylinder.id]?.text = newQty.toString();
+                                                    _controllers[cylinder.id]?.selection = TextSelection.fromPosition(
+                                                      TextPosition(offset: newQty.toString().length),
+                                                    );
+                                                  }
                                                 },
                                               ),
                                             ),
-                                            _QtyBtn(
-                                              icon: Icons.add,
-                                              onPressed: () => _updateQuantity(cylinder.id, 1),
-                                              isPrimary: true,
+                                              _QtyBtn(
+                                                icon: Icons.add,
+                                                onPressed: quantity < maxAvailable ? () => _updateQuantity(cylinder.id, 1) : null,
+                                                isPrimary: true,
                                             ),
                                           ],
                                         ),

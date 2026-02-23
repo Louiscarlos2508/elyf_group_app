@@ -1047,7 +1047,31 @@ class TransactionService {
   }) async {
     // 1. Mettre à jour chaque stock
     for (final item in audit.items) {
-      await stockRepository.updateStockQuantity(item.stockId, item.physicalQuantity);
+      // Find the existing stock ID by properties if not reliably provided or to ensure robustness
+      final existingStocks = await stockRepository.getStocksByWeight(
+        audit.enterpriseId, 
+        item.weight, 
+        siteId: audit.siteId,
+      );
+      
+      final existingStock = existingStocks.where((s) => s.status == item.status && s.cylinderId == item.cylinderId).firstOrNull;
+
+      if (existingStock != null) {
+        await stockRepository.updateStockQuantity(existingStock.id, item.physicalQuantity);
+      } else {
+        // Create new stock record if it doesn't exist (e.g. initial audit)
+        await stockRepository.addStock(CylinderStock(
+          id: LocalIdGenerator.generate(),
+          cylinderId: item.cylinderId,
+          weight: item.weight,
+          status: item.status,
+          quantity: item.physicalQuantity,
+          enterpriseId: audit.enterpriseId,
+          siteId: audit.siteId,
+          updatedAt: DateTime.now(),
+          createdAt: DateTime.now(),
+        ));
+      }
     }
 
     // 2. Enregistrer l'audit dans l'historique

@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 class PosStockTable extends StatelessWidget {
   const PosStockTable({super.key, required this.stockByCapacity});
 
-  final Map<int, ({int full, int empty})> stockByCapacity;
+  final Map<int, ({int full, int empty, int defective, int leak})> stockByCapacity;
 
   @override
   Widget build(BuildContext context) {
@@ -71,6 +71,18 @@ class PosStockTable extends StatelessWidget {
                 ),
                 Expanded(
                   flex: 2,
+                  child: Center(
+                    child: Text(
+                      'Issues',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontSize: 14,
+                        color: const Color(0xFF0A0A0A),
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: 2,
                   child: Align(
                     alignment: Alignment.centerRight,
                     child: Text(
@@ -104,7 +116,10 @@ class PosStockTable extends StatelessWidget {
               final weight = entry.key;
               final full = entry.value.full;
               final empty = entry.value.empty;
-              final total = full + empty;
+              final defective = entry.value.defective;
+              final leak = entry.value.leak;
+              final issues = defective + leak;
+              final total = full + empty + issues;
 
               return Container(
                 padding: const EdgeInsets.symmetric(
@@ -148,6 +163,19 @@ class PosStockTable extends StatelessWidget {
                           style: theme.textTheme.bodyMedium?.copyWith(
                             fontSize: 14,
                             color: const Color(0xFF0A0A0A),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      flex: 2,
+                      child: Center(
+                        child: Text(
+                          '$issues',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontSize: 14,
+                            color: issues > 0 ? theme.colorScheme.error : const Color(0xFF0A0A0A),
+                            fontWeight: issues > 0 ? FontWeight.bold : FontWeight.normal,
                           ),
                         ),
                       ),

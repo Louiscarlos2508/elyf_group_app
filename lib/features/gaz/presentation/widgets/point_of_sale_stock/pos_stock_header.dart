@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import '../stock_transfer_dialog.dart';
+import '../replenishment_dialog.dart';
 
 /// En-tête de la carte de stock d'un point de vente.
 class PosStockHeader extends StatelessWidget {
@@ -89,19 +90,20 @@ class PosStockHeader extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            ElyfButton(
-              onPressed: () => showDialog(
-                context: context,
-                builder: (context) => StockTransferDialog(
-                  fromEnterpriseId: enterprise.parentEnterpriseId ?? '',
-                  initialToEnterpriseId: enterprise.id,
+            if (enterprise.parentEnterpriseId != null)
+              ElyfButton(
+                onPressed: () => showDialog(
+                  context: context,
+                  builder: (context) => StockTransferDialog(
+                    fromEnterpriseId: enterprise.parentEnterpriseId ?? '',
+                    initialToEnterpriseId: enterprise.id,
+                  ),
                 ),
+                variant: ElyfButtonVariant.outlined,
+                size: ElyfButtonSize.small,
+                icon: Icons.local_shipping,
+                child: const Text('Ravitaillement'),
               ),
-              variant: ElyfButtonVariant.outlined,
-              size: ElyfButtonSize.small,
-              icon: Icons.local_shipping,
-              child: const Text('Ravitaillement'),
-            ),
           ],
         ),
       ],

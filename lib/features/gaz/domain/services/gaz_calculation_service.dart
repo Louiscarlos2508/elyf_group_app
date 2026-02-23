@@ -249,13 +249,24 @@ class GazCalculationService {
     return stocks.where((s) => s.status == CylinderStatus.full).toList();
   }
 
-  /// Filtre les stocks par statut vide.
+  /// Filtre les stocks par statut vide (uniquement les vides saines).
   static List<CylinderStock> filterEmptyStocks(List<CylinderStock> stocks) {
     return stocks
         .where(
           (s) =>
               s.status == CylinderStatus.emptyAtStore ||
               s.status == CylinderStatus.emptyInTransit,
+        )
+        .toList();
+  }
+
+  /// Filtre les stocks par statut à problème (fuites ou défectueux).
+  static List<CylinderStock> filterIssueStocks(List<CylinderStock> stocks) {
+    return stocks
+        .where(
+          (s) =>
+              s.status == CylinderStatus.defective ||
+              s.status == CylinderStatus.leak,
         )
         .toList();
   }
@@ -285,25 +296,48 @@ class GazCalculationService {
     required List<Enterprise> pointsOfSale,
     required List<Cylinder> cylinders,
     GazSettings? settings,
+    String? targetEnterpriseId,
   }) {
     final fullStocks = filterFullStocks(stocks);
     final emptyStocks = filterEmptyStocks(stocks);
+    final issueStocks = filterIssueStocks(stocks);
 
     final fullByWeight = groupStocksByWeight(fullStocks);
     final emptyByWeight = groupStocksByWeight(emptyStocks);
+    final issueByWeight = groupStocksByWeight(issueStocks);
 
     if (settings != null && settings.nominalStocks.isNotEmpty) {
       for (final cylinder in cylinders) {
         final nominal = settings.getNominalStock(cylinder.weight);
         if (nominal > 0) {
-          final full = fullByWeight[cylinder.weight] ?? 0;
-          emptyByWeight[cylinder.weight] = (nominal - full).clamp(0, nominal);
+          int full;
+          int issues;
+          int physicalEmpty;
+
+          if (targetEnterpriseId != null) {
+            // If targetEnterpriseId is provided, we calculate the adjustment ONLY for that site
+            // and replace its contribution in the global empty count.
+            final siteStocks = stocks.where((s) => s.enterpriseId == targetEnterpriseId).toList();
+            full = groupStocksByWeight(filterFullStocks(siteStocks))[cylinder.weight] ?? 0;
+            issues = groupStocksByWeight(filterIssueStocks(siteStocks))[cylinder.weight] ?? 0;
+            physicalEmpty = groupStocksByWeight(filterEmptyStocks(siteStocks))[cylinder.weight] ?? 0;
+
+            // GlobalAdjustedEmpty = GlobalPhysicalEmpty - SitePhysicalEmpty + SiteTheoreticalEmpty
+            final siteTheoreticalEmpty = (nominal - full - issues).clamp(0, nominal);
+            emptyByWeight[cylinder.weight] = (emptyByWeight[cylinder.weight] ?? 0) - physicalEmpty + siteTheoreticalEmpty;
+          } else {
+            // Legacy behavior: apply settings to the global sum (only correct if stocks list is for one site)
+            full = fullByWeight[cylinder.weight] ?? 0;
+            issues = issueByWeight[cylinder.weight] ?? 0;
+            emptyByWeight[cylinder.weight] = (nominal - full - issues).clamp(0, nominal);
+          }
         }
       }
     }
 
     final totalFull = fullByWeight.values.fold<int>(0, (sum, val) => sum + val);
     final totalEmpty = emptyByWeight.values.fold<int>(0, (sum, val) => sum + val);
+    final totalIssues = issueByWeight.values.fold<int>(0, (sum, val) => sum + val);
 
     final activePointsOfSale = pointsOfSale.where((p) => p.isActive).toList();
 
@@ -314,8 +348,10 @@ class GazCalculationService {
     return StockMetrics(
       totalFull: totalFull,
       totalEmpty: totalEmpty,
+      totalIssues: totalIssues,
       fullByWeight: fullByWeight,
       emptyByWeight: emptyByWeight,
+      issueByWeight: issueByWeight,
       activePointsOfSaleCount: activePointsOfSale.length,
       totalPointsOfSaleCount: pointsOfSale.length,
       availableWeights: weightsToShow,
@@ -617,15 +653,14 @@ class GazCalculationService {
   static PointOfSaleStockMetrics calculatePosStockMetrics({
     required String posId,
     required List<CylinderStock> allStocks,
+    List<Cylinder>? cylinders,
+    GazSettings? settings,
   }) {
     // Filtrer les stocks pour ce point de vente (basé sur l'ID entreprise)
-    final posStocks =
-        allStocks.where((s) => s.enterpriseId == posId).toList();
+    final posStocks = allStocks.where((s) => s.enterpriseId == posId).toList();
 
     // Calculer les totaux
-    final fullStocks = posStocks
-        .where((s) => s.status == CylinderStatus.full)
-        .toList();
+    final fullStocks = posStocks.where((s) => s.status == CylinderStatus.full).toList();
     final emptyStocks = posStocks
         .where(
           (s) =>
@@ -634,28 +669,56 @@ class GazCalculationService {
         )
         .toList();
 
-    final totalFull = fullStocks.fold<int>(0, (sum, s) => sum + s.quantity);
-    final totalEmpty = emptyStocks.fold<int>(0, (sum, s) => sum + s.quantity);
+    final fullByWeight = groupStocksByWeight(fullStocks);
+    final emptyByWeight = groupStocksByWeight(emptyStocks);
+    
+    final issueStocks = posStocks
+        .where((s) => s.status == CylinderStatus.defective || s.status == CylinderStatus.leak)
+        .toList();
+    final issueByWeight = groupStocksByWeight(issueStocks);
 
-    // Grouper par capacité
-    final availableWeights = posStocks.map((s) => s.weight).toSet().toList()
-      ..sort();
-    final stockByCapacity = <int, ({int full, int empty})>{};
+    // Appliquer le stock nominal si disponible
+    if (settings != null && settings.nominalStocks.isNotEmpty && cylinders != null) {
+      for (final cylinder in cylinders) {
+        final nominal = settings.getNominalStock(cylinder.weight);
+        if (nominal > 0) {
+          final full = fullByWeight[cylinder.weight] ?? 0;
+          final issues = issueByWeight[cylinder.weight] ?? 0;
+          // Le vide théorique est le nominal moins les pleines et les bouteilles à problème déjà identifiées
+          emptyByWeight[cylinder.weight] = (nominal - full - issues).clamp(0, nominal);
+        }
+      }
+    }
 
-    for (final weight in availableWeights) {
-      final full = posStocks
-          .where((s) => s.weight == weight && s.status == CylinderStatus.full)
+    final totalFull = fullByWeight.values.fold<int>(0, (sum, v) => sum + v);
+    final totalEmpty = emptyByWeight.values.fold<int>(0, (sum, v) => sum + v);
+    final totalIssues = issueByWeight.values.fold<int>(0, (sum, v) => sum + v);
+
+    // Déterminer les types de bouteilles à afficher
+    final Set<int> weightSet = cylinders != null
+        ? cylinders.map((c) => c.weight).toSet()
+        : posStocks.map((s) => s.weight).toSet();
+    final weightsToShow = weightSet.toList()..sort();
+
+    final stockByCapacity = <int, ({int full, int empty, int defective, int leak})>{};
+
+    for (final weight in weightsToShow) {
+      final full = fullByWeight[weight] ?? 0;
+      final empty = emptyByWeight[weight] ?? 0;
+      final defective = posStocks
+          .where((s) => s.weight == weight && s.status == CylinderStatus.defective)
           .fold<int>(0, (sum, s) => sum + s.quantity);
-      final empty = posStocks
-          .where(
-            (s) =>
-                s.weight == weight &&
-                (s.status == CylinderStatus.emptyAtStore ||
-                    s.status == CylinderStatus.emptyInTransit),
-          )
+      final leak = posStocks
+          .where((s) => s.weight == weight && s.status == CylinderStatus.leak)
           .fold<int>(0, (sum, s) => sum + s.quantity);
-      if (full > 0 || empty > 0) {
-        stockByCapacity[weight] = (full: full, empty: empty);
+
+      if (full > 0 || empty > 0 || defective > 0 || leak > 0) {
+        stockByCapacity[weight] = (
+          full: full,
+          empty: empty,
+          defective: defective,
+          leak: leak,
+        );
       }
     }
 
@@ -663,6 +726,7 @@ class GazCalculationService {
       pointOfSaleId: posId,
       totalFull: totalFull,
       totalEmpty: totalEmpty,
+      totalIssues: totalIssues,
       stockByCapacity: stockByCapacity,
     );
   }
@@ -823,8 +887,10 @@ class StockMetrics {
   const StockMetrics({
     required this.totalFull,
     required this.totalEmpty,
+    required this.totalIssues,
     required this.fullByWeight,
     required this.emptyByWeight,
+    required this.issueByWeight,
     required this.activePointsOfSaleCount,
     required this.totalPointsOfSaleCount,
     required this.availableWeights,
@@ -832,21 +898,17 @@ class StockMetrics {
 
   final int totalFull;
   final int totalEmpty;
+  final int totalIssues;
   final Map<int, int> fullByWeight;
   final Map<int, int> emptyByWeight;
+  final Map<int, int> issueByWeight;
   final int activePointsOfSaleCount;
   final int totalPointsOfSaleCount;
   final List<int> availableWeights;
 
-  String get fullSummary => GazCalculationService.formatStockByWeightSummary(
-    fullByWeight,
-    availableWeights,
-  );
-
-  String get emptySummary => GazCalculationService.formatStockByWeightSummary(
-    emptyByWeight,
-    availableWeights,
-  );
+  String get fullSummary => GazCalculationService.formatStockByWeightSummary(fullByWeight, availableWeights);
+  String get emptySummary => GazCalculationService.formatStockByWeightSummary(emptyByWeight, availableWeights);
+  String get issueSummary => GazCalculationService.formatStockByWeightSummary(issueByWeight, availableWeights);
 }
 
 /// Métriques des ventes au détail.
@@ -868,13 +930,15 @@ class PointOfSaleStockMetrics {
     required this.pointOfSaleId,
     required this.totalFull,
     required this.totalEmpty,
+    required this.totalIssues,
     required this.stockByCapacity,
   });
 
   final String pointOfSaleId;
   final int totalFull;
   final int totalEmpty;
-  final Map<int, ({int full, int empty})> stockByCapacity;
+  final int totalIssues;
+  final Map<int, ({int full, int empty, int defective, int leak})> stockByCapacity;
 }
 
 /// Métriques de réconciliation journalière.

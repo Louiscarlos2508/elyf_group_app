@@ -6,10 +6,12 @@ class PosBottlesSummary extends StatelessWidget {
     super.key,
     required this.fullBottles,
     required this.emptyBottles,
+    this.issueBottles = 0,
   });
 
   final int fullBottles;
   final int emptyBottles;
+  final int issueBottles;
 
   @override
   Widget build(BuildContext context) {
@@ -126,6 +128,63 @@ class PosBottlesSummary extends StatelessWidget {
             ),
           ),
         ),
+        const SizedBox(width: 16),
+        // Issues bottles card
+        if (issueBottles > 0) ...[
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.all(13),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEF2F2),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFFECACA), width: 1.3),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFEE2E2),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.warning_amber_rounded,
+                      size: 20,
+                      color: Color(0xFFDC2626),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Issues',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontSize: 12,
+                            color: const Color(0xFF4A5565),
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '$issueBottles',
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontSize: 24,
+                            fontWeight: FontWeight.normal,
+                            color: const Color(0xFFDC2626),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }

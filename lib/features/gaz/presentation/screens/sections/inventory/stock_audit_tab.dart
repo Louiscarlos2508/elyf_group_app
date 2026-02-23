@@ -123,19 +123,50 @@ class _StockAuditTabState extends ConsumerState<StockAuditTab> {
       siteId: _selectedSite?.id,
     )));
 
-    return stocksAsync.when(
-      data: (stocks) {
-        if (stocks.isEmpty) {
-          return const Center(child: Text('Aucun stock trouvé pour ce site.'));
-        }
+    final cylindersAsync = ref.watch(cylindersProvider);
+    
+    return cylindersAsync.when(
+      data: (cylinders) => stocksAsync.when(
+        data: (stocks) {
+          final auditList = <CylinderStock>[];
+          for (final cylinder in cylinders) {
+            // Find existing entries for this weight
+            final weightStocks = stocks.where((s) => s.weight == cylinder.weight).toList();
+            
+            // We want at least FULL and EMPTY for each weight
+            final statusesToShow = [CylinderStatus.full, CylinderStatus.emptyAtStore, CylinderStatus.leak];
+            
+            for (final status in statusesToShow) {
+              final existing = weightStocks.where((s) => s.status == status && s.cylinderId == cylinder.id).firstOrNull;
+              if (existing != null) {
+                auditList.add(existing);
+              } else {
+                // Add virtual entry for initial audit
+                auditList.add(CylinderStock(
+                  id: 'virtual-${status.name}-${cylinder.id}',
+                  cylinderId: cylinder.id,
+                  weight: cylinder.weight,
+                  status: status,
+                  quantity: 0,
+                  enterpriseId: enterpriseId,
+                  siteId: _selectedSite?.id,
+                  updatedAt: DateTime.now(),
+                ));
+              }
+            }
+          }
 
-        return ListView.builder(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          itemCount: stocks.length,
-          itemBuilder: (context, index) {
-            final stock = stocks[index];
-            final theoretical = stock.quantity;
-            final physical = _physicalCounts[stock.id] ?? theoretical;
+          if (auditList.isEmpty) {
+            return const Center(child: Text('Aucune configuration de bouteille trouvée.'));
+          }
+
+          return ListView.builder(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            itemCount: auditList.length,
+            itemBuilder: (context, index) {
+              final stock = auditList[index];
+              final theoretical = stock.quantity;
+              final physical = _physicalCounts[stock.id] ?? theoretical;
 
             return Card(
               margin: const EdgeInsets.only(bottom: AppSpacing.sm),
@@ -206,10 +237,15 @@ class _StockAuditTabState extends ConsumerState<StockAuditTab> {
               ),
             );
           },
+            );
+          },
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(child: Text('Erreur: $e')),
+    ),
+    loading: () => const Center(child: CircularProgressIndicator()),
+    error: (e, _) => Center(child: Text('Erreur: $e')),
     );
   }
 
@@ -301,6 +337,7 @@ class _StockAuditTabState extends ConsumerState<StockAuditTab> {
     setState(() => _isLoading = true);
 
     try {
+      final cylinders = await ref.read(cylindersProvider.future);
       final stocks = await ref.read(cylinderStocksProvider((
         enterpriseId: enterpriseId,
         status: null,
@@ -308,16 +345,23 @@ class _StockAuditTabState extends ConsumerState<StockAuditTab> {
       )).future);
 
       final auditItems = <InventoryAuditItem>[];
-      for (final stock in stocks) {
-        final physical = _physicalCounts[stock.id] ?? stock.quantity;
-        auditItems.add(InventoryAuditItem(
-          stockId: stock.id,
-          cylinderId: stock.cylinderId,
-          weight: stock.weight,
-          status: stock.status,
-          theoreticalQuantity: stock.quantity,
-          physicalQuantity: physical,
-        ));
+      for (final cylinder in cylinders) {
+        final statusesToShow = [CylinderStatus.full, CylinderStatus.emptyAtStore, CylinderStatus.leak];
+        for (final status in statusesToShow) {
+          final existing = stocks.where((s) => s.status == status && s.cylinderId == cylinder.id).firstOrNull;
+          final stockId = existing?.id ?? 'virtual-${status.name}-${cylinder.id}';
+          final theoretical = existing?.quantity ?? 0;
+          final physical = _physicalCounts[stockId] ?? theoretical;
+
+          auditItems.add(InventoryAuditItem(
+            stockId: stockId,
+            cylinderId: cylinder.id,
+            weight: cylinder.weight,
+            status: status,
+            theoreticalQuantity: theoretical,
+            physicalQuantity: physical,
+          ));
+        }
       }
 
       final userId = ref.read(auth.currentUserIdProvider) ?? '';

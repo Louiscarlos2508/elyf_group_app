@@ -119,11 +119,19 @@ class GazSettingsOfflineRepository extends OfflineRepository<GazSettings>
   }) async {
     final settingsId = _getSettingsId(enterpriseId, moduleId);
     try {
-      return await getByLocalId(settingsId);
+      final record = await driftService.records.findByLocalId(
+        collectionName: collectionName,
+        localId: settingsId,
+        enterpriseId: enterpriseId,
+        moduleType: moduleType,
+      );
+      if (record == null) return null;
+      final settings = fromMap(jsonDecode(record.dataJson) as Map<String, dynamic>);
+      return settings.isDeleted ? null : settings;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       AppLogger.error(
-        'Error getting settings: ${appException.message}',
+        'Error getting settings for $enterpriseId: ${appException.message}',
         name: 'GazSettingsOfflineRepository',
         error: error,
         stackTrace: stackTrace,

@@ -400,11 +400,15 @@ final stockTransferServiceProvider = Provider<StockTransferService>((ref) {
   final stockRepo = ref.watch(cylinderStockRepositoryProvider);
   final gasRepo = ref.watch(gasRepositoryProvider);
   final auditRepo = ref.watch(auditTrailRepositoryProvider);
+  final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+  final settingsRepo = ref.watch(gazSettingsRepositoryProvider(enterpriseId));
+  
   return StockTransferService(
     transferRepository: transferRepo,
     stockRepository: stockRepo,
     gasRepository: gasRepo,
     auditTrailRepository: auditRepo,
+    settingsRepository: settingsRepo,
   );
 });
 

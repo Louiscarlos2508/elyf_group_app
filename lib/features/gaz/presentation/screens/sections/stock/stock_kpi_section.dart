@@ -29,23 +29,26 @@ class StockKpiSection extends ConsumerWidget {
       enterpriseId: enterpriseId,
       moduleId: 'gaz',
     )));
+    final activeEnterprise = ref.watch(activeEnterpriseProvider).value;
+    final isPOS = activeEnterprise?.type == EnterpriseType.gasPointOfSale;
 
     return cylindersAsync.when(
       data: (cylinders) {
         final viewType = ref.watch(gazDashboardViewTypeProvider);
         
-        // Use calculation service for business logic
         final metrics = GazCalculationService.calculateStockMetrics(
           stocks: allStocks,
           pointsOfSale: pointsOfSale,
           cylinders: cylinders,
-          settings: viewType == GazDashboardViewType.local ? settingsAsync.value : null,
+          settings: settingsAsync.value,
+          targetEnterpriseId: enterpriseId,
         );
 
         return _StockKpiCards(
           metrics: metrics,
           activePointsOfSaleCount: activePointsOfSale.length,
           totalPointsOfSaleCount: pointsOfSale.length,
+          showPosTracking: !isPOS,
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -62,6 +65,9 @@ class StockKpiSection extends ConsumerWidget {
           emptyStocks,
         );
 
+        final issueStocks = GazCalculationService.filterIssueStocks(allStocks);
+        final issueByWeight = GazCalculationService.groupStocksByWeight(issueStocks);
+
         final viewType = ref.watch(gazDashboardViewTypeProvider);
         final settings = settingsAsync.value;
         if (viewType == GazDashboardViewType.local && settings != null && settings.nominalStocks.isNotEmpty) {
@@ -69,19 +75,23 @@ class StockKpiSection extends ConsumerWidget {
             final nominal = settings.getNominalStock(weight);
             if (nominal > 0) {
               final full = fullByWeight[weight] ?? 0;
-              emptyByWeight[weight] = (nominal - full).clamp(0, nominal);
+              final issues = issueByWeight[weight] ?? 0;
+              emptyByWeight[weight] = (nominal - full - issues).clamp(0, nominal);
             }
           }
         }
 
         final totalFull = fullByWeight.values.fold<int>(0, (sum, val) => sum + val);
         final totalEmpty = emptyByWeight.values.fold<int>(0, (sum, val) => sum + val);
+        final totalIssues = issueByWeight.values.fold<int>(0, (sum, val) => sum + val);
 
         final metrics = StockMetrics(
           totalFull: totalFull,
           totalEmpty: totalEmpty,
+          totalIssues: totalIssues,
           fullByWeight: fullByWeight,
           emptyByWeight: emptyByWeight,
+          issueByWeight: issueByWeight,
           activePointsOfSaleCount: activePointsOfSale.length,
           totalPointsOfSaleCount: pointsOfSale.length,
           availableWeights: allWeights,
@@ -91,6 +101,7 @@ class StockKpiSection extends ConsumerWidget {
           metrics: metrics,
           activePointsOfSaleCount: activePointsOfSale.length,
           totalPointsOfSaleCount: pointsOfSale.length,
+          showPosTracking: !isPOS,
         );
       },
     );
@@ -103,29 +114,34 @@ class _StockKpiCards extends StatelessWidget {
     required this.metrics,
     required this.activePointsOfSaleCount,
     required this.totalPointsOfSaleCount,
+    this.showPosTracking = true,
   });
 
   final StockMetrics metrics;
   final int activePointsOfSaleCount;
   final int totalPointsOfSaleCount;
+  final bool showPosTracking;
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
+        final theme = Theme.of(context);
         final isWide = constraints.maxWidth > 800;
         if (isWide) {
           return Row(
             children: [
-              Expanded(
-                child: StockKpiCard(
-                  title: 'Points de vente actifs',
-                  value: '$activePointsOfSaleCount',
-                  subtitle: 'sur $totalPointsOfSaleCount au total',
-                  icon: Icons.store,
+              if (showPosTracking) ...[
+                Expanded(
+                  child: StockKpiCard(
+                    title: 'Points de vente actifs',
+                    value: '$activePointsOfSaleCount',
+                    subtitle: 'sur $totalPointsOfSaleCount au total',
+                    icon: Icons.store,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 16),
+                const SizedBox(width: 16),
+              ],
               Expanded(
                 child: StockKpiCard(
                   title: 'Bouteilles pleines',
@@ -145,6 +161,16 @@ class _StockKpiCards extends StatelessWidget {
                   valueColor: const Color(0xFFF54900),
                 ),
               ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: StockKpiCard(
+                  title: 'Fuites / Défauts',
+                  value: '${metrics.totalIssues}',
+                  subtitle: metrics.issueSummary,
+                  icon: Icons.report_problem_outlined,
+                  valueColor: theme.colorScheme.error,
+                ),
+              ),
             ],
           );
         }
@@ -152,13 +178,15 @@ class _StockKpiCards extends StatelessWidget {
         // Mobile: stack vertically
         return Column(
           children: [
-            StockKpiCard(
-              title: 'Points de vente actifs',
-              value: '$activePointsOfSaleCount',
-              subtitle: 'sur $totalPointsOfSaleCount au total',
-              icon: Icons.store,
-            ),
-            const SizedBox(height: 16),
+            if (showPosTracking) ...[
+              StockKpiCard(
+                title: 'Points de vente actifs',
+                value: '$activePointsOfSaleCount',
+                subtitle: 'sur $totalPointsOfSaleCount au total',
+                icon: Icons.store,
+              ),
+              const SizedBox(height: 16),
+            ],
             StockKpiCard(
               title: 'Bouteilles pleines',
               value: '${metrics.totalFull}',
@@ -173,6 +201,14 @@ class _StockKpiCards extends StatelessWidget {
               subtitle: metrics.emptySummary,
               icon: Icons.inventory_2_outlined,
               valueColor: const Color(0xFFF54900),
+            ),
+            const SizedBox(height: 16),
+            StockKpiCard(
+              title: 'Fuites / Défauts',
+              value: '${metrics.totalIssues}',
+              subtitle: metrics.issueSummary,
+              icon: Icons.report_problem_outlined,
+              valueColor: theme.colorScheme.error,
             ),
           ],
         );

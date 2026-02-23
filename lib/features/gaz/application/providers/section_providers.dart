@@ -3,8 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/core/logging/app_logger.dart';
 import 'package:elyf_groupe_app/core/permissions/modules/gaz_permissions.dart';
-import '../../../../../core/tenant/tenant_provider.dart'
+import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart'
     show activeEnterpriseProvider;
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import '../../presentation/screens/sections/dashboard_screen.dart';
 import '../../presentation/screens/sections/profile_screen.dart';
 import '../../presentation/screens/sections/reports_screen.dart';
@@ -131,10 +132,16 @@ final accessibleGazSectionsProvider = FutureProvider<List<NavigationSection>>((
         ),
       ];
 
-  // Filtrer les sections selon les permissions
+  // Filtrer les sections selon les permissions et le type d'entreprise
   final accessibleSections = <NavigationSection>[];
+  final isPOS = activeEnterprise.type == EnterpriseType.gasPointOfSale;
 
   for (final item in allSections) {
+    // Restriction : Logistique n'est pas pour les POS
+    if (item.section.label == 'Logistique' && isPOS) {
+      continue;
+    }
+
     // Vérifier si l'utilisateur a au moins une des permissions requises
     final hasAccess = await adapter.hasAnyPermission(item.requiredPermissions);
 

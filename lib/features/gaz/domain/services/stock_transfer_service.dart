@@ -6,6 +6,8 @@ import '../repositories/gas_repository.dart';
 import '../../../audit_trail/domain/repositories/audit_trail_repository.dart';
 import '../../../audit_trail/domain/entities/audit_record.dart';
 import '../entities/cylinder_stock.dart';
+import '../entities/cylinder.dart';
+import '../repositories/gaz_settings_repository.dart';
 import '../../../../core/offline/offline_repository.dart' show LocalIdGenerator;
 
 class StockTransferService {
@@ -14,29 +16,52 @@ class StockTransferService {
     required this.stockRepository,
     required this.gasRepository,
     required this.auditTrailRepository,
+    this.settingsRepository,
   });
 
   final StockTransferRepository transferRepository;
   final CylinderStockRepository stockRepository;
   final GasRepository gasRepository;
   final AuditTrailRepository auditTrailRepository;
+  final GazSettingsRepository? settingsRepository;
 
   /// Initiates a transfer (Draft/Pending).
   /// Validates that source enterprise has enough stock.
   Future<void> initiateTransfer(StockTransfer transfer) async {
     // 1. Validate stock availability at source
+    final settings = settingsRepository != null 
+        ? await settingsRepository!.getSettings(enterpriseId: transfer.fromEnterpriseId, moduleId: 'gaz')
+        : null;
+
     for (final item in transfer.items) {
       final stocks = await stockRepository.getStocksByWeight(
         transfer.fromEnterpriseId,
         item.weight,
       );
-      final totalStock = stocks
+      final physicalStock = stocks
           .where((s) => s.status == item.status)
           .fold<int>(0, (sum, s) => sum + s.quantity);
           
-      if (totalStock < item.quantity) {
+      int availableStock = physicalStock;
+      
+      // If full bottles and nominal stock is defined, use the theoretical stock
+      if (item.status == CylinderStatus.full && settings != null) {
+        final nominal = settings.getNominalStock(item.weight);
+        if (nominal > 0) {
+          // Theoretical full stock is the nominal stock PLUS physical adjustments (which could be negative)
+          // actually, usually physical full stock is tracked directly.
+          // But if physical stock is 0 and we have 20 nominal, we have 20 available.
+          // The formula for available full stock is: max(physicalStock, nominal - otherPhysicalStates)
+          // For simplicity: if physical stock is 0 and nominal is > 0, we use nominal.
+          if (physicalStock == 0) {
+            availableStock = nominal;
+          }
+        }
+      }
+
+      if (availableStock < item.quantity) {
         throw ValidationException(
-          'Stock insuffisant à la source pour ${item.weight}kg (${item.status.label}): $totalStock disponible',
+          'Stock insuffisant à la source pour ${item.weight}kg (${item.status.label}): $availableStock disponible',
           'INSUFFICIENT_STOCK',
         );
       }
@@ -60,6 +85,10 @@ class StockTransferService {
     }
 
     // 1. Deduct stock from source
+    final settings = settingsRepository != null 
+        ? await settingsRepository!.getSettings(enterpriseId: transfer.fromEnterpriseId, moduleId: 'gaz')
+        : null;
+
     for (final item in transfer.items) {
       final stocks = await stockRepository.getStocksByWeight(
         transfer.fromEnterpriseId,
@@ -76,6 +105,28 @@ class StockTransferService {
         final toDebit = remainingToDebit > stock.quantity ? stock.quantity : remainingToDebit;
         await stockRepository.updateStockQuantity(stock.id, stock.quantity - toDebit);
         remainingToDebit -= toDebit;
+      }
+      
+      if (remainingToDebit > 0) {
+        // If still remaining and we have nominal stock, create a negative adjustment record
+        if (item.status == CylinderStatus.full && settings != null && (settings.nominalStocks[item.weight] ?? 0) > 0) {
+          final cylinders = await gasRepository.getCylindersForEnterprises([transfer.fromEnterpriseId]);
+          final cylinder = cylinders.where((c) => c.weight == item.weight).firstOrNull;
+          
+          if (cylinder != null) {
+            await stockRepository.addStock(CylinderStock(
+              id: LocalIdGenerator.generate(),
+              cylinderId: cylinder.id,
+              weight: item.weight,
+              status: item.status,
+              quantity: -remainingToDebit, // Negative offset to the nominal stock
+              enterpriseId: transfer.fromEnterpriseId,
+              updatedAt: DateTime.now(),
+              createdAt: DateTime.now(),
+            ));
+            remainingToDebit = 0;
+          }
+        }
       }
       
       if (remainingToDebit > 0) {

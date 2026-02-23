@@ -5,6 +5,7 @@ import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder_stock.dart';
+import 'package:elyf_groupe_app/features/gaz/domain/services/gaz_calculation_service.dart';
 import '../point_of_sale_stock_card.dart';
 import '../../../../../shared/presentation/widgets/elyf_ui/atoms/elyf_icon_button.dart';
 
@@ -28,6 +29,12 @@ class PosStockDialog extends ConsumerWidget {
         siteId: enterprise.id,
       )),
     );
+
+    final cylindersAsync = ref.watch(cylindersProvider);
+    final settingsAsync = ref.watch(gazSettingsProvider((
+      enterpriseId: enterpriseId, // Usually same as siteId for POS
+      moduleId: 'gaz', // Module ID for Gaz
+    )));
 
     return Dialog(
       backgroundColor: Colors.transparent,
@@ -53,41 +60,15 @@ class PosStockDialog extends ConsumerWidget {
                 .where((s) => s.siteId == enterprise.id || s.siteId == null)
                 .toList();
 
-            // Calculer les totaux
-            final posFull = posStocks
-                .where((s) => s.status == CylinderStatus.full)
-                .fold<int>(0, (sum, s) => sum + s.quantity);
-            final posEmpty = posStocks
-                .where(
-                  (s) =>
-                      s.status == CylinderStatus.emptyAtStore ||
-                      s.status == CylinderStatus.emptyInTransit,
-                )
-                .fold<int>(0, (sum, s) => sum + s.quantity);
+            final cylinders = cylindersAsync.value ?? [];
+            final settings = settingsAsync.value;
 
-            // Grouper par capacité
-            final stockByCapacity = <int, ({int full, int empty})>{};
-            final availableWeights =
-                posStocks.map((s) => s.weight).toSet().toList()..sort();
-            for (final weight in availableWeights) {
-              final full = posStocks
-                  .where(
-                    (s) =>
-                        s.weight == weight && s.status == CylinderStatus.full,
-                  )
-                  .fold<int>(0, (sum, s) => sum + s.quantity);
-              final empty = posStocks
-                  .where(
-                    (s) =>
-                        s.weight == weight &&
-                        (s.status == CylinderStatus.emptyAtStore ||
-                            s.status == CylinderStatus.emptyInTransit),
-                  )
-                  .fold<int>(0, (sum, s) => sum + s.quantity);
-              if (full > 0 || empty > 0) {
-                stockByCapacity[weight] = (full: full, empty: empty);
-              }
-            }
+            final metrics = GazCalculationService.calculatePosStockMetrics(
+              posId: enterpriseId,
+              allStocks: allStocks,
+              cylinders: cylinders,
+              settings: settings,
+            );
 
             return Column(
               mainAxisSize: MainAxisSize.min,
@@ -117,9 +98,10 @@ class PosStockDialog extends ConsumerWidget {
                   child: SingleChildScrollView(
                     child: PointOfSaleStockCard(
                       enterprise: enterprise,
-                      fullBottles: posFull,
-                      emptyBottles: posEmpty,
-                      stockByCapacity: stockByCapacity,
+                      fullBottles: metrics.totalFull,
+                      emptyBottles: metrics.totalEmpty,
+                      issueBottles: metrics.totalIssues,
+                      stockByCapacity: metrics.stockByCapacity,
                     ),
                   ),
                 ),
