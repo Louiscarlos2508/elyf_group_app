@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../application/providers.dart';
 import '../../../domain/entities/stock_alert.dart';
-import '../replenishment_dialog.dart';
 import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 
 class LowStockAlertSection extends ConsumerWidget {

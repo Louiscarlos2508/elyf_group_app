@@ -34,8 +34,6 @@ class StockKpiSection extends ConsumerWidget {
 
     return cylindersAsync.when(
       data: (cylinders) {
-        final viewType = ref.watch(gazDashboardViewTypeProvider);
-        
         final metrics = GazCalculationService.calculateStockMetrics(
           stocks: allStocks,
           pointsOfSale: pointsOfSale,
@@ -49,6 +47,7 @@ class StockKpiSection extends ConsumerWidget {
           activePointsOfSaleCount: activePointsOfSale.length,
           totalPointsOfSaleCount: pointsOfSale.length,
           showPosTracking: !isPOS,
+          isPOS: isPOS,
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -86,9 +85,6 @@ class StockKpiSection extends ConsumerWidget {
         final totalIssues = issueByWeight.values.fold<int>(0, (sum, val) => sum + val);
 
         final metrics = StockMetrics(
-          totalFull: totalFull,
-          totalEmpty: totalEmpty,
-          totalIssues: totalIssues,
           fullByWeight: fullByWeight,
           emptyByWeight: emptyByWeight,
           issueByWeight: issueByWeight,
@@ -102,6 +98,7 @@ class StockKpiSection extends ConsumerWidget {
           activePointsOfSaleCount: activePointsOfSale.length,
           totalPointsOfSaleCount: pointsOfSale.length,
           showPosTracking: !isPOS,
+          isPOS: isPOS,
         );
       },
     );
@@ -115,12 +112,14 @@ class _StockKpiCards extends StatelessWidget {
     required this.activePointsOfSaleCount,
     required this.totalPointsOfSaleCount,
     this.showPosTracking = true,
+    required this.isPOS,
   });
 
   final StockMetrics metrics;
   final int activePointsOfSaleCount;
   final int totalPointsOfSaleCount;
   final bool showPosTracking;
+  final bool isPOS;
 
   @override
   Widget build(BuildContext context) {
@@ -154,23 +153,35 @@ class _StockKpiCards extends StatelessWidget {
               const SizedBox(width: 16),
               Expanded(
                 child: StockKpiCard(
-                  title: 'Bouteilles vides',
+                  title: isPOS ? 'Bouteilles vides' : 'Patrimoine Vide (Dispo)',
                   value: '${metrics.totalEmpty}',
                   subtitle: metrics.emptySummary,
-                  icon: Icons.inventory_2_outlined,
+                  icon: isPOS ? Icons.inventory_2_outlined : Icons.account_balance_wallet_outlined,
                   valueColor: const Color(0xFFF54900),
                 ),
               ),
               const SizedBox(width: 16),
               Expanded(
                 child: StockKpiCard(
-                  title: 'Fuites / Défauts',
+                  title: 'Bouteilles Trouées / Fuites',
                   value: '${metrics.totalIssues}',
                   subtitle: metrics.issueSummary,
                   icon: Icons.report_problem_outlined,
                   valueColor: theme.colorScheme.error,
                 ),
               ),
+              if (metrics.totalCentralized > 0) ...[
+                const SizedBox(width: 16),
+                Expanded(
+                  child: StockKpiCard(
+                    title: 'Stock en Transit',
+                    value: '${metrics.totalCentralized}',
+                    subtitle: 'Bouteilles en tournée ou manquantes',
+                    icon: Icons.local_shipping_outlined,
+                    valueColor: theme.colorScheme.primary,
+                  ),
+                ),
+              ],
             ],
           );
         }
@@ -196,20 +207,30 @@ class _StockKpiCards extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             StockKpiCard(
-              title: 'Bouteilles vides',
+              title: isPOS ? 'Bouteilles vides' : 'Patrimoine Vide (Dispo)',
               value: '${metrics.totalEmpty}',
               subtitle: metrics.emptySummary,
-              icon: Icons.inventory_2_outlined,
+              icon: isPOS ? Icons.inventory_2_outlined : Icons.account_balance_wallet_outlined,
               valueColor: const Color(0xFFF54900),
             ),
             const SizedBox(height: 16),
             StockKpiCard(
-              title: 'Fuites / Défauts',
+              title: 'Bouteilles Trouées / Fuites',
               value: '${metrics.totalIssues}',
               subtitle: metrics.issueSummary,
               icon: Icons.report_problem_outlined,
               valueColor: theme.colorScheme.error,
             ),
+            if (metrics.totalCentralized > 0) ...[
+              const SizedBox(height: 16),
+              StockKpiCard(
+                title: 'Stock en Transit',
+                value: '${metrics.totalCentralized}',
+                subtitle: 'Bouteilles en tournée ou manquantes',
+                icon: Icons.local_shipping_outlined,
+                valueColor: theme.colorScheme.primary,
+              ),
+            ],
           ],
         );
       },

@@ -12,43 +12,85 @@ class LoadingUnloadingFeesSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    final containerColor = isDark
+        ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.2)
+        : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Frais de chargement
         Container(
-          padding: const EdgeInsets.fromLTRB(11.99, 11.99, 11.99, 0),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: const Color(0xFFF9FAFB),
-            borderRadius: BorderRadius.circular(10),
+            color: containerColor,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
           ),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Frais de chargement',
-                    style: TextStyle(fontSize: 14, color: Color(0xFF4A5565)),
-                  ),
                   Text(
-                    '${tour.totalBottlesToLoad} × ${tour.loadingFeePerBottle.toStringAsFixed(0)} F',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF0A0A0A),
+                    'Frais de chargement',
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
+                  if (!tour.applyLoadingFees)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.errorContainer,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        'OFF',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.onErrorContainer,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
                 ],
               ),
-              const SizedBox(height: 4),
+              if (tour.emptyBottlesLoaded.values.any((v) => v > 0)) ...[
+                const SizedBox(height: 8),
+                ...tour.emptyBottlesLoaded.entries.where((e) => e.value > 0).map((e) {
+                  final weight = e.key;
+                  final qty = e.value;
+                  final fee = tour.loadingFees[weight] ?? tour.loadingFeePerBottle;
+                  return Opacity(
+                    opacity: tour.applyLoadingFees ? 1.0 : 0.5,
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('$weight kg ($qty btl × ${fee.toInt()} F)', style: theme.textTheme.bodySmall),
+                          Text('${qty * fee > 0 ? CurrencyFormatter.formatDouble(qty * fee) : "0"} F', 
+                            style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                    ),
+                  );
+                }),
+              ],
+              const SizedBox(height: 12),
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   Text(
                     CurrencyFormatter.formatDouble(tour.totalLoadingFees),
-                    style: const TextStyle(
-                      fontSize: 16,
-                      color: Color(0xFFE7000B),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: tour.applyLoadingFees ? theme.colorScheme.error : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                      fontWeight: FontWeight.w900,
+                      decoration: tour.applyLoadingFees ? null : TextDecoration.lineThrough,
                     ),
                   ),
                 ],
@@ -56,41 +98,70 @@ class LoadingUnloadingFeesSection extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 12),
         // Frais de déchargement
         Container(
-          padding: const EdgeInsets.fromLTRB(11.99, 11.99, 11.99, 0),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: const Color(0xFFF9FAFB),
-            borderRadius: BorderRadius.circular(10),
+            color: containerColor,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
           ),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Frais de déchargement',
-                    style: TextStyle(fontSize: 14, color: Color(0xFF4A5565)),
-                  ),
                   Text(
-                    '${tour.totalBottlesReceived} × ${tour.unloadingFeePerBottle.toStringAsFixed(0)} F',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF0A0A0A),
+                    'Frais de déchargement',
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 4),
+              if (tour.fullBottlesReceived.values.any((v) => v > 0)) ...[
+                const SizedBox(height: 8),
+                ...tour.fullBottlesReceived.entries.where((e) => e.value > 0).map((e) {
+                  final weight = e.key;
+                  final qty = e.value;
+                  final fee = tour.unloadingFees[weight] ?? tour.unloadingFeePerBottle;
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('$weight kg ($qty btl × ${fee.toInt()} F)', style: theme.textTheme.bodySmall),
+                        Text('${qty * fee > 0 ? CurrencyFormatter.formatDouble(qty * fee) : "0"} F', 
+                          style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                  );
+                }),
+              ],
+              if (tour.fixedUnloadingFee > 0) ...[
+                 Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Frais fixe déchargement', style: theme.textTheme.bodySmall),
+                        Text('${CurrencyFormatter.formatDouble(tour.fixedUnloadingFee)} F', 
+                          style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                  ),
+              ],
+              const SizedBox(height: 12),
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   Text(
                     CurrencyFormatter.formatDouble(tour.totalUnloadingFees),
-                    style: const TextStyle(
-                      fontSize: 16,
-                      color: Color(0xFFE7000B),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: theme.colorScheme.error,
+                      fontWeight: FontWeight.w900,
                     ),
                   ),
                 ],
@@ -98,29 +169,35 @@ class LoadingUnloadingFeesSection extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 16),
         // Divider
-        Container(height: 1, color: Colors.black.withValues(alpha: 0.1)),
-        const SizedBox(height: 8),
+        Divider(height: 1, color: theme.colorScheme.outlineVariant),
+        const SizedBox(height: 16),
         // Total chargement/déchargement
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 11.99, vertical: 0),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: const Color(0xFFFFF7ED),
-            borderRadius: BorderRadius.circular(10),
+            color: theme.colorScheme.secondaryContainer.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Total chargement/déchargement',
-                style: TextStyle(fontSize: 16, color: Color(0xFF0A0A0A)),
+              Text(
+                'Total Manutention',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  color: theme.colorScheme.onSecondaryContainer,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               Text(
                 CurrencyFormatter.formatDouble(
                   tour.totalLoadingFees + tour.totalUnloadingFees,
                 ),
-                style: const TextStyle(fontSize: 18, color: Color(0xFFE7000B)),
+                style: theme.textTheme.titleLarge?.copyWith(
+                  color: theme.colorScheme.error,
+                  fontWeight: FontWeight.w900,
+                ),
               ),
             ],
           ),

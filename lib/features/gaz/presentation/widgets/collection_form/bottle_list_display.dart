@@ -48,11 +48,14 @@ class _BottleItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFFF9FAFB),
+        color: isDark ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5) : const Color(0xFFF9FAFB),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
@@ -60,14 +63,14 @@ class _BottleItem extends StatelessWidget {
         children: [
           Text(
             '$quantity × ${weight}kg',
-            style: const TextStyle(fontSize: 14, color: Color(0xFF0A0A0A)),
+            style: TextStyle(fontSize: 14, color: theme.colorScheme.onSurface),
           ),
           IconButton(
             icon: const Icon(Icons.close, size: 16),
             onPressed: onRemove,
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-            color: const Color(0xFF0A0A0A),
+            color: theme.colorScheme.onSurface,
           ),
         ],
       ),
@@ -82,9 +85,12 @@ class _SummaryBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final blueBg = const Color(0xFFEFF6FF);
-    final blueBorder = const Color(0xFF8EC5FF);
-    final blueText = const Color(0xFF1C398E);
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    final blueBg = isDark ? theme.colorScheme.primaryContainer.withValues(alpha: 0.2) : const Color(0xFFEFF6FF);
+    final blueBorder = isDark ? theme.colorScheme.primary.withValues(alpha: 0.3) : const Color(0xFF8EC5FF);
+    final blueText = isDark ? theme.colorScheme.primary : const Color(0xFF1C398E);
 
     return Container(
       padding: const EdgeInsets.fromLTRB(13, 13, 13, 1),
@@ -106,11 +112,11 @@ class _SummaryBox extends StatelessWidget {
             children: [
               const Text(
                 'Vides collectées :',
-                style: TextStyle(fontSize: 14, color: Color(0xFF364153)),
+                style: TextStyle(fontSize: 14),
               ),
               Text(
                 '$totalBottles',
-                style: const TextStyle(fontSize: 14, color: Color(0xFF0A0A0A)),
+                style: TextStyle(fontSize: 14, color: theme.colorScheme.onSurface),
               ),
             ],
           ),

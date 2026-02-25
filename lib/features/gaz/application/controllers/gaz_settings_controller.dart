@@ -200,6 +200,50 @@ class GazSettingsController {
     await repository.saveSettings(updated);
   }
 
+  /// Définit le frais de chargement par défaut.
+  Future<void> setLoadingFee({
+    required String enterpriseId,
+    required String moduleId,
+    required int weight,
+    required double fee,
+  }) async {
+    final existing = await repository.getSettings(
+      enterpriseId: enterpriseId,
+      moduleId: moduleId,
+    );
+
+    final updated = existing != null
+        ? existing.setLoadingFee(weight, fee)
+        : GazSettings(
+            enterpriseId: enterpriseId,
+            moduleId: moduleId,
+          ).setLoadingFee(weight, fee);
+
+    await repository.saveSettings(updated);
+  }
+
+  /// Définit le frais de déchargement par défaut.
+  Future<void> setUnloadingFee({
+    required String enterpriseId,
+    required String moduleId,
+    required int weight,
+    required double fee,
+  }) async {
+    final existing = await repository.getSettings(
+      enterpriseId: enterpriseId,
+      moduleId: moduleId,
+    );
+
+    final updated = existing != null
+        ? existing.setUnloadingFee(weight, fee)
+        : GazSettings(
+            enterpriseId: enterpriseId,
+            moduleId: moduleId,
+          ).setUnloadingFee(weight, fee);
+
+    await repository.saveSettings(updated);
+  }
+
   /// Active/Désactive l'impression automatique des reçus.
   Future<void> setAutoPrintReceipt({
     required String enterpriseId,

@@ -36,18 +36,19 @@ class _ClosureDetailsCardState extends ConsumerState<ClosureDetailsCard> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        color: isDark ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3) : theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: theme.colorScheme.outline.withValues(alpha: 0.1),
+          color: isDark ? theme.colorScheme.outline.withValues(alpha: 0.1) : theme.colorScheme.outlineVariant,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
+            color: (isDark ? Colors.black : theme.colorScheme.primary).withValues(alpha: isDark ? 0.2 : 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -97,14 +98,27 @@ class _ClosureDetailsCardState extends ConsumerState<ClosureDetailsCard> {
               ],
             ),
           )),
-          if (widget.tour.gasPurchaseCost != null && widget.tour.gasPurchaseCost! > 0) ...[
+          if (widget.tour.totalBottlesReturned > 0) ...[
             const SizedBox(height: 12),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Coût d\'achat gaz'),
+                const Text('Vides ramenés (magasin)'),
                 Text(
-                  CurrencyFormatter.formatDouble(widget.tour.gasPurchaseCost!),
+                  '${widget.tour.totalBottlesReturned} bouteilles',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          ],
+          if (widget.tour.totalGasPurchaseCost > 0) ...[
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Coût total achat gaz'),
+                Text(
+                  CurrencyFormatter.formatDouble(widget.tour.totalGasPurchaseCost),
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
               ],

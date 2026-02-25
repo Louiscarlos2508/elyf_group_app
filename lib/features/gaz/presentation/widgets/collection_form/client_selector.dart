@@ -11,13 +11,25 @@ class Client {
     required this.phone,
     this.address,
     this.emptyStock = const {},
+    this.fullStock = const {},
+    this.leakStock = const {},
   });
 
   final String id;
   final String name;
   final String phone;
   final String? address;
-  final Map<int, int> emptyStock; // poids -> quantité disponible
+  final Map<int, int> emptyStock; // poids -> quantité vide disponible
+  final Map<int, int> fullStock;  // poids -> quantité pleine disponible
+  final Map<int, int> leakStock;  // poids -> quantité fuite disponible
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is Client && runtimeType == other.runtimeType && id == other.id;
+
+  @override
+  int get hashCode => id.hashCode;
 }
 
 /// Sélecteur de client avec affichage du stock pour les points de vente.
@@ -40,17 +52,8 @@ class ClientSelector extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          collectionType == CollectionType.wholesaler
-              ? 'Grossiste'
-              : 'Point de vente',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            fontSize: 14,
-            color: const Color(0xFF0A0A0A),
-          ),
-        ),
         const SizedBox(height: 8),
-        _ClientDropdownButton(
+        _ClientDropdown(
           selectedClient: selectedClient,
           clients: clients,
           collectionType: collectionType,
@@ -65,8 +68,8 @@ class ClientSelector extends StatelessWidget {
   }
 }
 
-class _ClientDropdownButton extends StatelessWidget {
-  const _ClientDropdownButton({
+class _ClientDropdown extends StatelessWidget {
+  const _ClientDropdown({
     required this.selectedClient,
     required this.clients,
     required this.collectionType,
@@ -80,85 +83,36 @@ class _ClientDropdownButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final lightGray = const Color(0xFFF3F3F5);
-    final textGray = const Color(0xFF717182);
+    final theme = Theme.of(context);
+    final isWholesaler = collectionType == CollectionType.wholesaler;
 
-    return PopupMenuButton<Client>(
-      onSelected: onClientSelected,
-      child: Container(
-        constraints: const BoxConstraints(minHeight: 36),
-        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 4),
-        decoration: BoxDecoration(
-          color: lightGray,
-          borderRadius: BorderRadius.circular(8),
+    return DropdownButtonFormField<Client>(
+      key: ValueKey(selectedClient?.id),
+      initialValue: selectedClient,
+      isExpanded: true,
+      decoration: InputDecoration(
+        labelText: isWholesaler ? 'Grossiste' : 'Point de Vente',
+        prefixIcon: Icon(
+          isWholesaler ? Icons.person_outline : Icons.storefront_outlined,
+          color: theme.colorScheme.primary,
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Expanded(
-              child: selectedClient == null
-                  ? Center(
-                      child: Text(
-                        collectionType == CollectionType.wholesaler
-                            ? 'Sélectionner un grossiste'
-                            : 'Sélectionner un point de vente',
-                        style: TextStyle(fontSize: 14, color: textGray),
-                      ),
-                    )
-                  : Column(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          selectedClient!.name,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: Color(0xFF0A0A0A),
-                          ),
-                        ),
-                        if (selectedClient!.address != null)
-                          Text(
-                            '- ${selectedClient!.address}',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: Color(0xFF6A7282),
-                            ),
-                          ),
-                      ],
-                    ),
-            ),
-            const SizedBox(width: 8),
-            const Icon(
-              Icons.arrow_drop_down,
-              size: 16,
-              color: Color(0xFF717182),
-            ),
-          ],
-        ),
+        border: const OutlineInputBorder(),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       ),
-      itemBuilder: (context) => clients
-          .map(
-            (client) => PopupMenuItem(
-              value: client,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(client.name),
-                  if (client.address != null)
-                    Text(
-                      client.address!,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF6A7282),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          )
-          .toList(),
+      items: clients.map((client) {
+        return DropdownMenuItem<Client>(
+          value: client,
+          child: Text(
+            client.name,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        );
+      }).toList(),
+      onChanged: (client) {
+        if (client != null) onClientSelected(client);
+      },
     );
   }
 }
@@ -170,17 +124,20 @@ class _StockInfoBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final blueBg = const Color(0xFFEFF6FF);
-    final blueBorder = const Color(0xFFBEDBFF);
-    final blueText = const Color(0xFF1C398E);
-    final totalStock = client.emptyStock.values.fold<int>(
-      0,
-      (sum, qty) => sum + qty,
-    );
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    final blueBg = isDark ? theme.colorScheme.primaryContainer.withValues(alpha: 0.2) : const Color(0xFFEFF6FF);
+    final blueBorder = isDark ? theme.colorScheme.primary.withValues(alpha: 0.3) : const Color(0xFFBEDBFF);
+    final totalEmpty = client.emptyStock.values.fold<int>(0, (sum, qty) => sum + qty);
+    final totalFull = client.fullStock.values.fold<int>(0, (sum, qty) => sum + qty);
+    final totalLeaks = client.leakStock.values.fold<int>(0, (sum, qty) => sum + qty);
+
+    final blueText = isDark ? theme.colorScheme.primary : const Color(0xFF1C398E);
 
     return Container(
       margin: const EdgeInsets.only(top: 12),
-      padding: const EdgeInsets.fromLTRB(13, 13, 13, 1),
+      padding: const EdgeInsets.all(13),
       decoration: BoxDecoration(
         color: blueBg,
         border: Border.all(color: blueBorder, width: 1.3),
@@ -190,21 +147,52 @@ class _StockInfoBox extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '📍 Stock de bouteilles vides disponibles',
-            style: TextStyle(fontSize: 14, color: blueText),
+            '📍 Disponibilités au Point de Vente',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: blueText),
           ),
+          const SizedBox(height: 12),
+          _StockRow(label: 'Vides', stock: client.emptyStock, color: theme.colorScheme.onSurface),
           const SizedBox(height: 8),
-          Text(
-            totalStock == 0
-                ? 'Aucune bouteille vide dans ce point de vente'
-                : '${client.emptyStock.entries.map((e) => '${e.value} × ${e.key}kg').join(', ')} disponibles',
-            style: TextStyle(
-              fontSize: 14,
-              color: totalStock == 0 ? const Color(0xFF1447E6) : blueText,
+          _StockRow(label: 'Pleines', stock: client.fullStock, color: isDark ? Colors.blue[300]! : Colors.blue[800]!),
+          const SizedBox(height: 8),
+          _StockRow(label: 'Fuites', stock: client.leakStock, color: theme.colorScheme.error),
+          if (totalEmpty == 0 && totalFull == 0 && totalLeaks == 0)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                'Aucune bouteille disponible au POS',
+                style: TextStyle(fontSize: 12, color: theme.colorScheme.error),
+              ),
             ),
-          ),
         ],
       ),
+    );
+  }
+}
+
+class _StockRow extends StatelessWidget {
+  const _StockRow({required this.label, required this.stock, required this.color});
+  final String label;
+  final Map<int, int> stock;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final total = stock.values.fold<int>(0, (sum, qty) => sum + qty);
+    if (total == 0) return const SizedBox.shrink();
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          '$label :',
+          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+        ),
+        Text(
+          stock.entries.map((e) => '${e.value} × ${e.key}kg').join(', '),
+          style: TextStyle(fontSize: 13, color: color, fontWeight: FontWeight.bold),
+        ),
+      ],
     );
   }
 }

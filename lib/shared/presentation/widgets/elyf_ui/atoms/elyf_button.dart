@@ -202,7 +202,10 @@ class _ElyfButtonState extends State<ElyfButton>
                     Icon(widget.icon, size: 20, color: color),
                     const SizedBox(width: 8),
                   ],
-                  widget.child,
+                  DefaultTextStyle.merge(
+                    style: TextStyle(color: color, fontWeight: FontWeight.w600),
+                    child: widget.child,
+                  ),
                 ],
               ),
       ),

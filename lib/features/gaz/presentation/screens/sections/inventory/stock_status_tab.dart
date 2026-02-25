@@ -5,16 +5,14 @@ import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
 import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart' show activeEnterpriseProvider, activeEnterpriseIdProvider;
 import 'package:elyf_groupe_app/features/gaz/domain/services/gaz_calculation_service.dart';
-import '../../../../domain/entities/cylinder.dart';
 import '../../../widgets/point_of_sale_stock_card.dart';
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import 'package:elyf_groupe_app/features/administration/application/providers.dart';
 import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
-import '../../../widgets/stock_adjustment_dialog.dart';
-import '../../../widgets/cylinder_filling_dialog.dart';
 import '../stock/stock_kpi_section.dart';
 import '../stock/stock_pos_list.dart';
 import '../stock/stock_transfer_screen.dart';
+import '../../../widgets/wholesale/independent_collection_dialog.dart';
 
 class StockStatusTab extends ConsumerWidget {
   const StockStatusTab({super.key, required this.enterpriseId, required this.moduleId});
@@ -25,7 +23,6 @@ class StockStatusTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final isMobile = MediaQuery.of(context).size.width < 600;
     final activeEnterprise = ref.watch(activeEnterpriseProvider).value;
     final isPOS = activeEnterprise?.type == EnterpriseType.gasPointOfSale;
 
@@ -73,8 +70,21 @@ class StockStatusTab extends ConsumerWidget {
                       size: ElyfButtonSize.small,
                       child: const Text('Transferts'),
                     ),
-
-
+                    if (!isPOS)
+                      ElyfButton(
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (context) => IndependentCollectionDialog(
+                              enterpriseId: enterpriseId,
+                            ),
+                          );
+                        },
+                        icon: Icons.add_circle_outline,
+                        variant: ElyfButtonVariant.filled,
+                        size: ElyfButtonSize.small,
+                        child: const Text('Collecte (POS)'),
+                      ),
                   ],
                 ),
               ),
@@ -157,7 +167,7 @@ class StockStatusTab extends ConsumerWidget {
                     final settings = settingsAsync.value;
 
                     final metrics = GazCalculationService.calculatePosStockMetrics(
-                      posId: activeId,
+                      enterpriseId: activeId,
                       allStocks: allStocks,
                       cylinders: cylinders,
                       settings: settings,

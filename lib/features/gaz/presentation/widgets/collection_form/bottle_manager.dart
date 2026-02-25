@@ -11,6 +11,7 @@ class BottleManager {
     required int? selectedWeight,
     required String quantityText,
     required Map<int, int> bottles,
+    required int maxQuantity,
     required VoidCallback onBottlesChanged,
   }) {
     if (selectedWeight == null) {
@@ -30,7 +31,16 @@ class BottleManager {
       return;
     }
 
-    bottles[selectedWeight] = (bottles[selectedWeight] ?? 0) + qty;
+    final currentQtyInList = bottles[selectedWeight] ?? 0;
+    if (currentQtyInList + qty > maxQuantity) {
+      NotificationService.showWarning(
+        context,
+        'Stock insuffisant (Max: $maxQuantity, Déjà ajouté: $currentQtyInList)',
+      );
+      return;
+    }
+
+    bottles[selectedWeight] = currentQtyInList + qty;
     onBottlesChanged();
   }
 

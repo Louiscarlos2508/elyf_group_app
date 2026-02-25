@@ -5,10 +5,10 @@ import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
 import 'package:elyf_groupe_app/core/logging/app_logger.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder_leak.dart';
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
+import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import 'package:elyf_groupe_app/features/gaz/presentation/widgets/leak_report_dialog.dart';
-import 'package:elyf_groupe_app/features/gaz/presentation/widgets/supplier_claim_dialog.dart';
 import '../cylinder_leak/leak_filters.dart';
-import '../cylinder_leak/leak_header.dart';
 import '../cylinder_leak/leak_list_item.dart';
 
 class LeakTrackingTab extends ConsumerStatefulWidget {
@@ -55,25 +55,10 @@ class _LeakTrackingTabState extends ConsumerState<LeakTrackingTab> {
     }
   }
 
-  void _showClaimDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => SupplierClaimDialog(enterpriseId: widget.enterpriseId),
-    ).then((result) {
-      if (result == true && mounted) {
-        ref.invalidate(
-          cylinderLeaksProvider((
-            enterpriseId: widget.enterpriseId,
-            status: null,
-          )),
-        );
-      }
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
-    final isMobile = MediaQuery.of(context).size.width < 600;
+    final activeEnterprise = ref.watch(activeEnterpriseProvider).value;
+    final isPos = activeEnterprise?.type == EnterpriseType.gasPointOfSale;
 
     final leaksAsync = ref.watch(
       cylinderLeaksProvider((
@@ -96,13 +81,6 @@ class _LeakTrackingTabState extends ConsumerState<LeakTrackingTab> {
               alignment: WrapAlignment.end,
               children: [
                 ElyfButton(
-                  onPressed: _showClaimDialog,
-                  icon: Icons.assignment_outlined,
-                  variant: ElyfButtonVariant.outlined,
-                  size: ElyfButtonSize.small,
-                  child: const Text('Réclamation Fournisseur'),
-                ),
-                ElyfButton(
                   onPressed: _showLeakDialog,
                   icon: Icons.add,
                   variant: ElyfButtonVariant.filled,
@@ -117,10 +95,15 @@ class _LeakTrackingTabState extends ConsumerState<LeakTrackingTab> {
           child: LeakFilters(
             filterStatus: _filterStatus,
             onFilterChanged: (status) => setState(() => _filterStatus = status),
+            showExchanged: !isPos,
           ),
         ),
         leaksAsync.when(
-          data: (leaks) {
+          data: (allLeaks) {
+            final leaks = isPos 
+                ? allLeaks.where((l) => l.status != LeakStatus.exchanged).toList() 
+                : allLeaks;
+
             if (leaks.isEmpty) {
               return const SliverFillRemaining(
                 child: EmptyState(

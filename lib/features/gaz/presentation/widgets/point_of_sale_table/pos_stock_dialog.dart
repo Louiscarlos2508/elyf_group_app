@@ -3,8 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
-import 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder.dart';
-import 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder_stock.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/services/gaz_calculation_service.dart';
 import '../point_of_sale_stock_card.dart';
 import '../../../../../shared/presentation/widgets/elyf_ui/atoms/elyf_icon_button.dart';
@@ -24,16 +22,16 @@ class PosStockDialog extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final stocksAsync = ref.watch(
       cylinderStocksProvider((
-        enterpriseId: enterpriseId,
+        enterpriseId: enterprise.id, // POS ID
         status: null, // Tous les statuts
-        siteId: enterprise.id,
+        siteId: null,
       )),
     );
 
     final cylindersAsync = ref.watch(cylindersProvider);
     final settingsAsync = ref.watch(gazSettingsProvider((
-      enterpriseId: enterpriseId, // Usually same as siteId for POS
-      moduleId: 'gaz', // Module ID for Gaz
+      enterpriseId: enterprise.id,
+      moduleId: 'gaz',
     )));
 
     return Dialog(
@@ -57,14 +55,15 @@ class PosStockDialog extends ConsumerWidget {
           data: (allStocks) {
             // Filtrer les stocks pour ce point de vente
             final posStocks = allStocks
-                .where((s) => s.siteId == enterprise.id || s.siteId == null)
+                .where((s) => s.enterpriseId == enterprise.id)
                 .toList();
 
             final cylinders = cylindersAsync.value ?? [];
             final settings = settingsAsync.value;
 
             final metrics = GazCalculationService.calculatePosStockMetrics(
-              posId: enterpriseId,
+              enterpriseId: enterprise.id,
+              siteId: null,
               allStocks: allStocks,
               cylinders: cylinders,
               settings: settings,
@@ -102,6 +101,7 @@ class PosStockDialog extends ConsumerWidget {
                       emptyBottles: metrics.totalEmpty,
                       issueBottles: metrics.totalIssues,
                       stockByCapacity: metrics.stockByCapacity,
+                      nominalStocks: settings?.nominalStocks ?? {},
                     ),
                   ),
                 ),

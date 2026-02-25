@@ -273,14 +273,12 @@ class ModuleDataSyncService {
           }
 
           // Si pas trouvé par localId embarqué, chercher par remoteId
-          if (existingRecord == null) {
-            existingRecord = await driftService.records.findByRemoteId(
+          existingRecord ??= await driftService.records.findByRemoteId(
               collectionName: collectionName,
               remoteId: documentId,
               enterpriseId: storageEnterpriseId,
               moduleType: moduleId,
             );
-          }
 
           // Utiliser le localId existant si trouvé, sinon utiliser documentId
           final localIdToUse = existingRecord?.localId ?? documentId;

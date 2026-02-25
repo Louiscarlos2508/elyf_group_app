@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 
 class InventoryTabBar extends StatelessWidget {
-  const InventoryTabBar({super.key, required this.tabController});
+  const InventoryTabBar({
+    super.key,
+    required this.tabController,
+    required this.tabs,
+  });
 
   final TabController tabController;
+  final List<String> tabs;
 
   @override
   Widget build(BuildContext context) {
@@ -18,11 +23,10 @@ class InventoryTabBar extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
         ),
         child: Row(
-          children: [
-            _buildTab(context, index: 0, label: 'État'),
-            _buildTab(context, index: 1, label: 'Audits'),
-            _buildTab(context, index: 2, label: 'Fuites'),
-          ],
+          children: List.generate(
+            tabs.length,
+            (index) => _buildTab(context, index: index, label: tabs[index]),
+          ),
         ),
       ),
     );

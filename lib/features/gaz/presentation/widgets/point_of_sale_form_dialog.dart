@@ -14,7 +14,6 @@ import '../../../../features/administration/application/providers.dart'
         adminStatsProvider;
 import '../../../../features/administration/domain/entities/enterprise.dart';
 import '../../../../shared/presentation/widgets/elyf_ui/atoms/elyf_icon_button.dart';
-import '../../../../shared/presentation/widgets/elyf_ui/atoms/elyf_icon_button.dart';
 
 /// Dialogue pour créer ou modifier un point de vente.
 class PointOfSaleFormDialog extends ConsumerStatefulWidget {

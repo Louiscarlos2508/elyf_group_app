@@ -188,7 +188,9 @@ class _StockTransferDialogState extends ConsumerState<StockTransferDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final accessibleEnterprisesAsync = ref.watch(userAccessibleEnterprisesProvider);
+    // We use allEnterprisesStreamProvider instead of userAccessibleEnterprisesProvider
+    // to allow transferring to any node in the gaz network.
+    final accessibleEnterprisesAsync = ref.watch(allEnterprisesStreamProvider);
     final cylindersAsync = ref.watch(cylindersProvider);
     
     // Watch source stocks for availability constraints
@@ -233,9 +235,14 @@ class _StockTransferDialogState extends ConsumerState<StockTransferDialog> {
                         // Destination Selection
                         accessibleEnterprisesAsync.when(
                           data: (enterprises) {
+                            // Filter destinations: exclude source, must be same module
                             final List<Enterprise> destOptions = enterprises
                                 .where((e) => e.id != widget.fromEnterpriseId)
+                                .where((e) => e.type.module == EnterpriseModule.gaz)
                                 .toList();
+                            
+                            // Sort by name
+                            destOptions.sort((a, b) => a.name.compareTo(b.name));
                             
                             // CRITICAL: Ensure _selectedDestEnterprise is in the list
                             if (_selectedDestEnterprise != null && 
@@ -245,18 +252,32 @@ class _StockTransferDialogState extends ConsumerState<StockTransferDialog> {
 
                             final isLocked = widget.initialToEnterpriseId != null;
                             return DropdownButtonFormField<Enterprise>(
-                              value: _selectedDestEnterprise,
+                              key: ValueKey(_selectedDestEnterprise?.id), // Use key to force refresh if needed
+                              initialValue: _selectedDestEnterprise,
                               decoration: InputDecoration(
-                                labelText: 'Enterprise de destination *',
-                                prefixIcon: const Icon(Icons.business),
+                                labelText: 'Destination (Point de Vente / Dépôt) *',
+                                prefixIcon: const Icon(Icons.location_on_outlined),
                                 border: const OutlineInputBorder(),
                                 filled: isLocked,
                                 fillColor: isLocked ? theme.colorScheme.surfaceContainerHighest : null,
+                                helperText: 'Choisissez le destinataire du stock',
                               ),
                               items: destOptions.map((e) {
+                                final isSubEntity = e.parentEnterpriseId != null;
                                 return DropdownMenuItem(
                                   value: e,
-                                  child: Text(e.name),
+                                  child: Row(
+                                    children: [
+                                      Icon(e.type.icon, size: 18, color: theme.colorScheme.primary),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        e.name,
+                                        style: TextStyle(
+                                          fontWeight: isSubEntity ? FontWeight.normal : FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 );
                               }).toList(),
                               onChanged: isLocked ? null : (value) => setState(() => _selectedDestEnterprise = value),
@@ -264,7 +285,7 @@ class _StockTransferDialogState extends ConsumerState<StockTransferDialog> {
                             );
                           },
                           loading: () => const LinearProgressIndicator(),
-                          error: (e, _) => Text('Erreur: $e'),
+                          error: (e, _) => Text('Erreur chargement destinations: $e'),
                         ),
                         const SizedBox(height: 24),
 
@@ -487,19 +508,21 @@ class _StatusToggleButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
           color: isSelected ? theme.colorScheme.primary : Colors.transparent,
           borderRadius: BorderRadius.circular(6),
         ),
         child: Text(
           label,
-          style: theme.textTheme.labelMedium?.copyWith(
-            color: isSelected ? theme.colorScheme.onPrimary : theme.colorScheme.onSurfaceVariant,
+          style: TextStyle(
+            color: isSelected ? theme.colorScheme.onPrimary : theme.colorScheme.onSurface,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            fontSize: 13,
           ),
         ),
       ),

@@ -21,16 +21,18 @@ class ClosureExpenseItem extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: isTotal
-            ? theme.colorScheme.errorContainer.withValues(alpha: 0.2)
-            : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-        border: isTotal
-            ? Border.all(color: theme.colorScheme.errorContainer.withValues(alpha: 0.5))
-            : null,
-        borderRadius: BorderRadius.circular(8),
+            ? theme.colorScheme.errorContainer.withValues(alpha: 0.15)
+            : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.2),
+        border: Border.all(
+          color: isTotal
+              ? theme.colorScheme.error.withValues(alpha: 0.2)
+              : theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+        ),
+        borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,

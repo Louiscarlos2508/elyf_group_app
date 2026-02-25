@@ -42,7 +42,6 @@ TextTheme buildAppTextTheme(ColorScheme colors) {
     labelLarge: displayBase.labelLarge?.copyWith(
       letterSpacing: 1.2,
       fontWeight: FontWeight.w900,
-      color: colors.onSurface,
     ),
     bodyLarge: applied.bodyLarge?.copyWith(
       height: 1.6,

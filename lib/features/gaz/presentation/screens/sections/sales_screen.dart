@@ -19,7 +19,6 @@ import 'retail/retail_new_sale_tab.dart';
 import 'sales/sales_history_tab.dart';
 import 'wholesale/wholesale_new_sale_tab.dart';
 import 'sales/sales_tab_bar.dart';
-import 'sales/distribution_tab.dart';
 
 /// Unified sales screen for the Gaz module.
 /// Consolidates Retail and Wholesale sales workflows.
@@ -163,15 +162,12 @@ class _GazSalesScreenState extends ConsumerState<GazSalesScreen>
         final enterprise = enterpriseAsync.value;
         final isPOS = enterprise?.type == EnterpriseType.gasPointOfSale;
         
-        // Distribution is for managers only.
         // Wholesale (Gros) is restricted for POS unless manager.
         final showWholesale = !isPOS || isManager;
-        final showDistribution = isManager;
 
         final List<String> tabs = ['Détail'];
         if (showWholesale) tabs.add('Gros');
         tabs.add('Historique');
-        if (showDistribution) tabs.add('Distribution');
 
         _initTabController(tabs.length, isManager);
         
@@ -201,8 +197,7 @@ class _GazSalesScreenState extends ConsumerState<GazSalesScreen>
                     WholesaleNewSaleTab(
                       onCylinderTap: (c) => _showSaleDialog(c, SaleType.wholesale),
                     ),
-                  const SalesHistoryTab(),
-                  if (showDistribution) const DistributionTab(),
+                   const SalesHistoryTab(),
                 ],
               ),
             ),

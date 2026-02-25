@@ -25,16 +25,12 @@ class LeakReportDialog extends ConsumerStatefulWidget {
 class _LeakReportDialogState extends ConsumerState<LeakReportDialog> {
   final _formKey = GlobalKey<FormState>();
   final _notesController = TextEditingController();
-  final _volumeController = TextEditingController();
-  
   Cylinder? _selectedCylinder;
-  bool _isFullLoss = true;
   bool _isLoading = false;
 
   @override
   void dispose() {
     _notesController.dispose();
-    _volumeController.dispose();
     super.dispose();
   }
 
@@ -57,8 +53,8 @@ class _LeakReportDialogState extends ConsumerState<LeakReportDialog> {
         status: LeakStatus.reported,
         tourId: widget.tourId,
         notes: _notesController.text,
-        isFullLoss: _isFullLoss,
-        estimatedLossVolume: _isFullLoss ? null : double.tryParse(_volumeController.text),
+        isFullLoss: true,
+        estimatedLossVolume: null,
         reportedBy: auth.currentUser?.id,
       );
 
@@ -141,35 +137,6 @@ class _LeakReportDialogState extends ConsumerState<LeakReportDialog> {
                     loading: () => const LinearProgressIndicator(),
                     error: (e, _) => Text('Erreur: $e'),
                   ),
-                  const SizedBox(height: 16),
-
-                  // Type de perte
-                  SwitchListTile(
-                    title: const Text('Perte totale'),
-                    subtitle: const Text('La bouteille est considérée comme vide'),
-                    value: _isFullLoss,
-                    onChanged: (val) => setState(() => _isFullLoss = val),
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                  
-                  if (!_isFullLoss) ...[
-                    const SizedBox(height: 8),
-                    TextFormField(
-                      controller: _volumeController,
-                      decoration: const InputDecoration(
-                        labelText: 'Volume perdu estimé (%)',
-                        border: OutlineInputBorder(),
-                        suffixText: '%',
-                      ),
-                      keyboardType: TextInputType.number,
-                      validator: (val) {
-                        if (val == null || val.isEmpty) return 'Requis';
-                        final vol = double.tryParse(val);
-                        if (vol == null || vol <= 0 || vol > 100) return 'Invalide';
-                        return null;
-                      },
-                    ),
-                  ],
                   const SizedBox(height: 16),
 
                   // Notes

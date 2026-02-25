@@ -4,18 +4,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import 'package:elyf_groupe_app/features/administration/application/providers.dart';
-import '../../../domain/entities/cylinder_stock.dart';
 import '../../../domain/entities/cylinder.dart';
+import '../../../domain/entities/wholesaler.dart';
+import '../../../domain/entities/cylinder_stock.dart';
 import '../../../application/providers.dart';
 import '../../../domain/entities/collection.dart';
-import '../../../domain/entities/wholesaler.dart';
 import '../../../../../../core/errors/error_handler.dart';
 import '../../../../../../core/logging/app_logger.dart';
 import '../collection_form/bottle_list_display.dart';
 import '../collection_form/bottle_manager.dart';
 import '../collection_form/bottle_quantity_input.dart';
 import '../collection_form/client_selector.dart';
-import '../collection_form/collection_type_selector.dart';
 import '../../../../../../core/auth/providers.dart';
 
 /// Formulaire d'ajout d'une collecte indépendante (Wholesale/POS).
@@ -31,7 +30,7 @@ class IndependentCollectionDialog extends ConsumerStatefulWidget {
 
 class _IndependentCollectionDialogState extends ConsumerState<IndependentCollectionDialog> {
   final _formKey = GlobalKey<FormState>();
-  CollectionType _collectionType = CollectionType.pointOfSale;
+  final CollectionType _collectionType = CollectionType.pointOfSale;
   Client? _selectedClient;
   final Map<int, int> _bottles = {}; // poids -> quantité
 
@@ -39,11 +38,11 @@ class _IndependentCollectionDialogState extends ConsumerState<IndependentCollect
   int? _selectedWeight;
   final _quantityController = TextEditingController(text: '0');
 
-  // Pour le formulaire d'ajout de grossiste
-  final _wholesalerNameController = TextEditingController();
-  final _wholesalerPhoneController = TextEditingController();
-  final _wholesalerAddressController = TextEditingController();
-  bool _isAddingNewWholesaler = false;
+  // Pour le formulaire d'ajout de fuites
+  final Map<int, int> _leaks = {}; // poids -> quantité de fuites
+  int? _selectedLeakWeight;
+  final _leakQuantityController = TextEditingController(text: '0');
+
   bool _isSubmitting = false;
 
   /// Récupère les clients disponibles depuis la base de données.
@@ -89,10 +88,17 @@ class _IndependentCollectionDialogState extends ConsumerState<IndependentCollect
                     siteId: pos.id,
                   )));
                   final stockList = stockAsync.value ?? [];
-                  final stockInt = <int, int>{};
+                  final emptyStockInt = <int, int>{};
+                  final fullStockInt = <int, int>{};
+                  final leakStockInt = <int, int>{};
+
                   for (final item in stockList) {
-                    if ((item.status == CylinderStatus.emptyAtStore || item.status == CylinderStatus.emptyInTransit) && item.weight != null) {
-                       stockInt[item.weight!] = (stockInt[item.weight!] ?? 0) + item.quantity;
+                    if (item.status == CylinderStatus.emptyAtStore) {
+                       emptyStockInt[item.weight] = (emptyStockInt[item.weight] ?? 0) + item.quantity;
+                    } else if (item.status == CylinderStatus.full) {
+                       fullStockInt[item.weight] = (fullStockInt[item.weight] ?? 0) + item.quantity;
+                    } else if (item.status == CylinderStatus.leak) {
+                       leakStockInt[item.weight] = (leakStockInt[item.weight] ?? 0) + item.quantity;
                     }
                   }
 
@@ -101,7 +107,9 @@ class _IndependentCollectionDialogState extends ConsumerState<IndependentCollect
                     name: pos.name,
                     phone: pos.phone ?? '',
                     address: pos.address,
-                    emptyStock: stockInt,
+                    emptyStock: emptyStockInt,
+                    fullStock: fullStockInt,
+                    leakStock: leakStockInt,
                   );
                 },
               )
@@ -116,9 +124,7 @@ class _IndependentCollectionDialogState extends ConsumerState<IndependentCollect
   @override
   void dispose() {
     _quantityController.dispose();
-    _wholesalerNameController.dispose();
-    _wholesalerPhoneController.dispose();
-    _wholesalerAddressController.dispose();
+    _leakQuantityController.dispose();
     super.dispose();
   }
 
@@ -128,6 +134,7 @@ class _IndependentCollectionDialogState extends ConsumerState<IndependentCollect
       selectedWeight: _selectedWeight,
       quantityText: _quantityController.text,
       bottles: _bottles,
+      maxQuantity: _selectedClient?.emptyStock[_selectedWeight ?? -1] ?? 0,
       onBottlesChanged: () {
         setState(() {
           _selectedWeight = null;
@@ -141,6 +148,33 @@ class _IndependentCollectionDialogState extends ConsumerState<IndependentCollect
     BottleManager.removeBottle(
       weight: weight,
       bottles: _bottles,
+      onBottlesChanged: () => setState(() {}),
+    );
+  }
+
+  void _addLeak() {
+    BottleManager.addBottle(
+      context: context,
+      selectedWeight: _selectedLeakWeight,
+      quantityText: _leakQuantityController.text,
+      bottles: _leaks,
+      maxQuantity: // Physical stock available for collection as leaks (Leak + Full + Empty)
+                    (_selectedClient?.leakStock[_selectedLeakWeight ?? -1] ?? 0) +
+                    (_selectedClient?.fullStock[_selectedLeakWeight ?? -1] ?? 0) + 
+                    (_selectedClient?.emptyStock[_selectedLeakWeight ?? -1] ?? 0),
+      onBottlesChanged: () {
+        setState(() {
+          _selectedLeakWeight = null;
+          _leakQuantityController.text = '0';
+        });
+      },
+    );
+  }
+
+  void _removeLeak(int weight) {
+    BottleManager.removeBottle(
+      weight: weight,
+      bottles: _leaks,
       onBottlesChanged: () => setState(() {}),
     );
   }
@@ -179,6 +213,7 @@ class _IndependentCollectionDialogState extends ConsumerState<IndependentCollect
         clientPhone: _selectedClient!.phone,
         clientAddress: _selectedClient!.address,
         emptyBottles: _bottles,
+        leaks: _leaks,
         unitPrice: 0, // Géré par transaction
         amountPaid: 0, // Pour l'instant, on suppose paiement manuel ou séparé.
         // TODO: Ajouter un champ "Montant Payé" si nécessaire dans le futur
@@ -289,44 +324,100 @@ class _IndependentCollectionDialogState extends ConsumerState<IndependentCollect
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      // Sélection client
+                      // Section: Client
                       _buildClientSelector(),
                       const SizedBox(height: 16),
-                      // Divider
-                      Container(
-                        height: 1,
-                        color: const Color(0xFF000000).withValues(alpha: 0.1),
+                      
+                      // Section: Collected Bottles
+                      Card(
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: BorderSide(color: theme.colorScheme.outline.withValues(alpha: 0.1)),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Text(
+                                'Bouteilles à collecter (Vides)',
+                                style: theme.textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: theme.colorScheme.primary,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              if (_bottles.isNotEmpty) ...[
+                                BottleListDisplay(
+                                  bottles: _bottles,
+                                  onRemove: _removeBottle,
+                                ),
+                                const SizedBox(height: 8),
+                              ],
+                      // Formulaire d'ajout
+                              BottleQuantityInput(
+                                availableWeights: availableWeights,
+                                selectedWeight: _selectedWeight,
+                                maxQuantity: _selectedClient?.emptyStock[_selectedWeight ?? -1],
+                                quantityController: _quantityController,
+                                onWeightSelected: (weight) {
+                                  setState(() {
+                                    _selectedWeight = weight;
+                                  });
+                                },
+                                onAdd: _addBottle,
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                       const SizedBox(height: 16),
-                      // Types de bouteilles collectées
-                      Text(
-                        'Bouteilles à collecter (Vides)',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontSize: 14,
-                          color: const Color(0xFF0A0A0A),
+                      
+                      // Section: Leaks
+                      Card(
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: BorderSide(color: theme.colorScheme.outline.withValues(alpha: 0.1)),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      // Liste des bouteilles ajoutées
-                      if (_bottles.isNotEmpty) ...[
-                        BottleListDisplay(
-                          bottles: _bottles,
-                          onRemove: _removeBottle,
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Text(
+                                'Fuites (Bouteilles défectueuses)',
+                                style: theme.textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: theme.colorScheme.error,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              if (_leaks.isNotEmpty) ...[
+                                BottleListDisplay(
+                                  bottles: _leaks,
+                                  onRemove: _removeLeak,
+                                ),
+                                const SizedBox(height: 8),
+                              ],
+                              BottleQuantityInput(
+                                availableWeights: availableWeights,
+                                selectedWeight: _selectedLeakWeight,
+                                maxQuantity: (_selectedClient?.fullStock[_selectedLeakWeight ?? -1] ?? 0) + 
+                                             (_selectedClient?.leakStock[_selectedLeakWeight ?? -1] ?? 0) +
+                                             (_selectedClient?.emptyStock[_selectedLeakWeight ?? -1] ?? 0),
+                                quantityController: _leakQuantityController,
+                                onWeightSelected: (weight) {
+                                  setState(() {
+                                    _selectedLeakWeight = weight;
+                                  });
+                                },
+                                onAdd: _addLeak,
+                              ),
+                            ],
+                          ),
                         ),
-                        const SizedBox(height: 16),
-                      ],
-                      // Formulaire d'ajout
-                      BottleQuantityInput(
-                        availableWeights: availableWeights,
-                        selectedWeight: _selectedWeight,
-                        quantityController: _quantityController,
-                        onWeightSelected: (weight) {
-                          setState(() {
-                            _selectedWeight = weight;
-                          });
-                        },
-                        onAdd: _addBottle,
                       ),
                     ],
                   ),
@@ -348,6 +439,7 @@ class _IndependentCollectionDialogState extends ConsumerState<IndependentCollect
   }
 
   Widget _buildClientSelector() {
+    final theme = Theme.of(context);
     final clients = _getAvailableClients(ref);
     
     return Column(
@@ -357,22 +449,22 @@ class _IndependentCollectionDialogState extends ConsumerState<IndependentCollect
             Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.orange[50],
+                  color: theme.colorScheme.errorContainer.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.orange[300]!),
+                  border: Border.all(color: theme.colorScheme.errorContainer),
                 ),
                 child: Row(
                   children: [
                     Icon(
                       Icons.info_outline,
-                      color: Colors.orange[700],
+                      color: theme.colorScheme.error,
                       size: 20,
                     ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         'Aucun point de vente trouvé.',
-                        style: TextStyle(color: Colors.orange, fontSize: 12),
+                        style: TextStyle(color: theme.colorScheme.error, fontSize: 12),
                       ),
                     ),
                   ],
@@ -393,162 +485,4 @@ class _IndependentCollectionDialogState extends ConsumerState<IndependentCollect
     );
   }
 
-  Widget _buildNewWholesalerForm() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.blue[50],
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.blue[300]!),
-          ),
-          child: Row(
-            children: [
-              Icon(Icons.info_outline, color: Colors.blue[700], size: 20),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Nouveau grossiste - Sera enregistré dans la base de données',
-                  style: TextStyle(color: Colors.blue[900], fontSize: 12),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        TextFormField(
-          controller: _wholesalerNameController,
-          decoration: const InputDecoration(
-            labelText: 'Nom du grossiste *',
-            prefixIcon: Icon(Icons.business),
-            border: OutlineInputBorder(),
-          ),
-          validator: (value) {
-            if (value == null || value.trim().isEmpty) {
-              return 'Le nom est requis';
-            }
-            return null;
-          },
-        ),
-        const SizedBox(height: 16),
-        TextFormField(
-          controller: _wholesalerPhoneController,
-          decoration: const InputDecoration(
-            labelText: 'Téléphone',
-            prefixIcon: Icon(Icons.phone),
-            border: OutlineInputBorder(),
-          ),
-          keyboardType: TextInputType.phone,
-        ),
-        const SizedBox(height: 16),
-        TextFormField(
-          controller: _wholesalerAddressController,
-          decoration: const InputDecoration(
-            labelText: 'Adresse',
-            prefixIcon: Icon(Icons.location_on),
-            border: OutlineInputBorder(),
-          ),
-          maxLines: 2,
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: ElyfButton(
-                onPressed: () {
-                  setState(() {
-                    _isAddingNewWholesaler = false;
-                    _wholesalerNameController.clear();
-                    _wholesalerPhoneController.clear();
-                    _wholesalerAddressController.clear();
-                    _selectedClient = null;
-                  });
-                },
-                variant: ElyfButtonVariant.outlined,
-                width: double.infinity,
-                child: const Text('Annuler'),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: ElyfButton(
-                onPressed: () async {
-                  final name = _wholesalerNameController.text.trim();
-                  if (name.isEmpty) {
-                    if (mounted) {
-                      NotificationService.showError(
-                        context,
-                        'Le nom du grossiste est requis',
-                      );
-                    }
-                    return;
-                  }
-
-                  // Générer un ID unique temporaire (le repo le gérera mieux normalement mais ici on en a besoin pour l'UI)
-                  final newId = 'wholesaler_${DateTime.now().millisecondsSinceEpoch}';
-                  final phone = _wholesalerPhoneController.text.trim();
-                  final address = _wholesalerAddressController.text.trim();
-
-                  final newWholesaler = Wholesaler(
-                    id: newId,
-                    enterpriseId: widget.enterpriseId,
-                    name: name,
-                    phone: phone,
-                    address: address.isNotEmpty ? address : null,
-                    tier: 'default',
-                    createdAt: DateTime.now(),
-                    updatedAt: DateTime.now(),
-                  );
-                  
-                  // Appeler le repository pour créer le grossiste
-                  try {
-                    final repo = ref.read(wholesalerRepositoryProvider);
-                    await repo.createWholesaler(newWholesaler);
-                    
-                    // Invalider le provider pour rafraîchir la liste
-                    ref.invalidate(allWholesalersProvider(widget.enterpriseId));
-                  } catch (e) {
-                     if (mounted) {
-                      NotificationService.showError(
-                        context,
-                        'Erreur lors de la création du grossiste: $e',
-                      );
-                    }
-                    return;
-                  }
-
-                  // Sélectionner le nouveau client
-                  final newClient = Client(
-                    id: newId,
-                    name: name,
-                    phone: phone,
-                    address: address.isNotEmpty ? address : null,
-                  );
-
-                  setState(() {
-                    _selectedClient = newClient;
-                    _isAddingNewWholesaler = false;
-                    _wholesalerNameController.clear();
-                    _wholesalerPhoneController.clear();
-                    _wholesalerAddressController.clear();
-                  });
-
-                  if (mounted) {
-                    NotificationService.showSuccess(
-                      context,
-                      'Grossiste "$name" ajouté avec succès',
-                    );
-                  }
-                },
-                width: double.infinity,
-                child: const Text('Ajouter'),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
 }

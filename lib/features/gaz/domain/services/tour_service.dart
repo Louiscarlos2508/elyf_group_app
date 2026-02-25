@@ -14,18 +14,25 @@ class TourService {
   final TourRepository tourRepository;
   final TransactionService transactionService;
 
-  /// Met à jour les bouteilles vides chargées.
-  Future<void> updateEmptyBottlesLoaded(String tourId, Map<int, int> quantities) async {
+  /// Met à jour les bouteilles vides chargées avec gestion du stock transit.
+  Future<void> updateEmptyBottlesLoaded(String tourId, Map<int, int> quantities, String userId) async {
     final tour = await tourRepository.getTourById(tourId);
     if (tour == null) throw NotFoundException('Tour introuvable', 'TOUR_NOT_FOUND');
     if (tour.status != TourStatus.open) throw ValidationException('Le tour est clôturé', 'TOUR_CLOSED');
 
-    final updated = tour.copyWith(
-      emptyBottlesLoaded: quantities,
-      loadingCompletedDate: DateTime.now(),
-      updatedAt: DateTime.now(),
+    await transactionService.executeTourLoadingTransaction(
+      tourId: tourId,
+      userId: userId,
+      newLoading: quantities,
     );
-    await tourRepository.updateTour(updated);
+  }
+
+  /// Annule un tour avec remise en stock des bouteilles en transit.
+  Future<void> cancelTour(String tourId, String userId) async {
+    await transactionService.executeTourCancellationTransaction(
+      tourId: tourId,
+      userId: userId,
+    );
   }
 
   /// Met à jour les bouteilles pleines reçues.
@@ -39,6 +46,19 @@ class TourService {
       gasPurchaseCost: gasCost,
       supplierName: supplier,
       receptionCompletedDate: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+    await tourRepository.updateTour(updated);
+  }
+
+  /// Valide l'étape de transport et frais.
+  Future<void> validateTransport(String tourId) async {
+    final tour = await tourRepository.getTourById(tourId);
+    if (tour == null) throw NotFoundException('Tour introuvable', 'TOUR_NOT_FOUND');
+    if (tour.status != TourStatus.open) throw ValidationException('Le tour est clôturé', 'TOUR_CLOSED');
+
+    final updated = tour.copyWith(
+      transportCompletedDate: DateTime.now(),
       updatedAt: DateTime.now(),
     );
     await tourRepository.updateTour(updated);

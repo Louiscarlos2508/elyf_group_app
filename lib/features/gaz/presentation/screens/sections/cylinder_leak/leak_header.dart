@@ -9,12 +9,10 @@ class LeakHeader extends StatelessWidget {
     super.key,
     required this.isMobile,
     required this.onReportLeak,
-    required this.onGenerateClaim,
   });
 
   final bool isMobile;
   final VoidCallback onReportLeak;
-  final VoidCallback onGenerateClaim;
 
   @override
   Widget build(BuildContext context) {
@@ -23,13 +21,6 @@ class LeakHeader extends StatelessWidget {
       subtitle: 'Gestion des Fuites',
       asSliver: false,
       additionalActions: [
-        ElyfButton(
-          onPressed: onGenerateClaim,
-          icon: Icons.assignment_outlined,
-          variant: ElyfButtonVariant.outlined,
-          child: const Text('Réclamation Fournisseur'),
-        ),
-        const SizedBox(width: 8),
         ElyfButton(
           onPressed: onReportLeak,
           icon: Icons.add,

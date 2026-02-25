@@ -249,14 +249,10 @@ class GazCalculationService {
     return stocks.where((s) => s.status == CylinderStatus.full).toList();
   }
 
-  /// Filtre les stocks par statut vide (uniquement les vides saines).
+  /// Filtre les stocks par statut vide (uniquement les vides au magasin).
   static List<CylinderStock> filterEmptyStocks(List<CylinderStock> stocks) {
     return stocks
-        .where(
-          (s) =>
-              s.status == CylinderStatus.emptyAtStore ||
-              s.status == CylinderStatus.emptyInTransit,
-        )
+        .where((s) => s.status == CylinderStatus.emptyAtStore)
         .toList();
   }
 
@@ -301,43 +297,43 @@ class GazCalculationService {
     final fullStocks = filterFullStocks(stocks);
     final emptyStocks = filterEmptyStocks(stocks);
     final issueStocks = filterIssueStocks(stocks);
+    // On regroupe tout ce qui est défectueux ou fuite sous un seul indicateur 'Issues' (Fuites)
 
     final fullByWeight = groupStocksByWeight(fullStocks);
     final emptyByWeight = groupStocksByWeight(emptyStocks);
     final issueByWeight = groupStocksByWeight(issueStocks);
 
-    if (settings != null && settings.nominalStocks.isNotEmpty) {
-      for (final cylinder in cylinders) {
-        final nominal = settings.getNominalStock(cylinder.weight);
-        if (nominal > 0) {
-          int full;
-          int issues;
-          int physicalEmpty;
-
-          if (targetEnterpriseId != null) {
-            // If targetEnterpriseId is provided, we calculate the adjustment ONLY for that site
-            // and replace its contribution in the global empty count.
-            final siteStocks = stocks.where((s) => s.enterpriseId == targetEnterpriseId).toList();
-            full = groupStocksByWeight(filterFullStocks(siteStocks))[cylinder.weight] ?? 0;
-            issues = groupStocksByWeight(filterIssueStocks(siteStocks))[cylinder.weight] ?? 0;
-            physicalEmpty = groupStocksByWeight(filterEmptyStocks(siteStocks))[cylinder.weight] ?? 0;
-
-            // GlobalAdjustedEmpty = GlobalPhysicalEmpty - SitePhysicalEmpty + SiteTheoreticalEmpty
-            final siteTheoreticalEmpty = (nominal - full - issues).clamp(0, nominal);
-            emptyByWeight[cylinder.weight] = (emptyByWeight[cylinder.weight] ?? 0) - physicalEmpty + siteTheoreticalEmpty;
-          } else {
-            // Legacy behavior: apply settings to the global sum (only correct if stocks list is for one site)
-            full = fullByWeight[cylinder.weight] ?? 0;
-            issues = issueByWeight[cylinder.weight] ?? 0;
-            emptyByWeight[cylinder.weight] = (nominal - full - issues).clamp(0, nominal);
-          }
-        }
-      }
-    }
-
     final totalFull = fullByWeight.values.fold<int>(0, (sum, val) => sum + val);
     final totalEmpty = emptyByWeight.values.fold<int>(0, (sum, val) => sum + val);
     final totalIssues = issueByWeight.values.fold<int>(0, (sum, val) => sum + val);
+
+    final theoreticalEmptyByWeight = <int, int>{};
+    final centralizedByWeight = <int, int>{};
+    
+    // Check if target is POS. If not, it's Mother.
+    final isMother = pointsOfSale.every((p) => p.id != targetEnterpriseId);
+
+    if (isMother && settings != null && settings.nominalStocks.isNotEmpty) {
+      for (final cylinder in cylinders) {
+        final weight = cylinder.weight;
+        final nominal = settings.getNominalStock(weight);
+        if (nominal > 0) {
+          final full = fullByWeight[weight] ?? 0;
+          final empty = emptyByWeight[weight] ?? 0;
+          final issues = issueByWeight[weight] ?? 0;
+          
+          // Mother view (Consolidated): 
+          // "Vides (Patrimoine)" = Nominal - Full - Issues 
+          theoreticalEmptyByWeight[weight] = (nominal - full - issues).clamp(0, nominal);
+          
+          // "En Transit (Physique)" = Real transit records found in DB
+          // "En Transit (Total)" = Nominal - (Full + EmptyAtStore + Issues)
+          // We show the total gap as the official "Transit" to maintain planning integrity,
+          // but the physical records are now included in 'Empty' so they are LOADABLE.
+          centralizedByWeight[weight] = (nominal - full - empty - issues).clamp(0, nominal);
+        }
+      }
+    }
 
     final activePointsOfSale = pointsOfSale.where((p) => p.isActive).toList();
 
@@ -346,12 +342,10 @@ class GazCalculationService {
       ..sort();
 
     return StockMetrics(
-      totalFull: totalFull,
-      totalEmpty: totalEmpty,
-      totalIssues: totalIssues,
       fullByWeight: fullByWeight,
-      emptyByWeight: emptyByWeight,
+      emptyByWeight: theoreticalEmptyByWeight.isNotEmpty ? theoreticalEmptyByWeight : emptyByWeight,
       issueByWeight: issueByWeight,
+      centralizedByWeight: centralizedByWeight,
       activePointsOfSaleCount: activePointsOfSale.length,
       totalPointsOfSaleCount: pointsOfSale.length,
       availableWeights: weightsToShow,
@@ -651,47 +645,35 @@ class GazCalculationService {
 
   /// Calcule les métriques de stock pour un point de vente spécifique.
   static PointOfSaleStockMetrics calculatePosStockMetrics({
-    required String posId,
+    required String enterpriseId,
+    String? siteId,
     required List<CylinderStock> allStocks,
     List<Cylinder>? cylinders,
     GazSettings? settings,
   }) {
-    // Filtrer les stocks pour ce point de vente (basé sur l'ID entreprise)
-    final posStocks = allStocks.where((s) => s.enterpriseId == posId).toList();
+    // Filtrer les stocks pour ce point de vente (basé sur l'ID entreprise et le siteId)
+    final posStocks = allStocks.where((s) => s.enterpriseId == enterpriseId && s.siteId == siteId).toList();
 
     // Calculer les totaux
     final fullStocks = posStocks.where((s) => s.status == CylinderStatus.full).toList();
-    final emptyStocks = posStocks
-        .where(
-          (s) =>
-              s.status == CylinderStatus.emptyAtStore ||
-              s.status == CylinderStatus.emptyInTransit,
-        )
-        .toList();
+    final emptyAtStoreStocks = posStocks.where((s) => s.status == CylinderStatus.emptyAtStore).toList();
+    final emptyInTransitStocks = posStocks.where((s) => s.status == CylinderStatus.emptyInTransit).toList();
 
     final fullByWeight = groupStocksByWeight(fullStocks);
-    final emptyByWeight = groupStocksByWeight(emptyStocks);
+    final emptyAtStoreByWeight = groupStocksByWeight(emptyAtStoreStocks);
+    final emptyInTransitByWeight = groupStocksByWeight(emptyInTransitStocks);
     
     final issueStocks = posStocks
         .where((s) => s.status == CylinderStatus.defective || s.status == CylinderStatus.leak)
         .toList();
     final issueByWeight = groupStocksByWeight(issueStocks);
 
-    // Appliquer le stock nominal si disponible
-    if (settings != null && settings.nominalStocks.isNotEmpty && cylinders != null) {
-      for (final cylinder in cylinders) {
-        final nominal = settings.getNominalStock(cylinder.weight);
-        if (nominal > 0) {
-          final full = fullByWeight[cylinder.weight] ?? 0;
-          final issues = issueByWeight[cylinder.weight] ?? 0;
-          // Le vide théorique est le nominal moins les pleines et les bouteilles à problème déjà identifiées
-          emptyByWeight[cylinder.weight] = (nominal - full - issues).clamp(0, nominal);
-        }
-      }
-    }
+    // Removal of theoretical stock inflation block.
+    // Stock metrics will now strictly reflect physical counts for all statuses.
 
     final totalFull = fullByWeight.values.fold<int>(0, (sum, v) => sum + v);
-    final totalEmpty = emptyByWeight.values.fold<int>(0, (sum, v) => sum + v);
+    final totalEmpty = emptyAtStoreByWeight.values.fold<int>(0, (sum, v) => sum + v);
+    final totalInTransit = emptyInTransitByWeight.values.fold<int>(0, (sum, v) => sum + v);
     final totalIssues = issueByWeight.values.fold<int>(0, (sum, v) => sum + v);
 
     // Déterminer les types de bouteilles à afficher
@@ -700,32 +682,32 @@ class GazCalculationService {
         : posStocks.map((s) => s.weight).toSet();
     final weightsToShow = weightSet.toList()..sort();
 
-    final stockByCapacity = <int, ({int full, int empty, int defective, int leak})>{};
+    final stockByCapacity = <int, ({int full, int empty, int inTransit, int defective, int leak})>{};
 
     for (final weight in weightsToShow) {
       final full = fullByWeight[weight] ?? 0;
-      final empty = emptyByWeight[weight] ?? 0;
-      final defective = posStocks
-          .where((s) => s.weight == weight && s.status == CylinderStatus.defective)
-          .fold<int>(0, (sum, s) => sum + s.quantity);
-      final leak = posStocks
-          .where((s) => s.weight == weight && s.status == CylinderStatus.leak)
+      final empty = emptyAtStoreByWeight[weight] ?? 0;
+      final inTransit = emptyInTransitByWeight[weight] ?? 0;
+      final issues = posStocks
+          .where((s) => s.weight == weight && (s.status == CylinderStatus.defective || s.status == CylinderStatus.leak))
           .fold<int>(0, (sum, s) => sum + s.quantity);
 
-      if (full > 0 || empty > 0 || defective > 0 || leak > 0) {
-        stockByCapacity[weight] = (
-          full: full,
-          empty: empty,
-          defective: defective,
-          leak: leak,
-        );
-      }
+      final nominal = settings?.getNominalStock(weight) ?? 0;
+      // POS view is always physical. We don't show theoretical empty or centralized gaps.
+      stockByCapacity[weight] = (
+        full: full,
+        empty: empty,
+        inTransit: inTransit,
+        defective: issues,
+        leak: 0,
+      );
     }
 
     return PointOfSaleStockMetrics(
-      pointOfSaleId: posId,
+      pointOfSaleId: enterpriseId,
       totalFull: totalFull,
       totalEmpty: totalEmpty,
+      totalInTransit: totalInTransit,
       totalIssues: totalIssues,
       stockByCapacity: stockByCapacity,
     );
@@ -885,30 +867,31 @@ class WholesaleMetrics {
 /// Métriques du stock.
 class StockMetrics {
   const StockMetrics({
-    required this.totalFull,
-    required this.totalEmpty,
-    required this.totalIssues,
     required this.fullByWeight,
     required this.emptyByWeight,
     required this.issueByWeight,
+    this.centralizedByWeight = const {},
     required this.activePointsOfSaleCount,
     required this.totalPointsOfSaleCount,
     required this.availableWeights,
   });
 
-  final int totalFull;
-  final int totalEmpty;
-  final int totalIssues;
   final Map<int, int> fullByWeight;
   final Map<int, int> emptyByWeight;
   final Map<int, int> issueByWeight;
+  final Map<int, int> centralizedByWeight; // Bottles at mother warehouse / re-loading
   final int activePointsOfSaleCount;
   final int totalPointsOfSaleCount;
   final List<int> availableWeights;
 
+  int get totalFull => fullByWeight.values.fold<int>(0, (sum, val) => sum + val);
+  int get totalEmpty => emptyByWeight.values.fold<int>(0, (sum, val) => sum + val);
+  int get totalIssues => issueByWeight.values.fold<int>(0, (sum, val) => sum + val);
+  int get totalCentralized => centralizedByWeight.values.fold<int>(0, (sum, val) => sum + val);
   String get fullSummary => GazCalculationService.formatStockByWeightSummary(fullByWeight, availableWeights);
   String get emptySummary => GazCalculationService.formatStockByWeightSummary(emptyByWeight, availableWeights);
   String get issueSummary => GazCalculationService.formatStockByWeightSummary(issueByWeight, availableWeights);
+  String get centralizedSummary => GazCalculationService.formatStockByWeightSummary(centralizedByWeight, availableWeights);
 }
 
 /// Métriques des ventes au détail.
@@ -930,6 +913,7 @@ class PointOfSaleStockMetrics {
     required this.pointOfSaleId,
     required this.totalFull,
     required this.totalEmpty,
+    required this.totalInTransit,
     required this.totalIssues,
     required this.stockByCapacity,
   });
@@ -937,8 +921,11 @@ class PointOfSaleStockMetrics {
   final String pointOfSaleId;
   final int totalFull;
   final int totalEmpty;
+  final int totalInTransit;
   final int totalIssues;
-  final Map<int, ({int full, int empty, int defective, int leak})> stockByCapacity;
+  final Map<int, ({int full, int empty, int inTransit, int defective, int leak})> stockByCapacity;
+
+  int get totalCentralized => 0; // Not used for individual POS
 }
 
 /// Métriques de réconciliation journalière.

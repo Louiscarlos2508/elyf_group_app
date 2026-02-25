@@ -9,7 +9,8 @@ import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/gaz_session.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder.dart';
-import '../../widgets/gaz_session_opening_dialog.dart';
+import 'package:elyf_groupe_app/features/gaz/domain/services/gaz_calculation_service.dart';
+import '../gaz_session_opening_dialog.dart';
 
 /// Section du dashboard pour la réconciliation journalière (Z-Report).
 class DashboardReconciliationSection extends ConsumerStatefulWidget {

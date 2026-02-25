@@ -2,19 +2,25 @@ import 'package:flutter/material.dart';
 
 /// Table de stock par capacité.
 class PosStockTable extends StatelessWidget {
-  const PosStockTable({super.key, required this.stockByCapacity});
+  const PosStockTable({
+    super.key,
+    required this.stockByCapacity,
+    this.nominalStocks = const {},
+  });
 
-  final Map<int, ({int full, int empty, int defective, int leak})> stockByCapacity;
+  final Map<int, ({int full, int empty, int inTransit, int defective, int leak})> stockByCapacity;
+  final Map<int, int> nominalStocks;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
-          color: Colors.black.withValues(alpha: 0.1),
+          color: isDark ? theme.colorScheme.outline.withValues(alpha: 0.2) : Colors.black.withValues(alpha: 0.1),
           width: 1.3,
         ),
       ),
@@ -23,14 +29,17 @@ class PosStockTable extends StatelessWidget {
           // Table header
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 9),
-            decoration: const BoxDecoration(
-              color: Color(0xFFF9FAFB),
-              borderRadius: BorderRadius.only(
+            decoration: BoxDecoration(
+              color: isDark ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3) : const Color(0xFFF9FAFB),
+              borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(10),
                 topRight: Radius.circular(10),
               ),
               border: Border(
-                bottom: BorderSide(color: Color(0xFFE5E7EB), width: 1.3),
+                bottom: BorderSide(
+                  color: isDark ? theme.colorScheme.outline.withValues(alpha: 0.2) : const Color(0xFFE5E7EB), 
+                  width: 1.3,
+                ),
               ),
             ),
             child: Row(
@@ -41,7 +50,7 @@ class PosStockTable extends StatelessWidget {
                     'Capacité',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       fontSize: 14,
-                      color: const Color(0xFF0A0A0A),
+                      color: theme.colorScheme.onSurface,
                     ),
                   ),
                 ),
@@ -52,7 +61,7 @@ class PosStockTable extends StatelessWidget {
                       'Pleines',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         fontSize: 14,
-                        color: const Color(0xFF0A0A0A),
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
                   ),
@@ -64,7 +73,7 @@ class PosStockTable extends StatelessWidget {
                       'Vides',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         fontSize: 14,
-                        color: const Color(0xFF0A0A0A),
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
                   ),
@@ -73,23 +82,35 @@ class PosStockTable extends StatelessWidget {
                   flex: 2,
                   child: Center(
                     child: Text(
-                      'Issues',
+                      'Transit',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         fontSize: 14,
-                        color: const Color(0xFF0A0A0A),
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
                   ),
                 ),
                 Expanded(
                   flex: 2,
+                  child: Center(
+                    child: Text(
+                      'Fuites',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontSize: 14,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: 3,
                   child: Align(
                     alignment: Alignment.centerRight,
                     child: Text(
                       'Total',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         fontSize: 14,
-                        color: const Color(0xFF0A0A0A),
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
                   ),
@@ -106,7 +127,7 @@ class PosStockTable extends StatelessWidget {
                   'Aucun stock configuré',
                   style: theme.textTheme.bodyMedium?.copyWith(
                     fontSize: 14,
-                    color: const Color(0xFF6A7282),
+                    color: isDark ? theme.colorScheme.onSurfaceVariant : const Color(0xFF6A7282),
                   ),
                 ),
               ),
@@ -116,19 +137,23 @@ class PosStockTable extends StatelessWidget {
               final weight = entry.key;
               final full = entry.value.full;
               final empty = entry.value.empty;
+              final inTransit = entry.value.inTransit;
               final defective = entry.value.defective;
               final leak = entry.value.leak;
               final issues = defective + leak;
-              final total = full + empty + issues;
+              final total = full + empty + inTransit + issues;
 
               return Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 8,
                   vertical: 12,
                 ),
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   border: Border(
-                    bottom: BorderSide(color: Color(0xFFE5E7EB), width: 1),
+                    bottom: BorderSide(
+                      color: isDark ? theme.colorScheme.outline.withValues(alpha: 0.1) : const Color(0xFFE5E7EB), 
+                      width: 1,
+                    ),
                   ),
                 ),
                 child: Row(
@@ -139,7 +164,7 @@ class PosStockTable extends StatelessWidget {
                         '$weight kg',
                         style: theme.textTheme.bodyMedium?.copyWith(
                           fontSize: 14,
-                          color: const Color(0xFF0A0A0A),
+                          color: theme.colorScheme.onSurface,
                         ),
                       ),
                     ),
@@ -150,7 +175,7 @@ class PosStockTable extends StatelessWidget {
                           '$full',
                           style: theme.textTheme.bodyMedium?.copyWith(
                             fontSize: 14,
-                            color: const Color(0xFF0A0A0A),
+                            color: theme.colorScheme.onSurface,
                           ),
                         ),
                       ),
@@ -162,7 +187,20 @@ class PosStockTable extends StatelessWidget {
                           '$empty',
                           style: theme.textTheme.bodyMedium?.copyWith(
                             fontSize: 14,
-                            color: const Color(0xFF0A0A0A),
+                            color: theme.colorScheme.onSurface,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      flex: 2,
+                      child: Center(
+                        child: Text(
+                          '$inTransit',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontSize: 14,
+                            color: inTransit > 0 ? Colors.orange : theme.colorScheme.onSurface,
+                            fontWeight: inTransit > 0 ? FontWeight.bold : FontWeight.normal,
                           ),
                         ),
                       ),
@@ -174,21 +212,21 @@ class PosStockTable extends StatelessWidget {
                           '$issues',
                           style: theme.textTheme.bodyMedium?.copyWith(
                             fontSize: 14,
-                            color: issues > 0 ? theme.colorScheme.error : const Color(0xFF0A0A0A),
+                            color: issues > 0 ? theme.colorScheme.error : theme.colorScheme.onSurface,
                             fontWeight: issues > 0 ? FontWeight.bold : FontWeight.normal,
                           ),
                         ),
                       ),
                     ),
                     Expanded(
-                      flex: 2,
+                      flex: 3,
                       child: Align(
                         alignment: Alignment.centerRight,
                         child: Text(
                           '$total',
                           style: theme.textTheme.bodyMedium?.copyWith(
                             fontSize: 14,
-                            color: const Color(0xFF0A0A0A),
+                            color: theme.colorScheme.onSurface,
                           ),
                         ),
                       ),

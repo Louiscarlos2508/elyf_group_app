@@ -26,12 +26,12 @@ class StockPosList extends ConsumerWidget {
     final sortedPos = [...activePointsOfSale];
     sortedPos.sort((a, b) {
       final metricsA = GazCalculationService.calculatePosStockMetrics(
-        posId: a.id,
+        enterpriseId: a.id,
         allStocks: allStocks,
         cylinders: cylinders,
       );
       final metricsB = GazCalculationService.calculatePosStockMetrics(
-        posId: b.id,
+        enterpriseId: b.id,
         allStocks: allStocks,
         cylinders: cylinders,
       );
@@ -46,7 +46,7 @@ class StockPosList extends ConsumerWidget {
 
         // Use calculation service for business logic
         final metrics = GazCalculationService.calculatePosStockMetrics(
-          posId: pos.id,
+          enterpriseId: pos.id,
           allStocks: allStocks,
           cylinders: cylinders,
         );

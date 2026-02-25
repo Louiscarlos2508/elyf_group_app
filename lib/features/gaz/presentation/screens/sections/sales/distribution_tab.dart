@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../../application/providers.dart';
 import '../stock/stock_pos_list.dart';
-import '../../../widgets/gaz_kpi_card.dart';
 import '../../../widgets/stock_summary_card.dart';
 import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';

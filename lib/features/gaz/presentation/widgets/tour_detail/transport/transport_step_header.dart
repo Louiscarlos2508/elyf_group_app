@@ -1,12 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:elyf_groupe_app/shared.dart';
 import '../../../../../../../../core/logging/app_logger.dart';
-import '../../../../../../../../shared/presentation/widgets/gaz_button_styles.dart';
-import '../../../../application/providers.dart';
 import '../../../../domain/entities/tour.dart';
-import '../../transport_expense_form_dialog.dart';
 
 /// En-tête de l'étape transport.
 class TransportStepHeader extends ConsumerWidget {
@@ -29,10 +25,10 @@ class TransportStepHeader extends ConsumerWidget {
         Expanded(
           child: Row(
             children: [
-              const Icon(
-                Icons.account_balance_wallet,
+              Icon(
+                Icons.account_balance_wallet_outlined,
                 size: 20,
-                color: Color(0xFF0A0A0A),
+                color: theme.colorScheme.primary,
               ),
               const SizedBox(width: 8),
               Flexible(
@@ -40,7 +36,7 @@ class TransportStepHeader extends ConsumerWidget {
                   'Frais de transport',
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontSize: 16,
-                    fontWeight: FontWeight.normal,
+                    fontWeight: FontWeight.bold,
                     color: theme.colorScheme.onSurface,
                   ),
                   overflow: TextOverflow.ellipsis,
@@ -48,32 +44,6 @@ class TransportStepHeader extends ConsumerWidget {
               ),
             ],
           ),
-        ),
-        FilledButton.icon(
-          style: GazButtonStyles.filledPrimaryIcon(context),
-          onPressed: () async {
-            try {
-              final result = await showDialog<bool>(
-                context: context,
-                builder: (context) => TransportExpenseFormDialog(tour: tour),
-              );
-              if (result == true && context.mounted) {
-                ref.invalidate(
-                  toursProvider((enterpriseId: enterpriseId, status: null)),
-                );
-                // Invalider le provider du tour pour forcer le rafraîchissement
-                ref.refresh(tourProvider(tour.id).future).ignore();
-              }
-            } catch (e) {
-              AppLogger.error(
-                'Erreur lors de l\'ajout de dépense de transport: $e',
-                name: 'gaz.tour',
-                error: e,
-              );
-            }
-          },
-          icon: const Icon(Icons.add, size: 16),
-          label: const Text('Ajouter dépense', style: TextStyle(fontSize: 14)),
         ),
       ],
     );

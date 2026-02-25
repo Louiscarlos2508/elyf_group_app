@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
-import '../../widgets/tour_form_dialog.dart';
+import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
+import 'package:elyf_groupe_app/shared.dart';
 import 'approvisionnement/approvisionnement_tab_bar.dart';
 import 'approvisionnement/tours_list_tab.dart';
 import '../../widgets/gaz_header.dart';
@@ -41,11 +41,52 @@ class _GazLogisticsScreenState extends ConsumerState<GazLogisticsScreen>
     setState(() {});
   }
 
-  void _showNewTourDialog() {
-    showDialog(
+  Future<void> _handleNewTour() async {
+    final activeEnterprise = ref.read(activeEnterpriseProvider).value;
+    if (activeEnterprise == null) return;
+
+    final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => const TourFormDialog(),
+      builder: (context) => AlertDialog(
+        title: const Text('Nouveau tour'),
+        content: const Text(
+          'Voulez-vous démarrer un nouveau tour d\'approvisionnement pour aujourd\'hui ?'
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Annuler'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Démarrer'),
+          ),
+        ],
+      ),
     );
+
+    if (confirmed == true && mounted) {
+      try {
+        final controller = ref.read(tourControllerProvider);
+        final tour = Tour(
+          id: '',
+          enterpriseId: activeEnterprise.id,
+          tourDate: DateTime.now(),
+          status: TourStatus.open,
+        );
+
+        await controller.createTour(tour);
+        
+        if (mounted) {
+          NotificationService.showSuccess(context, 'Nouveau tour démarré');
+          // No need to invalidate manually if watchTours is used in the list tab
+        }
+      } catch (e) {
+        if (mounted) {
+          NotificationService.showError(context, 'Erreur lors de la création: $e');
+        }
+      }
+    }
   }
 
   @override
@@ -63,9 +104,9 @@ class _GazLogisticsScreenState extends ConsumerState<GazLogisticsScreen>
             asSliver: true,
             additionalActions: [
               IconButton(
-                onPressed: _showNewTourDialog,
+                onPressed: _handleNewTour,
                 icon: const Icon(Icons.add_road, color: Colors.white),
-                tooltip: 'Nouveau tour',
+                tooltip: 'Démarrer un tour',
               ),
             ],
             bottom: ApprovisionnementTabBar(tabController: _tabController),
@@ -78,13 +119,13 @@ class _GazLogisticsScreenState extends ConsumerState<GazLogisticsScreen>
               enterpriseId: enterpriseId,
               tourStatus: null, // null filters for non-closed tours in ToursListTab logic
               title: 'Tours en cours',
-              onNewTour: _showNewTourDialog,
+              onNewTour: _handleNewTour,
             ),
             ToursListTab(
               enterpriseId: enterpriseId,
               tourStatus: TourStatus.closed,
               title: 'Historique des tours',
-              onNewTour: _showNewTourDialog,
+              onNewTour: _handleNewTour,
             ),
           ],
         ),

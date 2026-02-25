@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../../core/tenant/tenant_provider.dart' show activeEnterpriseProvider;
 import '../../../../shared/presentation/widgets/elyf_ui/atoms/elyf_button.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/cylinder.dart';

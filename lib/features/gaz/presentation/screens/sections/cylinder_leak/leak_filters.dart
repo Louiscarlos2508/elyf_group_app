@@ -8,10 +8,12 @@ class LeakFilters extends StatelessWidget {
     super.key,
     required this.filterStatus,
     required this.onFilterChanged,
+    this.showExchanged = true,
   });
 
   final LeakStatus? filterStatus;
   final ValueChanged<LeakStatus?> onFilterChanged;
+  final bool showExchanged;
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +32,7 @@ class LeakFilters extends StatelessWidget {
               }
             },
           ),
-          ...LeakStatus.values.map((status) {
+          ...LeakStatus.values.where((s) => showExchanged || s != LeakStatus.exchanged).map((status) {
             return FilterChip(
               label: Text(status.label),
               selected: filterStatus == status,

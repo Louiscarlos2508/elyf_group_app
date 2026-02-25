@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../../../core/tenant/tenant_provider.dart' show activeEnterpriseProvider;
-import '../../../../application/providers.dart';
 import 'package:elyf_groupe_app/features/administration/application/providers.dart';
 import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import '../../../../domain/entities/gas_sale.dart';

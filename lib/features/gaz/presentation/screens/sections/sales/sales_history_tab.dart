@@ -8,7 +8,6 @@ import '../../../../domain/services/gaz_calculation_service.dart';
 import '../../../widgets/wholesale_date_filter_card.dart';
 import '../../../widgets/wholesale_empty_state.dart';
 import '../../../widgets/wholesale_sale_card.dart';
-import '../../../widgets/wholesale/independent_collection_dialog.dart';
 import '../../wholesaler_management_screen.dart';
 import '../../../widgets/gaz_kpi_card.dart';
 import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
@@ -57,22 +56,6 @@ class _SalesHistoryTabState extends ConsumerState<SalesHistoryTab> {
                       ),
                       icon: const Icon(Icons.people_outline),
                       label: const Text('Gérer grossistes'),
-                    ),
-                    const SizedBox(width: 8),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        final enterprise = ref.read(activeEnterpriseProvider).value;
-                        if (enterprise != null) {
-                          showDialog(
-                            context: context,
-                            builder: (context) => IndependentCollectionDialog(
-                              enterpriseId: enterprise.id,
-                            ),
-                          );
-                        }
-                      },
-                      icon: const Icon(Icons.add_circle_outline),
-                      label: const Text('Collecte'),
                     ),
                   ],
                 ),

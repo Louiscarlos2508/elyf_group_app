@@ -51,6 +51,32 @@ class _ReplenishmentDialogState extends ConsumerState<ReplenishmentDialog> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cylindersAsync = ref.watch(cylindersProvider);
+    final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? '';
+    final stocksAsync = ref.watch(cylinderStocksProvider);
+    final settingsAsync = ref.watch(gazSettingsProvider((
+      enterpriseId: enterpriseId,
+      moduleId: 'gaz',
+    )));
+
+    // Calculate available capacity if motherboard
+    int? availableCapacity;
+    if (_selectedCylinder != null && stocksAsync.hasValue && settingsAsync.hasValue) {
+      final stocks = stocksAsync.value!;
+      final settings = settingsAsync.value!;
+      final weight = _selectedCylinder!.weight;
+      
+      final nominal = settings.getNominalStock(weight);
+      if (nominal > 0) {
+        final full = stocks
+            .where((s) => s.weight == weight && s.status == CylinderStatus.full)
+            .fold<int>(0, (sum, s) => sum + s.quantity);
+        final issues = stocks
+            .where((s) => s.weight == weight && (s.status == CylinderStatus.leak || s.status == CylinderStatus.defective))
+            .fold<int>(0, (sum, s) => sum + s.quantity);
+            
+        availableCapacity = (nominal - full - issues).clamp(0, nominal);
+      }
+    }
 
     return AlertDialog(
       title: const Text('Réception de Stock (Plein)'),
@@ -89,10 +115,28 @@ class _ReplenishmentDialogState extends ConsumerState<ReplenishmentDialog> {
                 onChanged: (_) => setState(() {}),
                 validator: (v) {
                   if (v == null || v.isEmpty) return 'Requis';
-                  if (int.tryParse(v) == null || int.parse(v) <= 0) return 'Invalide';
+                  final qty = int.tryParse(v);
+                  if (qty == null || qty <= 0) return 'Invalide';
+                  if (availableCapacity != null && qty > availableCapacity) {
+                    return 'Dépasse la capacité ($availableCapacity dispo)';
+                  }
                   return null;
                 },
               ),
+              if (availableCapacity != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4, left: 4),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Capacité de remplissage (Patrimoine) : $availableCapacity',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
               const SizedBox(height: AppSpacing.md),
               TextFormField(
                 controller: _leakQuantityController,

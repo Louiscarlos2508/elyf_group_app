@@ -6,16 +6,19 @@ class PosBottlesSummary extends StatelessWidget {
     super.key,
     required this.fullBottles,
     required this.emptyBottles,
+    this.inTransitBottles = 0,
     this.issueBottles = 0,
   });
 
   final int fullBottles;
   final int emptyBottles;
+  final int inTransitBottles;
   final int issueBottles;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Row(
       children: [
@@ -24,9 +27,12 @@ class PosBottlesSummary extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.all(13),
             decoration: BoxDecoration(
-              color: const Color(0xFFF0FDF4),
+              color: isDark ? const Color(0xFF00A63E).withValues(alpha: 0.1) : const Color(0xFFF0FDF4),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFFB9F8CF), width: 1.3),
+              border: Border.all(
+                color: isDark ? const Color(0xFF00A63E).withValues(alpha: 0.3) : const Color(0xFFB9F8CF), 
+                width: 1.3,
+              ),
             ),
             child: Row(
               children: [
@@ -34,7 +40,7 @@ class PosBottlesSummary extends StatelessWidget {
                   width: 36,
                   height: 36,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFDCFCE7),
+                    color: isDark ? const Color(0xFF00A63E).withValues(alpha: 0.2) : const Color(0xFFDCFCE7),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(
@@ -52,7 +58,7 @@ class PosBottlesSummary extends StatelessWidget {
                         'Bouteilles pleines',
                         style: theme.textTheme.bodySmall?.copyWith(
                           fontSize: 12,
-                          color: const Color(0xFF4A5565),
+                          color: isDark ? theme.colorScheme.onSurfaceVariant : const Color(0xFF4A5565),
                         ),
                         overflow: TextOverflow.ellipsis,
                         maxLines: 1,
@@ -79,9 +85,12 @@ class PosBottlesSummary extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.all(13),
             decoration: BoxDecoration(
-              color: const Color(0xFFFFF7ED),
+              color: isDark ? const Color(0xFFF54900).withValues(alpha: 0.1) : const Color(0xFFFFF7ED),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFFFFD6A7), width: 1.3),
+              border: Border.all(
+                color: isDark ? const Color(0xFFF54900).withValues(alpha: 0.3) : const Color(0xFFFFD6A7), 
+                width: 1.3,
+              ),
             ),
             child: Row(
               children: [
@@ -89,7 +98,7 @@ class PosBottlesSummary extends StatelessWidget {
                   width: 36,
                   height: 36,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFFEDD4),
+                    color: isDark ? const Color(0xFFF54900).withValues(alpha: 0.2) : const Color(0xFFFFEDD4),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(
@@ -107,7 +116,7 @@ class PosBottlesSummary extends StatelessWidget {
                         'Bouteilles vides',
                         style: theme.textTheme.bodySmall?.copyWith(
                           fontSize: 12,
-                          color: const Color(0xFF4A5565),
+                          color: isDark ? theme.colorScheme.onSurfaceVariant : const Color(0xFF4A5565),
                         ),
                         overflow: TextOverflow.ellipsis,
                         maxLines: 1,
@@ -129,15 +138,18 @@ class PosBottlesSummary extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 16),
-        // Issues bottles card
-        if (issueBottles > 0) ...[
+        // Transit bottles card
+        if (inTransitBottles > 0) ...[
           Expanded(
             child: Container(
               padding: const EdgeInsets.all(13),
               decoration: BoxDecoration(
-                color: const Color(0xFFFEF2F2),
+                color: Colors.orange.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFFECACA), width: 1.3),
+                border: Border.all(
+                  color: Colors.orange.withValues(alpha: 0.3),
+                  width: 1.3,
+                ),
               ),
               child: Row(
                 children: [
@@ -145,7 +157,67 @@ class PosBottlesSummary extends StatelessWidget {
                     width: 36,
                     height: 36,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFEE2E2),
+                      color: Colors.orange.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.local_shipping_outlined,
+                      size: 20,
+                      color: Colors.orange,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'En transit',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontSize: 12,
+                            color: isDark ? theme.colorScheme.onSurfaceVariant : const Color(0xFF4A5565),
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '$inTransitBottles',
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontSize: 24,
+                            fontWeight: FontWeight.normal,
+                            color: Colors.orange,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+        ],
+        // Issues bottles card
+        if (issueBottles > 0) ...[
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.all(13),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFFDC2626).withValues(alpha: 0.1) : const Color(0xFFFEF2F2),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: isDark ? const Color(0xFFDC2626).withValues(alpha: 0.3) : const Color(0xFFFECACA), 
+                  width: 1.3,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFFDC2626).withValues(alpha: 0.2) : const Color(0xFFFEE2E2),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: const Icon(
@@ -160,10 +232,10 @@ class PosBottlesSummary extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Issues',
+                          'Fuites',
                           style: theme.textTheme.bodySmall?.copyWith(
                             fontSize: 12,
-                            color: const Color(0xFF4A5565),
+                            color: isDark ? theme.colorScheme.onSurfaceVariant : const Color(0xFF4A5565),
                           ),
                           overflow: TextOverflow.ellipsis,
                           maxLines: 1,

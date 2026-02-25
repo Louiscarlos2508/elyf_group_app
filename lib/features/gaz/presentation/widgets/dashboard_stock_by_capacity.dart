@@ -5,6 +5,7 @@ import '../../../../../../shared/presentation/widgets/elyf_ui/atoms/elyf_shimmer
 import '../../application/providers.dart';
 import '../../../../core/tenant/tenant_provider.dart';
 import '../../domain/entities/cylinder.dart';
+import '../../domain/entities/cylinder_stock.dart';
 
 /// Widget for Stock par capacité section showing full/empty counts.
 class DashboardStockByCapacity extends ConsumerWidget {

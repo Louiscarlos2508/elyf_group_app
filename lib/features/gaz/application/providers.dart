@@ -42,12 +42,14 @@ import '../data/repositories/expense_offline_repository.dart';
 import '../data/repositories/financial_report_offline_repository.dart';
 import '../data/repositories/gas_offline_repository.dart';
 import '../data/repositories/exchange_offline_repository.dart';
-import '../data/repositories/gaz_settings_offline_repository.dart';import 'package:elyf_groupe_app/features/administration/application/providers.dart';
+import '../data/repositories/gaz_settings_offline_repository.dart';
+import 'package:elyf_groupe_app/features/administration/application/providers.dart';
 import '../data/repositories/session_offline_repository.dart';
 import '../data/repositories/stock_transfer_offline_repository.dart';
 import '../data/repositories/tour_offline_repository.dart';
 import '../data/repositories/wholesaler_offline_repository.dart';
 import '../data/repositories/treasury_offline_repository.dart';
+import '../data/repositories/collection_offline_repository.dart';
 import '../domain/repositories/inventory_audit_repository.dart';
 import '../data/repositories/inventory_audit_offline_repository.dart';
 import '../domain/entities/gaz_inventory_audit.dart';
@@ -60,12 +62,12 @@ import '../domain/entities/financial_report.dart';
 import '../domain/entities/gas_sale.dart';
 import '../domain/entities/stock_alert.dart';
 import '../domain/entities/gaz_settings.dart';
-
 import '../domain/entities/report_data.dart';
 import '../domain/entities/stock_transfer.dart';
 import '../domain/entities/tour.dart';
 import '../domain/entities/wholesaler.dart';
 import '../domain/entities/gaz_session.dart';
+import '../domain/entities/collection.dart';
 import 'package:elyf_groupe_app/shared/domain/entities/treasury_operation.dart';
 import '../domain/services/leak_report_service.dart';
 import '../domain/services/wholesaler_service.dart';
@@ -82,6 +84,7 @@ import '../domain/repositories/stock_transfer_repository.dart';
 import '../domain/repositories/tour_repository.dart';
 import '../domain/repositories/wholesaler_repository.dart';
 import '../domain/repositories/treasury_repository.dart';
+import '../domain/repositories/collection_repository.dart';
 import '../domain/services/data_consistency_service.dart';
 import '../domain/services/financial_calculation_service.dart';
 
@@ -323,6 +326,11 @@ final wholesalerRepositoryProvider = Provider<WholesalerRepository>((ref) {
   );
 });
 
+final collectionRepositoryProvider = Provider<CollectionRepository>((ref) {
+  final driftService = ref.watch(driftServiceProvider);
+  return CollectionOfflineRepository(driftService: driftService);
+});
+
 final gazSettingsRepositoryProvider = Provider.family<GazSettingsRepository, String>((ref, enterpriseId) {
   final driftService = DriftService.instance;
   final syncManager = ref.watch(syncManagerProvider);
@@ -454,6 +462,7 @@ final transactionServiceProvider = Provider<TransactionService>((ref) {
   final expenseRepo = ref.watch(gazExpenseRepositoryProvider);
   final sessionRepo = ref.watch(gazSessionRepositoryProvider);
   final treasuryRepo = ref.watch(gazTreasuryRepositoryProvider);
+  final collectionRepo = ref.watch(collectionRepositoryProvider);
 
   return TransactionService(
     stockRepository: stockRepo,
@@ -469,6 +478,7 @@ final transactionServiceProvider = Provider<TransactionService>((ref) {
     expenseRepository: expenseRepo,
     sessionRepository: sessionRepo,
     treasuryRepository: treasuryRepo,
+    collectionRepository: collectionRepo,
   );
 });
 
@@ -885,6 +895,25 @@ final gazReportDataProvider = FutureProvider.family
         wholesaleSalesCount: wholesaleCount,
       );
     });
+
+// Collections
+final gazCollectionsProvider = StreamProvider<List<Collection>>((ref) {
+  final repo = ref.watch(collectionRepositoryProvider);
+  final viewType = ref.watch(gazDashboardViewTypeProvider);
+  final activeId = ref.watch(activeEnterpriseIdProvider).value ?? 'default';
+
+  if (viewType == GazDashboardViewType.local) {
+    return repo.watchCollections(activeId);
+  }
+
+  final scopedIds = ref.watch(gazScopedEnterpriseIdsProvider).value ?? [activeId];
+  return repo.watchCollections(activeId, enterpriseIds: scopedIds);
+});
+
+// History filtering for specific enterprise
+final collectionsProvider = StreamProvider.family<List<Collection>, String>((ref, enterpriseId) {
+  return ref.watch(collectionRepositoryProvider).watchCollections(enterpriseId);
+});
 
 // Cylinder Stocks
 final cylinderStocksProvider =

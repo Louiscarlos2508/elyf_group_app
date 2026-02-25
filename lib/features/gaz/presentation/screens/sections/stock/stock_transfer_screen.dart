@@ -17,14 +17,13 @@ class StockTransferScreen extends ConsumerWidget {
     final transfersAsync = ref.watch(stockTransfersProvider(activeEnterprise.id));
 
     return DefaultTabController(
-      length: 3,
+      length: 2,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Transferts de Stock'),
           bottom: const TabBar(
             tabs: [
-              Tab(text: 'À traiter'),
-              Tab(text: 'En attente'),
+              Tab(text: 'En cours'),
               Tab(text: 'Historique'),
             ],
           ),
@@ -44,17 +43,10 @@ class StockTransferScreen extends ConsumerWidget {
               return dateB.compareTo(dateA);
             });
 
-            final toProcess = sortedTransfers.where((t) {
-              final isOutgoing = t.fromEnterpriseId == activeEnterprise.id;
-              return (isOutgoing && t.status == StockTransferStatus.pending) ||
-                     (!isOutgoing && t.status == StockTransferStatus.shipped);
-            }).toList();
-
-            final waiting = sortedTransfers.where((t) {
-              final isOutgoing = t.fromEnterpriseId == activeEnterprise.id;
-              return (!isOutgoing && t.status == StockTransferStatus.pending) ||
-                     (isOutgoing && t.status == StockTransferStatus.shipped);
-            }).toList();
+            final active = sortedTransfers.where((t) => 
+              t.status == StockTransferStatus.pending || 
+              t.status == StockTransferStatus.shipped
+            ).toList();
 
             final history = sortedTransfers.where((t) => 
               t.status == StockTransferStatus.received || 
@@ -63,8 +55,7 @@ class StockTransferScreen extends ConsumerWidget {
 
             return TabBarView(
               children: [
-                _TransferList(transfers: toProcess, currentEnterpriseId: activeEnterprise.id, emptyMessage: 'Aucune action requise'),
-                _TransferList(transfers: waiting, currentEnterpriseId: activeEnterprise.id, emptyMessage: 'Aucun transfert en attente'),
+                _TransferList(transfers: active, currentEnterpriseId: activeEnterprise.id, emptyMessage: 'Aucun transfert en cours'),
                 _TransferList(transfers: history, currentEnterpriseId: activeEnterprise.id, emptyMessage: 'Historique vide'),
               ],
             );
@@ -122,7 +113,6 @@ class _TransferCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isOutgoing = transfer.fromEnterpriseId == currentEnterpriseId;
-    final color = _getStatusColor(transfer.status);
     final userId = ref.watch(currentUserIdProvider);
 
     return Card(
@@ -136,18 +126,7 @@ class _TransferCard extends ConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: color.withOpacity(0.5)),
-                  ),
-                  child: Text(
-                    transfer.status.label.toUpperCase(),
-                    style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 12),
-                  ),
-                ),
+                _StatusBadge(transfer: transfer, isOutgoing: isOutgoing),
                 Text(
                   _formatDate(transfer.createdAt ?? DateTime.now()),
                   style: Theme.of(context).textTheme.bodySmall,
@@ -197,7 +176,7 @@ class _TransferCard extends ConsumerWidget {
                     child: const Text('Expédier'),
                   ),
                 if (!isOutgoing && transfer.status == StockTransferStatus.shipped)
-                  ElyfButton(
+                   ElyfButton(
                     onPressed: () => _handleReceive(context, ref, userId),
                     variant: ElyfButtonVariant.filled,
                     child: const Text('Recevoir'),
@@ -218,15 +197,6 @@ class _TransferCard extends ConsumerWidget {
         ),
       ),
     );
-  }
-
-  Color _getStatusColor(StockTransferStatus status) {
-    switch (status) {
-      case StockTransferStatus.pending: return Colors.orange;
-      case StockTransferStatus.shipped: return Colors.blue;
-      case StockTransferStatus.received: return Colors.green;
-      case StockTransferStatus.cancelled: return Colors.red;
-    }
   }
 
   String _formatDate(DateTime date) {
@@ -288,5 +258,58 @@ class _TransferCard extends ConsumerWidget {
         if (context.mounted) NotificationService.showError(context, e.toString());
       }
     }
+  }
+}
+
+class _StatusBadge extends StatelessWidget {
+  const _StatusBadge({required this.transfer, required this.isOutgoing});
+  final StockTransfer transfer;
+  final bool isOutgoing;
+
+  Color _getStatusColor(StockTransferStatus status) {
+    switch (status) {
+      case StockTransferStatus.pending: return Colors.orange;
+      case StockTransferStatus.shipped: return Colors.blue;
+      case StockTransferStatus.received: return Colors.green;
+      case StockTransferStatus.cancelled: return Colors.red;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _getStatusColor(transfer.status);
+    final isActionRequired = (isOutgoing && transfer.status == StockTransferStatus.pending) ||
+                             (!isOutgoing && transfer.status == StockTransferStatus.shipped);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: isActionRequired ? color : color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: 0.5)),
+        boxShadow: isActionRequired ? [
+          BoxShadow(color: color.withValues(alpha: 0.3), blurRadius: 4, offset: const Offset(0, 2))
+        ] : null,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (isActionRequired) ...[
+            const Icon(Icons.notifications_active, size: 14, color: Colors.white),
+            const SizedBox(width: 4),
+          ],
+          Text(
+            isActionRequired 
+              ? (isOutgoing ? 'ACTION : À EXPÉDIER' : 'ACTION : À RECEVOIR')
+              : transfer.status.label.toUpperCase(),
+            style: TextStyle(
+              color: isActionRequired ? Colors.white : color, 
+              fontWeight: FontWeight.bold, 
+              fontSize: 11
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

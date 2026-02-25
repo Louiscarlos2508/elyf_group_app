@@ -14,13 +14,17 @@ class PointOfSaleStockCard extends StatelessWidget {
     required this.emptyBottles,
     this.issueBottles = 0,
     required this.stockByCapacity,
+    this.nominalStocks = const {},
+    this.totalInTransit = 0,
   });
 
   final Enterprise enterprise;
   final int fullBottles;
   final int emptyBottles;
+  final int totalInTransit;
   final int issueBottles;
-  final Map<int, ({int full, int empty, int defective, int leak})> stockByCapacity;
+  final Map<int, ({int full, int empty, int inTransit, int defective, int leak})> stockByCapacity;
+  final Map<int, int> nominalStocks;
 
   @override
   Widget build(BuildContext context) {
@@ -51,11 +55,15 @@ class PointOfSaleStockCard extends StatelessWidget {
           PosBottlesSummary(
             fullBottles: fullBottles,
             emptyBottles: emptyBottles,
+            inTransitBottles: totalInTransit,
             issueBottles: issueBottles,
           ),
           const SizedBox(height: 16),
           // Stock table by capacity
-          PosStockTable(stockByCapacity: stockByCapacity),
+          PosStockTable(
+            stockByCapacity: stockByCapacity,
+            nominalStocks: nominalStocks,
+          ),
         ],
       ),
     );

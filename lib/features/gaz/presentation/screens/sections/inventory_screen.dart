@@ -2,17 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import '../../../../../core/tenant/tenant_provider.dart';
 
 import '../../widgets/gaz_header.dart';
-import '../../widgets/replenishment_dialog.dart';
 import '../../widgets/deposit_refund_dialog.dart';
 import 'inventory/inventory_tab_bar.dart';
 import 'inventory/stock_status_tab.dart';
 import 'inventory/stock_audit_tab.dart';
 import 'inventory/leak_tracking_tab.dart';
-import '../../../domain/entities/gaz_inventory_audit.dart';
-import '../../../domain/entities/cylinder.dart';
+import 'sales/collection_history_tab.dart';
+import 'sales/distribution_tab.dart';
+import '../../../application/providers/permission_providers.dart';
 
 /// Unified Inventory & Stock management screen for the Gaz module.
 /// Consolidates Stock Status, Audits, and Leak Tracking.
@@ -24,20 +25,50 @@ class GazInventoryScreen extends ConsumerStatefulWidget {
 }
 
 class _GazInventoryScreenState extends ConsumerState<GazInventoryScreen>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+    with TickerProviderStateMixin {
+  TabController? _tabController;
+  final List<String> _tabs = [];
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
-    _tabController.addListener(_onTabChanged);
+    // Initialized in build when data is available
+  }
+
+  void _initTabs(Enterprise? enterprise, bool isManager) {
+    final isPOS = enterprise?.type.isPointOfSale == true;
+    final List<String> newTabs = ['Stock'];
+    if (!isPOS) {
+      newTabs.add('Collectes');
+    }
+    if (isManager) {
+      newTabs.add('Distribution');
+    }
+    if (enterprise?.type != EnterpriseType.gasPointOfSale) {
+      newTabs.add('Audits');
+    }
+    newTabs.add('Fuites');
+
+    // If tabs are already initialized and length matches, we are good
+    if (_tabs.isNotEmpty && _tabs.length == newTabs.length) return;
+
+    // Dispose old controller if exists
+    if (_tabController != null) {
+      _tabController!.removeListener(_onTabChanged);
+      _tabController!.dispose();
+    }
+
+    _tabs.clear();
+    _tabs.addAll(newTabs);
+    
+    _tabController = TabController(length: _tabs.length, vsync: this);
+    _tabController!.addListener(_onTabChanged);
   }
 
   @override
   void dispose() {
-    _tabController.removeListener(_onTabChanged);
-    _tabController.dispose();
+    _tabController?.removeListener(_onTabChanged);
+    _tabController?.dispose();
     super.dispose();
   }
 
@@ -48,8 +79,9 @@ class _GazInventoryScreenState extends ConsumerState<GazInventoryScreen>
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id;
+    final enterprise = ref.watch(activeEnterpriseProvider).value;
+    final enterpriseId = enterprise?.id;
+    final isManager = ref.watch(isGazManagerProvider).value ?? false;
 
     if (enterpriseId == null) {
       return Scaffold(
@@ -57,6 +89,8 @@ class _GazInventoryScreenState extends ConsumerState<GazInventoryScreen>
         body: const Center(child: Text('Aucune entreprise sélectionnée')),
       );
     }
+
+    _initTabs(enterprise, isManager);
 
     return Scaffold(
       body: NestedScrollView(
@@ -73,7 +107,10 @@ class _GazInventoryScreenState extends ConsumerState<GazInventoryScreen>
                 tooltip: 'Retour Bouteille',
               ),
             ],
-            bottom: InventoryTabBar(tabController: _tabController),
+            bottom: InventoryTabBar(
+              tabController: _tabController!,
+              tabs: _tabs,
+            ),
           ),
         ],
         body: TabBarView(
@@ -83,7 +120,12 @@ class _GazInventoryScreenState extends ConsumerState<GazInventoryScreen>
               enterpriseId: enterpriseId,
               moduleId: 'gaz',
             ),
-            StockAuditTab(enterpriseId: enterpriseId),
+            if (enterprise?.type.isPointOfSale != true)
+              const CollectionHistoryTab(),
+            if (isManager)
+              const DistributionTab(),
+            if (enterprise?.type != EnterpriseType.gasPointOfSale)
+              StockAuditTab(enterpriseId: enterpriseId),
             LeakTrackingTab(
               enterpriseId: enterpriseId,
               moduleId: 'gaz',
@@ -95,78 +137,8 @@ class _GazInventoryScreenState extends ConsumerState<GazInventoryScreen>
   }
 
   String _getSubtitle() {
-    switch (_tabController.index) {
-      case 0:
-        return 'État des Stocks';
-      case 1:
-        return 'Audits & Inventaires';
-      case 2:
-        return 'Suivi des Fuites';
-      default:
-        return 'Gestion du Stock';
-    }
+    if (_tabs.isEmpty || _tabController == null) return 'Gestion du Stock';
+    return _tabs[_tabController!.index];
   }
 }
 
-class _AuditHistoryCard extends StatelessWidget {
-  const _AuditHistoryCard({required this.audit});
-
-  final GazInventoryAudit audit;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final totalDiscrepancy = audit.items.fold<int>(0, (sum, item) => sum + item.discrepancy.abs());
-
-    return Card(
-      child: ExpansionTile(
-        title: Text(
-          'Audit du ${audit.auditDate.toIso8601String().substring(0, 10)}',
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        subtitle: Text(
-          '${audit.items.length} types | Écart total: $totalDiscrepancy',
-          style: TextStyle(
-            color: totalDiscrepancy == 0 ? Colors.green : Colors.orange,
-          ),
-        ),
-        leading: Icon(
-          Icons.inventory_2_outlined,
-          color: totalDiscrepancy == 0 ? Colors.green : Colors.orange,
-        ),
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ...audit.items.map((item) => Padding(
-                      padding: const EdgeInsets.only(bottom: 8.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text('${item.weight}kg - ${item.status.name}'),
-                          Text(
-                            'T: ${item.theoreticalQuantity} | P: ${item.physicalQuantity} (${item.discrepancy > 0 ? "+" : ""}${item.discrepancy})',
-                            style: TextStyle(
-                              color: item.discrepancy == 0
-                                  ? Colors.grey
-                                  : (item.discrepancy > 0 ? Colors.green : Colors.red),
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    )),
-                if (audit.notes != null) ...[
-                  const Divider(),
-                  Text('Note: ${audit.notes}', style: theme.textTheme.bodySmall),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}

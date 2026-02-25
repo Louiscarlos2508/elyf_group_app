@@ -12,6 +12,8 @@ import '../../widgets/cylinder_form_dialog.dart';
 import '../../widgets/point_of_sale_form_dialog.dart';
 import '../../widgets/point_of_sale_table.dart';
 import '../../widgets/gaz_header.dart';
+import '../../../domain/entities/cylinder.dart';
+import '../../../domain/entities/gaz_settings.dart';
 import '../../../application/providers.dart';
 
 /// Écran de paramètres pour le module Gaz selon le design Figma.
@@ -101,8 +103,8 @@ class GazSettingsScreen extends ConsumerWidget {
                   ),
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
-                      child: _buildNominalStockSection(
+                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+                      child: _buildDefaultFeesSection(
                         context: context,
                         ref: ref,
                         theme: theme,
@@ -672,6 +674,195 @@ class GazSettingsScreen extends ConsumerWidget {
                 weight: weight,
                 quantity: newNominal,
               );
+              if (context.mounted) Navigator.pop(context);
+            },
+            child: const Text('Enregistrer'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Construit la section des frais logistiques par défaut.
+  Widget _buildDefaultFeesSection({
+    required BuildContext context,
+    required WidgetRef ref,
+    required ThemeData theme,
+    required String enterpriseId,
+  }) {
+    final settingsAsync = ref.watch(gazSettingsProvider((enterpriseId: enterpriseId, moduleId: 'gaz')));
+    final cylindersAsync = ref.watch(cylindersProvider);
+
+    return Card(
+      elevation: 0,
+      color: theme.colorScheme.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.secondaryContainer.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    Icons.local_shipping_outlined,
+                    size: 20,
+                    color: theme.colorScheme.secondary,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Frais Logistiques par Défaut',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                        ),
+                      ),
+                      Text(
+                        'Frais appliqués automatiquement lors des tours',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            const Divider(),
+            const SizedBox(height: 16),
+            cylindersAsync.when(
+              data: (cylinders) {
+                final weights = cylinders.map((c) => c.weight).toSet().toList()..sort();
+                if (weights.isEmpty) {
+                  return const Center(child: Text('Aucun type de bouteille configuré'));
+                }
+
+                return settingsAsync.when(
+                  data: (settings) {
+                    return ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: weights.length,
+                      separatorBuilder: (context, index) => const Divider(),
+                      itemBuilder: (context, index) {
+                        final weight = weights[index];
+                        final loading = settings?.loadingFees[weight] ?? 0.0;
+                        final unloading = settings?.unloadingFees[weight] ?? 0.0;
+
+                        return ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text('$weight kg'),
+                          subtitle: Text('Chargement: ${loading.toInt()} F | Déchargement: ${unloading.toInt()} F'),
+                          trailing: SizedBox(
+                            width: 100,
+                            child: ElyfButton(
+                              onPressed: () => _showFeesEditDialog(
+                                context,
+                                ref,
+                                enterpriseId,
+                                weight,
+                                loading,
+                                unloading,
+                              ),
+                              size: ElyfButtonSize.small,
+                              child: const Text('Modifier'),
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                  loading: () => const Center(child: CircularProgressIndicator()),
+                  error: (e, _) => Text('Erreur paramètres: $e'),
+                );
+              },
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Text('Erreur cylindres: $e'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showFeesEditDialog(
+    BuildContext context,
+    WidgetRef ref,
+    String enterpriseId,
+    int weight,
+    double currentLoading,
+    double currentUnloading,
+  ) {
+    final loadingController = TextEditingController(text: currentLoading.toInt().toString());
+    final unloadingController = TextEditingController(text: currentUnloading.toInt().toString());
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        scrollable: true,
+        title: Text('Frais par défaut ($weight kg)'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: loadingController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'Frais de chargement (Unit.)',
+                suffixText: 'FCFA',
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: unloadingController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'Frais de déchargement (Unit.)',
+                suffixText: 'FCFA',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final newLoading = double.tryParse(loadingController.text) ?? 0.0;
+              final newUnloading = double.tryParse(unloadingController.text) ?? 0.0;
+              
+              final controller = ref.read(gazSettingsControllerProvider);
+              await controller.setLoadingFee(
+                enterpriseId: enterpriseId,
+                moduleId: 'gaz',
+                weight: weight,
+                fee: newLoading,
+              );
+              await controller.setUnloadingFee(
+                enterpriseId: enterpriseId,
+                moduleId: 'gaz',
+                weight: weight,
+                fee: newUnloading,
+              );
+              
               if (context.mounted) Navigator.pop(context);
             },
             child: const Text('Enregistrer'),

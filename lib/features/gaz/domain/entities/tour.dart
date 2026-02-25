@@ -23,11 +23,15 @@ class Tour {
     required this.status,
     this.loadingFeePerBottle = 0.0,
     this.unloadingFeePerBottle = 0.0,
+    Map<int, double>? loadingFees,
+    Map<int, double>? unloadingFees,
     this.fixedUnloadingFee = 0.0,
-    this.exchangeFees = const {},
-    this.emptyBottlesLoaded = const {},
+    Map<int, double>? exchangeFees,
+    Map<int, double>? purchasePricesUsed,
+    Map<int, int>? emptyBottlesLoaded,
     this.transportExpenses = const [],
-    this.fullBottlesReceived = const {},
+    Map<int, int>? fullBottlesReceived,
+    Map<int, int>? emptyBottlesReturned,
     this.gasPurchaseCost,
     this.supplierName,
     this.loadingCompletedDate,
@@ -36,11 +40,21 @@ class Tour {
     this.closureDate,
     this.cancelledDate,
     this.notes,
+    this.applyLoadingFees = true,
+    double? additionalInvoiceFees,
+ Sioux
     this.updatedAt,
     this.createdAt,
     this.deletedAt,
     this.deletedBy,
-  });
+  })  : _loadingFees = loadingFees,
+        _unloadingFees = unloadingFees,
+        _exchangeFees = exchangeFees,
+        _purchasePricesUsed = purchasePricesUsed,
+        _emptyBottlesLoaded = emptyBottlesLoaded,
+        _fullBottlesReceived = fullBottlesReceived,
+        _emptyBottlesReturned = emptyBottlesReturned,
+        _additionalInvoiceFees = additionalInvoiceFees;
 
   final String id;
   final String enterpriseId;
@@ -48,14 +62,32 @@ class Tour {
   final TourStatus status;
   final double loadingFeePerBottle;
   final double unloadingFeePerBottle;
+
+  final Map<int, double>? _loadingFees;
+  Map<int, double> get loadingFees => _loadingFees ?? const <int, double>{};
+
+  final Map<int, double>? _unloadingFees;
+  Map<int, double> get unloadingFees => _unloadingFees ?? const <int, double>{};
+
   final double fixedUnloadingFee;
-  /// Frais d'échange par type de bouteille (poids -> prix)
-  final Map<int, double> exchangeFees;
-  /// Bouteilles vides chargées pour l'échange (poids → quantité)
-  final Map<int, int> emptyBottlesLoaded;
+
+  final Map<int, double>? _exchangeFees;
+  Map<int, double> get exchangeFees => _exchangeFees ?? const <int, double>{};
+
+  final Map<int, double>? _purchasePricesUsed;
+  Map<int, double> get purchasePricesUsed => _purchasePricesUsed ?? const <int, double>{};
+
+  final Map<int, int>? _emptyBottlesLoaded;
+  Map<int, int> get emptyBottlesLoaded => _emptyBottlesLoaded ?? const <int, int>{};
+
   final List<TransportExpense> transportExpenses;
-  /// Bouteilles pleines reçues du fournisseur (poids → quantité)
-  final Map<int, int> fullBottlesReceived;
+
+  final Map<int, int>? _fullBottlesReceived;
+  Map<int, int> get fullBottlesReceived => _fullBottlesReceived ?? const <int, int>{};
+
+  final Map<int, int>? _emptyBottlesReturned;
+  Map<int, int> get emptyBottlesReturned => _emptyBottlesReturned ?? const <int, int>{};
+
   final double? gasPurchaseCost;
   final String? supplierName;
   final DateTime? loadingCompletedDate;
@@ -64,6 +96,9 @@ class Tour {
   final DateTime? closureDate;
   final DateTime? cancelledDate;
   final String? notes;
+  final bool applyLoadingFees;
+  final double? _additionalInvoiceFees;
+  double get additionalInvoiceFees => _additionalInvoiceFees ?? 0.0;
   final DateTime? updatedAt;
   final DateTime? createdAt;
   final DateTime? deletedAt;
@@ -76,11 +111,15 @@ class Tour {
     TourStatus? status,
     double? loadingFeePerBottle,
     double? unloadingFeePerBottle,
+    Map<int, double>? loadingFees,
+    Map<int, double>? unloadingFees,
     double? fixedUnloadingFee,
     Map<int, double>? exchangeFees,
+    Map<int, double>? purchasePricesUsed,
     Map<int, int>? emptyBottlesLoaded,
     List<TransportExpense>? transportExpenses,
     Map<int, int>? fullBottlesReceived,
+    Map<int, int>? emptyBottlesReturned,
     double? gasPurchaseCost,
     String? supplierName,
     DateTime? loadingCompletedDate,
@@ -89,6 +128,8 @@ class Tour {
     DateTime? closureDate,
     DateTime? cancelledDate,
     String? notes,
+    bool? applyLoadingFees,
+    double? additionalInvoiceFees,
     DateTime? updatedAt,
     DateTime? createdAt,
     DateTime? deletedAt,
@@ -102,11 +143,15 @@ class Tour {
       loadingFeePerBottle: loadingFeePerBottle ?? this.loadingFeePerBottle,
       unloadingFeePerBottle:
           unloadingFeePerBottle ?? this.unloadingFeePerBottle,
+      loadingFees: loadingFees ?? _loadingFees,
+      unloadingFees: unloadingFees ?? _unloadingFees,
       fixedUnloadingFee: fixedUnloadingFee ?? this.fixedUnloadingFee,
-      exchangeFees: exchangeFees ?? this.exchangeFees,
-      emptyBottlesLoaded: emptyBottlesLoaded ?? this.emptyBottlesLoaded,
+      exchangeFees: exchangeFees ?? _exchangeFees,
+      purchasePricesUsed: purchasePricesUsed ?? _purchasePricesUsed,
+      emptyBottlesLoaded: emptyBottlesLoaded ?? _emptyBottlesLoaded,
       transportExpenses: transportExpenses ?? this.transportExpenses,
-      fullBottlesReceived: fullBottlesReceived ?? this.fullBottlesReceived,
+      fullBottlesReceived: fullBottlesReceived ?? _fullBottlesReceived,
+      emptyBottlesReturned: emptyBottlesReturned ?? _emptyBottlesReturned,
       gasPurchaseCost: gasPurchaseCost ?? this.gasPurchaseCost,
       supplierName: supplierName ?? this.supplierName,
       loadingCompletedDate:
@@ -118,6 +163,8 @@ class Tour {
       closureDate: closureDate ?? this.closureDate,
       cancelledDate: cancelledDate ?? this.cancelledDate,
       notes: notes ?? this.notes,
+      applyLoadingFees: applyLoadingFees ?? this.applyLoadingFees,
+      additionalInvoiceFees: additionalInvoiceFees ?? _additionalInvoiceFees,
       updatedAt: updatedAt ?? this.updatedAt,
       createdAt: createdAt ?? this.createdAt,
       deletedAt: deletedAt ?? this.deletedAt,
@@ -128,7 +175,6 @@ class Tour {
   factory Tour.fromMap(Map<String, dynamic> map, String defaultEnterpriseId) {
     final tourId = map['localId'] as String? ?? map['id'] as String? ?? '';
 
-    // Migration: lire l'ancien champ "status" avec les anciens noms
     final statusStr = map['status'] as String? ?? 'loading';
     final migratedStatus = _migrateStatus(statusStr);
 
@@ -141,17 +187,29 @@ class Tour {
           (map['loadingFeePerBottle'] as num?)?.toDouble() ?? 0.0,
       unloadingFeePerBottle:
           (map['unloadingFeePerBottle'] as num?)?.toDouble() ?? 0.0,
+      loadingFees: (map['loadingFees'] as Map<String, dynamic>?)?.map(
+            (k, v) => MapEntry(int.parse(k), (v as num).toDouble()),
+          ) ??
+          const <int, double>{},
+      unloadingFees: (map['unloadingFees'] as Map<String, dynamic>?)?.map(
+            (k, v) => MapEntry(int.parse(k), (v as num).toDouble()),
+          ) ??
+          const <int, double>{},
       fixedUnloadingFee:
           (map['fixedUnloadingFee'] as num?)?.toDouble() ?? 0.0,
       exchangeFees: (map['exchangeFees'] as Map<String, dynamic>?)?.map(
             (k, v) => MapEntry(int.parse(k), (v as num).toDouble()),
           ) ??
-          {},
+          const <int, double>{},
+      purchasePricesUsed: (map['purchasePricesUsed'] as Map<String, dynamic>?)?.map(
+            (k, v) => MapEntry(int.parse(k), (v as num).toDouble()),
+          ) ??
+          const <int, double>{},
       emptyBottlesLoaded:
           (map['emptyBottlesLoaded'] as Map<String, dynamic>?)?.map(
                 (k, v) => MapEntry(int.parse(k), (v as num).toInt()),
               ) ??
-              {},
+              const <int, int>{},
       transportExpenses: (map['transportExpenses'] as List<dynamic>?)
               ?.map(
                   (e) => TransportExpense.fromMap(e as Map<String, dynamic>))
@@ -161,7 +219,12 @@ class Tour {
           (map['fullBottlesReceived'] as Map<String, dynamic>?)?.map(
                 (k, v) => MapEntry(int.parse(k), (v as num).toInt()),
               ) ??
-              {},
+              const <int, int>{},
+      emptyBottlesReturned:
+          (map['emptyBottlesReturned'] as Map<String, dynamic>?)?.map(
+                (k, v) => MapEntry(int.parse(k), (v as num).toInt()),
+              ) ??
+              const <int, int>{},
       gasPurchaseCost: (map['gasPurchaseCost'] as num?)?.toDouble(),
       supplierName: map['supplierName'] as String?,
       loadingCompletedDate: _parseDate(map['loadingCompletedDate'] ?? map['collectionCompletedDate']),
@@ -170,6 +233,8 @@ class Tour {
       closureDate: _parseDate(map['closureDate']),
       cancelledDate: _parseDate(map['cancelledDate']),
       notes: map['notes'] as String?,
+      applyLoadingFees: map['applyLoadingFees'] as bool? ?? true,
+      additionalInvoiceFees: (map['additionalInvoiceFees'] as num?)?.toDouble(),
       updatedAt: _parseDate(map['updatedAt']),
       createdAt: _parseDate(map['createdAt']),
       deletedAt: _parseDate(map['deletedAt']),
@@ -177,7 +242,6 @@ class Tour {
     );
   }
 
-  /// Migre les anciens noms de statut vers les nouveaux.
   static TourStatus _migrateStatus(String status) {
     switch (status) {
       case 'loading':
@@ -186,6 +250,8 @@ class Tour {
         return TourStatus.open;
       case 'closure':
         return TourStatus.closed;
+      case 'cancelled':
+        return TourStatus.cancelled;
       default:
         try {
           return TourStatus.values.byName(status);
@@ -208,8 +274,13 @@ class Tour {
       'status': status.name,
       'loadingFeePerBottle': loadingFeePerBottle,
       'unloadingFeePerBottle': unloadingFeePerBottle,
+      'loadingFees': loadingFees.map((k, v) => MapEntry(k.toString(), v)),
+      'unloadingFees': unloadingFees.map((k, v) => MapEntry(k.toString(), v)),
       'fixedUnloadingFee': fixedUnloadingFee,
       'exchangeFees': exchangeFees.map(
+        (k, v) => MapEntry(k.toString(), v),
+      ),
+      'purchasePricesUsed': purchasePricesUsed.map(
         (k, v) => MapEntry(k.toString(), v),
       ),
       'emptyBottlesLoaded': emptyBottlesLoaded.map(
@@ -217,6 +288,9 @@ class Tour {
       ),
       'transportExpenses': transportExpenses.map((e) => e.toMap()).toList(),
       'fullBottlesReceived': fullBottlesReceived.map(
+        (k, v) => MapEntry(k.toString(), v),
+      ),
+      'emptyBottlesReturned': emptyBottlesReturned.map(
         (k, v) => MapEntry(k.toString(), v),
       ),
       'gasPurchaseCost': gasPurchaseCost,
@@ -227,6 +301,8 @@ class Tour {
       'closureDate': closureDate?.toIso8601String(),
       'cancelledDate': cancelledDate?.toIso8601String(),
       'notes': notes,
+      'applyLoadingFees': applyLoadingFees,
+      'additionalInvoiceFees': additionalInvoiceFees,
       'updatedAt': updatedAt?.toIso8601String(),
       'createdAt': createdAt?.toIso8601String(),
       'deletedAt': deletedAt?.toIso8601String(),
@@ -236,27 +312,42 @@ class Tour {
 
   bool get isDeleted => deletedAt != null;
 
-  /// Total des bouteilles vides chargées.
   int get totalBottlesToLoad {
     return emptyBottlesLoaded.values.fold<int>(0, (sum, qty) => sum + qty);
   }
 
-  /// Total des bouteilles pleines reçues.
   int get totalBottlesReceived {
     return fullBottlesReceived.values.fold<int>(0, (sum, qty) => sum + qty);
   }
 
-  /// Calcule le total des frais de chargement.
+  int get totalBottlesReturned {
+    return emptyBottlesReturned.values.fold<int>(0, (sum, qty) => sum + qty);
+  }
+
   double get totalLoadingFees {
+    if (!applyLoadingFees) return 0.0;
+    if (loadingFees.isNotEmpty) {
+      double total = 0.0;
+      emptyBottlesLoaded.forEach((weight, qty) {
+        total += qty * (loadingFees[weight] ?? loadingFeePerBottle);
+      });
+      return total;
+    }
     return totalBottlesToLoad * loadingFeePerBottle;
   }
 
-  /// Calcule le total des frais de déchargement.
   double get totalUnloadingFees {
-    return (totalBottlesReceived * unloadingFeePerBottle) + fixedUnloadingFee;
+    double baseUnloading = 0.0;
+    if (unloadingFees.isNotEmpty) {
+      fullBottlesReceived.forEach((weight, qty) {
+        baseUnloading += qty * (unloadingFees[weight] ?? unloadingFeePerBottle);
+      });
+    } else {
+      baseUnloading = totalBottlesReceived * unloadingFeePerBottle;
+    }
+    return baseUnloading + fixedUnloadingFee;
   }
 
-  /// Calcule le total des frais d'échange.
   double get totalExchangeFees {
     double total = 0.0;
     fullBottlesReceived.forEach((weight, qty) {
@@ -266,7 +357,6 @@ class Tour {
     return total;
   }
 
-  /// Calcule le total des frais de transport.
   double get totalTransportExpenses {
     return transportExpenses.fold<double>(
       0.0,
@@ -274,12 +364,17 @@ class Tour {
     );
   }
 
-  /// Calcule le total des dépenses (transport + chargement + déchargement + échange + achat gaz).
+  double get totalGasPurchaseCost {
+    // Prioritize the manually entered invoice total for overall costs
+    return gasPurchaseCost ?? 0.0;
+  }
+
   double get totalExpenses {
     return totalTransportExpenses +
         totalLoadingFees +
         totalUnloadingFees +
         totalExchangeFees +
-        (gasPurchaseCost ?? 0.0);
+        totalGasPurchaseCost +
+        additionalInvoiceFees;
   }
 }

@@ -9,9 +9,14 @@ import '../../../../shared/presentation/widgets/elyf_ui/atoms/elyf_icon_button.d
 
 /// Formulaire d'ajout d'une dépense de transport selon le design Figma.
 class TransportExpenseFormDialog extends ConsumerStatefulWidget {
-  const TransportExpenseFormDialog({super.key, required this.tour});
+  const TransportExpenseFormDialog({
+    super.key,
+    required this.tour,
+    this.initialExpense,
+  });
 
   final Tour tour;
+  final TransportExpense? initialExpense;
 
   @override
   ConsumerState<TransportExpenseFormDialog> createState() =>
@@ -21,8 +26,19 @@ class TransportExpenseFormDialog extends ConsumerStatefulWidget {
 class _TransportExpenseFormDialogState
     extends ConsumerState<TransportExpenseFormDialog> {
   final _formKey = GlobalKey<FormState>();
-  final _descriptionController = TextEditingController();
-  final _amountController = TextEditingController(text: '0');
+  late final TextEditingController _descriptionController;
+  late final TextEditingController _amountController;
+
+  @override
+  void initState() {
+    super.initState();
+    _descriptionController = TextEditingController(
+      text: widget.initialExpense?.description ?? '',
+    );
+    _amountController = TextEditingController(
+      text: (widget.initialExpense?.amount ?? 0).toString(),
+    );
+  }
 
   @override
   void dispose() {
@@ -48,16 +64,32 @@ class _TransportExpenseFormDialogState
     try {
       final controller = ref.read(tourControllerProvider);
 
-      final expense = TransportExpense(
-        id: 'expense_${DateTime.now().millisecondsSinceEpoch}',
-        description: _descriptionController.text.trim(),
-        amount: amount,
-        expenseDate: DateTime.now(),
-      );
+      List<TransportExpense> updatedExpenses;
+      final isEditing = widget.initialExpense != null;
 
-      final updatedExpenses = [...widget.tour.transportExpenses, expense];
+      if (isEditing) {
+        updatedExpenses = widget.tour.transportExpenses.map((e) {
+          if (e.id == widget.initialExpense!.id) {
+            return e.copyWith(
+              description: _descriptionController.text.trim(),
+              amount: amount,
+            );
+          }
+          return e;
+        }).toList();
+      } else {
+        final expense = TransportExpense(
+          id: 'expense_${DateTime.now().millisecondsSinceEpoch}',
+          description: _descriptionController.text.trim(),
+          amount: amount,
+          expenseDate: DateTime.now(),
+        );
+        updatedExpenses = [...widget.tour.transportExpenses, expense];
+      }
+
       final updatedTour = widget.tour.copyWith(
         transportExpenses: updatedExpenses,
+        updatedAt: DateTime.now(),
       );
 
       await controller.updateTour(updatedTour);
@@ -85,8 +117,10 @@ class _TransportExpenseFormDialogState
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final lightGray = const Color(0xFFF3F3F5);
-    final textGray = const Color(0xFF717182);
+    final isDark = theme.brightness == Brightness.dark;
+    final backgroundColor = isDark ? theme.colorScheme.surfaceContainerHigh : const Color(0xFFF3F3F5);
+    final textSecondary = theme.colorScheme.onSurfaceVariant;
+    final isEditing = widget.initialExpense != null;
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -107,11 +141,11 @@ class _TransportExpenseFormDialogState
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Ajouter une dépense',
+                          isEditing ? 'Modifier la dépense' : 'Ajouter une dépense',
                           style: theme.textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.bold,
                             fontSize: 18,
-                            color: const Color(0xFF0A0A0A),
+                            color: theme.colorScheme.onSurface,
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -119,7 +153,7 @@ class _TransportExpenseFormDialogState
                           'Enregistrez les frais du trajet',
                           style: theme.textTheme.bodyMedium?.copyWith(
                             fontSize: 14,
-                            color: textGray,
+                            color: textSecondary,
                           ),
                         ),
                       ],
@@ -145,7 +179,7 @@ class _TransportExpenseFormDialogState
                         'Description',
                         style: theme.textTheme.bodyMedium?.copyWith(
                           fontSize: 14,
-                          color: const Color(0xFF0A0A0A),
+                          color: theme.colorScheme.onSurface,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -153,7 +187,7 @@ class _TransportExpenseFormDialogState
                         controller: _descriptionController,
                         decoration: InputDecoration(
                           filled: true,
-                          fillColor: lightGray,
+                          fillColor: backgroundColor,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                             borderSide: BorderSide.none,
@@ -163,9 +197,9 @@ class _TransportExpenseFormDialogState
                             vertical: 4,
                           ),
                           hintText: 'Ex: Carburant, péage, repas...',
-                          hintStyle: TextStyle(fontSize: 14, color: textGray),
+                          hintStyle: TextStyle(fontSize: 14, color: textSecondary),
                         ),
-                        style: TextStyle(fontSize: 14, color: textGray),
+                        style: TextStyle(fontSize: 14, color: theme.colorScheme.onSurface),
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
                             return 'Ce champ est requis';
@@ -179,7 +213,7 @@ class _TransportExpenseFormDialogState
                         'Montant',
                         style: theme.textTheme.bodyMedium?.copyWith(
                           fontSize: 14,
-                          color: const Color(0xFF0A0A0A),
+                          color: theme.colorScheme.onSurface,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -189,7 +223,7 @@ class _TransportExpenseFormDialogState
                             controller: _amountController,
                             decoration: InputDecoration(
                               filled: true,
-                              fillColor: lightGray,
+                              fillColor: backgroundColor,
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
                                 borderSide: BorderSide.none,
@@ -199,7 +233,7 @@ class _TransportExpenseFormDialogState
                                 vertical: 4,
                               ),
                             ),
-                            style: TextStyle(fontSize: 14, color: textGray),
+                            style: TextStyle(fontSize: 14, color: theme.colorScheme.onSurface),
                             keyboardType: TextInputType.number,
                             validator: (value) {
                               if (value == null || value.isEmpty) {
@@ -221,7 +255,7 @@ class _TransportExpenseFormDialogState
                                 'FCFA',
                                 style: TextStyle(
                                   fontSize: 14,
-                                  color: const Color(0xFF6A7282),
+                                  color: textSecondary,
                                 ),
                               ),
                             ),
@@ -249,7 +283,7 @@ class _TransportExpenseFormDialogState
                     child: ElyfButton(
                       onPressed: _submit,
                       width: double.infinity,
-                      child: const Text('Ajouter'),
+                      child: Text(isEditing ? 'Modifier' : 'Ajouter'),
                     ),
                   ),
                 ],

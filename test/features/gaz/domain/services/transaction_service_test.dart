@@ -20,6 +20,7 @@ import 'package:elyf_groupe_app/features/gaz/domain/repositories/exchange_reposi
 import 'package:elyf_groupe_app/features/gaz/domain/repositories/gaz_settings_repository.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/repositories/inventory_audit_repository.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/repositories/expense_repository.dart';
+import 'package:elyf_groupe_app/features/gaz/domain/repositories/collection_repository.dart';
 import 'package:elyf_groupe_app/shared/domain/entities/treasury_operation.dart';
 
 @GenerateNiceMocks([
@@ -36,6 +37,7 @@ import 'package:elyf_groupe_app/shared/domain/entities/treasury_operation.dart';
   MockSpec<GazExpenseRepository>(),
   MockSpec<GazSessionRepository>(),
   MockSpec<GazTreasuryRepository>(),
+  MockSpec<CollectionRepository>(),
 ])
 import 'transaction_service_test.mocks.dart';
 
@@ -45,6 +47,7 @@ void main() {
   late MockGasRepository mockGasRepo;
   late MockGazSessionRepository mockSessionRepo;
   late MockGazTreasuryRepository mockTreasuryRepo;
+  late MockCollectionRepository mockCollectionRepo;
   late MockDataConsistencyService mockConsistencyService; // Added mock for DataConsistencyService
 
   setUp(() {
@@ -52,6 +55,7 @@ void main() {
     mockGasRepo = MockGasRepository();
     mockSessionRepo = MockGazSessionRepository();
     mockTreasuryRepo = MockGazTreasuryRepository();
+    mockCollectionRepo = MockCollectionRepository();
     mockConsistencyService = MockDataConsistencyService(); // Initialize mock
 
     service = TransactionService(
@@ -68,6 +72,7 @@ void main() {
       expenseRepository: MockGazExpenseRepository(),
       sessionRepository: mockSessionRepo,
       treasuryRepository: mockTreasuryRepo,
+      collectionRepository: mockCollectionRepo,
     );
   });
 
@@ -137,10 +142,10 @@ void main() {
       predicate<CylinderStock>((s) => s.status == CylinderStatus.emptyAtStore && s.quantity == 10 && s.weight == 12)
     ))).called(1);
 
-    // 2. Check GasSale creation (Return type)
-    verify(mockGasRepo.addSale(argThat(
-      predicate<GasSale>((s) => s.dealType == GasSaleDealType.returnCylinder && s.emptyReturnedQuantity == 10)
-    ))).called(1);
+    // 2. Check Collection saving
+    verify(mockCollectionRepo.saveCollection(argThat(
+      predicate<Collection>((c) => c.id == 'col1' && c.emptyBottles[12] == 10)
+    ), 'ent1')).called(1);
 
     // 3. Check Treasury update (Expense)
     verify(mockTreasuryRepo.saveOperation(argThat(

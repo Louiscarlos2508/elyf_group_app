@@ -3,29 +3,60 @@ class GazSettings {
   const GazSettings({
     required this.enterpriseId,
     required this.moduleId,
-    this.retailPrices = const {},
-    this.wholesalePrices = const {},
-    this.purchasePrices = const {},
-    this.supplierExchangeFees = const {},
-    this.lowStockThresholds = const {},
-    this.depositRates = const {},
-    this.nominalStocks = const {},
+    Map<int, double>? retailPrices,
+    Map<int, double>? wholesalePrices,
+    Map<int, double>? purchasePrices,
+    Map<int, double>? supplierExchangeFees,
+    Map<int, int>? lowStockThresholds,
+    Map<int, double>? depositRates,
+    Map<int, int>? nominalStocks,
+    Map<int, double>? loadingFees,
+    Map<int, double>? unloadingFees,
     this.updatedAt,
     this.createdAt,
     this.deletedAt,
     this.deletedBy,
     this.autoPrintReceipt = false,
-  });
+  })  : _retailPrices = retailPrices,
+        _wholesalePrices = wholesalePrices,
+        _purchasePrices = purchasePrices,
+        _supplierExchangeFees = supplierExchangeFees,
+        _lowStockThresholds = lowStockThresholds,
+        _depositRates = depositRates,
+        _nominalStocks = nominalStocks,
+        _loadingFees = loadingFees,
+        _unloadingFees = unloadingFees;
 
   final String enterpriseId;
   final String moduleId;
-  final Map<int, double> retailPrices; // poids (kg) -> prix détail
-  final Map<int, double> wholesalePrices; // poids (kg) -> prix gros
-  final Map<int, double> purchasePrices; // poids (kg) -> prix achat (fournisseur)
-  final Map<int, double> supplierExchangeFees; // poids (kg) -> frais échange fournisseur
-  final Map<int, int> lowStockThresholds; // poids (kg) -> seuil d'alerte
-  final Map<int, double> depositRates; // poids (kg) -> montant de la consigne
-  final Map<int, int> nominalStocks; // poids (kg) -> quantité totale possédée (fixed stock)
+
+  final Map<int, double>? _retailPrices;
+  Map<int, double> get retailPrices => _retailPrices ?? const <int, double>{};
+
+  final Map<int, double>? _wholesalePrices;
+  Map<int, double> get wholesalePrices => _wholesalePrices ?? const <int, double>{};
+
+  final Map<int, double>? _purchasePrices;
+  Map<int, double> get purchasePrices => _purchasePrices ?? const <int, double>{};
+
+  final Map<int, double>? _supplierExchangeFees;
+  Map<int, double> get supplierExchangeFees => _supplierExchangeFees ?? const <int, double>{};
+
+  final Map<int, int>? _lowStockThresholds;
+  Map<int, int> get lowStockThresholds => _lowStockThresholds ?? const <int, int>{};
+
+  final Map<int, double>? _depositRates;
+  Map<int, double> get depositRates => _depositRates ?? const <int, double>{};
+
+  final Map<int, int>? _nominalStocks;
+  Map<int, int> get nominalStocks => _nominalStocks ?? const <int, int>{};
+
+  final Map<int, double>? _loadingFees;
+  Map<int, double> get loadingFees => _loadingFees ?? const <int, double>{};
+
+  final Map<int, double>? _unloadingFees;
+  Map<int, double> get unloadingFees => _unloadingFees ?? const <int, double>{};
+
   final DateTime? updatedAt;
   final DateTime? createdAt;
   final DateTime? deletedAt;
@@ -42,6 +73,8 @@ class GazSettings {
     Map<int, int>? lowStockThresholds,
     Map<int, double>? depositRates,
     Map<int, int>? nominalStocks,
+    Map<int, double>? loadingFees,
+    Map<int, double>? unloadingFees,
     DateTime? updatedAt,
     DateTime? createdAt,
     DateTime? deletedAt,
@@ -51,13 +84,15 @@ class GazSettings {
     return GazSettings(
       enterpriseId: enterpriseId ?? this.enterpriseId,
       moduleId: moduleId ?? this.moduleId,
-      retailPrices: retailPrices ?? this.retailPrices,
-      wholesalePrices: wholesalePrices ?? this.wholesalePrices,
-      purchasePrices: purchasePrices ?? this.purchasePrices,
-      supplierExchangeFees: supplierExchangeFees ?? this.supplierExchangeFees,
-      lowStockThresholds: lowStockThresholds ?? this.lowStockThresholds,
-      depositRates: depositRates ?? this.depositRates,
-      nominalStocks: nominalStocks ?? this.nominalStocks,
+      retailPrices: retailPrices ?? _retailPrices,
+      wholesalePrices: wholesalePrices ?? _wholesalePrices,
+      purchasePrices: purchasePrices ?? _purchasePrices,
+      supplierExchangeFees: supplierExchangeFees ?? _supplierExchangeFees,
+      lowStockThresholds: lowStockThresholds ?? _lowStockThresholds,
+      depositRates: depositRates ?? _depositRates,
+      nominalStocks: nominalStocks ?? _nominalStocks,
+      loadingFees: loadingFees ?? _loadingFees,
+      unloadingFees: unloadingFees ?? _unloadingFees,
       updatedAt: updatedAt ?? this.updatedAt,
       createdAt: createdAt ?? this.createdAt,
       deletedAt: deletedAt ?? this.deletedAt,
@@ -67,11 +102,10 @@ class GazSettings {
   }
 
   factory GazSettings.fromMap(Map<String, dynamic> map, String defaultEnterpriseId) {
-    final retailPricesRaw = map['retailPrices'] as Map<String, dynamic>?;
-    final retailPrices = retailPricesRaw?.map(
+    final retailPrices = (map['retailPrices'] as Map<String, dynamic>?)?.map(
           (k, v) => MapEntry(int.parse(k), (v as num).toDouble()),
         ) ??
-        {};
+        const <int, double>{};
 
     final wholesalePricesRaw = map['wholesalePrices'] as Map<String, dynamic>?;
     final Map<int, double> wholesalePrices = {};
@@ -81,7 +115,6 @@ class GazSettings {
       if (priceRaw is num) {
         wholesalePrices[weight] = priceRaw.toDouble();
       } else if (priceRaw is Map<String, dynamic>) {
-        // Migration from old tiered structure
         final defaultPrice = priceRaw['default'] ?? priceRaw.values.firstOrNull;
         if (defaultPrice != null) {
           wholesalePrices[weight] = (defaultPrice as num).toDouble();
@@ -89,35 +122,40 @@ class GazSettings {
       }
     });
 
-    final purchasePricesRaw = map['purchasePrices'] as Map<String, dynamic>?;
-    final purchasePrices = purchasePricesRaw?.map(
+    final purchasePrices = (map['purchasePrices'] as Map<String, dynamic>?)?.map(
           (k, v) => MapEntry(int.parse(k), (v as num).toDouble()),
         ) ??
-        {};
+        const <int, double>{};
 
-    final exchangeFeesRaw = map['supplierExchangeFees'] as Map<String, dynamic>?;
-    final exchangeFees = exchangeFeesRaw?.map(
+    final exchangeFees = (map['supplierExchangeFees'] as Map<String, dynamic>?)?.map(
           (k, v) => MapEntry(int.parse(k), (v as num).toDouble()),
         ) ??
-        {};
+        const <int, double>{};
 
-    final lowStockThresholdsRaw = map['lowStockThresholds'] as Map<String, dynamic>?;
-    final lowStockThresholds = lowStockThresholdsRaw?.map(
+    final lowStockThresholds = (map['lowStockThresholds'] as Map<String, dynamic>?)?.map(
           (k, v) => MapEntry(int.parse(k), (v as num).toInt()),
         ) ??
-        {};
+        const <int, int>{};
 
-    final depositRatesRaw = map['depositRates'] as Map<String, dynamic>?;
-    final depositRates = depositRatesRaw?.map(
+    final depositRates = (map['depositRates'] as Map<String, dynamic>?)?.map(
           (k, v) => MapEntry(int.parse(k), (v as num).toDouble()),
         ) ??
-        {};
+        const <int, double>{};
 
-    final nominalStocksRaw = map['nominalStocks'] as Map<String, dynamic>?;
-    final nominalStocks = nominalStocksRaw?.map(
+    final nominalStocks = (map['nominalStocks'] as Map<String, dynamic>?)?.map(
           (k, v) => MapEntry(int.parse(k), (v as num).toInt()),
         ) ??
-        {};
+        const <int, int>{};
+
+    final loadingFees = (map['loadingFees'] as Map<String, dynamic>?)?.map(
+          (k, v) => MapEntry(int.parse(k), (v as num).toDouble()),
+        ) ??
+        const <int, double>{};
+
+    final unloadingFees = (map['unloadingFees'] as Map<String, dynamic>?)?.map(
+          (k, v) => MapEntry(int.parse(k), (v as num).toDouble()),
+        ) ??
+        const <int, double>{};
 
     return GazSettings(
       enterpriseId: map['enterpriseId'] as String? ?? defaultEnterpriseId,
@@ -129,6 +167,8 @@ class GazSettings {
       lowStockThresholds: lowStockThresholds,
       depositRates: depositRates,
       nominalStocks: nominalStocks,
+      loadingFees: loadingFees,
+      unloadingFees: unloadingFees,
       autoPrintReceipt: map['autoPrintReceipt'] as bool? ?? false,
       updatedAt: map['updatedAt'] != null
           ? DateTime.parse(map['updatedAt'] as String)
@@ -168,6 +208,12 @@ class GazSettings {
       'nominalStocks': nominalStocks.map(
         (k, v) => MapEntry(k.toString(), v),
       ),
+      'loadingFees': loadingFees.map(
+        (k, v) => MapEntry(k.toString(), v),
+      ),
+      'unloadingFees': unloadingFees.map(
+        (k, v) => MapEntry(k.toString(), v),
+      ),
       'autoPrintReceipt': autoPrintReceipt,
       'updatedAt': updatedAt?.toIso8601String(),
       'createdAt': createdAt?.toIso8601String(),
@@ -175,89 +221,74 @@ class GazSettings {
       'deletedBy': deletedBy,
     };
   }
+
   bool get isDeleted => deletedAt != null;
 
-  /// Récupère le prix détail pour un poids donné.
-  double? getRetailPrice(int weight) {
-    return retailPrices[weight];
-  }
+  double? getRetailPrice(int weight) => retailPrices[weight];
 
-  /// Définit le prix détail pour un poids donné.
   GazSettings setRetailPrice(int weight, double price) {
     final updated = Map<int, double>.from(retailPrices);
     updated[weight] = price;
     return copyWith(retailPrices: updated, updatedAt: DateTime.now());
   }
 
-  /// Récupère le prix en gros pour un poids donné.
-  double? getWholesalePrice(int weight) {
-    return wholesalePrices[weight];
-  }
+  double? getWholesalePrice(int weight) => wholesalePrices[weight];
 
-  /// Définit le prix en gros pour un poids donné.
   GazSettings setWholesalePrice(int weight, double price) {
     final updated = Map<int, double>.from(wholesalePrices);
     updated[weight] = price;
     return copyWith(wholesalePrices: updated, updatedAt: DateTime.now());
   }
 
-  /// Récupère le prix d'achat pour un poids donné.
-  double? getPurchasePrice(int weight) {
-    return purchasePrices[weight];
-  }
+  double? getPurchasePrice(int weight) => purchasePrices[weight];
 
-  /// Définit le prix d'achat pour un poids donné.
   GazSettings setPurchasePrice(int weight, double price) {
     final updated = Map<int, double>.from(purchasePrices);
     updated[weight] = price;
     return copyWith(purchasePrices: updated, updatedAt: DateTime.now());
   }
 
-  /// Récupère les frais d'échange fournisseur pour un poids donné.
-  double? getSupplierExchangeFee(int weight) {
-    return supplierExchangeFees[weight];
-  }
+  double? getSupplierExchangeFee(int weight) => supplierExchangeFees[weight];
 
-  /// Définit les frais d'échange fournisseur pour un poids donné.
   GazSettings setSupplierExchangeFee(int weight, double fee) {
     final updated = Map<int, double>.from(supplierExchangeFees);
     updated[weight] = fee;
     return copyWith(supplierExchangeFees: updated, updatedAt: DateTime.now());
   }
 
-  /// Récupère le seuil d'alerte pour un poids donné.
-  int getLowStockThreshold(int weight) {
-    return lowStockThresholds[weight] ?? 0;
-  }
+  int getLowStockThreshold(int weight) => lowStockThresholds[weight] ?? 0;
 
-  /// Définit le seuil d'alerte pour un poids donné.
   GazSettings setLowStockThreshold(int weight, int threshold) {
     final updatedThresholds = Map<int, int>.from(lowStockThresholds);
     updatedThresholds[weight] = threshold;
     return copyWith(lowStockThresholds: updatedThresholds, updatedAt: DateTime.now());
   }
 
-  /// Récupère le taux de consigne pour un poids donné.
-  double getDepositRate(int weight) {
-    return depositRates[weight] ?? 0.0;
-  }
+  double getDepositRate(int weight) => depositRates[weight] ?? 0.0;
 
-  /// Définit le taux de consigne pour un poids donné.
   GazSettings setDepositRate(int weight, double rate) {
     final updatedRates = Map<int, double>.from(depositRates);
     updatedRates[weight] = rate;
     return copyWith(depositRates: updatedRates, updatedAt: DateTime.now());
   }
 
-  /// Récupère le stock nominal pour un poids donné.
-  int getNominalStock(int weight) {
-    return nominalStocks[weight] ?? 0;
-  }
+  int getNominalStock(int weight) => nominalStocks[weight] ?? 0;
 
-  /// Définit le stock nominal pour un poids donné.
   GazSettings setNominalStock(int weight, int quantity) {
     final updated = Map<int, int>.from(nominalStocks);
     updated[weight] = quantity;
     return copyWith(nominalStocks: updated, updatedAt: DateTime.now());
+  }
+
+  GazSettings setLoadingFee(int weight, double fee) {
+    final updated = Map<int, double>.from(loadingFees);
+    updated[weight] = fee;
+    return copyWith(loadingFees: updated, updatedAt: DateTime.now());
+  }
+
+  GazSettings setUnloadingFee(int weight, double fee) {
+    final updated = Map<int, double>.from(unloadingFees);
+    updated[weight] = fee;
+    return copyWith(unloadingFees: updated, updatedAt: DateTime.now());
   }
 }

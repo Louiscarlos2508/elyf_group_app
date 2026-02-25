@@ -56,8 +56,13 @@ class TourController {
   }
 
   /// Met à jour les bouteilles vides chargées.
-  Future<void> updateEmptyBottlesLoaded(String tourId, Map<int, int> quantities) async {
-    await service.updateEmptyBottlesLoaded(tourId, quantities);
+  Future<void> updateEmptyBottlesLoaded(String tourId, Map<int, int> quantities, String userId) async {
+    await service.updateEmptyBottlesLoaded(tourId, quantities, userId);
+  }
+
+  /// Valide l'étape de transport et frais.
+  Future<void> validateTransport(String tourId) async {
+    await service.validateTransport(tourId);
   }
 
   /// Met à jour les bouteilles pleines reçues.
@@ -71,9 +76,9 @@ class TourController {
     return alerts.cast<StockAlert>();
   }
 
-  /// Annule un tour.
-  Future<void> cancelTour(String id) async {
-    await repository.cancelTour(id);
+  /// Annule un tour avec remise en stock des bouteilles en transit.
+  Future<void> cancelTour(String id, String userId) async {
+    await service.cancelTour(id, userId);
   }
 
   /// Supprime un tour.
