@@ -33,7 +33,6 @@ class SmartDeduplicator {
     // Autres
     'properties': ['address', 'reference'],
     'contracts': ['contractNumber', 'reference'],
-    'tours': ['tourDate', 'enterpriseId'],
     'production_sessions': ['date', 'heureDebut', 'enterpriseId'],
   };
 

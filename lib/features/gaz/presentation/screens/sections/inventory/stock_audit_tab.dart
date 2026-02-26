@@ -10,7 +10,7 @@ import '../../../../domain/entities/gaz_inventory_audit.dart';
 import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import 'package:elyf_groupe_app/features/administration/application/providers.dart';
 import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
-import '../../../../domain/services/gaz_calculation_service.dart';
+import 'package:elyf_groupe_app/features/gaz/domain/services/gaz_stock_calculation_service.dart';
 
 class StockAuditTab extends ConsumerStatefulWidget {
   const StockAuditTab({super.key, required this.enterpriseId});
@@ -178,12 +178,13 @@ class _StockAuditTabState extends ConsumerState<StockAuditTab> {
         data: (stocks) => settingsAsync.when(
         data: (settings) {
           final theme = Theme.of(context);
-          final theoreticalMetrics = GazCalculationService.calculatePosStockMetrics(
+          final transfers = ref.watch(stockTransfersProvider(targetId)).value;
+          final theoreticalMetrics = GazStockCalculationService.calculatePosStockMetrics(
             enterpriseId: targetId,
             siteId: siteIdParam,
             allStocks: stocks,
+            transfers: transfers,
             cylinders: cylinders,
-            settings: settings,
           );
 
           final uniqueCylinders = <int, Cylinder>{};
@@ -413,6 +414,8 @@ class _StockAuditTabState extends ConsumerState<StockAuditTab> {
         return Colors.red;
       case CylinderStatus.defective:
         return Colors.brown;
+      case CylinderStatus.leakInTransit:
+        return Colors.redAccent;
     }
   }
 
@@ -452,12 +455,13 @@ class _StockAuditTabState extends ConsumerState<StockAuditTab> {
         moduleId: 'gaz',
       )).future);
 
-      final theoreticalMetrics = GazCalculationService.calculatePosStockMetrics(
+      final transfers = await ref.read(stockTransfersProvider(targetId).future);
+      final theoreticalMetrics = GazStockCalculationService.calculatePosStockMetrics(
         enterpriseId: targetId,
         siteId: siteIdParam,
         allStocks: stocks,
+        transfers: transfers,
         cylinders: cylinders,
-        settings: settings,
       );
 
       final uniqueCylinders = <int, Cylinder>{};

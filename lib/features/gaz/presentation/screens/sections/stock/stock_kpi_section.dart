@@ -5,8 +5,8 @@ import '../../../../application/providers.dart';
 import '../../../../domain/entities/cylinder_stock.dart';
 import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
-import '../../../../domain/services/gaz_calculation_service.dart';
 import '../../../widgets/stock_kpi_card.dart';
+import 'package:elyf_groupe_app/features/gaz/domain/services/gaz_stock_calculation_service.dart';
 
 /// Section des KPI cards pour le stock.
 class StockKpiSection extends ConsumerWidget {
@@ -29,17 +29,21 @@ class StockKpiSection extends ConsumerWidget {
       enterpriseId: enterpriseId,
       moduleId: 'gaz',
     )));
+    final transfersAsync = ref.watch(stockTransfersProvider(enterpriseId));
     final activeEnterprise = ref.watch(activeEnterpriseProvider).value;
-    final isPOS = activeEnterprise?.type == EnterpriseType.gasPointOfSale;
+    final isPOS = activeEnterprise?.isPointOfSale ?? false;
 
     return cylindersAsync.when(
       data: (cylinders) {
-        final metrics = GazCalculationService.calculateStockMetrics(
+        final transfers = transfersAsync.value;
+        final metrics = GazStockCalculationService.calculateStockMetrics(
           stocks: allStocks,
           pointsOfSale: pointsOfSale,
           cylinders: cylinders,
-          settings: settingsAsync.value,
+          transfers: transfers,
+          settings: isPOS ? null : settingsAsync.value,
           targetEnterpriseId: enterpriseId,
+          isPOS: isPOS,
         );
 
         return _StockKpiCards(
@@ -55,21 +59,21 @@ class StockKpiSection extends ConsumerWidget {
         // Fallback: use weights from stocks
         final allWeights = allStocks.map((s) => s.weight).toSet().toList()
           ..sort();
-        final fullStocks = GazCalculationService.filterFullStocks(allStocks);
-        final emptyStocks = GazCalculationService.filterEmptyStocks(allStocks);
-        final fullByWeight = GazCalculationService.groupStocksByWeight(
+        final fullStocks = GazStockCalculationService.filterFullStocks(allStocks);
+        final emptyStocks = GazStockCalculationService.filterEmptyStocks(allStocks);
+        final fullByWeight = GazStockCalculationService.groupStocksByWeight(
           fullStocks,
         );
-        final emptyByWeight = GazCalculationService.groupStocksByWeight(
+        final emptyByWeight = GazStockCalculationService.groupStocksByWeight(
           emptyStocks,
         );
 
-        final issueStocks = GazCalculationService.filterIssueStocks(allStocks);
-        final issueByWeight = GazCalculationService.groupStocksByWeight(issueStocks);
+        final issueStocks = GazStockCalculationService.filterIssueStocks(allStocks);
+        final issueByWeight = GazStockCalculationService.groupStocksByWeight(issueStocks);
 
         final viewType = ref.watch(gazDashboardViewTypeProvider);
         final settings = settingsAsync.value;
-        if (viewType == GazDashboardViewType.local && settings != null && settings.nominalStocks.isNotEmpty) {
+        if (viewType == GazDashboardViewType.local && settings != null && settings.nominalStocks.isNotEmpty && !isPOS) {
           for (final weight in allWeights) {
             final nominal = settings.getNominalStock(weight);
             if (nominal > 0) {
@@ -176,7 +180,9 @@ class _StockKpiCards extends StatelessWidget {
                   child: StockKpiCard(
                     title: 'Stock en Transit',
                     value: '${metrics.totalCentralized}',
-                    subtitle: 'Bouteilles en tournée ou manquantes',
+                    subtitle: metrics.transitBreakdown.isNotEmpty 
+                        ? metrics.transitBreakdown.entries.map((e) => '${e.key}: ${e.value}').join(', ')
+                        : metrics.centralizedSummary,
                     icon: Icons.local_shipping_outlined,
                     valueColor: theme.colorScheme.primary,
                   ),
@@ -226,7 +232,9 @@ class _StockKpiCards extends StatelessWidget {
               StockKpiCard(
                 title: 'Stock en Transit',
                 value: '${metrics.totalCentralized}',
-                subtitle: 'Bouteilles en tournée ou manquantes',
+                subtitle: metrics.transitBreakdown.isNotEmpty 
+                    ? metrics.transitBreakdown.entries.map((e) => '${e.key}: ${e.value}').join(', ')
+                    : metrics.centralizedSummary,
                 icon: Icons.local_shipping_outlined,
                 valueColor: theme.colorScheme.primary,
               ),

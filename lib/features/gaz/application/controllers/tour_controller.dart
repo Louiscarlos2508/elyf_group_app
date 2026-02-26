@@ -56,8 +56,11 @@ class TourController {
   }
 
   /// Met à jour les bouteilles vides chargées.
-  Future<void> updateEmptyBottlesLoaded(String tourId, Map<int, int> quantities, String userId) async {
-    await service.updateEmptyBottlesLoaded(tourId, quantities, userId);
+  Future<void> updateEmptyBottlesLoaded(
+      String tourId, Map<int, int> quantities, String userId,
+      {Map<int, int> leakingQuantities = const {}}) async {
+    await service.updateEmptyBottlesLoaded(tourId, quantities, userId,
+        leakingQuantities: leakingQuantities);
   }
 
   /// Valide l'étape de transport et frais.

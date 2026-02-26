@@ -59,8 +59,10 @@ class _ReplenishmentDialogState extends ConsumerState<ReplenishmentDialog> {
     )));
 
     // Calculate available capacity if motherboard
+    final activeEnterprise = ref.watch(activeEnterpriseProvider).value;
+    final isPos = activeEnterprise?.isPointOfSale ?? false;
     int? availableCapacity;
-    if (_selectedCylinder != null && stocksAsync.hasValue && settingsAsync.hasValue) {
+    if (!isPos && _selectedCylinder != null && stocksAsync.hasValue && settingsAsync.hasValue) {
       final stocks = stocksAsync.value!;
       final settings = settingsAsync.value!;
       final weight = _selectedCylinder!.weight;

@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
 import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart' show activeEnterpriseProvider, activeEnterpriseIdProvider;
-import 'package:elyf_groupe_app/features/gaz/domain/services/gaz_calculation_service.dart';
 import '../../../widgets/point_of_sale_stock_card.dart';
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import 'package:elyf_groupe_app/features/administration/application/providers.dart';
@@ -13,6 +12,7 @@ import '../stock/stock_kpi_section.dart';
 import '../stock/stock_pos_list.dart';
 import '../stock/stock_transfer_screen.dart';
 import '../../../widgets/wholesale/independent_collection_dialog.dart';
+import 'package:elyf_groupe_app/features/gaz/domain/services/gaz_stock_calculation_service.dart';
 
 class StockStatusTab extends ConsumerWidget {
   const StockStatusTab({super.key, required this.enterpriseId, required this.moduleId});
@@ -165,18 +165,20 @@ class StockStatusTab extends ConsumerWidget {
 
                     final cylinders = cylindersAsync.value ?? [];
                     final settings = settingsAsync.value;
+                    final transfers = ref.watch(stockTransfersProvider(activeId)).value;
 
-                    final metrics = GazCalculationService.calculatePosStockMetrics(
+                    final metrics = GazStockCalculationService.calculatePosStockMetrics(
                       enterpriseId: activeId,
                       allStocks: allStocks,
+                      transfers: transfers,
                       cylinders: cylinders,
-                      settings: settings,
                     );
 
                     return PointOfSaleStockCard(
                       enterprise: currentEnterprise,
                       fullBottles: metrics.totalFull,
                       emptyBottles: metrics.totalEmpty,
+                      totalInTransit: metrics.totalInTransit,
                       issueBottles: metrics.totalIssues,
                       stockByCapacity: metrics.stockByCapacity,
                     );

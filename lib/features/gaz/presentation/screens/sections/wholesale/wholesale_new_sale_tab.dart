@@ -6,12 +6,12 @@ import '../../../../../../core/tenant/tenant_provider.dart';
 import '../../../../application/providers.dart';
 import '../../../../domain/entities/cylinder.dart';
 import '../../../../domain/entities/gas_sale.dart';
-import '../../../../domain/services/gaz_calculation_service.dart';
 import '../../../widgets/gas_sale_form/tour_wholesaler_selector_widget.dart';
 import '../../../widgets/gas_sale_form/price_stock_manager.dart';
 import '../../../widgets/gas_sale_form/gas_sale_submit_handler.dart';
 import '../../../../domain/entities/gaz_settings.dart';
 import 'wholesale_kpi_section.dart';
+import 'package:elyf_groupe_app/features/gaz/domain/services/gaz_financial_calculation_service.dart';
 
 /// Onglet nouvelle vente pour la vente en gros.
 /// Utilise un formulaire de type "Vente en Gros" avec une liste de bouteilles.
@@ -72,7 +72,7 @@ class _WholesaleNewSaleTabState extends ConsumerState<WholesaleNewSaleTab> {
       return;
     }
 
-    final totalAmount = GazCalculationService.calculateTotalAmount(
+    final totalAmount = GazFinancialCalculationService.calculateTotalAmount(
       cylinder: cylinder,
       unitPrice: unitPrice,
       quantity: quantity,
@@ -282,7 +282,7 @@ class _WholesaleNewSaleTabState extends ConsumerState<WholesaleNewSaleTab> {
         totalBottles += qty;
         totalWeight += cylinder.weight * qty;
         
-        final unitPrice = GazCalculationService.determineWholesalePrice(
+        final unitPrice = GazFinancialCalculationService.determineWholesalePrice(
           cylinder: cylinder,
           settings: settings,
         );

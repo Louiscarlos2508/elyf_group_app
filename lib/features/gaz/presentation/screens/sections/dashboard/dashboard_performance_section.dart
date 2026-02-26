@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../../../domain/entities/expense.dart';
 import '../../../../domain/entities/gas_sale.dart';
-import '../../../../domain/services/gaz_calculation_service.dart';
 import '../../../widgets/dashboard_performance_chart.dart';
+import 'package:elyf_groupe_app/features/gaz/domain/services/gaz_financial_calculation_service.dart';
 
 /// Section du graphique de performance pour le dashboard.
 class DashboardPerformanceSection extends StatelessWidget {
@@ -19,7 +19,7 @@ class DashboardPerformanceSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Utiliser le service pour les calculs
-    final performanceData = GazCalculationService.calculateLast7DaysPerformance(
+    final performanceData = GazFinancialCalculationService.calculateLast7DaysPerformance(
       sales,
       expenses,
     );

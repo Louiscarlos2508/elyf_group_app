@@ -5,10 +5,10 @@ import '../../../../../../core/tenant/tenant_provider.dart' show activeEnterpris
 import 'package:elyf_groupe_app/features/administration/application/providers.dart';
 import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import '../../../../domain/entities/gas_sale.dart';
-import '../../../../domain/services/gaz_calculation_service.dart';
 import '../../../../domain/entities/cylinder.dart';
 import '../../../../domain/entities/cylinder_stock.dart';
 import '../../../widgets/dashboard_point_of_sale_performance.dart';
+import 'package:elyf_groupe_app/features/gaz/domain/services/gaz_sales_calculation_service.dart';
 
 /// Section de performance par point de vente pour le dashboard.
 class DashboardPosPerformanceSection extends ConsumerWidget {
@@ -50,7 +50,7 @@ class DashboardPosPerformanceSection extends ConsumerWidget {
             final salesCountByPos = <String, int>{};
 
             // Filtrer uniquement les ventes du jour
-            final todaySales = GazCalculationService.calculateTodaySales(sales);
+            final todaySales = GazSalesCalculationService.calculateTodaySales(sales);
 
             for (final pos in pointsOfSale) {
               final posSales = todaySales.where((s) => s.enterpriseId == pos.id).toList();

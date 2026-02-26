@@ -6,6 +6,7 @@ import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/tour.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder_stock.dart';
+import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/gaz_settings.dart';
 import 'transport/loading_unloading_fees_section.dart';
 
@@ -150,8 +151,11 @@ class _ReceptionStepContentState extends ConsumerState<ReceptionStepContent> {
     return settingsAsync.when(
       data: (settings) {
         _initializeControllers(settings);
+        final activeEnterprise = ref.watch(activeEnterpriseProvider).value;
+        final isPos = activeEnterprise?.id == widget.enterpriseId && (activeEnterprise?.isPointOfSale ?? false);
+
         return cylindersAsync.when(
-          data: (cylinders) => _buildContent(context, theme, isDark, cylinders, allStocksAsync.value ?? [], settings),
+          data: (cylinders) => _buildContent(context, theme, isDark, cylinders, allStocksAsync.value ?? [], settings, isPos),
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (e, _) => Center(child: Text('Erreur Cylindres: $e')),
         );
@@ -168,6 +172,7 @@ class _ReceptionStepContentState extends ConsumerState<ReceptionStepContent> {
     List<Cylinder> cylinders, 
     List<CylinderStock> allStocks,
     GazSettings? settings,
+    bool isPos,
   ) {
     final weights = widget.tour.emptyBottlesLoaded.keys.toSet().toList()..sort();
     
@@ -342,6 +347,8 @@ class _ReceptionStepContentState extends ConsumerState<ReceptionStepContent> {
             // Compact table/list
             ...weights.map((weight) {
               final loaded = widget.tour.emptyBottlesLoaded[weight] ?? 0;
+              final leakingLoaded = widget.tour.leakingBottlesLoaded[weight] ?? 0;
+              final totalLoaded = loaded + leakingLoaded;
               final nominal = _nominalStocks[weight] ?? 0;
               final cylinderId = cylinders.any((c) => c.weight == weight) 
                   ? cylinders.firstWhere((c) => c.weight == weight).id 
@@ -399,7 +406,7 @@ class _ReceptionStepContentState extends ConsumerState<ReceptionStepContent> {
                       ),
                     ),
                     title: Text(
-                      'Chargé: $loaded btl',
+                      'Chargé: $loaded vides + $leakingLoaded fuites',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.w500,
                       ),
@@ -407,10 +414,10 @@ class _ReceptionStepContentState extends ConsumerState<ReceptionStepContent> {
                     subtitle: Text(
                       'Reçu: $received | Ramenés: $returned',
                       style: theme.textTheme.labelSmall?.copyWith(
-                        color: (received + returned) == loaded 
+                        color: (received + returned) == totalLoaded 
                             ? (isDark ? Colors.greenAccent : Colors.green)
-                            : (received + returned > loaded ? theme.colorScheme.error : theme.colorScheme.onSurfaceVariant),
-                        fontWeight: (received + returned) == loaded ? FontWeight.bold : null,
+                            : (received + returned > totalLoaded ? theme.colorScheme.error : theme.colorScheme.onSurfaceVariant),
+                        fontWeight: (received + returned) == totalLoaded ? FontWeight.bold : null,
                       ),
                     ),
                     children: [
@@ -434,7 +441,7 @@ class _ReceptionStepContentState extends ConsumerState<ReceptionStepContent> {
                                     ),
                                     onChanged: (val) {
                                       final r = int.tryParse(val) ?? 0;
-                                      final suggeredReturn = (loaded - r).clamp(0, 1000).toInt();
+                                      final suggeredReturn = (totalLoaded - r).clamp(0, 1000).toInt();
                                       _returnedControllers[weight]?.text = suggeredReturn.toString();
                                       setState(() {});
                                     },
@@ -488,7 +495,7 @@ class _ReceptionStepContentState extends ConsumerState<ReceptionStepContent> {
                                 ),
                               ],
                             ),
-                           if (nominal > 0) ...[
+                           if (nominal > 0 && !isPos) ...[
                               const SizedBox(height: 12),
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),

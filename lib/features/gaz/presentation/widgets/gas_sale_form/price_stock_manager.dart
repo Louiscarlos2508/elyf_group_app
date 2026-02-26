@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
-import '../../../domain/services/gaz_calculation_service.dart';
 import '../../../domain/entities/cylinder.dart';
+import 'package:elyf_groupe_app/features/gaz/domain/services/gaz_financial_calculation_service.dart';
 
 /// Gestionnaire de prix et stock pour le formulaire de vente.
 class PriceStockManager {
@@ -27,7 +27,7 @@ class PriceStockManager {
           );
 
       if (isWholesale) {
-        return GazCalculationService.determineWholesalePrice(
+        return GazFinancialCalculationService.determineWholesalePrice(
           cylinder: cylinder,
           settings: settings,
         );

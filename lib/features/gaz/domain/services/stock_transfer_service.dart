@@ -8,6 +8,7 @@ import '../../../audit_trail/domain/entities/audit_record.dart';
 import '../entities/cylinder_stock.dart';
 import '../entities/cylinder.dart';
 import '../repositories/gaz_settings_repository.dart';
+import '../../../administration/domain/repositories/enterprise_repository.dart';
 import '../../../../core/offline/offline_repository.dart' show LocalIdGenerator;
 
 class StockTransferService {
@@ -16,6 +17,7 @@ class StockTransferService {
     required this.stockRepository,
     required this.gasRepository,
     required this.auditTrailRepository,
+    required this.enterpriseRepository,
     this.settingsRepository,
   });
 
@@ -23,15 +25,15 @@ class StockTransferService {
   final CylinderStockRepository stockRepository;
   final GasRepository gasRepository;
   final AuditTrailRepository auditTrailRepository;
+  final EnterpriseRepository enterpriseRepository;
   final GazSettingsRepository? settingsRepository;
 
-  /// Initiates a transfer (Draft/Pending).
-  /// Validates that source enterprise has enough stock.
   Future<void> initiateTransfer(StockTransfer transfer) async {
-    // 1. Validate stock availability at source
     final settings = settingsRepository != null 
         ? await settingsRepository!.getSettings(enterpriseId: transfer.fromEnterpriseId, moduleId: 'gaz')
         : null;
+    final enterprise = await enterpriseRepository.getEnterpriseById(transfer.fromEnterpriseId);
+    final isPos = enterprise?.isPointOfSale ?? false;
 
     for (final item in transfer.items) {
       final stocks = await stockRepository.getStocksByWeight(
@@ -41,11 +43,11 @@ class StockTransferService {
       final physicalStock = stocks
           .where((s) => s.status == item.status)
           .fold<int>(0, (sum, s) => sum + s.quantity);
-          
+
       int availableStock = physicalStock;
-      
-      // If full bottles and nominal stock is defined, use the theoretical stock
-      if (item.status == CylinderStatus.full && settings != null) {
+
+      // If full bottles and nominal stock is defined AND NOT A POS, use the theoretical stock
+      if (item.status == CylinderStatus.full && settings != null && !isPos) {
         final nominal = settings.getNominalStock(item.weight);
         if (nominal > 0) {
           // Theoretical full stock is the nominal stock PLUS physical adjustments (which could be negative)
@@ -84,10 +86,11 @@ class StockTransferService {
       throw ValidationException('Le transfert doit être en attente pour être expédié', 'INVALID_STATUS');
     }
 
-    // 1. Deduct stock from source
     final settings = settingsRepository != null 
         ? await settingsRepository!.getSettings(enterpriseId: transfer.fromEnterpriseId, moduleId: 'gaz')
         : null;
+    final enterprise = await enterpriseRepository.getEnterpriseById(transfer.fromEnterpriseId);
+    final isPos = enterprise?.isPointOfSale ?? false;
 
     for (final item in transfer.items) {
       final stocks = await stockRepository.getStocksByWeight(
@@ -108,8 +111,8 @@ class StockTransferService {
       }
       
       if (remainingToDebit > 0) {
-        // If still remaining and we have nominal stock, create a negative adjustment record
-        if (item.status == CylinderStatus.full && settings != null && (settings.nominalStocks[item.weight] ?? 0) > 0) {
+        // If still remaining and we have nominal stock (AND NOT A POS), create a negative adjustment record
+        if (item.status == CylinderStatus.full && settings != null && (settings.nominalStocks[item.weight] ?? 0) > 0 && !isPos) {
           final cylinders = await gasRepository.getCylindersForEnterprises([transfer.fromEnterpriseId]);
           final cylinder = cylinders.where((c) => c.weight == item.weight).firstOrNull;
           

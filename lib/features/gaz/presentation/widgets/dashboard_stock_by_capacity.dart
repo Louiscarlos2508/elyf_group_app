@@ -6,6 +6,9 @@ import '../../application/providers.dart';
 import '../../../../core/tenant/tenant_provider.dart';
 import '../../domain/entities/cylinder.dart';
 import '../../domain/entities/cylinder_stock.dart';
+import '../../domain/entities/stock_transfer.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
+import 'package:elyf_groupe_app/features/gaz/domain/services/gaz_stock_calculation_service.dart';
 
 /// Widget for Stock par capacité section showing full/empty counts.
 class DashboardStockByCapacity extends ConsumerWidget {
@@ -17,7 +20,7 @@ class DashboardStockByCapacity extends ConsumerWidget {
     final activeEnterprise = ref.watch(activeEnterpriseProvider).value;
     final enterpriseId = activeEnterprise?.id ?? 'default_enterprise';
 
-    final dashboardDataAsync = ref.watch(gazDashboardDataProvider);
+    final dashboardDataAsync = ref.watch(gazDashboardDataProviderComplete);
     final settingsAsync = ref.watch(
       gazSettingsProvider((
         enterpriseId: enterpriseId,
@@ -58,13 +61,17 @@ class DashboardStockByCapacity extends ConsumerWidget {
             error: (_, __) => const SizedBox.shrink(),
             data: (settings) => dashboardDataAsync.when(
               data: (data) {
-                final stocks = data.stocks;
-                
-                // Combiner les poids issus du stock physique et du stock nominal
-                final weights = {
-                  ...stocks.map((s) => s.weight),
-                  if (settings != null) ...settings.nominalStocks.keys,
-                }.toList()..sort();
+                final metrics = GazStockCalculationService.calculateStockMetrics(
+                  stocks: data.stocks,
+                  pointsOfSale: data.pointsOfSale,
+                  cylinders: data.cylinders,
+                  transfers: data.transfers,
+                  settings: activeEnterprise?.isPointOfSale == true ? null : settings,
+                  targetEnterpriseId: enterpriseId,
+                  isPOS: activeEnterprise?.isPointOfSale == true,
+                );
+
+                final weights = metrics.availableWeights;
                 
                 if (weights.isEmpty) {
                   return Center(
@@ -83,35 +90,15 @@ class DashboardStockByCapacity extends ConsumerWidget {
 
                 return Column(
                   children: weights.map((weight) {
-                    final full = stocks
-                        .where((s) => s.weight == weight && s.status == CylinderStatus.full)
-                        .fold<int>(0, (sum, s) => sum + s.quantity);
+                    final capacityData = metrics.stockByCapacity[weight];
+                    if (capacityData == null) return const SizedBox.shrink();
 
-                    int empty = stocks
-                        .where((s) => s.weight == weight && 
-                                     (s.status == CylinderStatus.emptyAtStore || 
-                                      s.status == CylinderStatus.emptyInTransit))
-                        .fold<int>(0, (sum, s) => sum + s.quantity);
-
-                    // Appliquer la logique du stock nominal:
-                    // Si on est en vue locale OU si on est en vue consolidée mais que c'est
-                    // l'entreprise active (le dépôt) qui a défini ces capacités.
-                    final viewType = ref.watch(gazDashboardViewTypeProvider);
-                    
-                    if (settings != null) {
-                      final nominal = settings.getNominalStock(weight);
-                      // En vue locale, le nominal fait foi pour le vide
-                      // En vue groupe, on peut aussi l'utiliser si on n'a pas encore de records physiques
-                      // pour éviter d'afficher 0 vide alors qu'on a un nominal défini.
-                      if (nominal > 0 && (viewType == GazDashboardViewType.local || empty == 0)) {
-                        empty = (nominal - full).clamp(0, nominal).toInt();
-                      }
-                    }
-                    
                     return _CapacityItem(
                       label: '${weight}kg',
-                      full: full,
-                      empty: empty,
+                      full: capacityData.full,
+                      empty: capacityData.empty,
+                      inTransit: capacityData.inTransit,
+                      issues: capacityData.defective + capacityData.leak,
                       isLast: weight == weights.last,
                     );
                   }).toList(),
@@ -138,12 +125,16 @@ class _CapacityItem extends StatelessWidget {
     required this.label,
     required this.full,
     required this.empty,
+    this.inTransit = 0,
+    this.issues = 0,
     this.isLast = false,
   });
 
   final String label;
   final int full;
   final int empty;
+  final int inTransit;
+  final int issues;
   final bool isLast;
 
   @override
@@ -197,6 +188,20 @@ class _CapacityItem extends StatelessWidget {
                       label: '$empty Vides',
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
+                    if (inTransit > 0) ...[
+                      const SizedBox(width: 8),
+                      _StatusBadge(
+                        label: '$inTransit Transit',
+                        color: Colors.orange,
+                      ),
+                    ],
+                    if (issues > 0) ...[
+                      const SizedBox(width: 8),
+                      _StatusBadge(
+                        label: '$issues Fuites',
+                        color: theme.colorScheme.error,
+                      ),
+                    ],
                   ],
                 ),
               ],

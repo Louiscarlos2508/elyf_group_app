@@ -3,9 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
-import 'package:elyf_groupe_app/features/gaz/domain/services/gaz_calculation_service.dart';
 import '../point_of_sale_stock_card.dart';
 import '../../../../../shared/presentation/widgets/elyf_ui/atoms/elyf_icon_button.dart';
+import 'package:elyf_groupe_app/features/gaz/domain/services/gaz_stock_calculation_service.dart';
 
 /// Dialog pour afficher le stock d'un point de vente.
 class PosStockDialog extends ConsumerWidget {
@@ -33,6 +33,7 @@ class PosStockDialog extends ConsumerWidget {
       enterpriseId: enterprise.id,
       moduleId: 'gaz',
     )));
+    final transfersAsync = ref.watch(stockTransfersProvider(enterprise.id));
 
     return Dialog(
       backgroundColor: Colors.transparent,
@@ -61,12 +62,12 @@ class PosStockDialog extends ConsumerWidget {
             final cylinders = cylindersAsync.value ?? [];
             final settings = settingsAsync.value;
 
-            final metrics = GazCalculationService.calculatePosStockMetrics(
+            final metrics = GazStockCalculationService.calculatePosStockMetrics(
               enterpriseId: enterprise.id,
               siteId: null,
               allStocks: allStocks,
+              transfers: transfersAsync.value,
               cylinders: cylinders,
-              settings: settings,
             );
 
             return Column(
@@ -99,9 +100,9 @@ class PosStockDialog extends ConsumerWidget {
                       enterprise: enterprise,
                       fullBottles: metrics.totalFull,
                       emptyBottles: metrics.totalEmpty,
+                      totalInTransit: metrics.totalInTransit,
                       issueBottles: metrics.totalIssues,
                       stockByCapacity: metrics.stockByCapacity,
-                      nominalStocks: settings?.nominalStocks ?? {},
                     ),
                   ),
                 ),

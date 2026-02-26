@@ -5,8 +5,8 @@ import 'package:elyf_groupe_app/shared.dart';
 import '../../../../../../../shared/utils/currency_formatter.dart';
 import '../../../../application/providers.dart';
 import '../../../../domain/entities/gas_sale.dart';
-import '../../../../domain/services/gaz_calculation_service.dart';
 import '../../../widgets/gaz_kpi_card.dart';
+import 'package:elyf_groupe_app/features/gaz/domain/services/gaz_sales_calculation_service.dart';
 
 /// Section des KPI cards pour la vente en gros.
 class WholesaleKpiSection extends ConsumerWidget {
@@ -23,12 +23,12 @@ class WholesaleKpiSection extends ConsumerWidget {
         child: salesAsync.when(
           data: (sales) {
             // Utiliser le service pour les calculs wholesale
-            final todaySales = GazCalculationService.calculateTodaySalesByType(
+            final todaySales = GazSalesCalculationService.calculateTodaySalesByType(
               sales,
               SaleType.wholesale,
             );
             final totalToday =
-                GazCalculationService.calculateTodayRevenueByType(
+                GazSalesCalculationService.calculateTodayRevenueByType(
                   sales,
                   SaleType.wholesale,
                 );

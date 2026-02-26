@@ -3,14 +3,13 @@ import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
-import 'package:elyf_groupe_app/features/gaz/domain/services/gaz_calculation_service.dart';
 import 'package:elyf_groupe_app/core/auth/providers.dart' as auth;
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/gaz_session.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder.dart';
-import 'package:elyf_groupe_app/features/gaz/domain/services/gaz_calculation_service.dart';
 import '../gaz_session_opening_dialog.dart';
+import 'package:elyf_groupe_app/features/gaz/domain/services/gaz_session_calculation_service.dart';
 
 /// Section du dashboard pour la réconciliation journalière (Z-Report).
 class DashboardReconciliationSection extends ConsumerStatefulWidget {
@@ -45,7 +44,7 @@ class _DashboardReconciliationSectionState extends ConsumerState<DashboardReconc
 
         return dashboardDataAsync.when(
           data: (data) {
-            final metrics = GazCalculationService.calculateDailyReconciliation(
+            final metrics = GazSessionCalculationService.calculateDailyReconciliation(
               date: DateTime.now(),
               allSales: data.sales,
               allExpenses: data.expenses,

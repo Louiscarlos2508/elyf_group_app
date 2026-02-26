@@ -4,8 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../domain/entities/cylinder_stock.dart';
 import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
-import '../../../../domain/services/gaz_calculation_service.dart';
 import '../../../widgets/point_of_sale_stock_card.dart';
+import 'package:elyf_groupe_app/features/gaz/domain/services/gaz_stock_calculation_service.dart';
 
 /// Liste des cartes de stock par point de vente.
 class StockPosList extends ConsumerWidget {
@@ -25,14 +25,16 @@ class StockPosList extends ConsumerWidget {
     // Trier les points de vente par urgence de stock (moins de bouteilles pleines en premier)
     final sortedPos = [...activePointsOfSale];
     sortedPos.sort((a, b) {
-      final metricsA = GazCalculationService.calculatePosStockMetrics(
+      final metricsA = GazStockCalculationService.calculatePosStockMetrics(
         enterpriseId: a.id,
         allStocks: allStocks,
+        transfers: ref.read(stockTransfersProvider(a.id)).value,
         cylinders: cylinders,
       );
-      final metricsB = GazCalculationService.calculatePosStockMetrics(
+      final metricsB = GazStockCalculationService.calculatePosStockMetrics(
         enterpriseId: b.id,
         allStocks: allStocks,
+        transfers: ref.read(stockTransfersProvider(b.id)).value,
         cylinders: cylinders,
       );
       return metricsA.totalFull.compareTo(metricsB.totalFull);
@@ -44,10 +46,13 @@ class StockPosList extends ConsumerWidget {
       itemBuilder: (context, index) {
         final pos = sortedPos[index];
 
+        final transfers = ref.watch(stockTransfersProvider(pos.id)).value;
+
         // Use calculation service for business logic
-        final metrics = GazCalculationService.calculatePosStockMetrics(
+        final metrics = GazStockCalculationService.calculatePosStockMetrics(
           enterpriseId: pos.id,
           allStocks: allStocks,
+          transfers: transfers,
           cylinders: cylinders,
         );
 
@@ -55,6 +60,7 @@ class StockPosList extends ConsumerWidget {
           enterprise: pos,
           fullBottles: metrics.totalFull,
           emptyBottles: metrics.totalEmpty,
+          totalInTransit: metrics.totalInTransit,
           issueBottles: metrics.totalIssues,
           stockByCapacity: metrics.stockByCapacity,
         );

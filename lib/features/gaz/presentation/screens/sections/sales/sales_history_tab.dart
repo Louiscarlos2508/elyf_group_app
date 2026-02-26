@@ -4,7 +4,6 @@ import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
 import '../../../../domain/entities/gas_sale.dart';
-import '../../../../domain/services/gaz_calculation_service.dart';
 import '../../../widgets/wholesale_date_filter_card.dart';
 import '../../../widgets/wholesale_empty_state.dart';
 import '../../../widgets/wholesale_sale_card.dart';
@@ -12,6 +11,7 @@ import '../../wholesaler_management_screen.dart';
 import '../../../widgets/gaz_kpi_card.dart';
 import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
+import 'package:elyf_groupe_app/features/gaz/domain/services/gaz_sales_calculation_service.dart';
 
 class SalesHistoryTab extends ConsumerStatefulWidget {
   const SalesHistoryTab({super.key});
@@ -93,7 +93,7 @@ class _SalesHistoryTabState extends ConsumerState<SalesHistoryTab> {
                         ? allSales 
                         : allSales.where((s) => s.saleType == _selectedType).toList();
 
-                    final metrics = GazCalculationService.calculateWholesaleMetrics(
+                    final metrics = GazSalesCalculationService.calculateWholesaleMetrics(
                       filteredSales,
                       startDate: _startDate,
                       endDate: _endDate,
@@ -125,7 +125,7 @@ class _SalesHistoryTabState extends ConsumerState<SalesHistoryTab> {
                         ? allSales 
                         : allSales.where((s) => s.saleType == _selectedType).toList();
 
-                    final metrics = GazCalculationService.calculateWholesaleMetrics(
+                    final metrics = GazSalesCalculationService.calculateWholesaleMetrics(
                       filteredSales,
                       startDate: _startDate,
                       endDate: _endDate,

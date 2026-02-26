@@ -5,11 +5,9 @@ class PosStockTable extends StatelessWidget {
   const PosStockTable({
     super.key,
     required this.stockByCapacity,
-    this.nominalStocks = const {},
   });
 
   final Map<int, ({int full, int empty, int inTransit, int defective, int leak})> stockByCapacity;
-  final Map<int, int> nominalStocks;
 
   @override
   Widget build(BuildContext context) {

@@ -111,18 +111,24 @@ class TransactionService {
     }
 
     // Déduire du stock VIDE (Échange standard chez le fournisseur pour la quantité ACHETÉE)
-    final emptyStock = existingStocks.where((s) => s.status == CylinderStatus.emptyAtStore && s.cylinderId == cylinderId).firstOrNull;
-    if (emptyStock != null) {
-      final newEmptyQty = (emptyStock.quantity - quantity).clamp(0, 1000000).toInt();
-      await stockRepository.updateStockQuantity(emptyStock.id, newEmptyQty);
+    final emptyStocks = existingStocks.where((s) => s.status == CylinderStatus.emptyAtStore && s.cylinderId == cylinderId).toList();
+    int remainingToDeductEmpty = quantity;
+    for (final s in emptyStocks) {
+      if (remainingToDeductEmpty <= 0) break;
+      final toDeduct = remainingToDeductEmpty > s.quantity ? s.quantity : remainingToDeductEmpty;
+      await stockRepository.updateStockQuantity(s.id, s.quantity - toDeduct);
+      remainingToDeductEmpty -= toDeduct;
     }
 
     // Déduire du stock FUITE (Échange gratuit chez le fournisseur pour la quantité LEAK)
     if (leakySwappedQuantity > 0) {
-      final leakStock = existingStocks.where((s) => s.status == CylinderStatus.leak && s.cylinderId == cylinderId).firstOrNull;
-      if (leakStock != null) {
-        final newLeakQty = (leakStock.quantity - leakySwappedQuantity).clamp(0, 1000000).toInt();
-        await stockRepository.updateStockQuantity(leakStock.id, newLeakQty);
+      final leakStocks = existingStocks.where((s) => s.status == CylinderStatus.leak && s.cylinderId == cylinderId).toList();
+      int remainingToDeductLeak = leakySwappedQuantity;
+      for (final s in leakStocks) {
+        if (remainingToDeductLeak <= 0) break;
+        final toDeduct = remainingToDeductLeak > s.quantity ? s.quantity : remainingToDeductLeak;
+        await stockRepository.updateStockQuantity(s.id, s.quantity - toDeduct);
+        remainingToDeductLeak -= toDeduct;
       }
       
       // Mettre à jour les enregistrements individuels de fuite
@@ -487,19 +493,64 @@ class TransactionService {
 
         final existingStocks = await stockRepository.getStocksByWeight(
             updatedTour.enterpriseId, weight);
-        final transitStock = existingStocks
+        final transitStocks = existingStocks
             .where((s) =>
                 s.status == CylinderStatus.emptyInTransit &&
                 s.cylinderId == cylinder.id)
-            .firstOrNull;
+            .toList();
 
-        if (transitStock == null || transitStock.quantity < quantityToDeduct) {
+        final totalAvailableTransit = transitStocks.fold<int>(0, (sum, s) => sum + s.quantity);
+        if (totalAvailableTransit < quantityToDeduct) {
           throw ValidationException(
-            'Stock de transit insuffisant pour $weight kg : ${transitStock?.quantity ?? 0} disponibles, $quantityToDeduct attendues pour la clôture',
+            'Stock de transit insuffisant pour $weight kg : $totalAvailableTransit disponibles, $quantityToDeduct attendues pour la clôture',
             'INSUFFICIENT_TRANSIT_STOCK',
           );
         }
-        await stockRepository.updateStockQuantity(transitStock.id, transitStock.quantity - quantityToDeduct);
+
+        int remainingToDeduct = quantityToDeduct;
+        for (final s in transitStocks) {
+           if (remainingToDeduct <= 0) break;
+           final toDeduct = remainingToDeduct > s.quantity ? s.quantity : remainingToDeduct;
+           await stockRepository.updateStockQuantity(s.id, s.quantity - toDeduct);
+           remainingToDeduct -= toDeduct;
+        }
+      }
+
+      // Phase 3.1.bis: Déduire les fuites chargées du stock société
+      for (final entry in updatedTour.leakingBottlesLoaded.entries) {
+        final weight = entry.key;
+        final quantityToDeduct = entry.value;
+        if (quantityToDeduct <= 0) continue;
+
+        final cylinder = cylinders.firstWhere(
+          (c) => c.weight == weight,
+          orElse: () => throw NotFoundException(
+              'Cylindre $weight kg introuvable', 'CYLINDER_NOT_FOUND'),
+        );
+
+        final existingStocks = await stockRepository.getStocksByWeight(
+            updatedTour.enterpriseId, weight);
+        final leakTransitStocks = existingStocks
+            .where((s) =>
+                s.status == CylinderStatus.leakInTransit &&
+                s.cylinderId == cylinder.id)
+            .toList();
+
+        final totalAvailableLeakTransit = leakTransitStocks.fold<int>(0, (sum, s) => sum + s.quantity);
+        if (totalAvailableLeakTransit < quantityToDeduct) {
+          throw ValidationException(
+            'Stock de fuites en transit insuffisant pour $weight kg : $totalAvailableLeakTransit disponibles, $quantityToDeduct attendues pour la clôture',
+            'INSUFFICIENT_TRANSIT_STOCK',
+          );
+        }
+
+        int remainingToDeduct = quantityToDeduct;
+        for (final s in leakTransitStocks) {
+           if (remainingToDeduct <= 0) break;
+           final toDeduct = remainingToDeduct > s.quantity ? s.quantity : remainingToDeduct;
+           await stockRepository.updateStockQuantity(s.id, s.quantity - toDeduct);
+           remainingToDeduct -= toDeduct;
+        }
       }
 
       // Phase 3.2: Ajouter les pleines reçues au stock société
@@ -592,6 +643,8 @@ class TransactionService {
           'supplierName': updatedTour.supplierName,
           'emptyBottlesLoaded': updatedTour.emptyBottlesLoaded
               .map((k, v) => MapEntry(k.toString(), v)),
+          'leakingBottlesLoaded': updatedTour.leakingBottlesLoaded
+              .map((k, v) => MapEntry(k.toString(), v)),
           'fullBottlesReceived': updatedTour.fullBottlesReceived
               .map((k, v) => MapEntry(k.toString(), v)),
           'emptyBottlesReturned': updatedTour.emptyBottlesReturned
@@ -669,43 +722,36 @@ class TransactionService {
     required String tourId,
     required String userId,
     required Map<int, int> newLoading,
+    Map<int, int> newLeakingLoading = const {},
   }) async {
     final tour = await tourRepository.getTourById(tourId);
     if (tour == null) throw NotFoundException('Tour introuvable', 'TOUR_NOT_FOUND');
 
     final oldLoading = tour.emptyBottlesLoaded;
+    final oldLeakingLoading = tour.leakingBottlesLoaded;
 
-    // Calculer les deltas pour chaque poids
-    final allWeights = <int>{...oldLoading.keys, ...newLoading.keys};
-
-    for (final weight in allWeights) {
+    // 1. Gérer les bouteilles vides classiques
+    final emptyWeights = <int>{...oldLoading.keys, ...newLoading.keys};
+    for (final weight in emptyWeights) {
       final oldQty = oldLoading[weight] ?? 0;
       final newQty = newLoading[weight] ?? 0;
       final delta = newQty - oldQty;
-
       if (delta == 0) continue;
 
       final cylinders = await gasRepository.getCylinders();
       final cylinder = cylinders.firstWhere(
         (c) => c.weight == weight && c.enterpriseId == tour.enterpriseId,
-        orElse: () => cylinders.firstWhere(
-          (c) => c.weight == weight,
-          orElse: () => throw NotFoundException(
-            'Cylindre $weight kg introuvable',
-            'CYLINDER_NOT_FOUND',
-          ),
-        ),
+        orElse: () => cylinders.firstWhere((c) => c.weight == weight),
       );
 
       if (delta > 0) {
-        // Chargement de plus de bouteilles
-        // On essaie d'abord de prendre dans le stock Magasin
+        // Chargement : Store -> Transit
+        // On essaie d'abord le magasin, puis on vérifie les fantômes en transit
         final stocks = await stockRepository.getStocksByWeight(tour.enterpriseId, weight);
         final emptyAtStore = stocks.where((s) => s.status == CylinderStatus.emptyAtStore && s.cylinderId == cylinder.id).firstOrNull;
         final availableAtStore = emptyAtStore?.quantity ?? 0;
 
         if (availableAtStore >= delta) {
-          // Cas normal : tout est disponible au magasin
           await _moveStock(
             enterpriseId: tour.enterpriseId,
             cylinderId: cylinder.id,
@@ -715,13 +761,11 @@ class TransactionService {
             quantity: delta,
           );
         } else {
-          // Cas de "récupération" : le magasin n'a pas tout, on vérifie si le reste est "en transit" (bouteilles fantômes)
           final neededFromTransit = delta - availableAtStore;
           final emptyInTransit = stocks.where((s) => s.status == CylinderStatus.emptyInTransit && s.cylinderId == cylinder.id).firstOrNull;
           final availableInTransit = emptyInTransit?.quantity ?? 0;
 
           if (availableInTransit >= neededFromTransit) {
-            // On prend ce qu'on peut au magasin
             if (availableAtStore > 0) {
               await _moveStock(
                 enterpriseId: tour.enterpriseId,
@@ -732,23 +776,12 @@ class TransactionService {
                 quantity: availableAtStore,
               );
             }
-            // Et pour le reste, on considère qu'elles sont déjà en transit (on ne change pas le stock physique,
-            // car elles sont déjà dans l'état CylinderStatus.emptyInTransit, mais elles sont maintenant
-            // "comptées" dans le chargement de ce tour).
-            AppLogger.info(
-              'TourLoading: Récupération de $neededFromTransit bouteilles $weight kg déjà en transit (fantômes).',
-              name: 'transaction.tour_loading',
-            );
           } else {
-            // Vrai manque de stock
-            throw ValidationException(
-              'Stock insuffisant pour $weight kg : $availableAtStore au magasin et $availableInTransit en transit, alors que +$delta sont demandées.',
-              'INSUFFICIENT_STOCK',
-            );
+            throw ValidationException('Stock insuffisant pour $weight kg', 'INSUFFICIENT_STOCK');
           }
         }
       } else {
-        // Retrait de bouteilles (déchargement partiel) : Transit -> Magasin
+        // Déchargement : Transit -> Store
         await _moveStock(
           enterpriseId: tour.enterpriseId,
           cylinderId: cylinder.id,
@@ -760,9 +793,86 @@ class TransactionService {
       }
     }
 
-    // Mettre à jour le tour (l'état du tour est mis à jour ici car c'est une opération critique liée au stock)
+    // 2. Gérer les bouteilles avec fuite (Remplacement gratuit)
+    final leakWeights = <int>{...oldLeakingLoading.keys, ...newLeakingLoading.keys};
+    for (final weight in leakWeights) {
+      final oldQty = oldLeakingLoading[weight] ?? 0;
+      final newQty = newLeakingLoading[weight] ?? 0;
+      final delta = newQty - oldQty;
+      if (delta == 0) continue;
+
+      final cylinders = await gasRepository.getCylinders();
+      final cylinder = cylinders.firstWhere(
+        (c) => c.weight == weight && c.enterpriseId == tour.enterpriseId,
+        orElse: () => cylinders.firstWhere((c) => c.weight == weight),
+      );
+
+      if (delta > 0) {
+        // Chargement Fuite : Leak -> LeakInTransit
+        await _moveStock(
+          enterpriseId: tour.enterpriseId,
+          cylinderId: cylinder.id,
+          weight: weight,
+          fromStatus: CylinderStatus.leak,
+          toStatus: CylinderStatus.leakInTransit,
+          quantity: delta,
+        );
+
+        // Synchroniser les signalements de fuite : passer en 'sentForExchange'
+        final pendingLeaks = await leakRepository.getLeaks(
+          tour.enterpriseId,
+          status: LeakStatus.reported,
+        );
+        final leaksToUpdate = pendingLeaks
+            .where((l) => l.weight == weight && l.cylinderId == cylinder.id)
+            .take(delta)
+            .toList();
+
+        for (final leak in leaksToUpdate) {
+          await leakRepository.updateLeak(leak.copyWith(
+            status: LeakStatus.sentForExchange,
+            tourId: tour.id,
+            updatedAt: DateTime.now(),
+          ));
+        }
+      } else {
+        // Déchargement Fuite : LeakInTransit -> Leak
+        await _moveStock(
+          enterpriseId: tour.enterpriseId,
+          cylinderId: cylinder.id,
+          weight: weight,
+          fromStatus: CylinderStatus.leakInTransit,
+          toStatus: CylinderStatus.leak,
+          quantity: delta.abs(),
+        );
+
+        // Synchroniser les signalements de fuite : remettre en 'reported'
+        final sentLeaks = await leakRepository.getLeaks(
+          tour.enterpriseId,
+          status: LeakStatus.sentForExchange,
+        );
+        final leaksToRevert = sentLeaks
+            .where((l) =>
+                l.weight == weight &&
+                l.cylinderId == cylinder.id &&
+                l.tourId == tour.id)
+            .take(delta.abs())
+            .toList();
+
+        for (final leak in leaksToRevert) {
+          await leakRepository.updateLeak(leak.copyWith(
+            status: LeakStatus.reported,
+            tourId: null,
+            updatedAt: DateTime.now(),
+          ));
+        }
+      }
+    }
+
+    // Mettre à jour le tour
     await tourRepository.updateTour(tour.copyWith(
       emptyBottlesLoaded: newLoading,
+      leakingBottlesLoaded: newLeakingLoading,
       updatedAt: DateTime.now(),
     ));
 
@@ -779,6 +889,8 @@ class TransactionService {
       metadata: {
         'oldLoading': oldLoading.map((k, v) => MapEntry(k.toString(), v)),
         'newLoading': newLoading.map((k, v) => MapEntry(k.toString(), v)),
+        'oldLeakingLoading': oldLeakingLoading.map((k, v) => MapEntry(k.toString(), v)),
+        'newLeakingLoading': newLeakingLoading.map((k, v) => MapEntry(k.toString(), v)),
       },
     ));
   }
@@ -820,6 +932,48 @@ class TransactionService {
       );
     }
 
+    // 1.bis Remettre les fuites en transit vers le stock fuite
+    for (final entry in tour.leakingBottlesLoaded.entries) {
+      final weight = entry.key;
+      final quantity = entry.value;
+      if (quantity <= 0) continue;
+
+      final cylinders = await gasRepository.getCylinders();
+      final cylinder = cylinders.firstWhere(
+        (c) => c.weight == weight && c.enterpriseId == tour.enterpriseId,
+        orElse: () => cylinders.firstWhere((c) => c.weight == weight),
+      );
+
+      await _moveStock(
+        enterpriseId: tour.enterpriseId,
+        cylinderId: cylinder.id,
+        weight: weight,
+        fromStatus: CylinderStatus.leakInTransit,
+        toStatus: CylinderStatus.leak,
+        quantity: quantity,
+      );
+
+      // Synchroniser les signalements de fuite : remettre en 'reported'
+      final sentLeaks = await leakRepository.getLeaks(
+        tour.enterpriseId,
+        status: LeakStatus.sentForExchange,
+      );
+      final leaksToRevert = sentLeaks
+          .where((l) =>
+              l.weight == weight &&
+              l.cylinderId == cylinder.id &&
+              l.tourId == tour.id)
+          .toList();
+
+      for (final leak in leaksToRevert) {
+        await leakRepository.updateLeak(leak.copyWith(
+          status: LeakStatus.reported,
+          tourId: null,
+          updatedAt: DateTime.now(),
+        ));
+      }
+    }
+
     // 2. Annuler le tour
     await tourRepository.updateTour(tour.copyWith(
       status: TourStatus.cancelled,
@@ -855,14 +1009,23 @@ class TransactionService {
     final stocks = await stockRepository.getStocksByWeight(enterpriseId, weight, siteId: siteId);
     
     // Décrémenter Source
-    final sourceStock = stocks.where((s) => s.status == fromStatus && s.cylinderId == cylinderId).firstOrNull;
-    if (sourceStock == null || sourceStock.quantity < quantity) {
+    final sourceStocks = stocks.where((s) => s.status == fromStatus && s.cylinderId == cylinderId).toList();
+    final totalSource = sourceStocks.fold<int>(0, (sum, s) => sum + s.quantity);
+    
+    if (totalSource < quantity) {
       throw ValidationException(
-        'Stock insuffisant (${fromStatus.label}) pour $weight kg : ${sourceStock?.quantity ?? 0} disponibles, $quantity demandées',
+        'Stock insuffisant (${fromStatus.label}) pour $weight kg : $totalSource disponibles, $quantity demandées',
         'INSUFFICIENT_STOCK',
       );
     }
-    await stockRepository.updateStockQuantity(sourceStock.id, sourceStock.quantity - quantity);
+
+    int remainingToDeduct = quantity;
+    for (final s in sourceStocks) {
+      if (remainingToDeduct <= 0) break;
+      final toDeduct = remainingToDeduct > s.quantity ? s.quantity : remainingToDeduct;
+      await stockRepository.updateStockQuantity(s.id, s.quantity - toDeduct);
+      remainingToDeduct -= toDeduct;
+    }
 
     // Incrémenter Destination
     final destStock = stocks.where((s) => s.status == toStatus && s.cylinderId == cylinderId).firstOrNull;
@@ -1382,17 +1545,21 @@ class TransactionService {
   }) async {
     // 1. Mettre à jour chaque stock
     for (final item in audit.items) {
-      // Find the existing stock ID by properties if not reliably provided or to ensure robustness
       final existingStocks = await stockRepository.getStocksByWeight(
         audit.enterpriseId, 
         item.weight, 
         siteId: audit.siteId,
       );
       
-      final existingStock = existingStocks.where((s) => s.status == item.status && s.cylinderId == item.cylinderId && s.siteId == audit.siteId).firstOrNull;
+      final matchingStocks = existingStocks.where((s) => s.status == item.status && s.cylinderId == item.cylinderId && s.siteId == audit.siteId).toList();
 
-      if (existingStock != null) {
-        await stockRepository.updateStockQuantity(existingStock.id, item.physicalQuantity);
+      if (matchingStocks.isNotEmpty) {
+        // Mettre à jour le premier record avec la valeur réelle
+        await stockRepository.updateStockQuantity(matchingStocks.first.id, item.physicalQuantity);
+        // Mettre à zéro les doublons éventuels pour éviter l'inflation du stock
+        for (int i = 1; i < matchingStocks.length; i++) {
+          await stockRepository.updateStockQuantity(matchingStocks[i].id, 0);
+        }
       } else {
         // Create new stock record if it doesn't exist (e.g. initial audit)
         await stockRepository.addStock(CylinderStock(

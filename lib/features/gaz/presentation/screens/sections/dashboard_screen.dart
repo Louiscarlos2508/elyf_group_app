@@ -197,7 +197,7 @@ class _DashboardKpiSliver extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final dashboardDataAsync = ref.watch(gazDashboardDataProvider);
+    final dashboardDataAsync = ref.watch(gazDashboardDataProviderComplete);
     final viewType = ref.watch(gazDashboardViewTypeProvider);
     final activeEnterprise = ref.watch(activeEnterpriseProvider).value;
     final enterpriseId = activeEnterprise?.id ?? '';
@@ -215,6 +215,8 @@ class _DashboardKpiSliver extends ConsumerWidget {
         expenses: data.expenses,
         cylinders: data.cylinders,
         stocks: data.stocks,
+        transfers: data.transfers,
+        pointsOfSale: data.pointsOfSale,
         settings: settingsAsync.value,
         viewType: viewType,
       ),
@@ -222,7 +224,7 @@ class _DashboardKpiSliver extends ConsumerWidget {
       error: (error, stackTrace) => ErrorDisplayWidget(
         error: error,
         title: 'Erreur de chargement des données',
-        onRetry: () => ref.refresh(gazDashboardDataProvider),
+        onRetry: () => ref.refresh(gazDashboardDataProviderComplete),
       ),
     );
   }
@@ -234,7 +236,7 @@ class _DashboardChartsSliver extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final dashboardDataAsync = ref.watch(gazDashboardDataProvider);
+    final dashboardDataAsync = ref.watch(gazDashboardDataProviderComplete);
 
     return dashboardDataAsync.when(
       data: (data) => DashboardPerformanceSection(
@@ -245,7 +247,7 @@ class _DashboardChartsSliver extends ConsumerWidget {
       error: (error, stackTrace) => ErrorDisplayWidget(
         error: error,
         title: 'Erreur de chargement des performances',
-        onRetry: () => ref.refresh(gazDashboardDataProvider),
+        onRetry: () => ref.refresh(gazDashboardDataProviderComplete),
       ),
     );
   }
@@ -257,7 +259,7 @@ class _DashboardPosPerformanceSliver extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final dashboardDataAsync = ref.watch(gazDashboardDataProvider);
+    final dashboardDataAsync = ref.watch(gazDashboardDataProviderComplete);
 
     return dashboardDataAsync.when(
       data: (data) => DashboardPosPerformanceSection(
@@ -269,7 +271,7 @@ class _DashboardPosPerformanceSliver extends ConsumerWidget {
         error: error,
         title: 'Erreur de chargement',
         message: 'Impossible de charger les performances par point de vente.',
-        onRetry: () => ref.refresh(gazDashboardDataProvider),
+        onRetry: () => ref.refresh(gazDashboardDataProviderComplete),
       ),
     );
   }

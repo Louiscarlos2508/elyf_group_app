@@ -9,7 +9,6 @@ import 'package:elyf_groupe_app/features/administration/domain/entities/enterpri
 import 'package:elyf_groupe_app/features/gaz/domain/entities/gaz_settings.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/gas_sale.dart';
-import 'package:elyf_groupe_app/features/gaz/domain/services/gaz_calculation_service.dart';
 import 'gas_sale_form/customer_info_widget.dart';
 import 'gas_sale_form/cylinder_selector_widget.dart';
 import 'gas_sale_form/gas_sale_submit_handler.dart';
@@ -19,6 +18,7 @@ import 'gas_sale_form/tour_wholesaler_selector_widget.dart';
 import 'gas_print_receipt_button.dart';
 import '../../application/providers.dart';
 import 'package:elyf_groupe_app/core/logging/app_logger.dart';
+import 'package:elyf_groupe_app/features/gaz/domain/services/gaz_financial_calculation_service.dart';
 /// Dialog de formulaire pour créer une vente de gaz.
 class GasSaleFormDialog extends ConsumerStatefulWidget {
   const GasSaleFormDialog({
@@ -92,7 +92,7 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
       }
     }
 
-    return GazCalculationService.calculateTotalAmount(
+    return GazFinancialCalculationService.calculateTotalAmount(
       cylinder: _selectedCylinder,
       unitPrice: _unitPrice,
       quantity: quantity,

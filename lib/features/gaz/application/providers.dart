@@ -408,6 +408,7 @@ final stockTransferServiceProvider = Provider<StockTransferService>((ref) {
   final stockRepo = ref.watch(cylinderStockRepositoryProvider);
   final gasRepo = ref.watch(gasRepositoryProvider);
   final auditRepo = ref.watch(auditTrailRepositoryProvider);
+  final enterpriseRepo = ref.watch(enterpriseRepositoryProvider);
   final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
   final settingsRepo = ref.watch(gazSettingsRepositoryProvider(enterpriseId));
   
@@ -416,6 +417,7 @@ final stockTransferServiceProvider = Provider<StockTransferService>((ref) {
     stockRepository: stockRepo,
     gasRepository: gasRepo,
     auditTrailRepository: auditRepo,
+    enterpriseRepository: enterpriseRepo,
     settingsRepository: settingsRepo,
   );
 });
@@ -688,28 +690,58 @@ final gazStocksProvider = StreamProvider<List<CylinderStock>>((ref) {
   return controller.watchStocks(activeId, enterpriseIds: scopedIds);
 });
 
+/// Données agrégées pour le dashboard gaz.
+class GazDashboardData {
+  const GazDashboardData({
+    required this.sales,
+    required this.expenses,
+    required this.cylinders,
+    required this.stocks,
+    required this.transfers,
+    required this.pointsOfSale,
+  });
+
+  final List<GasSale> sales;
+  final List<GazExpense> expenses;
+  final List<Cylinder> cylinders;
+  final List<CylinderStock> stocks;
+  final List<StockTransfer> transfers;
+  final List<Enterprise> pointsOfSale;
+}
+
 /// Provider combiné pour les données du dashboard gaz.
-///
-/// Simplifie l'utilisation en combinant sales, expenses et cylinders
-/// en un seul AsyncValue.
-final gazDashboardDataProvider = StreamProvider<
-    ({List<GasSale> sales, List<GazExpense> expenses, List<Cylinder> cylinders, List<CylinderStock> stocks})>(
+final gazDashboardDataProviderComplete = StreamProvider<GazDashboardData>(
   (ref) {
     final salesAsync = ref.watch(gasSalesProvider);
     final expensesAsync = ref.watch(gazExpensesProvider);
     final cylindersAsync = ref.watch(cylindersProvider);
     final stocksAsync = ref.watch(gazStocksProvider);
+    
+    final activeEnterprise = ref.watch(activeEnterpriseProvider).value;
+    final enterpriseId = activeEnterprise?.id ?? 'default';
+    
+    final transfersAsync = ref.watch(stockTransfersProvider(enterpriseId));
+    final pointsOfSaleAsync = ref.watch(
+      enterprisesByParentAndTypeProvider((
+        parentId: enterpriseId,
+        type: EnterpriseType.gasPointOfSale,
+      )),
+    );
 
     final sales = salesAsync.value ?? [];
     final expenses = expensesAsync.value ?? [];
     final cylinders = cylindersAsync.value ?? [];
     final stocks = stocksAsync.value ?? [];
+    final transfers = transfersAsync.value ?? [];
+    final pointsOfSale = pointsOfSaleAsync.value ?? [];
 
-    return Stream.value((
+    return Stream.value(GazDashboardData(
       sales: sales,
       expenses: expenses,
       cylinders: cylinders,
       stocks: stocks,
+      transfers: transfers,
+      pointsOfSale: pointsOfSale,
     ));
   },
 );

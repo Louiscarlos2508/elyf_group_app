@@ -7,8 +7,13 @@ import '../../../../domain/entities/cylinder_stock.dart';
 import '../../../../domain/entities/expense.dart';
 import '../../../../domain/entities/gas_sale.dart';
 import '../../../../domain/entities/gaz_settings.dart';
-import '../../../../domain/services/gaz_calculation_service.dart';
+import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
+import '../../../../domain/entities/stock_transfer.dart';
 import '../../../../application/providers.dart';
+import 'package:elyf_groupe_app/features/gaz/domain/services/gaz_financial_calculation_service.dart';
+import 'package:elyf_groupe_app/features/gaz/domain/services/gaz_stock_calculation_service.dart';
+import 'package:elyf_groupe_app/features/gaz/domain/services/gaz_sales_calculation_service.dart';
 
 /// Section des KPI cards pour le dashboard.
 class DashboardKpiSection extends ConsumerWidget {
@@ -18,6 +23,8 @@ class DashboardKpiSection extends ConsumerWidget {
     required this.expenses,
     required this.cylinders,
     required this.stocks,
+    required this.transfers,
+    required this.pointsOfSale,
     this.settings,
     this.viewType = GazDashboardViewType.consolidated,
   });
@@ -26,49 +33,37 @@ class DashboardKpiSection extends ConsumerWidget {
   final List<GazExpense> expenses;
   final List<Cylinder> cylinders;
   final List<CylinderStock> stocks;
+  final List<StockTransfer> transfers;
+  final List<Enterprise> pointsOfSale;
   final GazSettings? settings;
   final GazDashboardViewType viewType;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    // Utiliser le service pour les calculs
-    final todaySales = GazCalculationService.calculateTodaySales(sales);
-    final todayRevenue = GazCalculationService.calculateTodayRevenue(sales);
-    final todayExpenses = GazCalculationService.calculateTodayExpenses(
-      expenses,
-    );
-    final todayExpensesAmount =
-        GazCalculationService.calculateTodayExpensesTotal(expenses);
-    final todayProfit = GazCalculationService.calculateTodayProfit(
-      sales,
-      expenses,
-      cylinders,
+    final activeEnterprise = ref.watch(activeEnterpriseProvider).value;
+    final enterpriseId = activeEnterprise?.id ?? 'default';
+    final isPos = activeEnterprise?.isPointOfSale ?? false;
+
+    // Use centralized calculation service
+    final metrics = GazStockCalculationService.calculateStockMetrics(
+      stocks: stocks,
+      pointsOfSale: pointsOfSale,
+      cylinders: cylinders,
+      transfers: transfers,
+      settings: isPos ? null : settings,
+      targetEnterpriseId: enterpriseId,
     );
 
-    // Calculer les bouteilles pleines
-    final fullBottles = GazCalculationService.calculateTotalFullCylinders(
-      stocks,
-    );
-    
-    // Calculer les bouteilles vides
-    int emptyBottles = 0;
-    final s = settings;
-    if (viewType == GazDashboardViewType.local && s != null) {
-      // En vue locale, le vide = Nominal - Plein
-      for (final weight in s.nominalStocks.keys) {
-        final nominal = s.getNominalStock(weight);
-        final fullForWeight = stocks
-            .where((s) => s.weight == weight && s.status == CylinderStatus.full)
-            .fold<int>(0, (sum, s) => sum + s.quantity);
-        emptyBottles += (nominal - fullForWeight).clamp(0, nominal).toInt();
-      }
-    } else {
-      // En vue consolidée, c'est le cumul du stock physique vide
-      emptyBottles = GazCalculationService.calculateTotalEmptyCylinders(
-        stocks,
-      );
-    }
+    final todaySales = GazSalesCalculationService.calculateTodaySales(sales);
+    final todayRevenue = GazSalesCalculationService.calculateTodayRevenue(sales);
+    final todayExpenses = GazFinancialCalculationService.calculateTodayExpenses(expenses);
+    final todayExpensesAmount = GazFinancialCalculationService.calculateTodayExpensesTotal(expenses);
+    final todayProfit = GazFinancialCalculationService.calculateTodayProfit(sales, expenses, cylinders);
+
+    final fullBottles = metrics.totalFull;
+    final emptyBottles = metrics.totalEmpty;
+    final transitBottles = metrics.totalCentralized;
 
     return LayoutBuilder(
           builder: (context, constraints) {
@@ -110,7 +105,7 @@ class DashboardKpiSection extends ConsumerWidget {
                     child: ElyfStatsCard(
                       label: "Bouteilles pleines",
                       value: "$fullBottles",
-                      subtitle: "$emptyBottles vides",
+                      subtitle: "$emptyBottles vides${transitBottles > 0 ? ' • $transitBottles transit' : ''}",
                       icon: Icons.inventory_2_rounded,
                       color: theme.colorScheme.tertiary, // Vibrant Violet/Tertiary
                     ),
@@ -162,7 +157,7 @@ class DashboardKpiSection extends ConsumerWidget {
                       child: ElyfStatsCard(
                         label: "Bouteilles pleines",
                         value: "$fullBottles",
-                        subtitle: "$emptyBottles vides",
+                        subtitle: "$emptyBottles vides${transitBottles > 0 ? ' • $transitBottles transit' : ''}",
                         icon: Icons.inventory_2_rounded,
                         color: theme.colorScheme.tertiary,
                       ),

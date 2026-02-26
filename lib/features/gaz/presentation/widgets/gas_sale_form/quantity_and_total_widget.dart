@@ -4,7 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import '../../../domain/entities/cylinder.dart';
-import '../../../domain/services/gaz_calculation_service.dart';
+import 'package:elyf_groupe_app/features/gaz/domain/services/gaz_financial_calculation_service.dart';
+import 'package:elyf_groupe_app/features/gaz/domain/services/gaz_sales_calculation_service.dart';
 
 /// Widget pour saisir la quantité et afficher le total.
 class QuantityAndTotalWidget extends StatelessWidget {
@@ -29,7 +30,7 @@ class QuantityAndTotalWidget extends StatelessWidget {
 
   double get _totalAmount {
     final quantity = int.tryParse(quantityController.text) ?? 0;
-    return GazCalculationService.calculateTotalAmount(
+    return GazFinancialCalculationService.calculateTotalAmount(
       cylinder: selectedCylinder,
       unitPrice: unitPrice,
       quantity: quantity,
@@ -55,7 +56,7 @@ class QuantityAndTotalWidget extends StatelessWidget {
           keyboardType: TextInputType.number,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           validator: (value) {
-            return GazCalculationService.validateQuantityText(
+            return GazSalesCalculationService.validateQuantityText(
               quantityText: value,
               availableStock: availableStock,
             );

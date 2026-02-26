@@ -5,13 +5,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/stock_transfer.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder.dart';
-import 'package:elyf_groupe_app/features/gaz/domain/services/gaz_calculation_service.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/core/auth/providers.dart';
 import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import 'package:elyf_groupe_app/features/administration/application/providers.dart';
 import 'package:elyf_groupe_app/core/offline/offline_repository.dart' show LocalIdGenerator;
+import 'package:elyf_groupe_app/features/gaz/domain/services/gaz_stock_calculation_service.dart';
 
 class StockTransferDialog extends ConsumerStatefulWidget {
   const StockTransferDialog({
@@ -106,7 +106,7 @@ class _StockTransferDialogState extends ConsumerState<StockTransferDialog> {
         moduleId: 'gaz',
       ))).value;
 
-      final metrics = GazCalculationService.calculateStockMetrics(
+      final metrics = GazStockCalculationService.calculateStockMetrics(
         stocks: stocks,
         pointsOfSale: [],
         cylinders: cylinders,
@@ -323,7 +323,7 @@ class _StockTransferDialogState extends ConsumerState<StockTransferDialog> {
                                   final stocks = sourceStocksAsync.value ?? [];
                                   final settings = sourceSettingsAsync.value;
 
-                                  final metrics = GazCalculationService.calculateStockMetrics(
+                                  final metrics = GazStockCalculationService.calculateStockMetrics(
                                     stocks: stocks,
                                     pointsOfSale: [],
                                     cylinders: cylinders,

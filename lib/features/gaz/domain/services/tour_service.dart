@@ -15,7 +15,9 @@ class TourService {
   final TransactionService transactionService;
 
   /// Met à jour les bouteilles vides chargées avec gestion du stock transit.
-  Future<void> updateEmptyBottlesLoaded(String tourId, Map<int, int> quantities, String userId) async {
+  Future<void> updateEmptyBottlesLoaded(
+      String tourId, Map<int, int> quantities, String userId,
+      {Map<int, int> leakingQuantities = const {}}) async {
     final tour = await tourRepository.getTourById(tourId);
     if (tour == null) throw NotFoundException('Tour introuvable', 'TOUR_NOT_FOUND');
     if (tour.status != TourStatus.open) throw ValidationException('Le tour est clôturé', 'TOUR_CLOSED');
@@ -24,6 +26,7 @@ class TourService {
       tourId: tourId,
       userId: userId,
       newLoading: quantities,
+      newLeakingLoading: leakingQuantities,
     );
   }
 

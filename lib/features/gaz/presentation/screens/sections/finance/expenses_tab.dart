@@ -5,13 +5,13 @@ import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/core/logging/app_logger.dart';
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import '../../../../domain/entities/expense.dart';
-import '../../../../domain/services/gaz_calculation_service.dart';
 import '../../../widgets/expense_form_dialog.dart';
 import '../expenses/expense_detail_dialog.dart';
 import '../expenses/expenses_category_tab.dart';
 import '../expenses/expenses_history_tab.dart';
 import '../expenses/expenses_kpi_section.dart';
 import '../expenses/expenses_tab_bar.dart';
+import 'package:elyf_groupe_app/features/gaz/domain/services/gaz_financial_calculation_service.dart';
 
 class ExpensesTab extends ConsumerStatefulWidget {
   const ExpensesTab({super.key});
@@ -74,9 +74,9 @@ class _ExpensesTabState extends ConsumerState<ExpensesTab>
 
     return expensesAsync.when(
       data: (expenses) {
-        final todayTotal = GazCalculationService.calculateTodayExpensesTotal(expenses);
-        final todayExpenses = GazCalculationService.calculateTodayExpenses(expenses);
-        final totalExpenses = GazCalculationService.calculateTotalExpenses(expenses);
+        final todayTotal = GazFinancialCalculationService.calculateTodayExpensesTotal(expenses);
+        final todayExpenses = GazFinancialCalculationService.calculateTodayExpenses(expenses);
+        final totalExpenses = GazFinancialCalculationService.calculateTotalExpenses(expenses);
 
         return Column(
           children: [

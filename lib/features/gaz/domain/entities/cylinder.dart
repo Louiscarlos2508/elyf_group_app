@@ -114,7 +114,8 @@ enum CylinderStatus {
   emptyAtStore('Vides (Magasin)'),
   emptyInTransit('Vides (En transit)'),
   defective('Défectueuses'),
-  leak('Fuites');
+  leak('Fuites'),
+  leakInTransit('Fuites (En transit)');
 
   const CylinderStatus(this.label);
   final String label;

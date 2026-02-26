@@ -29,6 +29,7 @@ class Tour {
     Map<int, double>? exchangeFees,
     Map<int, double>? purchasePricesUsed,
     Map<int, int>? emptyBottlesLoaded,
+    Map<int, int>? leakingBottlesLoaded,
     this.transportExpenses = const [],
     Map<int, int>? fullBottlesReceived,
     Map<int, int>? emptyBottlesReturned,
@@ -42,7 +43,6 @@ class Tour {
     this.notes,
     this.applyLoadingFees = true,
     double? additionalInvoiceFees,
- Sioux
     this.updatedAt,
     this.createdAt,
     this.deletedAt,
@@ -52,6 +52,7 @@ class Tour {
         _exchangeFees = exchangeFees,
         _purchasePricesUsed = purchasePricesUsed,
         _emptyBottlesLoaded = emptyBottlesLoaded,
+        _leakingBottlesLoaded = leakingBottlesLoaded,
         _fullBottlesReceived = fullBottlesReceived,
         _emptyBottlesReturned = emptyBottlesReturned,
         _additionalInvoiceFees = additionalInvoiceFees;
@@ -79,6 +80,9 @@ class Tour {
 
   final Map<int, int>? _emptyBottlesLoaded;
   Map<int, int> get emptyBottlesLoaded => _emptyBottlesLoaded ?? const <int, int>{};
+
+  final Map<int, int>? _leakingBottlesLoaded;
+  Map<int, int> get leakingBottlesLoaded => _leakingBottlesLoaded ?? const <int, int>{};
 
   final List<TransportExpense> transportExpenses;
 
@@ -117,6 +121,7 @@ class Tour {
     Map<int, double>? exchangeFees,
     Map<int, double>? purchasePricesUsed,
     Map<int, int>? emptyBottlesLoaded,
+    Map<int, int>? leakingBottlesLoaded,
     List<TransportExpense>? transportExpenses,
     Map<int, int>? fullBottlesReceived,
     Map<int, int>? emptyBottlesReturned,
@@ -149,6 +154,7 @@ class Tour {
       exchangeFees: exchangeFees ?? _exchangeFees,
       purchasePricesUsed: purchasePricesUsed ?? _purchasePricesUsed,
       emptyBottlesLoaded: emptyBottlesLoaded ?? _emptyBottlesLoaded,
+      leakingBottlesLoaded: leakingBottlesLoaded ?? _leakingBottlesLoaded,
       transportExpenses: transportExpenses ?? this.transportExpenses,
       fullBottlesReceived: fullBottlesReceived ?? _fullBottlesReceived,
       emptyBottlesReturned: emptyBottlesReturned ?? _emptyBottlesReturned,
@@ -207,6 +213,11 @@ class Tour {
           const <int, double>{},
       emptyBottlesLoaded:
           (map['emptyBottlesLoaded'] as Map<String, dynamic>?)?.map(
+                (k, v) => MapEntry(int.parse(k), (v as num).toInt()),
+              ) ??
+              const <int, int>{},
+      leakingBottlesLoaded:
+          (map['leakingBottlesLoaded'] as Map<String, dynamic>?)?.map(
                 (k, v) => MapEntry(int.parse(k), (v as num).toInt()),
               ) ??
               const <int, int>{},
@@ -286,6 +297,9 @@ class Tour {
       'emptyBottlesLoaded': emptyBottlesLoaded.map(
         (k, v) => MapEntry(k.toString(), v),
       ),
+      'leakingBottlesLoaded': leakingBottlesLoaded.map(
+        (k, v) => MapEntry(k.toString(), v),
+      ),
       'transportExpenses': transportExpenses.map((e) => e.toMap()).toList(),
       'fullBottlesReceived': fullBottlesReceived.map(
         (k, v) => MapEntry(k.toString(), v),
@@ -313,7 +327,9 @@ class Tour {
   bool get isDeleted => deletedAt != null;
 
   int get totalBottlesToLoad {
-    return emptyBottlesLoaded.values.fold<int>(0, (sum, qty) => sum + qty);
+    final empty = emptyBottlesLoaded.values.fold<int>(0, (sum, qty) => sum + qty);
+    final leaky = leakingBottlesLoaded.values.fold<int>(0, (sum, qty) => sum + qty);
+    return empty + leaky;
   }
 
   int get totalBottlesReceived {
