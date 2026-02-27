@@ -286,13 +286,18 @@ class ModuleDataSyncService {
           // Si on utilise embeddedLocalId, valider qu'il n'est pas vide
           final finalLocalId = localIdToUse.trim().isEmpty ? documentId : localIdToUse;
 
+          // Crucial : Injecter le finalLocalId déterminé dans les données stockées
+          // Pour que les fromMap() puissent toujours retrouver leur localId.
+          sanitizedData['localId'] = finalLocalId;
+          final updatedJsonPayload = jsonEncode(sanitizedData);
+
           companions.add(OfflineRecordsCompanion.insert(
             collectionName: collectionName,
             localId: finalLocalId,
             remoteId: Value(documentId),
             enterpriseId: storageEnterpriseId,
             moduleType: Value(moduleId),
-            dataJson: jsonPayload,
+            dataJson: updatedJsonPayload,
             localUpdatedAt: DateTime.now(),
           ));
         } catch (e) {
