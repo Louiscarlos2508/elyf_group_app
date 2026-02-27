@@ -16,32 +16,23 @@ class WholesalePriceConfigCard extends ConsumerWidget {
   final String enterpriseId;
   final String moduleId;
 
-  /// Récupère les poids disponibles depuis les bouteilles créées.
-  List<int> _getAvailableWeights(WidgetRef ref) {
-    final cylindersAsync = ref.watch(cylindersProvider);
-    return cylindersAsync.when(
-      data: (cylinders) {
-        // Extraire les poids uniques des bouteilles existantes
-        final weights = cylinders.map((c) => c.weight).toSet().toList();
-        weights.sort();
-        return weights;
-      },
-      loading: () => [],
-      error: (_, __) => [],
-    );
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
-    final availableWeights = _getAvailableWeights(ref);
     final settingsAsync = ref.watch(
       gazSettingsProvider((enterpriseId: enterpriseId, moduleId: moduleId)),
     );
 
     return settingsAsync.when(
       data: (settings) {
+        // Use settings price keys rather than cylinder objects — works on new devices too
+        final availableWeights = {
+          ...?settings?.retailPrices.keys,
+          ...?settings?.wholesalePrices.keys,
+          ...?settings?.purchasePrices.keys,
+        }.toList()..sort();
+
         return Card(
           elevation: 0,
           shape: RoundedRectangleBorder(
@@ -67,7 +58,7 @@ class WholesalePriceConfigCard extends ConsumerWidget {
               children: [
                 const WholesalePriceHeader(),
                 const SizedBox(height: 24),
-                // Liste des prix par poids (basée sur les bouteilles créées)
+                // Liste des prix par poids (basée sur les paramètres de prix)
                 if (availableWeights.isEmpty)
                   Padding(
                     padding: const EdgeInsets.all(16),

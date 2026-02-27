@@ -362,7 +362,6 @@ class GazSettingsScreen extends ConsumerWidget {
     );
   }
 
-  /// Construit la section des seuils d'alerte de stock.
   Widget _buildStockAlertSection({
     required BuildContext context,
     required WidgetRef ref,
@@ -370,7 +369,6 @@ class GazSettingsScreen extends ConsumerWidget {
     required String enterpriseId,
   }) {
     final settingsAsync = ref.watch(gazSettingsProvider((enterpriseId: enterpriseId, moduleId: 'gaz')));
-    final cylindersAsync = ref.watch(cylindersProvider);
 
     return Card(
       elevation: 0,
@@ -425,52 +423,49 @@ class GazSettingsScreen extends ConsumerWidget {
             const SizedBox(height: 16),
             const Divider(),
             const SizedBox(height: 16),
-            cylindersAsync.when(
-              data: (cylinders) {
-                final weights = cylinders.map((c) => c.weight).toSet().toList()..sort();
+            settingsAsync.when(
+              data: (settings) {
+                // Use settings price keys rather than cylinder objects — works on new devices too
+                final weights = {
+                  ...?settings?.retailPrices.keys,
+                  ...?settings?.purchasePrices.keys,
+                  ...?settings?.wholesalePrices.keys,
+                }.toList()..sort();
                 if (weights.isEmpty) {
                   return const Center(child: Text('Aucun type de bouteille configuré'));
                 }
-
-                return settingsAsync.when(
-                  data: (settings) {
-                    return ListView.separated(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: weights.length,
-                      separatorBuilder: (context, index) => const Divider(),
-                      itemBuilder: (context, index) {
-                        final weight = weights[index];
-                        final threshold = settings?.getLowStockThreshold(weight) ?? 0;
-
-                        return ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          title: Text('$weight kg'),
-                          subtitle: Text('Seuil actuel : $threshold bouteilles'),
-                          trailing: SizedBox(
-                            width: 100,
-                            child: ElyfButton(
-                              onPressed: () => _showThresholdEditDialog(
-                                context,
-                                ref,
-                                enterpriseId,
-                                weight,
-                                threshold,
-                              ),
-                              size: ElyfButtonSize.small,
-                              child: const Text('Modifier'),
-                            ),
+                return ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: weights.length,
+                  separatorBuilder: (context, index) => const Divider(),
+                  itemBuilder: (context, index) {
+                    final weight = weights[index];
+                    final threshold = settings?.getLowStockThreshold(weight) ?? 0;
+                    return ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text('$weight kg'),
+                      subtitle: Text('Seuil actuel : $threshold bouteilles'),
+                      trailing: SizedBox(
+                        width: 100,
+                        child: ElyfButton(
+                          onPressed: () => _showThresholdEditDialog(
+                            context,
+                            ref,
+                            enterpriseId,
+                            weight,
+                            threshold,
                           ),
-                        );
-                      },
+                          size: ElyfButtonSize.small,
+                          child: const Text('Modifier'),
+                        ),
+                      ),
                     );
                   },
-                  loading: () => const Center(child: CircularProgressIndicator()),
-                  error: (e, _) => Text('Erreur paramètres: $e'),
                 );
               },
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Text('Erreur cylindres: $e'),
+              error: (e, _) => Text('Erreur paramètres: $e'),
             ),
           ],
         ),
@@ -530,7 +525,6 @@ class GazSettingsScreen extends ConsumerWidget {
     required String enterpriseId,
   }) {
     final settingsAsync = ref.watch(gazSettingsProvider((enterpriseId: enterpriseId, moduleId: 'gaz')));
-    final cylindersAsync = ref.watch(cylindersProvider);
 
     return Card(
       elevation: 0,
@@ -585,54 +579,52 @@ class GazSettingsScreen extends ConsumerWidget {
             const SizedBox(height: 16),
             const Divider(),
             const SizedBox(height: 16),
-            cylindersAsync.when(
-              data: (cylinders) {
-                final weights = cylinders.map((c) => c.weight).toSet().toList()..sort();
+            settingsAsync.when(
+              data: (settings) {
+                // Use settings price keys rather than cylinder objects — works on new devices too
+                final weights = {
+                  ...?settings?.retailPrices.keys,
+                  ...?settings?.purchasePrices.keys,
+                  ...?settings?.loadingFees.keys,
+                  ...?settings?.unloadingFees.keys,
+                }.toList()..sort();
                 if (weights.isEmpty) {
                   return const Center(child: Text('Aucun type de bouteille configuré'));
                 }
-
-                return settingsAsync.when(
-                  data: (settings) {
-                    return ListView.separated(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: weights.length,
-                      separatorBuilder: (context, index) => const Divider(),
-                      itemBuilder: (context, index) {
-                        final weight = weights[index];
-                        final loading = settings?.loadingFees[weight] ?? 0.0;
-                        final unloading = settings?.unloadingFees[weight] ?? 0.0;
-
-                        return ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          title: Text('$weight kg'),
-                          subtitle: Text('Chargement: ${loading.toInt()} F | Déchargement: ${unloading.toInt()} F'),
-                          trailing: SizedBox(
-                            width: 100,
-                            child: ElyfButton(
-                              onPressed: () => _showFeesEditDialog(
-                                context,
-                                ref,
-                                enterpriseId,
-                                weight,
-                                loading,
-                                unloading,
-                              ),
-                              size: ElyfButtonSize.small,
-                              child: const Text('Modifier'),
-                            ),
+                return ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: weights.length,
+                  separatorBuilder: (context, index) => const Divider(),
+                  itemBuilder: (context, index) {
+                    final weight = weights[index];
+                    final loading = settings?.loadingFees[weight] ?? 0.0;
+                    final unloading = settings?.unloadingFees[weight] ?? 0.0;
+                    return ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text('$weight kg'),
+                      subtitle: Text('Chargement: ${loading.toInt()} F | Déchargement: ${unloading.toInt()} F'),
+                      trailing: SizedBox(
+                        width: 100,
+                        child: ElyfButton(
+                          onPressed: () => _showFeesEditDialog(
+                            context,
+                            ref,
+                            enterpriseId,
+                            weight,
+                            loading,
+                            unloading,
                           ),
-                        );
-                      },
+                          size: ElyfButtonSize.small,
+                          child: const Text('Modifier'),
+                        ),
+                      ),
                     );
                   },
-                  loading: () => const Center(child: CircularProgressIndicator()),
-                  error: (e, _) => Text('Erreur paramètres: $e'),
                 );
               },
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Text('Erreur cylindres: $e'),
+              error: (e, _) => Text('Erreur paramètres: $e'),
             ),
           ],
         ),
