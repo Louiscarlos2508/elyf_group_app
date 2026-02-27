@@ -30,8 +30,12 @@ class ReconciliationMetrics {
   final double totalExpenses;
   final double theoreticalCash;
   final double theoreticalMobileMoney;
-  final Map<int, int> currentFullStocks;
-  final Map<int, int> currentEmptyStocks;
+  final double totalSales;
+  final Map<PaymentMethod, double> salesByPaymentMethod;
+  final Map<int, int> salesByCylinderWeight;
+  final Map<int, int> theoreticalStock;
+  final Map<int, int> theoreticalEmptyStock;
+  final DateTime date;
 
   ReconciliationMetrics({
     required this.initialCash,
@@ -41,8 +45,12 @@ class ReconciliationMetrics {
     required this.totalExpenses,
     required this.theoreticalCash,
     required this.theoreticalMobileMoney,
-    required this.currentFullStocks,
-    required this.currentEmptyStocks,
+    required this.totalSales,
+    required this.salesByPaymentMethod,
+    required this.salesByCylinderWeight,
+    required this.theoreticalStock,
+    required this.theoreticalEmptyStock,
+    required this.date,
   });
 }
 
@@ -67,7 +75,7 @@ class GazSessionCalculationService {
         .where((s) => s.paymentMethod == PaymentMethod.mobileMoney)
         .fold<double>(0, (sum, s) => sum + s.totalAmount);
 
-    final latestCash = session.openingCashAmount + cashSales;
+    final latestCash = session.openingCash + cashSales;
     final latestMobileMoney = session.openingMobileMoney + mobileMoneySales;
 
     final salesByWeight = <int, int>{};
@@ -122,8 +130,16 @@ class GazSessionCalculationService {
     final mobileMoneySales = salesByPaymentMethod[PaymentMethod.mobileMoney] ?? 0.0;
     final theoreticalMobileMoney = openingMobileMoney + mobileMoneySales;
 
-    final fullStocks = GazStockCalculationService.filterFullStocks(stocks);
-    final emptyStocks = GazStockCalculationService.filterEmptyStocks(stocks);
+    final totalSales = todaySales.fold<double>(0, (sum, s) => sum + s.totalAmount);
+
+    final salesByCylinderWeight = <int, int>{};
+    for (final sale in todaySales) {
+      final cylinder = cylinders.firstWhere((c) => c.id == sale.cylinderId, orElse: () => cylinders.first);
+      salesByCylinderWeight[cylinder.weight] = (salesByCylinderWeight[cylinder.weight] ?? 0) + sale.quantity;
+    }
+
+    final theoreticalStock = GazStockCalculationService.groupStocksByWeight(GazStockCalculationService.filterFullStocks(stocks));
+    final theoreticalEmptyStock = GazStockCalculationService.groupStocksByWeight(GazStockCalculationService.filterEmptyStocks(stocks));
 
     return ReconciliationMetrics(
       initialCash: openingCash,
@@ -133,8 +149,12 @@ class GazSessionCalculationService {
       totalExpenses: totalExpenses,
       theoreticalCash: theoreticalCash,
       theoreticalMobileMoney: theoreticalMobileMoney,
-      currentFullStocks: GazStockCalculationService.groupStocksByWeight(fullStocks),
-      currentEmptyStocks: GazStockCalculationService.groupStocksByWeight(emptyStocks),
+      totalSales: totalSales,
+      salesByPaymentMethod: salesByPaymentMethod,
+      salesByCylinderWeight: salesByCylinderWeight,
+      theoreticalStock: theoreticalStock,
+      theoreticalEmptyStock: theoreticalEmptyStock,
+      date: date,
     );
   }
 }

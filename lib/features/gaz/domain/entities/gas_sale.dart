@@ -11,22 +11,24 @@ class GasSale {
     required this.totalAmount,
     required this.saleDate,
     required this.saleType,
-    this.sessionId, // ID de la session active
+    this.sessionId,
     this.customerName,
     this.customerPhone,
     this.createdBy,
     this.notes,
-    this.tourId, // ID du tour d'approvisionnement (pour ventes en gros)
-    this.wholesalerId, // ID du grossiste (pour ventes en gros)
-    this.wholesalerName, // Nom du grossiste (pour ventes en gros)
-    this.emptyReturnedQuantity = 0, // Nombre de bouteilles vides rendues
-    this.dealType = GasSaleDealType.exchange, // Type de transaction (Échange ou Nouveau)
-    this.sellerId, // ID du vendeur
+    this.tourId,
+    this.wholesalerId,
+    this.wholesalerName,
+    this.emptyReturnedQuantity = 0,
+    this.dealType = GasSaleDealType.exchange,
+    this.sellerId,
     this.createdAt,
     this.updatedAt,
     this.deletedAt,
     this.deletedBy,
     this.paymentMethod = PaymentMethod.cash,
+    this.cashAmount,       // Part espèces (paiement mixte)
+    this.mobileMoneyAmount, // Part mobile money (paiement mixte)
   });
 
   final String id;
@@ -42,17 +44,21 @@ class GasSale {
   final String? customerPhone;
   final String? createdBy;
   final String? notes;
-  final String? tourId; // ID du tour d'approvisionnement (pour ventes en gros)
-  final String? wholesalerId; // ID du grossiste (pour ventes en gros)
-  final String? wholesalerName; // Nom du grossiste (pour ventes en gros)
-  final int emptyReturnedQuantity; // Nombre de bouteilles vides rendues
-  final GasSaleDealType dealType; // Type de transaction (Échange ou Nouveau)
-  final String? sellerId; // ID du vendeur
+  final String? tourId;
+  final String? wholesalerId;
+  final String? wholesalerName;
+  final int emptyReturnedQuantity;
+  final GasSaleDealType dealType;
+  final String? sellerId;
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final DateTime? deletedAt;
   final String? deletedBy;
   final PaymentMethod paymentMethod;
+  final double? cashAmount;        // Part espèces si paiement mixte
+  final double? mobileMoneyAmount; // Part mobile money si paiement mixte
+
+  bool get isMixedPayment => cashAmount != null && mobileMoneyAmount != null;
 
   bool get isExchange => dealType == GasSaleDealType.exchange;
 
@@ -81,6 +87,8 @@ class GasSale {
     DateTime? deletedAt,
     String? deletedBy,
     PaymentMethod? paymentMethod,
+    Object? cashAmount = _sentinel,
+    Object? mobileMoneyAmount = _sentinel,
   }) {
     return GasSale(
       id: id ?? this.id,
@@ -107,12 +115,22 @@ class GasSale {
       deletedAt: deletedAt ?? this.deletedAt,
       deletedBy: deletedBy ?? this.deletedBy,
       paymentMethod: paymentMethod ?? this.paymentMethod,
+      cashAmount: cashAmount == _sentinel ? this.cashAmount : cashAmount as double?,
+      mobileMoneyAmount: mobileMoneyAmount == _sentinel ? this.mobileMoneyAmount : mobileMoneyAmount as double?,
     );
   }
 
+  static const _sentinel = Object();
+
   factory GasSale.fromMap(Map<String, dynamic> map, String defaultEnterpriseId) {
+    // Prioritize embedded localId to maintain offline relations on new devices
+    final validLocalId = map['localId'] as String?;
+    final objectId = (validLocalId != null && validLocalId.trim().isNotEmpty)
+        ? validLocalId
+        : (map['id'] as String? ?? '');
+
     return GasSale(
-      id: map['id'] as String? ?? map['localId'] as String,
+      id: objectId,
       enterpriseId: map['enterpriseId'] as String? ?? defaultEnterpriseId,
       cylinderId: map['cylinderId'] as String? ?? '',
       quantity: (map['quantity'] as num?)?.toInt() ?? 0,
@@ -132,6 +150,8 @@ class GasSale {
       dealType: GasSaleDealType.values.byName(map['dealType'] as String? ?? 'exchange'),
       sellerId: map['sellerId'] as String?,
       paymentMethod: PaymentMethod.values.byName(map['paymentMethod'] as String? ?? 'cash'),
+      cashAmount: (map['cashAmount'] as num?)?.toDouble(),
+      mobileMoneyAmount: (map['mobileMoneyAmount'] as num?)?.toDouble(),
       createdAt: map['createdAt'] != null
           ? DateTime.parse(map['createdAt'] as String)
           : null,
@@ -167,6 +187,8 @@ class GasSale {
       'dealType': dealType.name,
       'sellerId': sellerId,
       'paymentMethod': paymentMethod.name,
+      'cashAmount': cashAmount,
+      'mobileMoneyAmount': mobileMoneyAmount,
       'createdAt': createdAt?.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
       'deletedAt': deletedAt?.toIso8601String(),

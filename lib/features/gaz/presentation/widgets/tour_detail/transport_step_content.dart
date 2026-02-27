@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import '../../../domain/entities/tour.dart';
-import '../../../domain/entities/cylinder.dart';
 import '../../../domain/entities/gaz_settings.dart';
 import 'transport/loading_unloading_fees_section.dart';
 import 'transport/other_expenses_section.dart';
@@ -90,7 +89,7 @@ class _TransportStepContentState extends ConsumerState<TransportStepContent> {
             subtitle: Text('Désactiver si le chargement est gratuit ou fait en interne',
               style: theme.textTheme.bodySmall),
             contentPadding: EdgeInsets.zero,
-            activeColor: theme.colorScheme.primary,
+            activeThumbColor: theme.colorScheme.primary,
           ),
          
           const SizedBox(height: 24),

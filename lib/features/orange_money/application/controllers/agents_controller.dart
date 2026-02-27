@@ -1,157 +1,299 @@
+import '../../domain/entities/transaction.dart';
+import '../../domain/repositories/transaction_repository.dart';
 import '../../domain/entities/agent.dart';
 import '../../domain/repositories/agent_repository.dart';
+import 'package:elyf_groupe_app/features/orange_money/domain/entities/orange_money_enterprise_extensions.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
+import 'package:elyf_groupe_app/features/administration/domain/repositories/enterprise_repository.dart';
 import '../../../audit_trail/domain/services/audit_trail_service.dart';
 import '../../../../core/logging/app_logger.dart';
 import '../../domain/adapters/orange_money_permission_adapter.dart';
 
-/// Controller for managing affiliated agents.
+/// Controller for managing mobile money agents (represented as enterprises).
 class AgentsController {
   AgentsController(
-    this._repository,
+    this._enterpriseRepository,
+    this._agentRepository,
+    this._transactionRepository,
     this._auditTrailService,
     this.userId,
     this._permissionAdapter,
     this._activeEnterpriseId,
   );
 
-  final AgentRepository _repository;
+  final EnterpriseRepository _enterpriseRepository;
+  final AgentRepository _agentRepository;
+  final TransactionRepository _transactionRepository;
   final AuditTrailService _auditTrailService;
   final String userId;
   final OrangeMoneyPermissionAdapter _permissionAdapter;
   final String _activeEnterpriseId;
 
+  // --- Agency (Enterprise) Management ---
+
+  /// Fetches enterprises that are mobile money agencies (Kiosks, Boutiques).
+  Future<List<Enterprise>> fetchAgencies({
+    String? parentEnterpriseId,
+    String? searchQuery,
+  }) async {
+    final List<String> targetIds;
+
+    if (parentEnterpriseId != null) {
+      targetIds = [parentEnterpriseId];
+    } else {
+      final accessibleIds = await _permissionAdapter.getAccessibleEnterpriseIds(_activeEnterpriseId);
+      targetIds = accessibleIds.toList();
+    }
+
+    final allEnterprises = await _enterpriseRepository.getAllEnterprises();
+    
+    var agencies = allEnterprises.where((e) {
+      final isAccessible = targetIds.contains(e.parentEnterpriseId) || targetIds.contains(e.id);
+      final isMobileMoney = e.isMobileMoney;
+      // Filter out self unless searching specifically
+      final isNotActiveSelf = e.id != _activeEnterpriseId;
+      
+      return isAccessible && isMobileMoney && isNotActiveSelf;
+    }).toList();
+
+    if (searchQuery != null && searchQuery.isNotEmpty) {
+      final query = searchQuery.toLowerCase();
+      agencies = agencies.where((a) {
+        return a.name.toLowerCase().contains(query);
+      }).toList();
+    }
+
+    return agencies;
+  }
+
+  Future<Enterprise?> getAgency(String agencyId) async {
+    return await _enterpriseRepository.getEnterpriseById(agencyId);
+  }
+
+  Future<void> createAgency(Enterprise agency) async {
+    await _enterpriseRepository.createEnterprise(agency);
+    _logAgentEvent(agency.id, 'CREATE_AGENCY', 'Agency: ${agency.name}', 'agency');
+  }
+
+  Future<void> updateAgency(Enterprise agency) async {
+    await _enterpriseRepository.updateEnterprise(agency);
+    _logAgentEvent(agency.id, 'UPDATE_AGENCY', 'Agency: ${agency.name}', 'agency');
+  }
+
+  Future<void> deleteAgency(String agencyId) async {
+    final agency = await getAgency(agencyId);
+    if (agency != null) {
+      await _enterpriseRepository.deleteEnterprise(agencyId);
+      _logAgentEvent(agencyId, 'DELETE_AGENCY', 'Agency ID: $agencyId', 'agency');
+    }
+  }
+
+  Stream<List<Enterprise>> watchAgencies({String? parentEnterpriseId}) {
+    return _enterpriseRepository.watchAllEnterprises().map((list) {
+      return list.where((e) {
+        final isMobileMoney = e.isMobileMoney;
+        final isChild = parentEnterpriseId != null ? e.parentEnterpriseId == parentEnterpriseId : e.id != _activeEnterpriseId;
+        return isMobileMoney && isChild;
+      }).toList();
+    });
+  }
+
+  // --- Agent (Transaction Account) Management ---
+
+  /// Fetches agents (SIMs/Accounts).
   Future<List<Agent>> fetchAgents({
     String? enterpriseId,
     AgentStatus? status,
     String? searchQuery,
   }) async {
-    // If specific enterprise requested, use it
-    if (enterpriseId != null) {
-      return await _repository.fetchAgents(
-        enterpriseId: enterpriseId,
-        status: status,
-        searchQuery: searchQuery,
-      );
-    }
-
-    // Otherwise, check hierarchy
-    final accessibleIds = await _permissionAdapter.getAccessibleEnterpriseIds(_activeEnterpriseId);
-
-    if (accessibleIds.length > 1) {
-       // Note: Repository likely needs fetchAgentsByEnterprises or we iterate.
-       // For now, let's assuming repo doesn't have it, we might need to iterate or add it to repo.
-       // Checking AgentRepository... it might only have fetchAgents.
-       // Let's check AgentRepository first.
-       // Actually, to avoid breaking, let's implement basic iteration here if repo missing method.
-       // But better to add it to repo.
-       // Let's assume for now we use `activeEnterpriseId` if no method, 
-       // OR even better: just iterate here if necessary.
-       // Wait, I should have checked AgentRepository. 
-       // I will assume for this step I need to add it or iterate.
-       // Let's implement iteration as fallback safe approach.
-       
-       List<Agent> allAgents = [];
-       for (final id in accessibleIds) {
-          final agents = await _repository.fetchAgents(
-            enterpriseId: id,
-            status: status,
-            searchQuery: searchQuery,
-          );
-          allAgents.addAll(agents);
-       }
-       return allAgents;
-    }
-
-    return await _repository.fetchAgents(
-      enterpriseId: _activeEnterpriseId,
+    return await _agentRepository.fetchAgents(
+      enterpriseId: enterpriseId ?? _activeEnterpriseId,
       status: status,
       searchQuery: searchQuery,
     );
   }
 
   Future<Agent?> getAgent(String agentId) async {
-    return await _repository.getAgent(agentId);
+    return await _agentRepository.getAgent(agentId);
   }
 
-  Future<String> createAgent(Agent agent) async {
-    final agentId = await _repository.createAgent(agent);
-    _logAgentEvent(agent.enterpriseId, 'CREATE_AGENT', 'Agent: ${agent.name}');
-    return agentId;
+  Future<void> createAgent(Agent agent) async {
+    await _agentRepository.createAgent(agent);
+    _logAgentEvent(agent.id, 'CREATE_AGENT_ACCOUNT', 'Agent: ${agent.name}, SIM: ${agent.simNumber}', 'agent');
   }
 
   Future<void> updateAgent(Agent agent) async {
-    await _repository.updateAgent(agent);
-    _logAgentEvent(agent.enterpriseId, 'UPDATE_AGENT', 'Agent: ${agent.name}');
+    await _agentRepository.updateAgent(agent);
+    _logAgentEvent(agent.id, 'UPDATE_AGENT_ACCOUNT', 'Agent: ${agent.name}', 'agent');
   }
 
   Future<void> deleteAgent(String agentId) async {
     final agent = await getAgent(agentId);
     if (agent != null) {
-      await _repository.deleteAgent(agentId, userId);
-      _logAgentEvent(agent.enterpriseId, 'DELETE_AGENT', 'Agent ID: $agentId');
+      await _agentRepository.deleteAgent(agentId, userId);
+      _logAgentEvent(agentId, 'DELETE_AGENT_ACCOUNT', 'Agent ID: $agentId', 'agent');
     }
   }
 
-  Future<void> restoreAgent(String agentId) async {
-    await _repository.restoreAgent(agentId);
-    final agent = await getAgent(agentId);
-    if (agent != null) {
-      _logAgentEvent(agent.enterpriseId, 'RESTORE_AGENT', 'Agent ID: $agentId');
-    }
+  Stream<List<Agent>> watchAgents({String? enterpriseId, AgentStatus? status, String? searchQuery}) {
+    return _agentRepository.watchAgents(
+      enterpriseId: enterpriseId ?? _activeEnterpriseId,
+      status: status,
+      searchQuery: searchQuery,
+    );
   }
 
-  Stream<List<Agent>> watchAgents({String? enterpriseId}) {
-    return _repository.watchAgents(enterpriseId: enterpriseId);
-  }
-
-  Stream<List<Agent>> watchDeletedAgents() {
-    return _repository.watchDeletedAgents();
-  }
-
+  /// Récupère les statistiques quotidiennes pour le réseau d'agents.
   Future<Map<String, dynamic>> getDailyStatistics({
     String? enterpriseId,
     DateTime? date,
   }) async {
-    return await _repository.getDailyStatistics(
-      enterpriseId: enterpriseId,
-      date: date,
+    final targetDate = date ?? DateTime.now();
+    final startOfDay = DateTime(targetDate.year, targetDate.month, targetDate.day);
+    final endOfDay = startOfDay.add(const Duration(days: 1)).subtract(const Duration(milliseconds: 1));
+
+    // 1. Récupérer les transactions du jour pour les entités accessibles
+    final targetIds = enterpriseId != null 
+        ? [enterpriseId] 
+        : await _permissionAdapter.getAccessibleEnterpriseIds(_activeEnterpriseId);
+    
+    // Pour simplifier, on récupère toutes les transactions et on filtre
+    // (Dans une vraie prod, on utiliserait une requête filtrée par IDs)
+    final transactions = await _transactionRepository.fetchTransactions(
+      startDate: startOfDay,
+      endDate: endOfDay,
     );
+
+    int rechargesToday = 0;
+    int withdrawalsToday = 0;
+    
+    for (final t in transactions) {
+      if (!targetIds.contains(t.enterpriseId)) continue;
+      if (t.status != TransactionStatus.completed) continue;
+
+      if (t.type == TransactionType.cashIn) {
+        rechargesToday += t.amount;
+      } else if (t.type == TransactionType.cashOut) {
+        withdrawalsToday += t.amount;
+      }
+    }
+
+    // 2. Compter les alertes de liquidité
+    final allAgencies = await fetchAgencies(parentEnterpriseId: enterpriseId);
+    final allAgents = await fetchAgents(enterpriseId: enterpriseId);
+    
+    // Low liquidity can be on both Agency (aggregated/cash) and Agent (SIM)
+    int lowLiquidityAlerts = 0;
+    
+    for (final a in allAgencies) {
+      final threshold = a.metadata['criticalThreshold'] as int? ?? 50000;
+      if ((a.floatBalance ?? 0) <= threshold) lowLiquidityAlerts++;
+    }
+
+    for (final a in allAgents) {
+      if (a.isLowLiquidity(50000)) lowLiquidityAlerts++;
+    }
+
+    return {
+      'rechargesToday': rechargesToday,
+      'withdrawalsToday': withdrawalsToday,
+      'lowLiquidityAlerts': lowLiquidityAlerts,
+      'agentCount': allAgents.length,
+      'agencyCount': allAgencies.length,
+    };
   }
 
-  /// Met à jour la liquidité d'un agent (recharge ou retrait).
-  /// Retourne l'agent mis à jour.
+  /// Met à jour la liquidité d'une agence (recharge ou retrait interne).
+  Future<Enterprise> updateAgencyLiquidity({
+    required Enterprise agency,
+    required int amount,
+    required bool isRecharge,
+    bool isCredit = false,
+  }) async {
+    var updatedAgency = agency;
+    
+    if (isRecharge) {
+      final currentBalance = agency.floatBalance ?? 0;
+      final currentDebt = agency.floatDebt ?? 0;
+      
+      updatedAgency = agency.copyWithOrangeMoneyMetadata(
+        floatBalance: currentBalance + amount,
+        floatDebt: isCredit ? currentDebt + amount : currentDebt,
+      );
+    } else {
+      final currentBalance = agency.floatBalance ?? 0;
+      updatedAgency = agency.copyWithOrangeMoneyMetadata(
+        floatBalance: (currentBalance - amount).clamp(0, double.infinity).toInt(),
+      );
+    }
+
+    await _enterpriseRepository.updateEnterprise(updatedAgency);
+    
+    _logAgentEvent(
+      agency.id,
+      isRecharge ? (isCredit ? 'AGENCY_CREDIT_SUPPLY' : 'AGENCY_CASH_SUPPLY') : 'AGENCY_WITHDRAW',
+      'Agency: ${agency.name}, Amount: $amount, Credit: $isCredit',
+      'agency',
+    );
+    
+    return updatedAgency;
+  }
+
+  /// Met à jour la liquidité d'un agent (recharge ou retrait SIM).
   Future<Agent> updateAgentLiquidity({
     required Agent agent,
     required int amount,
     required bool isRecharge,
   }) async {
-    final newLiquidity = isRecharge
-        ? agent.liquidity + amount
-        : (agent.liquidity - amount).clamp(0, double.infinity).toInt();
-
     final updatedAgent = agent.copyWith(
-      liquidity: newLiquidity,
-      updatedAt: DateTime.now(),
+      liquidity: isRecharge ? agent.liquidity + amount : (agent.liquidity - amount).clamp(0, double.infinity).toInt(),
     );
 
-    await _repository.updateAgent(updatedAgent);
+    await _agentRepository.updateAgent(updatedAgent);
+    
     _logAgentEvent(
-      agent.enterpriseId,
-      isRecharge ? 'AGENT_RECHARGE' : 'AGENT_WITHDRAW',
-      'Agent: ${agent.name}, Amount: $amount, New Liquidity: $newLiquidity',
+      agent.id,
+      isRecharge ? 'AGENT_SIM_RECHARGE' : 'AGENT_SIM_WITHDRAW',
+      'Agent: ${agent.name}, Amount: $amount',
+      'agent',
     );
+    
     return updatedAgent;
   }
 
-  void _logAgentEvent(String enterpriseId, String action, String details) {
+  /// Remboursement d'une dette par une agence.
+  Future<Enterprise> repayAgencyDebt({
+    required Enterprise agency,
+    required int amount,
+  }) async {
+    final currentDebt = agency.floatDebt ?? 0;
+    final newDebt = (currentDebt - amount).clamp(0, double.infinity).toInt();
+    
+    final updatedAgency = agency.copyWithOrangeMoneyMetadata(
+      floatDebt: newDebt,
+    );
+
+    await _enterpriseRepository.updateEnterprise(updatedAgency);
+    
+    _logAgentEvent(
+      agency.id,
+      'AGENCY_DEBT_REPAYMENT',
+      'Agency: ${agency.name}, Amount: $amount, Remaining Debt: $newDebt',
+      'agency',
+    );
+    
+    return updatedAgency;
+  }
+
+  void _logAgentEvent(String id, String action, String details, String type) {
     try {
       _auditTrailService.logAction(
-        enterpriseId: enterpriseId,
+        enterpriseId: _activeEnterpriseId,
         userId: userId,
         action: action,
         module: 'orange_money',
-        entityId: '', // Generic agent event
-        entityType: 'agent',
+        entityId: id,
+        entityType: type == 'agency' ? 'agency_enterprise' : 'agent_account',
         metadata: {'details': details},
       );
     } catch (e) {

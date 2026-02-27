@@ -52,11 +52,28 @@ class BottlePriceTable extends ConsumerWidget {
 
     try {
       final controller = ref.read(cylinderControllerProvider);
+      final stockRepo = ref.read(cylinderStockRepositoryProvider);
+
+      // Delete the cylinder
       await controller.deleteCylinder(cylinder.id);
+
+      // Cascade delete associated stocks for this enterprise
+      final allStocks = await stockRepo.getAllForEnterprise(enterpriseId);
+      final relatedStocks = allStocks
+          .where((s) => s.cylinderId == cylinder.id)
+          .toList();
+      for (final stock in relatedStocks) {
+        await stockRepo.deleteStock(stock.id);
+      }
 
       if (!context.mounted) return;
 
+      // Small delay to allow Drift stream to propagate the soft-delete internally
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+
       ref.invalidate(cylindersProvider);
+      ref.invalidate(gazStocksProvider);
+      ref.invalidate(cylinderStocksProvider);
 
       NotificationService.showSuccess(
         context,
@@ -107,10 +124,9 @@ class BottlePriceTable extends ConsumerWidget {
         }
 
         // Observer les réglages globalement pour ce module
-        final settingsAsync = ref.watch(gazSettingsProvider((
-          enterpriseId: enterpriseId,
-          moduleId: moduleId,
-        )));
+        final settingsAsync = ref.watch(
+          gazSettingsProvider((enterpriseId: enterpriseId, moduleId: moduleId)),
+        );
 
         return settingsAsync.when(
           data: (settings) {
@@ -118,10 +134,17 @@ class BottlePriceTable extends ConsumerWidget {
               children: [
                 // Header du tableau
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                    color: theme.colorScheme.surfaceContainerHighest.withValues(
+                      alpha: 0.3,
+                    ),
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(12),
+                    ),
                   ),
                   child: Row(
                     children: [
@@ -172,25 +195,37 @@ class BottlePriceTable extends ConsumerWidget {
                 Column(
                   children: List.generate(cylinders.length, (index) {
                     final cylinder = cylinders[index];
-                    
+
                     // Priorité aux réglages (Settings), fallback sur l'entité Cylinder
-                    final retailPrice = settings?.getRetailPrice(cylinder.weight) ?? cylinder.sellPrice;
-                    final wholesalePrice = settings?.getWholesalePrice(cylinder.weight) ?? cylinder.sellPrice;
-                    final purchasePrice = settings?.getPurchasePrice(cylinder.weight) ?? cylinder.buyPrice;
+                    final retailPrice =
+                        settings?.getRetailPrice(cylinder.weight) ??
+                        cylinder.sellPrice;
+                    final wholesalePrice =
+                        settings?.getWholesalePrice(cylinder.weight) ??
+                        cylinder.sellPrice;
+                    final purchasePrice =
+                        settings?.getPurchasePrice(cylinder.weight) ??
+                        cylinder.buyPrice;
 
                     return Column(
                       children: [
                         if (index > 0)
                           Divider(
                             height: 1,
-                            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+                            color: theme.colorScheme.outlineVariant.withValues(
+                              alpha: 0.5,
+                            ),
                           ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
                           decoration: BoxDecoration(
-                            color: index % 2 == 0 
-                                ? Colors.transparent 
-                                : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.1),
+                            color: index % 2 == 0
+                                ? Colors.transparent
+                                : theme.colorScheme.surfaceContainerHighest
+                                      .withValues(alpha: 0.1),
                           ),
                           child: Row(
                             children: [
@@ -206,9 +241,10 @@ class BottlePriceTable extends ConsumerWidget {
                                     const SizedBox(width: 8),
                                     Text(
                                       '${cylinder.weight} kg',
-                                      style: theme.textTheme.bodyMedium?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                                      style: theme.textTheme.bodyMedium
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                     ),
                                   ],
                                 ),
@@ -225,7 +261,9 @@ class BottlePriceTable extends ConsumerWidget {
                               ),
                               Expanded(
                                 child: Text(
-                                  CurrencyFormatter.formatDouble(wholesalePrice),
+                                  CurrencyFormatter.formatDouble(
+                                    wholesalePrice,
+                                  ),
                                   textAlign: TextAlign.right,
                                   style: theme.textTheme.bodySmall?.copyWith(
                                     fontWeight: FontWeight.w600,
@@ -252,38 +290,52 @@ class BottlePriceTable extends ConsumerWidget {
                                     if (value == 'edit') {
                                       showDialog(
                                         context: context,
-                                        builder: (context) => CylinderFormDialog(
-                                          cylinder: cylinder,
-                                          enterpriseId: enterpriseId,
-                                          moduleId: moduleId,
-                                        ),
+                                        builder: (context) =>
+                                            CylinderFormDialog(
+                                              cylinder: cylinder,
+                                              enterpriseId: enterpriseId,
+                                              moduleId: moduleId,
+                                            ),
                                       );
                                     } else if (value == 'delete') {
                                       _deleteCylinder(context, ref, cylinder);
                                     }
                                   },
-                                  itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-                                    const PopupMenuItem<String>(
-                                      value: 'edit',
-                                      child: Row(
-                                        children: [
-                                          Icon(Icons.edit_outlined, size: 18),
-                                          SizedBox(width: 12),
-                                          Text('Modifier'),
-                                        ],
-                                      ),
-                                    ),
-                                    const PopupMenuItem<String>(
-                                      value: 'delete',
-                                      child: Row(
-                                        children: [
-                                          Icon(Icons.delete_outline, size: 18, color: Colors.red),
-                                          SizedBox(width: 12),
-                                          Text('Supprimer', style: TextStyle(color: Colors.red)),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
+                                  itemBuilder: (BuildContext context) =>
+                                      <PopupMenuEntry<String>>[
+                                        const PopupMenuItem<String>(
+                                          value: 'edit',
+                                          child: Row(
+                                            children: [
+                                              Icon(
+                                                Icons.edit_outlined,
+                                                size: 18,
+                                              ),
+                                              SizedBox(width: 12),
+                                              Text('Modifier'),
+                                            ],
+                                          ),
+                                        ),
+                                        const PopupMenuItem<String>(
+                                          value: 'delete',
+                                          child: Row(
+                                            children: [
+                                              Icon(
+                                                Icons.delete_outline,
+                                                size: 18,
+                                                color: Colors.red,
+                                              ),
+                                              SizedBox(width: 12),
+                                              Text(
+                                                'Supprimer',
+                                                style: TextStyle(
+                                                  color: Colors.red,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
                                 ),
                               ),
                             ],

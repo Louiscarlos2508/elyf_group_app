@@ -1,19 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 
 import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import '../stock_transfer_dialog.dart';
 
 /// En-tête de la carte de stock d'un point de vente.
-class PosStockHeader extends StatelessWidget {
+class PosStockHeader extends ConsumerWidget {
   const PosStockHeader({super.key, required this.enterprise});
 
   final Enterprise enterprise;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final activeEnterprise = ref.watch(activeEnterpriseProvider).value;
+    final isPOS = activeEnterprise?.type == EnterpriseType.gasPointOfSale;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -92,7 +96,7 @@ class PosStockHeader extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            if (enterprise.parentEnterpriseId != null)
+            if (enterprise.parentEnterpriseId != null && !isPOS)
               ElyfButton(
                 onPressed: () => showDialog(
                   context: context,

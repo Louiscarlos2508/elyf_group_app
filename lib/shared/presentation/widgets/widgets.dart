@@ -6,6 +6,7 @@ export 'elyf_ui/atoms/elyf_background.dart';
 export 'elyf_ui/atoms/elyf_shimmer.dart';
 export 'elyf_ui/atoms/elyf_badge.dart';
 export 'elyf_ui/atoms/elyf_button.dart';
+export 'elyf_ui/atoms/elyf_field.dart';
 export 'elyf_ui/organisms/elyf_card.dart';
 export 'elyf_ui/organisms/elyf_app_bar.dart';
 export 'elyf_ui/organisms/elyf_drawer.dart';

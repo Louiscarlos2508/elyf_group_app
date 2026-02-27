@@ -74,7 +74,9 @@ class AuditLog {
   /// Create from Map
   factory AuditLog.fromMap(Map<String, dynamic> map) {
     return AuditLog(
-      id: map['id'] as String,
+      id: (map['localId'] as String?)?.trim().isNotEmpty == true 
+          ? map['localId'] as String 
+          : (map['id'] as String? ?? ''),
       action: AuditAction.values.firstWhere(
         (e) => e.name == map['action'],
         orElse: () => AuditAction.unknown,

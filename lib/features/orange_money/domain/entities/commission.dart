@@ -153,7 +153,9 @@ class Commission {
     String defaultEnterpriseId,
   ) {
     return Commission(
-      id: map['id'] as String? ?? map['localId'] as String,
+      id: (map['localId'] as String?)?.trim().isNotEmpty == true 
+          ? map['localId'] as String 
+          : (map['id'] as String? ?? ''),
       period: map['period'] as String,
       enterpriseId: map['enterpriseId'] as String? ?? defaultEnterpriseId,
       estimatedAmount: (map['estimatedAmount'] as num).toInt(),

@@ -133,6 +133,7 @@ class _BreadcrumbItem extends ConsumerWidget {
 
   Widget _getIcon(EnterpriseType type, ThemeData theme) {
     IconData iconData = Icons.business;
+    Color? iconColor;
 
     switch (type) {
       case EnterpriseType.group:
@@ -176,7 +177,7 @@ class _BreadcrumbItem extends ConsumerWidget {
     return Icon(
       iconData,
       size: 16,
-      color: theme.colorScheme.onPrimaryContainer.withValues(alpha: 0.8),
+      color: iconColor ?? theme.colorScheme.onPrimaryContainer.withValues(alpha: 0.8),
     );
   }
 }

@@ -50,10 +50,33 @@ class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
       _weightController.text = widget.cylinder!.weight.toString();
       _sellPriceController.text = widget.cylinder!.sellPrice.toStringAsFixed(0);
       _buyPriceController.text = widget.cylinder!.buyPrice.toStringAsFixed(0);
+      
+      _loadExistingStocks();
     }
 
     // Initialiser tous les prix depuis les réglages (source de vérité prioritaire)
     _loadSettingsPrices();
+  }
+
+  Future<void> _loadExistingStocks() async {
+    if (widget.cylinder == null || _enterpriseId == null) return;
+    
+    try {
+      final stocks = await ref.read(gazStocksProvider.future);
+      final cylinderStocks = stocks.where((s) => s.cylinderId == widget.cylinder!.id && s.enterpriseId == _enterpriseId && s.siteId == null).toList();
+      
+      final fullStock = cylinderStocks.where((s) => s.status == CylinderStatus.full).fold<int>(0, (sum, s) => sum + s.quantity);
+      final emptyStock = cylinderStocks.where((s) => s.status == CylinderStatus.emptyAtStore).fold<int>(0, (sum, s) => sum + s.quantity);
+      
+      if (mounted) {
+        setState(() {
+          _initialFullStockController.text = fullStock.toString();
+          _initialEmptyStockController.text = emptyStock.toString();
+        });
+      }
+    } catch(e) {
+      debugPrint('Error loading existing stocks: $e');
+    }
   }
 
   Future<void> _loadSettingsPrices() async {
@@ -304,11 +327,10 @@ class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
                   
                   const SizedBox(height: 16),
                   
-                  if (widget.cylinder == null) ...[
-                    const Divider(),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Stock Initial (Plein/Vide)',
+                  const Divider(),
+                  const SizedBox(height: 16),
+                  Text(
+                    widget.cylinder == null ? 'Stock Initial (Plein/Vide)' : 'Stock Actuel (Plein/Vide)',
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: Theme.of(context).colorScheme.primary,
@@ -354,7 +376,6 @@ class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
                         ),
                       ],
                     ),
-                  ],
                   const SizedBox(height: 32),
                   
                   Row(

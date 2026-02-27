@@ -12,13 +12,11 @@ class RetailCylinderList extends ConsumerWidget {
     required this.cylinders,
     required this.enterpriseId,
     required this.onCylinderTap,
-    this.onQuickExchange,
   });
 
   final List<Cylinder> cylinders;
   final String enterpriseId;
   final ValueChanged<Cylinder> onCylinderTap;
-  final ValueChanged<Cylinder>? onQuickExchange;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -63,7 +61,6 @@ class RetailCylinderList extends ConsumerWidget {
                   cylinder: cylinder,
                   enterpriseId: enterpriseId,
                   onTap: () => onCylinderTap(cylinder),
-                  onQuickExchange: onQuickExchange != null ? () => onQuickExchange!(cylinder) : null,
                 );
               }).toList(),
             );
@@ -80,7 +77,6 @@ class RetailCylinderList extends ConsumerWidget {
                     cylinder: cylinder,
                     enterpriseId: enterpriseId,
                     onTap: () => onCylinderTap(cylinder),
-                    onQuickExchange: onQuickExchange != null ? () => onQuickExchange!(cylinder) : null,
                   ),
                 );
               }).toList(),
@@ -97,13 +93,11 @@ class _CylinderCardWithStock extends ConsumerWidget {
     required this.cylinder,
     required this.enterpriseId,
     required this.onTap,
-    this.onQuickExchange,
   });
 
   final Cylinder cylinder;
   final String enterpriseId;
   final VoidCallback onTap;
-  final VoidCallback? onQuickExchange;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -126,7 +120,6 @@ class _CylinderCardWithStock extends ConsumerWidget {
           cylinder: cylinder,
           stock: stock,
           onTap: onTap,
-          onQuickExchange: onQuickExchange,
         );
       },
       loading: () => Container(

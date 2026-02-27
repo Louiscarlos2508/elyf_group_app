@@ -34,6 +34,19 @@ extension OrangeMoneyEnterpriseExtension on Enterprise {
     return null;
   }
 
+  /// Dette de liquidité (OM pris avant paiement cash)
+  int? get floatDebt {
+    final debt = metadata['floatDebt'];
+    if (debt == null) return null;
+    if (debt is int) return debt;
+    if (debt is double) return debt.toInt();
+    if (debt is String) return int.tryParse(debt);
+    return null;
+  }
+
+  /// Opérateur principal (si multi-opérateur)
+  String? get operatorName => metadata['operatorName'] as String?;
+
   /// Seuil critique de liquidité en FCFA
   int? get criticalThreshold {
     final threshold = metadata['criticalThreshold'];
@@ -66,8 +79,10 @@ extension OrangeMoneyEnterpriseExtension on Enterprise {
     String? agentNumber,
     String? simNumber,
     String? operator,
+    String? operatorName,
     double? commissionRate,
     int? floatBalance,
+    int? floatDebt,
     int? criticalThreshold,
     String? zone,
     String? manager,
@@ -78,8 +93,10 @@ extension OrangeMoneyEnterpriseExtension on Enterprise {
     if (agentNumber != null) newMetadata['agentNumber'] = agentNumber;
     if (simNumber != null) newMetadata['simNumber'] = simNumber;
     if (operator != null) newMetadata['operator'] = operator;
+    if (operatorName != null) newMetadata['operatorName'] = operatorName;
     if (commissionRate != null) newMetadata['commissionRate'] = commissionRate;
     if (floatBalance != null) newMetadata['floatBalance'] = floatBalance;
+    if (floatDebt != null) newMetadata['floatDebt'] = floatDebt;
     if (criticalThreshold != null) {
       newMetadata['criticalThreshold'] = criticalThreshold;
     }

@@ -121,37 +121,38 @@ class _LiquidityCheckpointDialogState extends State<LiquidityCheckpointDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Container(
         width: 509,
+        padding: EdgeInsets.all(isKeyboardOpen ? 16 : 24),
         constraints: BoxConstraints(
           maxHeight: MediaQuery.of(context).size.height * 0.9,
         ),
         child: Form(
           key: _formKey,
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Pointage de liquidité',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF0A0A0A),
-                            ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Pointage de liquidité',
+                          style: TextStyle(
+                            fontSize: isKeyboardOpen ? 16 : 18,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF0A0A0A),
                           ),
+                        ),
+                        if (!isKeyboardOpen) ...[
                           const SizedBox(height: 8),
                           const Text(
                             'Enregistrez les montants disponibles en cash et sur la SIM',
@@ -161,162 +162,169 @@ class _LiquidityCheckpointDialogState extends State<LiquidityCheckpointDialog> {
                             ),
                           ),
                         ],
-                      ),
+                      ],
                     ),
-                    const SizedBox(width: 8),
-                    IconButton(
-                      icon: const Icon(Icons.close, size: 16),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: const Icon(Icons.close, size: 16),
+                    onPressed: () => Navigator.of(context).pop(),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
+              ),
+              SizedBox(height: isKeyboardOpen ? 12 : 24),
+              Flexible(
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Période et Date
+                      Row(
+                        children: [
+                          Expanded(child: _buildPeriodSelector(isKeyboardOpen)),
+                          const SizedBox(width: 16),
+                          Expanded(child: _buildDateField(isKeyboardOpen)),
+                        ],
+                      ),
+                      SizedBox(height: isKeyboardOpen ? 12 : 16),
+                      // Cash disponible
+                      FormFieldWithLabel(
+                        label: '💵 Cash disponible (FCFA) *',
+                        controller: _cashController,
+                        hintText: 'Argent liquide comptabilisé',
+                        keyboardType: TextInputType.number,
+                        validator: LiquidityCheckpointService.validateAmount,
+                      ),
+                      if (!isKeyboardOpen) ...[
+                        const SizedBox(height: 4),
+                        const Text(
+                          'Montant en espèces physiques que vous avez',
+                          style: TextStyle(fontSize: 12, color: Color(0xFF4A5565)),
+                        ),
+                      ],
+                      SizedBox(height: isKeyboardOpen ? 12 : 16),
+                      // Solde sur la SIM
+                      FormFieldWithLabel(
+                        label: '📱 Solde sur la SIM (FCFA) *',
+                        controller: _simController,
+                        hintText: 'Solde Orange Money / MTN / Moov',
+                        keyboardType: TextInputType.number,
+                        validator: LiquidityCheckpointService.validateAmount,
+                      ),
+                      if (!isKeyboardOpen) ...[
+                        const SizedBox(height: 4),
+                        const Text(
+                          'Vérifiez votre solde : *144# (Orange), *126# (MTN)',
+                          style: TextStyle(fontSize: 12, color: Color(0xFF4A5565)),
+                        ),
+                      ],
+                      SizedBox(height: isKeyboardOpen ? 12 : 16),
+                      // Notes
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Notes (optionnel)',
+                            style: TextStyle(
+                              fontSize: isKeyboardOpen ? 13 : 14,
+                              fontWeight: FontWeight.normal,
+                              color: const Color(0xFF0A0A0A),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          TextFormField(
+                            controller: _notesController,
+                            maxLines: isKeyboardOpen ? 1 : 2,
+                            decoration: InputDecoration(
+                              hintText: 'Informations complémentaires...',
+                              hintStyle: const TextStyle(
+                                fontSize: 13,
+                                color: Color(0xFF717182),
+                              ),
+                              filled: true,
+                              fillColor: const Color(0xFFF3F3F5),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide.none,
+                              ),
+                              contentPadding: const EdgeInsets.all(12),
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: isKeyboardOpen ? 12 : 16),
+                      // Liquidité totale
+                      _buildTotalLiquiditySection(isKeyboardOpen),
+                    ],
+                  ),
+                ),
+              ),
+              SizedBox(height: isKeyboardOpen ? 16 : 24),
+              // Boutons
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
                       onPressed: () => Navigator.of(context).pop(),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                // Période et Date
-                Row(
-                  children: [
-                    Expanded(child: _buildPeriodSelector()),
-                    const SizedBox(width: 16),
-                    Expanded(child: _buildDateField()),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                // Cash disponible
-                FormFieldWithLabel(
-                  label: '💵 Cash disponible (FCFA) *',
-                  controller: _cashController,
-                  hintText: 'Argent liquide comptabilisé',
-                  keyboardType: TextInputType.number,
-                  validator: LiquidityCheckpointService.validateAmount,
-                ),
-                const SizedBox(height: 4),
-                const Padding(
-                  padding: EdgeInsets.only(left: 0),
-                  child: Text(
-                    'Montant en espèces physiques que vous avez',
-                    style: TextStyle(fontSize: 12, color: Color(0xFF4A5565)),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                // Solde sur la SIM
-                FormFieldWithLabel(
-                  label: '📱 Solde sur la SIM (FCFA) *',
-                  controller: _simController,
-                  hintText: 'Solde Orange Money / MTN / Moov',
-                  keyboardType: TextInputType.number,
-                  validator: LiquidityCheckpointService.validateAmount,
-                ),
-                const SizedBox(height: 4),
-                const Padding(
-                  padding: EdgeInsets.only(left: 0),
-                  child: Text(
-                    'Vérifiez votre solde : *144# (Orange), *126# (MTN)',
-                    style: TextStyle(fontSize: 12, color: Color(0xFF4A5565)),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                // Notes
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Notes (optionnel)',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.normal,
-                        color: Color(0xFF0A0A0A),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    TextFormField(
-                      controller: _notesController,
-                      maxLines: 3,
-                      decoration: InputDecoration(
-                        hintText:
-                            'Ex: Grosse activité ce matin, stock faible...',
-                        hintStyle: const TextStyle(
-                          fontSize: 14,
-                          color: Color(0xFF717182),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(
+                          color: Color(0xFFE5E5E5),
+                          width: 1.219,
                         ),
-                        filled: true,
-                        fillColor: const Color(0xFFF3F3F5),
-                        border: OutlineInputBorder(
+                        shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide.none,
                         ),
-                        contentPadding: const EdgeInsets.all(12),
+                        padding: EdgeInsets.symmetric(vertical: isKeyboardOpen ? 8 : 12),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                // Liquidité totale
-                _buildTotalLiquiditySection(),
-                const SizedBox(height: 16),
-                // Boutons
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(
-                            color: Color(0xFFE5E5E5),
-                            width: 1.219,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                        ),
-                        child: const Text(
-                          'Annuler',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Color(0xFF0A0A0A),
-                          ),
+                      child: Text(
+                        'Annuler',
+                        style: TextStyle(
+                          fontSize: isKeyboardOpen ? 13 : 14,
+                          color: const Color(0xFF0A0A0A),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: _handleSave,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF155DFC),
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 10),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: _handleSave,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF155DFC),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                        child: const Text(
-                          'Enregistrer',
-                          style: TextStyle(fontSize: 14),
-                        ),
+                        padding: EdgeInsets.symmetric(vertical: isKeyboardOpen ? 8 : 12),
+                      ),
+                      child: Text(
+                        'Enregistrer',
+                        style: TextStyle(fontSize: isKeyboardOpen ? 13 : 14),
                       ),
                     ),
-                  ],
-                ),
-              ],
-            ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildPeriodSelector() {
+  Widget _buildPeriodSelector(bool isKeyboardOpen) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Période *',
           style: TextStyle(
-            fontSize: 14,
+            fontSize: isKeyboardOpen ? 13 : 14,
             fontWeight: FontWeight.normal,
-            color: Color(0xFF0A0A0A),
+            color: const Color(0xFF0A0A0A),
           ),
         ),
         const SizedBox(height: 8),
@@ -399,16 +407,16 @@ class _LiquidityCheckpointDialogState extends State<LiquidityCheckpointDialog> {
     );
   }
 
-  Widget _buildDateField() {
+  Widget _buildDateField(bool isKeyboardOpen) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Date *',
           style: TextStyle(
-            fontSize: 14,
+            fontSize: isKeyboardOpen ? 13 : 14,
             fontWeight: FontWeight.normal,
-            color: Color(0xFF0A0A0A),
+            color: const Color(0xFF0A0A0A),
           ),
         ),
         const SizedBox(height: 8),
@@ -446,7 +454,7 @@ class _LiquidityCheckpointDialogState extends State<LiquidityCheckpointDialog> {
     );
   }
 
-  Widget _buildTotalLiquiditySection() {
+  Widget _buildTotalLiquiditySection(bool isKeyboardOpen) {
     final cashAmount = int.tryParse(_cashController.text.trim()) ?? 0;
     final simAmount = int.tryParse(_simController.text.trim()) ?? 0;
     final total = cashAmount + simAmount;
@@ -457,28 +465,30 @@ class _LiquidityCheckpointDialogState extends State<LiquidityCheckpointDialog> {
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: const Color(0xFFB9F8CF), width: 1.219),
       ),
-      padding: const EdgeInsets.all(13),
+      padding: EdgeInsets.all(isKeyboardOpen ? 10 : 13),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             '💰 Liquidité totale',
-            style: TextStyle(fontSize: 14, color: Color(0xFF0D542B)),
+            style: TextStyle(fontSize: isKeyboardOpen ? 12 : 14, color: const Color(0xFF0D542B)),
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: isKeyboardOpen ? 0 : 4),
           Text(
             CurrencyFormatter.formatShort(total),
-            style: const TextStyle(
-              fontSize: 24,
+            style: TextStyle(
+              fontSize: isKeyboardOpen ? 20 : 24,
               fontWeight: FontWeight.normal,
-              color: Color(0xFF008236),
+              color: const Color(0xFF008236),
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            'Cash: ${CurrencyFormatter.formatShort(cashAmount)} + SIM: ${CurrencyFormatter.formatShort(simAmount)}',
-            style: const TextStyle(fontSize: 12, color: Color(0xFF00A63E)),
-          ),
+          if (!isKeyboardOpen) ...[
+            const SizedBox(height: 4),
+            Text(
+              'Cash: ${CurrencyFormatter.formatShort(cashAmount)} + SIM: ${CurrencyFormatter.formatShort(simAmount)}',
+              style: const TextStyle(fontSize: 12, color: Color(0xFF00A63E)),
+            ),
+          ],
         ],
       ),
     );

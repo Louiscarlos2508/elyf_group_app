@@ -4,10 +4,6 @@ import '../../../../../../shared/presentation/widgets/elyf_ui/organisms/elyf_car
 import '../../../../../../shared/presentation/widgets/elyf_ui/atoms/elyf_shimmer.dart';
 import '../../application/providers.dart';
 import '../../../../core/tenant/tenant_provider.dart';
-import '../../domain/entities/cylinder.dart';
-import '../../domain/entities/cylinder_stock.dart';
-import '../../domain/entities/stock_transfer.dart';
-import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/services/gaz_stock_calculation_service.dart';
 
 /// Widget for Stock par capacité section showing full/empty counts.

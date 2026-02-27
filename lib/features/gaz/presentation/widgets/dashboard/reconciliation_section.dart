@@ -69,24 +69,28 @@ class _DashboardReconciliationSectionState extends ConsumerState<DashboardReconc
                   children: [
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Réconciliation du Jour',
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Réconciliation du Jour',
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                            ),
-                            Text(
-                              'Résumé théorique de la session',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
+                              Text(
+                                'Résumé théorique de la session',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
+                        const SizedBox(width: 8),
                         _buildStatusChip(context, session),
                       ],
                     ),
@@ -338,10 +342,13 @@ class _DashboardReconciliationSectionState extends ConsumerState<DashboardReconc
             children: [
               Icon(icon, size: 18, color: color),
               const SizedBox(width: 8),
-              Text(
-                label,
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+              Expanded(
+                child: Text(
+                  label,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
@@ -504,7 +511,7 @@ class _DashboardReconciliationSectionState extends ConsumerState<DashboardReconc
 
       final physicalStock = stockControllers.map((k, v) => MapEntry(k, int.tryParse(v.text) ?? metrics.theoreticalStock[k] ?? 0));
 
-      final newSession = GazCalculationService.createSessionClosure(
+      final newSession = GazSession.fromMetrics(
         id: DateTime.now().toIso8601String(),
         enterpriseId: enterpriseId,
         metrics: metrics,

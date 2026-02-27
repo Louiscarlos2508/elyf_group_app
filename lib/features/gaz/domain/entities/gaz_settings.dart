@@ -9,7 +9,6 @@ class GazSettings {
     Map<int, double>? supplierExchangeFees,
     Map<int, int>? lowStockThresholds,
     Map<int, double>? depositRates,
-    Map<int, int>? nominalStocks,
     Map<int, double>? loadingFees,
     Map<int, double>? unloadingFees,
     this.updatedAt,
@@ -23,7 +22,6 @@ class GazSettings {
         _supplierExchangeFees = supplierExchangeFees,
         _lowStockThresholds = lowStockThresholds,
         _depositRates = depositRates,
-        _nominalStocks = nominalStocks,
         _loadingFees = loadingFees,
         _unloadingFees = unloadingFees;
 
@@ -48,9 +46,6 @@ class GazSettings {
   final Map<int, double>? _depositRates;
   Map<int, double> get depositRates => _depositRates ?? const <int, double>{};
 
-  final Map<int, int>? _nominalStocks;
-  Map<int, int> get nominalStocks => _nominalStocks ?? const <int, int>{};
-
   final Map<int, double>? _loadingFees;
   Map<int, double> get loadingFees => _loadingFees ?? const <int, double>{};
 
@@ -72,7 +67,6 @@ class GazSettings {
     Map<int, double>? supplierExchangeFees,
     Map<int, int>? lowStockThresholds,
     Map<int, double>? depositRates,
-    Map<int, int>? nominalStocks,
     Map<int, double>? loadingFees,
     Map<int, double>? unloadingFees,
     DateTime? updatedAt,
@@ -90,7 +84,6 @@ class GazSettings {
       supplierExchangeFees: supplierExchangeFees ?? _supplierExchangeFees,
       lowStockThresholds: lowStockThresholds ?? _lowStockThresholds,
       depositRates: depositRates ?? _depositRates,
-      nominalStocks: nominalStocks ?? _nominalStocks,
       loadingFees: loadingFees ?? _loadingFees,
       unloadingFees: unloadingFees ?? _unloadingFees,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -142,11 +135,6 @@ class GazSettings {
         ) ??
         const <int, double>{};
 
-    final nominalStocks = (map['nominalStocks'] as Map<String, dynamic>?)?.map(
-          (k, v) => MapEntry(int.parse(k), (v as num).toInt()),
-        ) ??
-        const <int, int>{};
-
     final loadingFees = (map['loadingFees'] as Map<String, dynamic>?)?.map(
           (k, v) => MapEntry(int.parse(k), (v as num).toDouble()),
         ) ??
@@ -166,7 +154,6 @@ class GazSettings {
       supplierExchangeFees: exchangeFees,
       lowStockThresholds: lowStockThresholds,
       depositRates: depositRates,
-      nominalStocks: nominalStocks,
       loadingFees: loadingFees,
       unloadingFees: unloadingFees,
       autoPrintReceipt: map['autoPrintReceipt'] as bool? ?? false,
@@ -203,9 +190,6 @@ class GazSettings {
         (k, v) => MapEntry(k.toString(), v),
       ),
       'depositRates': depositRates.map(
-        (k, v) => MapEntry(k.toString(), v),
-      ),
-      'nominalStocks': nominalStocks.map(
         (k, v) => MapEntry(k.toString(), v),
       ),
       'loadingFees': loadingFees.map(
@@ -270,14 +254,6 @@ class GazSettings {
     final updatedRates = Map<int, double>.from(depositRates);
     updatedRates[weight] = rate;
     return copyWith(depositRates: updatedRates, updatedAt: DateTime.now());
-  }
-
-  int getNominalStock(int weight) => nominalStocks[weight] ?? 0;
-
-  GazSettings setNominalStock(int weight, int quantity) {
-    final updated = Map<int, int>.from(nominalStocks);
-    updated[weight] = quantity;
-    return copyWith(nominalStocks: updated, updatedAt: DateTime.now());
   }
 
   GazSettings setLoadingFee(int weight, double fee) {

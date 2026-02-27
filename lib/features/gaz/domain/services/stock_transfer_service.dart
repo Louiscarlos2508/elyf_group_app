@@ -46,19 +46,11 @@ class StockTransferService {
 
       int availableStock = physicalStock;
 
-      // If full bottles and nominal stock is defined AND NOT A POS, use the theoretical stock
-      if (item.status == CylinderStatus.full && settings != null && !isPos) {
-        final nominal = settings.getNominalStock(item.weight);
-        if (nominal > 0) {
-          // Theoretical full stock is the nominal stock PLUS physical adjustments (which could be negative)
-          // actually, usually physical full stock is tracked directly.
-          // But if physical stock is 0 and we have 20 nominal, we have 20 available.
-          // The formula for available full stock is: max(physicalStock, nominal - otherPhysicalStates)
-          // For simplicity: if physical stock is 0 and nominal is > 0, we use nominal.
-          if (physicalStock == 0) {
-            availableStock = nominal;
-          }
-        }
+      if (item.status == CylinderStatus.full && !isPos) {
+        // En point de vente : on transfère les pleines disponibles physiquement
+        // The formula for available full stock is max(physicalStock, 0)
+        // For simplicity: if physical stock is 0, we use 0.
+        availableStock = physicalStock;
       }
 
       if (availableStock < item.quantity) {
@@ -108,28 +100,6 @@ class StockTransferService {
         final toDebit = remainingToDebit > stock.quantity ? stock.quantity : remainingToDebit;
         await stockRepository.updateStockQuantity(stock.id, stock.quantity - toDebit);
         remainingToDebit -= toDebit;
-      }
-      
-      if (remainingToDebit > 0) {
-        // If still remaining and we have nominal stock (AND NOT A POS), create a negative adjustment record
-        if (item.status == CylinderStatus.full && settings != null && (settings.nominalStocks[item.weight] ?? 0) > 0 && !isPos) {
-          final cylinders = await gasRepository.getCylindersForEnterprises([transfer.fromEnterpriseId]);
-          final cylinder = cylinders.where((c) => c.weight == item.weight).firstOrNull;
-          
-          if (cylinder != null) {
-            await stockRepository.addStock(CylinderStock(
-              id: LocalIdGenerator.generate(),
-              cylinderId: cylinder.id,
-              weight: item.weight,
-              status: item.status,
-              quantity: -remainingToDebit, // Negative offset to the nominal stock
-              enterpriseId: transfer.fromEnterpriseId,
-              updatedAt: DateTime.now(),
-              createdAt: DateTime.now(),
-            ));
-            remainingToDebit = 0;
-          }
-        }
       }
       
       if (remainingToDebit > 0) {

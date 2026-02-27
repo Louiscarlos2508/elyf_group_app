@@ -155,7 +155,9 @@ class Closing extends Equatable {
 
   factory Closing.fromMap(Map<String, dynamic> map, String enterpriseId) {
     return Closing(
-      id: map['id'] ?? '',
+      id: (map['localId'] as String?)?.trim().isNotEmpty == true 
+          ? map['localId'] as String 
+          : (map['id'] as String? ?? ''),
       enterpriseId: enterpriseId,
       userId: map['userId'] ?? '',
       date: DateTime.parse(map['date']),

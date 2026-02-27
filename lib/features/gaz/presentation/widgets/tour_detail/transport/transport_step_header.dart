@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../../../../../core/logging/app_logger.dart';
 import '../../../../domain/entities/tour.dart';
 
 /// En-tête de l'étape transport.

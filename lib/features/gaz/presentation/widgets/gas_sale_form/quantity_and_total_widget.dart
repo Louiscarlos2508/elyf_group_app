@@ -16,8 +16,6 @@ class QuantityAndTotalWidget extends StatelessWidget {
     required this.availableStock,
     required this.unitPrice,
     required this.onQuantityChanged,
-    required this.emptyReturned,
-    required this.onEmptyReturnedChanged,
   });
 
   final TextEditingController quantityController;
@@ -25,8 +23,6 @@ class QuantityAndTotalWidget extends StatelessWidget {
   final int availableStock;
   final double unitPrice;
   final VoidCallback onQuantityChanged;
-  final bool emptyReturned;
-  final ValueChanged<bool> onEmptyReturnedChanged;
 
   double get _totalAmount {
     final quantity = int.tryParse(quantityController.text) ?? 0;
@@ -34,7 +30,6 @@ class QuantityAndTotalWidget extends StatelessWidget {
       cylinder: selectedCylinder,
       unitPrice: unitPrice,
       quantity: quantity,
-      emptyReturnedQuantity: emptyReturned ? quantity : 0,
     );
   }
 
@@ -62,21 +57,6 @@ class QuantityAndTotalWidget extends StatelessWidget {
             );
           },
           onChanged: (_) => onQuantityChanged(),
-        ),
-        const SizedBox(height: 8),
-        SwitchListTile(
-          value: emptyReturned,
-          onChanged: onEmptyReturnedChanged,
-          title: const Text(
-            'Bouteille vide rendue ?',
-            style: TextStyle(fontSize: 14),
-          ),
-          subtitle: const Text(
-            'Cochez si le client rapporte une bouteille vide (Échange standard)',
-            style: TextStyle(fontSize: 12),
-          ),
-          dense: true,
-          contentPadding: EdgeInsets.zero,
         ),
         if (selectedCylinder != null && quantityController.text.isNotEmpty) ...[
           const SizedBox(height: 16),

@@ -27,7 +27,11 @@ class FinanceTabBar extends StatelessWidget {
     );
   }
 
-  Widget _buildTab(BuildContext context, {required int index, required String label}) {
+  Widget _buildTab(
+    BuildContext context, {
+    required int index,
+    required String label,
+  }) {
     final theme = Theme.of(context);
     final isSelected = tabController.index == index;
 
@@ -35,10 +39,7 @@ class FinanceTabBar extends StatelessWidget {
       child: GestureDetector(
         onTap: () => tabController.animateTo(index),
         child: Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 4,
-            vertical: 8,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
           decoration: BoxDecoration(
             color: isSelected ? theme.colorScheme.surface : Colors.transparent,
             borderRadius: BorderRadius.circular(12),

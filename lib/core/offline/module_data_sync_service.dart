@@ -280,12 +280,15 @@ class ModuleDataSyncService {
               moduleType: moduleId,
             );
 
-          // Utiliser le localId existant si trouvé, sinon utiliser documentId
-          final localIdToUse = existingRecord?.localId ?? documentId;
+          // Utiliser le localId existant si trouvé, sinon le localId embarqué, sinon utiliser documentId
+          final localIdToUse = existingRecord?.localId ?? embeddedLocalId ?? documentId;
+
+          // Si on utilise embeddedLocalId, valider qu'il n'est pas vide
+          final finalLocalId = localIdToUse.trim().isEmpty ? documentId : localIdToUse;
 
           companions.add(OfflineRecordsCompanion.insert(
             collectionName: collectionName,
-            localId: localIdToUse,
+            localId: finalLocalId,
             remoteId: Value(documentId),
             enterpriseId: storageEnterpriseId,
             moduleType: Value(moduleId),

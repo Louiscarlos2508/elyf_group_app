@@ -5,8 +5,6 @@ import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import 'package:elyf_groupe_app/features/administration/application/providers.dart';
 import '../../../domain/entities/cylinder.dart';
-import '../../../domain/entities/wholesaler.dart';
-import '../../../domain/entities/cylinder_stock.dart';
 import '../../../application/providers.dart';
 import '../../../domain/entities/collection.dart';
 import '../../../../../../core/errors/error_handler.dart';

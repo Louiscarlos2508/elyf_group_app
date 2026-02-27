@@ -69,7 +69,9 @@ class Employee {
         .toList();
 
     return Employee(
-      id: map['id'] as String? ?? map['localId'] as String,
+      id: (map['localId'] as String?)?.trim().isNotEmpty == true 
+          ? map['localId'] as String 
+          : (map['id'] as String? ?? ''),
       name: map['name'] as String? ?? '',
       phone: map['phone'] as String? ?? '',
       type: EmployeeType.values.byName(map['type'] as String? ?? 'fixed'),

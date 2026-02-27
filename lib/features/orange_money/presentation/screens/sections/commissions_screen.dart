@@ -40,6 +40,7 @@ class CommissionsScreen extends ConsumerWidget {
             subtitle: 'Consultez vos estimations, déclarez vos SMS et validez vos gains mensuels.',
             badgeText: 'COMMISSIONS',
             badgeIcon: Icons.payments_rounded,
+            asSliver: true,
           ),
           SliverPadding(
             padding: const EdgeInsets.all(24),

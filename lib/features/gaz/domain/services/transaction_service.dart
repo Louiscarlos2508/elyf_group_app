@@ -346,20 +346,57 @@ class TransactionService {
       
       await gasRepository.addSale(saleWithSession);
   
-      // 4.5. Enregistrement Trésorerie (Epic 7)
-      await treasuryRepository.saveOperation(TreasuryOperation(
-        id: LocalIdGenerator.generate(),
-        enterpriseId: enterpriseId,
-        userId: saleWithSession.sellerId ?? '',
-        amount: saleWithSession.totalAmount.toInt(),
-        type: TreasuryOperationType.supply,
-        toAccount: saleWithSession.paymentMethod,
-        date: saleWithSession.saleDate,
-        reason: 'Vente Gaz ${weight}kg x ${saleWithSession.quantity}',
-        referenceEntityId: saleWithSession.id,
-        referenceEntityType: 'gas_sale',
-        createdAt: DateTime.now(),
-      ));
+      // 4.5. Enregistrement Trésorerie — paiement ventilé si mixte
+      if (saleWithSession.isMixedPayment) {
+        // Paiement mixte : 2 opérations séparées
+        final cashAmt = saleWithSession.cashAmount ?? 0;
+        final mmAmt = saleWithSession.mobileMoneyAmount ?? 0;
+        if (cashAmt > 0) {
+          await treasuryRepository.saveOperation(TreasuryOperation(
+            id: LocalIdGenerator.generate(),
+            enterpriseId: enterpriseId,
+            userId: saleWithSession.sellerId ?? '',
+            amount: cashAmt.toInt(),
+            type: TreasuryOperationType.supply,
+            toAccount: PaymentMethod.cash,
+            date: saleWithSession.saleDate,
+            reason: 'Vente Gaz ${weight}kg x ${saleWithSession.quantity} (Espèces)',
+            referenceEntityId: saleWithSession.id,
+            referenceEntityType: 'gas_sale',
+            createdAt: DateTime.now(),
+          ));
+        }
+        if (mmAmt > 0) {
+          await treasuryRepository.saveOperation(TreasuryOperation(
+            id: LocalIdGenerator.generate(),
+            enterpriseId: enterpriseId,
+            userId: saleWithSession.sellerId ?? '',
+            amount: mmAmt.toInt(),
+            type: TreasuryOperationType.supply,
+            toAccount: PaymentMethod.mobileMoney,
+            date: saleWithSession.saleDate,
+            reason: 'Vente Gaz ${weight}kg x ${saleWithSession.quantity} (Orange Money)',
+            referenceEntityId: saleWithSession.id,
+            referenceEntityType: 'gas_sale',
+            createdAt: DateTime.now(),
+          ));
+        }
+      } else {
+        // Paiement simple (Espèces ou Orange Money)
+        await treasuryRepository.saveOperation(TreasuryOperation(
+          id: LocalIdGenerator.generate(),
+          enterpriseId: enterpriseId,
+          userId: saleWithSession.sellerId ?? '',
+          amount: saleWithSession.totalAmount.toInt(),
+          type: TreasuryOperationType.supply,
+          toAccount: saleWithSession.paymentMethod,
+          date: saleWithSession.saleDate,
+          reason: 'Vente Gaz ${weight}kg x ${saleWithSession.quantity}',
+          referenceEntityId: saleWithSession.id,
+          referenceEntityType: 'gas_sale',
+          createdAt: DateTime.now(),
+        ));
+      }
   
       // 5. Audit Log
       await auditTrailRepository.log(AuditRecord(
@@ -1184,7 +1221,7 @@ class TransactionService {
 
         if (remainingToDeduct > 0) {
           throw ValidationException(
-            'Impossible de collecter ${quantity} fuite(s) de ${weight}kg au POS $posId : stock physique insuffisant.',
+            'Impossible de collecter $quantity fuite(s) de ${weight}kg au POS $posId : stock physique insuffisant.',
             'INSUFFICIENT_STOCK',
           );
         }

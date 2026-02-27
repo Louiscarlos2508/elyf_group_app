@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/gas_sale.dart';
+import 'gas_print_receipt_button.dart';
 
 class WholesaleSaleCard extends ConsumerWidget {
   const WholesaleSaleCard({super.key, required this.sale});
@@ -116,26 +117,67 @@ class WholesaleSaleCard extends ConsumerWidget {
                   ],
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: (sale.saleType == SaleType.wholesale ? theme.colorScheme.secondary : theme.colorScheme.primary).withAlpha(20),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: (sale.saleType == SaleType.wholesale ? theme.colorScheme.secondary : theme.colorScheme.primary).withAlpha(40),
+              Row(
+                children: [
+                   IconButton(
+                    icon: Icon(
+                      Icons.print_outlined,
+                      size: 20,
+                      color: theme.colorScheme.primary.withValues(alpha: 0.7),
+                    ),
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) => Dialog(
+                          child: Padding(
+                            padding: const EdgeInsets.all(24),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  'Imprimer le reçu',
+                                  style: theme.textTheme.titleLarge,
+                                ),
+                                const SizedBox(height: 24),
+                                GasPrintReceiptButton(
+                                  sale: sale,
+                                  cylinderLabel: cylinderLabel,
+                                  onPrintSuccess: () => Navigator.pop(context),
+                                ),
+                                const SizedBox(height: 12),
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text('Annuler'),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
                   ),
-                ),
-                child: Text(
-                  CurrencyFormatter.formatDouble(sale.totalAmount),
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: sale.saleType == SaleType.wholesale ? theme.colorScheme.secondary : theme.colorScheme.primary,
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: (sale.saleType == SaleType.wholesale ? theme.colorScheme.secondary : theme.colorScheme.primary).withAlpha(20),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: (sale.saleType == SaleType.wholesale ? theme.colorScheme.secondary : theme.colorScheme.primary).withAlpha(40),
+                      ),
+                    ),
+                    child: Text(
+                      CurrencyFormatter.formatDouble(sale.totalAmount),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: sale.saleType == SaleType.wholesale ? theme.colorScheme.secondary : theme.colorScheme.primary,
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
             ],
           ),

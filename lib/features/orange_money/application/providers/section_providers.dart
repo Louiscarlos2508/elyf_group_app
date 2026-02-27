@@ -12,6 +12,7 @@ import '../../presentation/screens/sections/liquidity_screen.dart';
 import '../../presentation/screens/sections/reports_screen.dart';
 import '../../presentation/screens/sections/settings_screen.dart';
 import '../../presentation/screens/sections/transactions_v2_screen.dart';
+import '../../presentation/screens/sections/treasury_tab.dart';
 import 'permission_providers.dart';
 
 /// Provider pour récupérer les sections accessibles selon les permissions.
@@ -40,7 +41,7 @@ final accessibleOrangeMoneySectionsProvider =
             ),
             (
               section: NavigationSection(
-                label: 'Agents Affiliés',
+                label: 'Réseau d\'Agents',
                 icon: Icons.people_outline,
                 builder: () => AgentsScreen(enterpriseId: enterpriseId),
                 isPrimary: true,
@@ -54,6 +55,17 @@ final accessibleOrangeMoneySectionsProvider =
                 label: 'Liquidité',
                 icon: Icons.wallet,
                 builder: () => LiquidityScreen(enterpriseId: enterpriseId),
+                isPrimary: true,
+                enterpriseId: enterpriseId,
+                moduleId: moduleId,
+              ),
+              requiredPermissions: {OrangeMoneyPermissions.viewLiquidity.id},
+            ),
+            (
+              section: NavigationSection(
+                label: 'Trésorerie',
+                icon: Icons.account_balance_outlined,
+                builder: () => const TreasuryTab(),
                 isPrimary: true,
                 enterpriseId: enterpriseId,
                 moduleId: moduleId,

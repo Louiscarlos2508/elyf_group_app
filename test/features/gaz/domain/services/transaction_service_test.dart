@@ -5,7 +5,6 @@ import 'package:elyf_groupe_app/features/gaz/domain/services/transaction_service
 import 'package:elyf_groupe_app/features/gaz/domain/entities/collection.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder_stock.dart';
-import 'package:elyf_groupe_app/features/gaz/domain/entities/gas_sale.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/gaz_session.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/repositories/gas_repository.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/repositories/cylinder_stock_repository.dart';

@@ -179,13 +179,17 @@ class Tour {
   }
 
   factory Tour.fromMap(Map<String, dynamic> map, String defaultEnterpriseId) {
-    final tourId = map['localId'] as String? ?? map['id'] as String? ?? '';
+    // Prioritize embedded localId to maintain offline relations on new devices
+    final validLocalId = map['localId'] as String?;
+    final objectId = (validLocalId != null && validLocalId.trim().isNotEmpty)
+        ? validLocalId
+        : (map['id'] as String? ?? '');
 
     final statusStr = map['status'] as String? ?? 'loading';
     final migratedStatus = _migrateStatus(statusStr);
 
     return Tour(
-      id: tourId,
+      id: objectId,
       enterpriseId: map['enterpriseId'] as String? ?? defaultEnterpriseId,
       tourDate: DateTime.parse(map['tourDate'] as String),
       status: migratedStatus,

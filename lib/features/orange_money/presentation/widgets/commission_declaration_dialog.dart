@@ -124,115 +124,151 @@ class _CommissionDeclarationDialogState
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text('Déclarer Commission ${widget.commission.period}'),
-      content: SingleChildScrollView(
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 1. Saisie montant SMS (PRIORITAIRE)
-              TextFormField(
-                controller: _declaredAmountController,
-                keyboardType: TextInputType.number,
-                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                ],
-                decoration: InputDecoration(
-                  labelText: 'Montant SMS (Reçu)',
-                  labelStyle: const TextStyle(fontSize: 16),
-                  hintText: 'ex: 50000',
-                  prefixIcon: const Icon(Icons.message),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(width: 2),
+    final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 500),
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Déclarer Commission ${widget.commission.period}',
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
-                  filled: true,
-                  fillColor: Colors.blue.shade50.withOpacity(0.3),
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Montant requis';
-                  }
-                  final amount = int.tryParse(value);
-                  if (amount == null || amount <= 0) {
-                    return 'Montant invalide';
-                  }
-                  return null;
-                },
-                onChanged: _calculateDiscrepancy,
-              ),
-
-              const SizedBox(height: 24),
-
-              // 2. Upload screenshot SMS (OBLIGATOIRE)
-              _buildImagePicker(),
-
-              const SizedBox(height: 24),
-              
-              // 3. Vérification Système (Replié par défaut)
-              ExpansionTile(
-                title: const Text(
-                  'Vérification Système',
-                  style: TextStyle(fontWeight: FontWeight.w600),
+                IconButton(
+                  icon: const Icon(Icons.close, size: 18),
+                  onPressed: () => Navigator.of(context).pop(),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
                 ),
-                subtitle: _declaredAmount != null 
-                    ? CommissionDiscrepancyIndicator(
-                        estimatedAmount: widget.commission.estimatedAmount,
-                        declaredAmount: _declaredAmount!,
-                        showDetails: false,
-                      )
-                    : const Text('Comparer avec le calcul théorique'),
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      children: [
-                        _buildEstimatedAmountCard(),
-                        const SizedBox(height: 16),
-                        if (widget.commission.calculationDetails != null)
-                          _buildCalculationDetails(), // This will be nested, but OK for now or I should flatten it.
-                      ],
-                    ),
+              ],
+            ),
+            SizedBox(height: isKeyboardOpen ? 12 : 24),
+            Flexible(
+              child: SingleChildScrollView(
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    children: [
+                      TextFormField(
+                        controller: _declaredAmountController,
+                        keyboardType: TextInputType.number,
+                        style: TextStyle(
+                          fontSize: isKeyboardOpen ? 20 : 24, 
+                          fontWeight: FontWeight.bold
+                        ),
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                        ],
+                        decoration: InputDecoration(
+                          labelText: 'Montant SMS (Reçu)',
+                          labelStyle: const TextStyle(fontSize: 14),
+                          hintText: 'ex: 50000',
+                          prefixIcon: const Icon(Icons.message),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          filled: true,
+                          fillColor: Colors.blue.shade50.withOpacity(0.3),
+                          contentPadding: isKeyboardOpen ? const EdgeInsets.symmetric(horizontal: 12, vertical: 8) : null,
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Montant requis';
+                          }
+                          final amount = int.tryParse(value);
+                          if (amount == null || amount <= 0) {
+                            return 'Montant invalide';
+                          }
+                          return null;
+                        },
+                        onChanged: _calculateDiscrepancy,
+                      ),
+                      SizedBox(height: isKeyboardOpen ? 12 : 24),
+                      _buildImagePicker(isKeyboardOpen),
+                      SizedBox(height: isKeyboardOpen ? 12 : 24),
+                      ExpansionTile(
+                        title: const Text(
+                          'Vérification Système',
+                          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                        ),
+                        subtitle: _declaredAmount != null 
+                            ? CommissionDiscrepancyIndicator(
+                                estimatedAmount: widget.commission.estimatedAmount,
+                                declaredAmount: _declaredAmount!,
+                                showDetails: false,
+                              )
+                            : const Text('Comparer avec le calcul théorique', style: TextStyle(fontSize: 12)),
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              children: [
+                                _buildEstimatedAmountCard(),
+                                const SizedBox(height: 16),
+                                if (widget.commission.calculationDetails != null)
+                                  _buildCalculationDetails(),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _notesController,
+                        maxLines: isKeyboardOpen ? 1 : 2,
+                        decoration: const InputDecoration(
+                          labelText: 'Notes',
+                          prefixIcon: Icon(Icons.note),
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-
-              const SizedBox(height: 16),
-
-              // 4. Notes optionnelles
-              TextFormField(
-                controller: _notesController,
-                maxLines: 2,
-                decoration: const InputDecoration(
-                  labelText: 'Notes',
-                  prefixIcon: Icon(Icons.note),
-                  border: OutlineInputBorder(),
                 ),
               ),
-            ],
-          ),
+            ),
+            SizedBox(height: isKeyboardOpen ? 16 : 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: _isLoading ? null : () => Navigator.pop(context),
+                  child: const Text('Annuler'),
+                ),
+                const SizedBox(width: 12),
+                ElevatedButton(
+                  onPressed: _isLoading ? null : _handleDeclare,
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  child: _isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Text('Déclarer'),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: _isLoading ? null : () => Navigator.pop(context),
-          child: const Text('Annuler'),
-        ),
-        ElevatedButton(
-          onPressed: _isLoading ? null : _handleDeclare,
-          child: _isLoading
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Text('Déclarer'),
-        ),
-      ],
     );
   }
 
@@ -345,23 +381,23 @@ class _CommissionDeclarationDialogState
     );
   }
 
-  Widget _buildImagePicker() {
+  Widget _buildImagePicker(bool isKeyboardOpen) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Screenshot SMS Orange Money *',
           style: TextStyle(
-            fontSize: 14,
+            fontSize: isKeyboardOpen ? 12 : 14,
             fontWeight: FontWeight.w600,
           ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: isKeyboardOpen ? 4 : 8),
         InkWell(
           onTap: _pickSmsProof,
           borderRadius: BorderRadius.circular(8),
           child: Container(
-            height: 150,
+            height: isKeyboardOpen ? 100 : 150,
             decoration: BoxDecoration(
               border: Border.all(color: Colors.grey.shade300, width: 2),
               borderRadius: BorderRadius.circular(8),

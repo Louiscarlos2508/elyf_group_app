@@ -10,6 +10,7 @@ import '../../widgets/form_field_with_label.dart';
 import '../../widgets/new_customer_form_card.dart';
 import '../../widgets/transaction_type_selector.dart';
 import '../../widgets/orange_money_header.dart';
+import '../../widgets/operator_balance_summary.dart';
 import 'transactions_history_screen.dart';
 
 /// New transactions screen with tabs for new transaction and history.
@@ -135,27 +136,27 @@ class _TransactionsV2ScreenState extends ConsumerState<TransactionsV2Screen>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
-      color: const Color(0xFFF9FAFB),
-      child: Column(
-        children: [
+      color: theme.colorScheme.surfaceContainerHighest,
+      child: NestedScrollView(
+        headerSliverBuilder: (context, innerBoxIsScrolled) => [
           OrangeMoneyHeader(
             title: 'Flux de Trésorerie',
             subtitle: 'Gérez vos dépôts et retraits avec une traçabilité complète.',
             badgeText: 'TRANSACTIONS',
             badgeIcon: Icons.swap_horiz_rounded,
-            asSliver: false,
+            asSliver: true,
           ),
-          _buildTabBar(),
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildNewTransactionTab(),
-                const TransactionsHistoryScreen(),
-              ],
-            ),
+          SliverToBoxAdapter(
+            child: _buildTabBar(),
           ),
         ],
+        body: TabBarView(
+          controller: _tabController,
+          children: [
+            _buildNewTransactionTab(),
+            const TransactionsHistoryScreen(),
+          ],
+        ),
       ),
     );
   }
@@ -164,13 +165,15 @@ class _TransactionsV2ScreenState extends ConsumerState<TransactionsV2Screen>
     return AnimatedBuilder(
       animation: _tabController,
       builder: (context, child) {
+        final theme = Theme.of(context);
         final currentIndex = _tabController.index;
         return Container(
-          margin: const EdgeInsets.all(16),
-          height: 36,
+          margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+          height: 48,
           decoration: BoxDecoration(
-            color: const Color(0xFFECECF0),
-            borderRadius: BorderRadius.circular(14),
+            color: theme.colorScheme.surfaceContainerHigh,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: theme.colorScheme.outlineVariant),
           ),
           child: Row(
             children: [
@@ -211,6 +214,7 @@ class _TransactionsV2ScreenState extends ConsumerState<TransactionsV2Screen>
     required bool isSelected,
     required VoidCallback onTap,
   }) {
+    final theme = Theme.of(context);
     return InkWell(
       onTap: onTap,
       splashColor: Colors.transparent,
@@ -218,30 +222,34 @@ class _TransactionsV2ScreenState extends ConsumerState<TransactionsV2Screen>
       hoverColor: Colors.transparent,
       borderRadius: BorderRadius.circular(14),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        curve: Curves.easeInOut,
-        margin: const EdgeInsets.all(2.99),
-        height: 29.428,
+        duration: const Duration(milliseconds: 200),
+        margin: const EdgeInsets.all(4),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.white : Colors.transparent,
-          borderRadius: BorderRadius.circular(14),
-          border: isSelected
-              ? Border.all(color: Colors.transparent, width: 1.219)
-              : null,
+          color: isSelected ? theme.colorScheme.primary : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+          boxShadow: isSelected ? [
+            BoxShadow(
+              color: theme.colorScheme.primary.withValues(alpha: 0.2),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            )
+          ] : null,
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 16, color: const Color(0xFF0A0A0A)),
-            const SizedBox(width: 8),
+            Icon(
+              icon, 
+              size: 20, 
+              color: isSelected ? theme.colorScheme.onPrimary : theme.colorScheme.onSurfaceVariant
+            ),
+            const SizedBox(width: 10),
             Flexible(
               child: Text(
                 label,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.normal,
-                  color: Color(0xFF0A0A0A),
-                  height: 1.43,
+                style: theme.textTheme.labelLarge?.copyWith(
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  color: isSelected ? theme.colorScheme.onPrimary : theme.colorScheme.onSurfaceVariant,
                 ),
                 textAlign: TextAlign.center,
                 overflow: TextOverflow.ellipsis,
@@ -254,11 +262,16 @@ class _TransactionsV2ScreenState extends ConsumerState<TransactionsV2Screen>
   }
 
   Widget _buildNewTransactionTab() {
+    final theme = Theme.of(context);
+    final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(isKeyboardOpen ? 12 : 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          const OperatorBalanceSummary(),
+          SizedBox(height: isKeyboardOpen ? 12 : 24),
           TransactionTypeSelector(
             selectedType: _selectedType,
             onTypeChanged: (TransactionType type) {
@@ -267,9 +280,9 @@ class _TransactionsV2ScreenState extends ConsumerState<TransactionsV2Screen>
               });
             },
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: isKeyboardOpen ? 12 : 24),
           if (!_showCustomerForm)
-            _buildSearchClientCard()
+            _buildSearchClientCard(theme)
           else
             _buildCustomerFormCard(),
         ],
@@ -304,82 +317,77 @@ class _TransactionsV2ScreenState extends ConsumerState<TransactionsV2Screen>
     );
   }
 
-  Widget _buildSearchClientCard() {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-        side: const BorderSide(color: Color(0xFFE5E5E5), width: 1.219),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: const [
-                  Icon(Icons.person_search, size: 20, color: Color(0xFF0A0A0A)),
-                  SizedBox(width: 8),
-                  Text(
-                    'Rechercher le client',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.normal,
-                      color: Color(0xFF0A0A0A),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              FormFieldWithLabel(
-                label: 'Numéro de téléphone',
-                controller: _phoneController,
-                hintText: 'Ex: 0670000000',
-                keyboardType: TextInputType.phone,
-                validator: TransactionService.validatePhoneNumber,
-              ),
-              const SizedBox(height: 16),
-              FormFieldWithLabel(
-                label: 'Montant (FCFA)',
-                controller: _amountController,
-                hintText: 'Ex: 10000',
-                keyboardType: TextInputType.number,
-                validator: TransactionService.validateAmount,
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                height: 36,
-                child: ElevatedButton(
-                  onPressed: _handleContinue,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFF54900),
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
-                      Text(
-                        'Continuer',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.normal,
-                        ),
-                      ),
-                      SizedBox(width: 8),
-                      Icon(Icons.arrow_forward, size: 16),
-                    ],
+  Widget _buildSearchClientCard(ThemeData theme) {
+    return ElyfCard(
+      padding: const EdgeInsets.all(24),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.person_search, size: 24, color: theme.colorScheme.primary),
+                const SizedBox(width: 12),
+                Text(
+                  'Détails de la Transaction',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            ElyfField(
+              label: 'Numéro de téléphone client',
+              controller: _phoneController,
+              hint: 'Ex: 0670000000',
+              prefixIcon: Icons.phone_android,
+              keyboardType: TextInputType.phone,
+              validator: TransactionService.validatePhoneNumber,
+            ),
+            const SizedBox(height: 20),
+            ElyfField(
+              label: 'Montant de l\'opération (FCFA)',
+              controller: _amountController,
+              hint: 'Ex: 10000',
+              prefixIcon: Icons.account_balance_wallet,
+              keyboardType: TextInputType.number,
+              suffixText: 'CFA',
+              validator: TransactionService.validateAmount,
+            ),
+            const SizedBox(height: 32),
+            SizedBox(
+              width: double.infinity,
+              height: 54,
+              child: ElevatedButton(
+                onPressed: _handleContinue,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: theme.colorScheme.primary,
+                  foregroundColor: theme.colorScheme.onPrimary,
+                  elevation: 2,
+                  shadowColor: theme.colorScheme.primary.withValues(alpha: 0.4),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Valider les informations',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(width: 12),
+                    Icon(Icons.arrow_forward_rounded, size: 20),
+                  ],
+                ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

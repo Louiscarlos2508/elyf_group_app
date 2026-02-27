@@ -47,7 +47,9 @@ class Category extends Equatable {
 
   factory Category.fromMap(Map<String, dynamic> map, String defaultEnterpriseId) {
     return Category(
-      id: map['id'] as String,
+      id: (map['localId'] as String?)?.trim().isNotEmpty == true 
+          ? map['localId'] as String 
+          : (map['id'] as String? ?? ''),
       enterpriseId: map['enterpriseId'] as String? ?? defaultEnterpriseId,
       name: map['name'] as String,
       colorValue: map['colorValue'] as int?,

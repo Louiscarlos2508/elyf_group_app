@@ -62,8 +62,14 @@ class Cylinder {
   }
 
   factory Cylinder.fromMap(Map<String, dynamic> map, String defaultEnterpriseId) {
+    // Prioritize embedded localId to maintain offline relations on new devices
+    final validLocalId = map['localId'] as String?;
+    final objectId = (validLocalId != null && validLocalId.trim().isNotEmpty)
+        ? validLocalId
+        : (map['id'] as String? ?? '');
+
     return Cylinder(
-      id: map['id'] as String? ?? map['localId'] as String,
+      id: objectId,
       weight: (map['weight'] as num?)?.toInt() ?? 0,
       buyPrice: (map['buyPrice'] as num?)?.toDouble() ?? 0,
       sellPrice: (map['sellPrice'] as num?)?.toDouble() ?? 0,
@@ -103,9 +109,14 @@ class Cylinder {
 
   bool get isDeleted => deletedAt != null;
 
-  String get label {
-    return '${weight}kg';
-  }
+  String get label => '${weight}kg';
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) || other is Cylinder && other.id == id;
+
+  @override
+  int get hashCode => id.hashCode;
 }
 
 /// Statut d'une bouteille dans le circuit logistique.

@@ -57,8 +57,14 @@ class CylinderStock {
   }
 
   factory CylinderStock.fromMap(Map<String, dynamic> map, String defaultEnterpriseId) {
+    // Prioritize embedded localId to maintain offline relations on new devices
+    final validLocalId = map['localId'] as String?;
+    final objectId = (validLocalId != null && validLocalId.trim().isNotEmpty)
+        ? validLocalId
+        : (map['id'] as String? ?? '');
+
     return CylinderStock(
-      id: map['id'] as String? ?? map['localId'] as String,
+      id: objectId,
       cylinderId: map['cylinderId'] as String? ?? '',
       weight: (map['weight'] as num?)?.toInt() ?? 0,
       status: CylinderStatus.values.byName(map['status'] as String? ?? 'full'),

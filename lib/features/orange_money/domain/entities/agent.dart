@@ -85,7 +85,9 @@ class Agent {
 
   factory Agent.fromMap(Map<String, dynamic> map, String defaultEnterpriseId) {
     return Agent(
-      id: map['id'] as String? ?? map['localId'] as String,
+      id: (map['localId'] as String?)?.trim().isNotEmpty == true 
+          ? map['localId'] as String 
+          : (map['id'] as String? ?? ''),
       name: map['name'] as String,
       phoneNumber: map['phoneNumber'] as String,
       simNumber: map['simNumber'] as String,

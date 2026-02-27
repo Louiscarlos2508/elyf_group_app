@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../domain/entities/agent.dart';
+import 'package:elyf_groupe_app/features/orange_money/domain/entities/agent.dart' show AgentStatus;
 import 'agents_name_filter.dart';
 import 'agents_search_field.dart';
 import 'agents_status_filter.dart';

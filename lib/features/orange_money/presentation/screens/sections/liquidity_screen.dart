@@ -62,6 +62,7 @@ class _LiquidityScreenState extends ConsumerState<LiquidityScreen> {
             subtitle: 'Contrôlez vos pointages matin et soir pour garantir la sécurité de vos fonds.',
             badgeText: 'LIQUIDITÉ',
             badgeIcon: Icons.water_drop_rounded,
+            asSliver: true,
           ),
           SliverPadding(
             padding: const EdgeInsets.all(24),

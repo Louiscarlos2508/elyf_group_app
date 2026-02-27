@@ -220,6 +220,12 @@ class ModuleSectionsRegistry {
         description: 'Configuration du module',
       ),
       ModuleSection(
+        id: 'hierarchy',
+        name: 'Réseau & Hiérarchie',
+        icon: Icons.account_tree_outlined,
+        description: 'Gestion du réseau et des permissions de visibilité multiniveaux',
+      ),
+      ModuleSection(
         id: 'profile',
         name: 'Profil',
         icon: Icons.person_outline,

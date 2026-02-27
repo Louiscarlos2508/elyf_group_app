@@ -91,7 +91,7 @@ class MultipleModuleEnterpriseSelection extends StatelessWidget {
     }).toList();
     
     // Debug: Log pour voir si les points de vente sont inclus
-    final posCount = availableEnterprises.where((e) => e.description?.contains("Point de vente") ?? false).length;
+    final posCount = availableEnterprises.where((e) => e.isPointOfSale).length;
     AppLogger.debug(
       'MultipleModuleEnterpriseSelection: ${enterprises.length} entreprises au total, ${availableEnterprises.length} disponibles pour modules $moduleIds (dont $posCount points de vente)',
       name: 'admin.enterprise',

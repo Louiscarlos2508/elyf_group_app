@@ -122,6 +122,8 @@ child: LayoutBuilder(
                                   context: context,
                                   builder: (context) => CylinderFormDialog(
                                     cylinder: cylinder,
+                                    enterpriseId: cylinder.enterpriseId,
+                                    moduleId: cylinder.moduleId,
                                   ),
                                 );
                               },
@@ -243,6 +245,8 @@ child: LayoutBuilder(
                                 context: context,
                                 builder: (context) => CylinderFormDialog(
                                   cylinder: cylinder,
+                                  enterpriseId: cylinder.enterpriseId,
+                                  moduleId: cylinder.moduleId,
                                 ),
                               );
                             },

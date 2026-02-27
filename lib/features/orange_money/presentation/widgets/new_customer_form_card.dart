@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import 'package:elyf_groupe_app/shared.dart';
 import '../../domain/entities/transaction.dart';
 import '../../domain/services/customer_service.dart';
 import 'new_customer_form/transaction_info_card.dart';
@@ -183,277 +184,261 @@ class _NewCustomerFormCardState extends State<NewCustomerFormCard> {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-        side: const BorderSide(color: Color(0xFFBEDBFF), width: 1.219),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              Row(
-                children: [
-                  const Icon(
-                    Icons.person_add,
-                    size: 20,
-                    color: Color(0xFF0A0A0A),
+    final theme = Theme.of(context);
+    final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+
+    return AnimatedPadding(
+      duration: const Duration(milliseconds: 200),
+      padding: EdgeInsets.all(isKeyboardOpen ? 12 : 24),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            Row(
+              children: [
+                Icon(
+                  Icons.person_add_rounded,
+                  size: isKeyboardOpen ? 18 : 24,
+                  color: theme.colorScheme.primary,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Enregistrement Client',
+                  style: (isKeyboardOpen ? theme.textTheme.titleSmall : theme.textTheme.titleMedium)?.copyWith(
+                    fontWeight: FontWeight.bold,
                   ),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'Enregistrer une nouvelle personne',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.normal,
-                      color: Color(0xFF0A0A0A),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              // Carte d'information transaction
+                ),
+              ],
+            ),
+            if (!isKeyboardOpen) const SizedBox(height: 24),
+            
+            // Carte d'information transaction (masquée si clavier ouvert pour plus de place)
+            if (!isKeyboardOpen) ...[
               TransactionInfoCard(
                 phoneNumber: widget.phoneNumber,
                 amount: widget.amount,
                 type: widget.type,
               ),
               const SizedBox(height: 16),
-              // Prénom et Nom
-              CustomerNameFields(
-                firstNameController: _firstNameController,
-                lastNameController: _lastNameController,
-              ),
-              const SizedBox(height: 16),
-              // Type de pièce d'identité
-              IdTypeField(
-                idType: _idType,
-                onTap: () async {
-                  // ✅ TODO résolu: Show ID type selector dialog
-                  final selectedType = await _showIdTypeDialog(context);
-                  if (selectedType != null) {
-                    setState(() {
-                      _idType = selectedType;
-                    });
-                  }
-                },
-              ),
-              const SizedBox(height: 16),
-              // Numéro de pièce
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Numéro de pièce *',
-                    style: TextStyle(fontSize: 14, color: Color(0xFF0A0A0A)),
+            ] else 
+              const SizedBox(height: 12),
+
+            // Prénom et Nom
+            Row(
+              children: [
+                Expanded(
+                  child: ElyfField(
+                    label: 'Prénom',
+                    controller: _firstNameController,
+                    hint: 'ex: Jean',
+                    prefixIcon: Icons.person_outline,
+                    validator: (v) => v?.isEmpty == true ? 'Requis' : null,
                   ),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    controller: _idNumberController,
-                    decoration: InputDecoration(
-                      hintText: 'Ex: CI123456789',
-                      hintStyle: const TextStyle(
-                        fontSize: 14,
-                        color: Color(0xFF717182),
-                      ),
-                      filled: true,
-                      fillColor: const Color(0xFFF3F3F5),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                    ),
-                    validator: CustomerService.validateIdNumber,
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: ElyfField(
+                    label: 'Nom',
+                    controller: _lastNameController,
+                    hint: 'ex: Dupont',
+                    prefixIcon: Icons.badge_outlined,
+                    validator: (v) => v?.isEmpty == true ? 'Requis' : null,
                   ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              // Dates
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          "Date d'émission",
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Color(0xFF0A0A0A),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        InkWell(
-                          onTap: () => _selectDate(context, true),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF3F3F5),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
+                ),
+              ],
+            ),
+            SizedBox(height: isKeyboardOpen ? 16 : 24),
+            _buildSectionHeader('Pièce d\'identité'),
+            SizedBox(height: isKeyboardOpen ? 12 : 16),
+            // Type de pièce d'identité
+            IdTypeField(
+              idType: _idType,
+              onTap: () async {
+                final selectedType = await _showIdTypeDialog(context);
+                if (selectedType != null) {
+                  setState(() {
+                    _idType = selectedType;
+                  });
+                }
+              },
+            ),
+            const SizedBox(height: 16),
+            // Numéro de pièce
+            ElyfField(
+              label: 'Numéro de pièce',
+              controller: _idNumberController,
+              hint: 'Ex: CI123456789',
+              prefixIcon: Icons.numbers_rounded,
+              validator: CustomerService.validateIdNumber,
+            ),
+            const SizedBox(height: 16),
+            // Dates
+            Row(
+              children: [
+                Expanded(
+                  child: InkWell(
+                    onTap: () => _selectDate(context, true),
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 12, 
+                        vertical: isKeyboardOpen ? 10 : 14
+                      ),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surfaceContainerLow,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: theme.colorScheme.outlineVariant),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.calendar_today, size: 18, color: theme.colorScheme.primary),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Expanded(
-                                  child: Text(
-                                    _idIssueDate != null
-                                        ? DateFormat(
-                                            'dd/MM/yyyy',
-                                          ).format(_idIssueDate!)
-                                        : '',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: _idIssueDate != null
-                                          ? const Color(0xFF0A0A0A)
-                                          : const Color(0xFF717182),
-                                    ),
+                                Text('Date d\'émission', style: theme.textTheme.labelSmall),
+                                Text(
+                                  _idIssueDate != null ? DateFormat('dd/MM/yyyy').format(_idIssueDate!) : 'Sélectionner',
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    fontWeight: _idIssueDate != null ? FontWeight.bold : FontWeight.normal,
+                                    fontSize: isKeyboardOpen ? 12 : 14,
                                   ),
-                                ),
-                                const Icon(
-                                  Icons.calendar_today,
-                                  size: 16,
-                                  color: Color(0xFF717182),
                                 ),
                               ],
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          "Date d'expiration",
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Color(0xFF0A0A0A),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        InkWell(
-                          onTap: () => _selectDate(context, false),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF3F3F5),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: InkWell(
+                    onTap: () => _selectDate(context, false),
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 12, 
+                        vertical: isKeyboardOpen ? 10 : 14
+                      ),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surfaceContainerLow,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: theme.colorScheme.outlineVariant),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.event_busy, size: 18, color: theme.colorScheme.error),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Expanded(
-                                  child: Text(
-                                    _idExpiryDate != null
-                                        ? DateFormat(
-                                            'dd/MM/yyyy',
-                                          ).format(_idExpiryDate!)
-                                        : '',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: _idExpiryDate != null
-                                          ? const Color(0xFF0A0A0A)
-                                          : const Color(0xFF717182),
-                                    ),
+                                Text('Date d\'expiration', style: theme.textTheme.labelSmall),
+                                Text(
+                                  _idExpiryDate != null ? DateFormat('dd/MM/yyyy').format(_idExpiryDate!) : 'Sélectionner',
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    fontWeight: _idExpiryDate != null ? FontWeight.bold : FontWeight.normal,
+                                    fontSize: isKeyboardOpen ? 12 : 14,
                                   ),
-                                ),
-                                const Icon(
-                                  Icons.calendar_today,
-                                  size: 16,
-                                  color: Color(0xFF717182),
                                 ),
                               ],
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              // Boutons
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: widget.onCancel,
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(
-                          color: Color(0xFFE5E5E5),
-                          width: 1.219,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                      ),
-                      child: const Text(
-                        'Annuler',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Color(0xFF0A0A0A),
-                        ),
+                        ],
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: _isSaving ? null : _handleSave,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFF54900),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                      ),
-                      child: _isSaving
-                          ? const SizedBox(
-                              height: 16,
-                              width: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  Colors.white,
+                ),
+              ],
+            ),
+            SizedBox(height: isKeyboardOpen ? 24 : 32),
+            // Boutons
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: widget.onCancel,
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: theme.colorScheme.outlineVariant),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: EdgeInsets.symmetric(vertical: isKeyboardOpen ? 12 : 16),
+                    ),
+                    child: Text(
+                      'Annuler',
+                      style: TextStyle(color: theme.colorScheme.onSurface),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _isSaving ? null : _handleSave,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: theme.colorScheme.primary,
+                      foregroundColor: theme.colorScheme.onPrimary,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: EdgeInsets.symmetric(vertical: isKeyboardOpen ? 12 : 16),
+                      elevation: 0,
+                    ),
+                    child: _isSaving
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.check_circle_outline, size: isKeyboardOpen ? 16 : 20),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Confirmer',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: isKeyboardOpen ? 13 : 14
                                 ),
                               ),
-                            )
-                          : const Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.check, size: 16),
-                                SizedBox(width: 4),
-                                Text(
-                                  'Enregistrer et valider',
-                                  style: TextStyle(fontSize: 14),
-                                ),
-                              ],
-                            ),
-                    ),
+                            ],
+                          ),
                   ),
-                ],
-              ),
-            ],
-          ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Row(
+      children: [
+        Container(
+          width: 4,
+          height: 16,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.primary,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          title.toUpperCase(),
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1.2,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+        ),
+      ],
     );
   }
 }

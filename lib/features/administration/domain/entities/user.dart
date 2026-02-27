@@ -87,7 +87,9 @@ class User {
   /// Crée depuis un Map Firestore
   factory User.fromMap(Map<String, dynamic> map) {
     return User(
-      id: map['id'] as String,
+      id: (map['localId'] as String?)?.trim().isNotEmpty == true 
+          ? map['localId'] as String 
+          : (map['id'] as String? ?? ''),
       firstName: map['firstName'] as String,
       lastName: map['lastName'] as String,
       username: map['username'] as String,

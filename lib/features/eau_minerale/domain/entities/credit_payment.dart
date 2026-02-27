@@ -62,7 +62,9 @@ class CreditPayment {
 
   factory CreditPayment.fromMap(Map<String, dynamic> map, String defaultEnterpriseId) {
     return CreditPayment(
-      id: map['id'] as String? ?? map['localId'] as String,
+      id: (map['localId'] as String?)?.trim().isNotEmpty == true 
+          ? map['localId'] as String 
+          : (map['id'] as String? ?? ''),
       enterpriseId: map['enterpriseId'] as String? ?? defaultEnterpriseId,
       saleId: map['saleId'] as String? ?? '',
       amount: (map['amount'] as num?)?.toInt() ?? 0,

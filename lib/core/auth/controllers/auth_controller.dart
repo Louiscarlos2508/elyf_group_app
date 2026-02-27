@@ -9,7 +9,7 @@ import '../../tenant/tenant_provider.dart';
 import '../services/auth_service.dart';
 import '../../firebase/firestore_user_service.dart';
 import '../../../core/offline/providers.dart'
-    show realtimeSyncServiceProvider, globalModuleRealtimeSyncServiceProvider;
+    show realtimeSyncServiceProvider, globalModuleRealtimeSyncServiceProvider, firestoreSyncServiceProvider;
 import '../../../core/offline/sync_paths.dart';
 import '../../../core/offline/drift_service.dart';
 import '../../../core/offline/module_data_sync_service.dart';
@@ -324,6 +324,11 @@ class AuthController {
         name: 'auth.controller',
       );
 
+      // 1. ATTENDRE que la synchronisation d'accès (EnterpriseModuleUser) soit finie
+      // car sinon getUserEnterpriseModuleUsers retournera une liste vide
+      final realtimeSyncService = _ref.read(realtimeSyncServiceProvider);
+      await realtimeSyncService.waitForInitialPull();
+
       // Récupérer tous les accès EnterpriseModuleUser de l'utilisateur
       final userAccesses = await adminController.getUserEnterpriseModuleUsers(
         userId,
@@ -369,6 +374,27 @@ class AuthController {
         final enterpriseId = entry.key;
         final moduleIds = entry.value;
 
+        // S'assurer que le record de l'entreprise elle-même est présent localement
+        // (crucial pour les sous-tenants comme les POS qui ne sont pas dans le pull initial global)
+        try {
+          final firestoreSync = _ref.read(firestoreSyncServiceProvider);
+          await firestoreSync.syncSpecificEnterprise(enterpriseId);
+        } catch (e) {
+          AppLogger.warning('Could not sync enterprise record for $enterpriseId: $e');
+        }
+
+        // Check if enterprise is POS, and add its parent to the sync
+        String? parentEnterpriseId;
+        try {
+          final enterprise = await adminController.getEnterpriseById(enterpriseId);
+          if (enterprise != null && enterprise.type.name == 'gasPointOfSale' && enterprise.parentEnterpriseId != null) {
+            parentEnterpriseId = enterprise.parentEnterpriseId;
+            AppLogger.info('Detected POS, adding parent enterprise ${enterprise.parentEnterpriseId} to sync tasks', name: 'auth.controller');
+          }
+        } catch (e) {
+             AppLogger.warning('Could not get enterprise to check for parent: $e');
+        }
+
         for (final moduleId in moduleIds) {
           try {
             AppLogger.info(
@@ -381,6 +407,15 @@ class AuthController {
               moduleId: moduleId,
             );
             syncedCount++;
+
+            // If POS has a parent, sync the parent's data as well
+            if (parentEnterpriseId != null) {
+              await syncService.syncModuleData(
+                enterpriseId: parentEnterpriseId,
+                moduleId: moduleId,
+              );
+              syncedCount++;
+            }
 
             // 2. Démarrer la synchronisation en temps réel pour ce module
             try {

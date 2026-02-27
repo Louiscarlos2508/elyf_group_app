@@ -48,6 +48,25 @@ class RealtimeSyncService {
   /// Indique si le service écoute actuellement les changements.
   bool get isListening => _isListening;
   bool _initialPullCompleted = false;
+
+  /// Completer pour attendre que le pull initial soit fini
+  Completer<void>? _initialPullCompleter;
+
+  /// Attend que la synchronisation initiale soit terminée.
+  Future<void> waitForInitialPull() async {
+    // Si déjà fini, retourner immédiatement
+    if (_initialPullCompleted) return;
+    
+    // Si en cours, attendre le completer
+    if (_initialPullCompleter != null) {
+      return _initialPullCompleter!.future;
+    }
+    
+    // Sinon, on ne peut pas encore attendre (start non appelé)
+    // On attend un peu que start soit appelé ou on retourne
+    // Note: C'est une sécurité, normalement start est appelé juste après login
+  }
+
   void dispose() {
     _usersSubscription?.cancel();
     _enterprisesSubscription?.cancel();
@@ -119,6 +138,7 @@ class RealtimeSyncService {
     }
 
     _setSyncing(true);
+    _initialPullCompleter = Completer<void>();
 
     try {
       // 1. Pull initial : charger toutes les données depuis Firestore vers Drift
@@ -137,6 +157,12 @@ class RealtimeSyncService {
 
       _isListening = true;
       _setSyncing(false);
+      
+      // Signaler la fin du pull initial
+      if (_initialPullCompleter != null && !_initialPullCompleter!.isCompleted) {
+        _initialPullCompleter!.complete();
+      }
+
       developer.log(
         'RealtimeSyncService started - initial pull completed, listening to all collections',
         name: 'admin.realtime.sync',
@@ -151,6 +177,11 @@ class RealtimeSyncService {
         stackTrace: stackTrace,
       );
       rethrow;
+    } finally {
+       // S'assurer que le completer est libéré même en cas d'erreur
+       if (_initialPullCompleter != null && !_initialPullCompleter!.isCompleted) {
+        _initialPullCompleter!.complete();
+      }
     }
   }
 
@@ -550,12 +581,20 @@ class RealtimeSyncService {
   /// Sauvegarde un utilisateur localement (sans déclencher de sync).
   Future<void> _saveUserToLocal(User user) async {
     try {
-      // Utiliser directement la méthode saveToLocal du repository
-      // via FirestoreSyncService qui a accès aux repositories
+      // Rechercher si on a déjà cet utilisateur avec un localId différent
+      final existingRecord = await driftService.records.findByRemoteId(
+        collectionName: _usersCollection,
+        remoteId: user.id,
+        enterpriseId: 'global',
+        moduleType: 'administration',
+      );
+
+      final localId = existingRecord?.localId ?? user.id;
       final map = user.toMap();
+      
       await driftService.records.upsert(
         collectionName: _usersCollection,
-        localId: user.id,
+        localId: localId,
         remoteId: user.id,
         enterpriseId: 'global',
         moduleType: 'administration',
@@ -596,10 +635,19 @@ class RealtimeSyncService {
   /// Sauvegarde une entreprise localement (sans déclencher de sync).
   Future<void> _saveEnterpriseToLocal(Enterprise enterprise) async {
     try {
+      final existingRecord = await driftService.records.findByRemoteId(
+        collectionName: _enterprisesCollection,
+        remoteId: enterprise.id,
+        enterpriseId: 'global',
+        moduleType: 'administration',
+      );
+
+      final localId = existingRecord?.localId ?? enterprise.id;
       final map = enterprise.toMap();
+      
       await driftService.records.upsert(
         collectionName: _enterprisesCollection,
-        localId: enterprise.id,
+        localId: localId,
         remoteId: enterprise.id,
         enterpriseId: 'global',
         moduleType: 'administration',
@@ -741,13 +789,23 @@ class RealtimeSyncService {
         'isSystemRole': role.isSystemRole,
       };
       
+      // Rechercher le localId existant
+      final existingRecord = await driftService.records.findByRemoteId(
+        collectionName: _rolesCollection,
+        remoteId: role.id,
+        enterpriseId: 'global',
+        moduleType: 'administration',
+      );
+
+      final localId = existingRecord?.localId ?? role.id;
+      
       // Utiliser le timestamp Firestore si fourni, sinon utiliser maintenant
       // Cela permet de préserver l'ordre chronologique des modifications
       final localUpdatedAt = firestoreUpdatedAt ?? DateTime.now();
       
       await driftService.records.upsert(
         collectionName: _rolesCollection,
-        localId: role.id,
+        localId: localId,
         remoteId: role.id,
         enterpriseId: 'global',
         moduleType: 'administration',
@@ -791,15 +849,22 @@ class RealtimeSyncService {
     EnterpriseModuleUser assignment,
   ) async {
     try {
+      final existingRecord = await driftService.records.findByRemoteId(
+        collectionName: _enterpriseModuleUsersCollection,
+        remoteId: assignment.documentId,
+        enterpriseId: 'global',
+        moduleType: 'administration',
+      );
+
+      final localId = existingRecord?.localId ?? assignment.documentId;
       final map = assignment.toMap();
+      
       await driftService.records.upsert(
         collectionName: _enterpriseModuleUsersCollection,
-        localId: assignment.documentId,
+        localId: localId,
         remoteId: assignment.documentId,
-        enterpriseId:
-            'global', // EnterpriseModuleUsers sont globaux (pas liés à une entreprise spécifique dans le stockage)
-        moduleType:
-            'administration', // Tous les EnterpriseModuleUsers sont stockés avec moduleType='administration'
+        enterpriseId: 'global',
+        moduleType: 'administration',
         dataJson: jsonEncode(map),
         localUpdatedAt: DateTime.now(),
       );
@@ -880,7 +945,7 @@ class RealtimeSyncService {
       final posCollection = firestore
           .collection(_enterprisesCollection)
           .doc(enterpriseId)
-          .collection('pointofsale');
+          .collection('pointsOfSale');
       
       final subscription = posCollection.snapshots().listen(
         (snapshot) async {
@@ -897,9 +962,18 @@ class RealtimeSyncService {
                 case DocumentChangeType.added:
                 case DocumentChangeType.modified:
                   // Sauvegarder localement
+                  final existingRecord = await driftService.records.findByRemoteId(
+                    collectionName: 'pointOfSale',
+                    remoteId: docChange.doc.id,
+                    enterpriseId: enterpriseId,
+                    moduleType: 'gaz',
+                  );
+
+                  final localId = existingRecord?.localId ?? docChange.doc.id;
+
                   await driftService.records.upsert(
                     collectionName: 'pointOfSale',
-                    localId: docChange.doc.id,
+                    localId: localId,
                     remoteId: docChange.doc.id,
                     enterpriseId: enterpriseId,
                     moduleType: 'gaz',

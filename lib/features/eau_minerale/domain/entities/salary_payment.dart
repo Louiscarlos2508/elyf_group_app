@@ -53,7 +53,9 @@ class SalaryPayment {
 
   factory SalaryPayment.fromMap(Map<String, dynamic> map) {
     return SalaryPayment(
-      id: map['id'] as String,
+      id: (map['localId'] as String?)?.trim().isNotEmpty == true 
+          ? map['localId'] as String 
+          : (map['id'] as String? ?? ''),
       employeeId: map['employeeId'] as String,
       employeeName: map['employeeName'] as String,
       amount: (map['amount'] as num).toInt(),

@@ -82,7 +82,9 @@ class StockMovement extends Equatable {
 
   factory StockMovement.fromMap(Map<String, dynamic> map) {
     return StockMovement(
-      id: map['id'] as String,
+      id: (map['localId'] as String?)?.trim().isNotEmpty == true 
+          ? map['localId'] as String 
+          : (map['id'] as String? ?? ''),
       productId: map['productId'] as String,
       enterpriseId: map['enterpriseId'] as String,
       type: StockMovementType.values.byName(map['type'] as String),

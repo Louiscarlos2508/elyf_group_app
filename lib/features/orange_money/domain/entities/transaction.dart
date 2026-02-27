@@ -85,7 +85,9 @@ class Transaction {
     String defaultEnterpriseId,
   ) {
     return Transaction(
-      id: map['id'] as String? ?? map['localId'] as String,
+      id: (map['localId'] as String?)?.trim().isNotEmpty == true 
+          ? map['localId'] as String 
+          : (map['id'] as String? ?? ''),
       enterpriseId: map['enterpriseId'] as String? ?? defaultEnterpriseId,
       type: TransactionType.values.byName(map['type'] as String),
       amount: (map['amount'] as num).toInt(),

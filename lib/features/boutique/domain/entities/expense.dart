@@ -80,7 +80,9 @@ class Expense {
 
   factory Expense.fromMap(Map<String, dynamic> map, String defaultEnterpriseId) {
     return Expense(
-      id: map['id'] as String? ?? map['localId'] as String,
+      id: (map['localId'] as String?)?.trim().isNotEmpty == true 
+          ? map['localId'] as String 
+          : (map['id'] as String? ?? ''),
       enterpriseId: map['enterpriseId'] as String? ?? defaultEnterpriseId,
       label: map['label'] as String? ?? map['description'] as String? ?? '',
       amountCfa:

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter/services.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
@@ -12,7 +11,6 @@ import '../../../domain/entities/gas_sale.dart';
 import '../../widgets/gas_sale_form_dialog.dart';
 import '../../widgets/gaz_header.dart';
 import '../../widgets/gaz_session_guard.dart';
-import '../../widgets/gas_sale_form/gas_sale_submit_handler.dart';
 import '../../../application/providers/permission_providers.dart';
 
 import 'retail/retail_new_sale_tab.dart';
@@ -51,82 +49,6 @@ class _GazSalesScreenState extends ConsumerState<GazSalesScreen>
   void _onTabChanged() {
     if (!mounted) return;
     setState(() {});
-  }
-
-  void _handleQuickExchange(Cylinder cylinder) async {
-    final enterpriseId = ref.read(activeEnterpriseIdProvider).value;
-    if (enterpriseId == null) {
-      NotificationService.showError(context, 'Aucune entreprise sélectionnée');
-      return;
-    }
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Confirmer l\'Échange Rapide'),
-        content: Text(
-          'Voulez-vous enregistrer un échange standard d\'une bouteille de ${cylinder.weight}kg ?\n\n'
-          'Montant: ${CurrencyFormatter.formatDouble(cylinder.sellPrice)}',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Annuler'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              foregroundColor: Theme.of(context).colorScheme.onPrimary,
-            ),
-            child: const Text('Confirmer'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != true) return;
-
-    if (!mounted) return;
-    
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(child: CircularProgressIndicator()),
-    );
-
-    try {
-      final sale = await GasSaleSubmitHandler.submit(
-        context: context,
-        ref: ref,
-        selectedCylinder: cylinder,
-        quantity: 1,
-        availableStock: 1000,
-        enterpriseId: enterpriseId,
-        saleType: SaleType.retail,
-        customerName: null,
-        customerPhone: null,
-        notes: 'Échange Rapide',
-        totalAmount: cylinder.sellPrice,
-        unitPrice: cylinder.sellPrice,
-        emptyReturnedQuantity: 1,
-        dealType: GasSaleDealType.exchange,
-        onLoadingChanged: () {},
-      );
-
-      if (mounted) {
-        Navigator.pop(context);
-        if (sale != null) {
-          NotificationService.showSuccess(context, 'Vente enregistrée !');
-          HapticFeedback.mediumImpact();
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        Navigator.pop(context);
-        NotificationService.showError(context, 'Erreur: $e');
-      }
-    }
   }
 
   void _showSaleDialog(Cylinder cylinder, [SaleType saleType = SaleType.retail]) {
@@ -191,7 +113,6 @@ class _GazSalesScreenState extends ConsumerState<GazSalesScreen>
                 children: [
                   RetailNewSaleTab(
                     onCylinderTap: (c) => _showSaleDialog(c, SaleType.retail),
-                    onQuickExchange: _handleQuickExchange,
                   ),
                   if (showWholesale)
                     WholesaleNewSaleTab(

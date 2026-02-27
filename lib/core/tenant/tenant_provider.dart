@@ -116,14 +116,27 @@ final allEnterprisesStreamProvider = StreamProvider<List<Enterprise>>((ref) {
           final parentId = map['parentEnterpriseId'] as String? ?? map['enterpriseId'] as String?;
           final parent = enterprises.where((e) => e.id == parentId).firstOrNull;
           
-          if (parent == null) {
-             // AppLogger.debug('allEnterprisesStreamProvider: sub-entity $name (id: $id) has no matching parent ($parentId).', name: 'tenant');
+          EnterpriseType childType = EnterpriseType.pointOfSale;
+          if (map['type'] != null) {
+            childType = EnterpriseType.fromId(map['type'] as String);
+          } else if (parent != null) {
+            if (parent.type.isGas) {
+              childType = EnterpriseType.gasPointOfSale;
+            } else if (parent.type.isWater) {
+              childType = EnterpriseType.waterPointOfSale;
+            } else if (parent.type.isShop) {
+              childType = EnterpriseType.shopBranch;
+            } else if (parent.type.isMobileMoney) {
+              childType = EnterpriseType.mobileMoneyKiosk;
+            } else if (parent.type.isRealEstate) {
+              childType = EnterpriseType.realEstateBranch;
+            }
           }
 
           all.add(Enterprise(
             id: id,
             name: name,
-            type: parent?.type ?? EnterpriseType.pointOfSale,
+            type: childType,
             parentEnterpriseId: parentId,
             description: map['description'] as String? ?? map['address'] as String?,
             isActive: map['isActive'] as bool? ?? true,
@@ -156,14 +169,32 @@ final userAccessibleEnterprisesProvider = StreamProvider<List<Enterprise>>((ref)
     data: (assignments) {
       return enterprisesAsync.when(
         data: (enterprises) {
-          final activeEnterpriseIds = assignments
-              .where((a) => a.isActive)
-              .map((a) => a.enterpriseId)
-              .toSet();
+          final activeAssignments = assignments.where((a) => a.isActive).toList();
+          
+          final accessible = enterprises.where((e) {
+            if (!e.isActive) return false;
 
-          final accessible = enterprises
-              .where((e) => activeEnterpriseIds.contains(e.id) && e.isActive)
-              .toList();
+            // 1. Accès direct
+            final hasDirectAccess = activeAssignments.any((a) => a.enterpriseId == e.id);
+            if (hasDirectAccess) return true;
+
+            // 2. Accès via parent (hiérarchique) avec héritage (includesChildren)
+            String? currentParentId = e.parentEnterpriseId;
+            while (currentParentId != null) {
+              // Vérifier si l'utilisateur a un accès à ce parent avec héritage activé
+              final hasParentAccessWithInheritance = activeAssignments.any(
+                (a) => a.enterpriseId == currentParentId && a.includesChildren,
+              );
+              
+              if (hasParentAccessWithInheritance) return true;
+              
+              // Continuer à remonter la hiérarchie
+              final parentDoc = enterprises.where((ent) => ent.id == currentParentId).firstOrNull;
+              currentParentId = parentDoc?.parentEnterpriseId;
+            }
+
+            return false;
+          }).toList();
           
           return Stream.value(accessible);
         },

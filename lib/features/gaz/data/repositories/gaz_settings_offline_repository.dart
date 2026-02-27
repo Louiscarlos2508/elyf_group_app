@@ -117,17 +117,16 @@ class GazSettingsOfflineRepository extends OfflineRepository<GazSettings>
     required String enterpriseId,
     required String moduleId,
   }) async {
-    final settingsId = _getSettingsId(enterpriseId, moduleId);
     try {
-      final record = await driftService.records.findByLocalId(
-        collectionName: collectionName,
-        localId: settingsId,
-        enterpriseId: enterpriseId,
-        moduleType: moduleType,
-      );
-      if (record == null) return null;
-      final settings = fromMap(jsonDecode(record.dataJson) as Map<String, dynamic>);
-      return settings.isDeleted ? null : settings;
+      final allSettings = await getAllForEnterprise(enterpriseId);
+      final settings = allSettings.where((s) => s.moduleId == moduleId).firstOrNull;
+      
+      // Fallback: si on n'a qu'un seul settings mais avec un moduleId vide (ex: configuré manuellement depuis Firebase)
+      if (settings == null && allSettings.isNotEmpty) {
+        return allSettings.first;
+      }
+      
+      return settings;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       AppLogger.error(
@@ -145,7 +144,6 @@ class GazSettingsOfflineRepository extends OfflineRepository<GazSettings>
     required String enterpriseId,
     required String moduleId,
   }) {
-    final settingsId = _getSettingsId(enterpriseId, moduleId);
     return driftService.records
         .watchForEnterprise(
           collectionName: collectionName,
@@ -153,7 +151,7 @@ class GazSettingsOfflineRepository extends OfflineRepository<GazSettings>
           moduleType: moduleType,
         )
         .map((rows) {
-          final row = rows.where((r) => r.localId == settingsId).firstOrNull;
+          final row = rows.firstOrNull;
           if (row == null) return null;
           try {
             final settings = fromMap(jsonDecode(row.dataJson) as Map<String, dynamic>);

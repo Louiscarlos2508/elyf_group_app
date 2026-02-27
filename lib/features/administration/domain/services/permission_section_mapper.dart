@@ -66,6 +66,8 @@ class PermissionSectionMapper {
         permissionId.startsWith('change_') ||
         permissionId.startsWith('assign_') ||
         permissionId.startsWith('manage_') ||
+        permissionId.startsWith('validate_') ||
+        permissionId.startsWith('declare_') ||
         permissionId.startsWith('export_')) {
       final prefix = permissionId.split('_').first;
       final suffix = permissionId.substring(prefix.length + 1);
@@ -165,8 +167,10 @@ class PermissionSectionMapper {
 
         case 'orange_money':
           if (suffix == 'dashboard' || suffix.startsWith('dashboard')) {
-            // Orange Money n'a pas de section dashboard, mettre dans transactions
-            return 'transactions';
+            return 'transactions'; // Par défaut dans transactions si section dashboard non présente
+          } else if (permissionId.contains('network_dashboard') || 
+                     permissionId.contains('child_transactions')) {
+            return 'hierarchy'; // Nouvelle section pour la hiérarchie
           } else if (suffix == 'transaction' || suffix == 'transactions') {
             return 'transactions';
           } else if (suffix == 'agent' || suffix == 'agents') {

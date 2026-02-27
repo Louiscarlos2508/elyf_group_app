@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/providers.dart';
 import '../../../../core/logging/app_logger.dart';
+import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 import '../../domain/entities/cylinder.dart';
 import 'cylinder_form_dialog.dart';
 import 'cylinder_list_item.dart';
@@ -23,10 +24,26 @@ class _CylinderManagementCardState
   Future<void> _deleteCylinder(String id) async {
     try {
       final controller = ref.read(cylinderControllerProvider);
+      final stockRepo = ref.read(cylinderStockRepositoryProvider);
+      final enterpriseId = ref.read(activeEnterpriseProvider).value?.id ?? '';
+
       await controller.deleteCylinder(id);
+
+      // Cascade delete associated stocks for this enterprise
+      final allStocks = await stockRepo.getAllForEnterprise(enterpriseId);
+      final relatedStocks = allStocks.where((s) => s.cylinderId == id).toList();
+      for (final stock in relatedStocks) {
+        await stockRepo.deleteStock(stock.id);
+      }
+
       if (!mounted) return;
 
+      // Small delay to allow Drift stream to propagate the soft-delete internally
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+
       ref.invalidate(cylindersProvider);
+      ref.invalidate(gazStocksProvider);
+      ref.invalidate(cylinderStocksProvider);
 
       if (!mounted) return;
       NotificationService.showSuccess(
@@ -99,9 +116,8 @@ class _CylinderManagementCardState
                                 children: [
                                   Text(
                                     'Gestion des Bouteilles',
-                                    style: theme.textTheme.titleMedium?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                    style: theme.textTheme.titleMedium
+                                        ?.copyWith(fontWeight: FontWeight.bold),
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
@@ -143,7 +159,8 @@ class _CylinderManagementCardState
                     children: cylinders.map<Widget>((cylinder) {
                       return CylinderListItem(
                         cylinder: cylinder,
-                        onEdit: () => _showEditCylinderDialog(context, cylinder),
+                        onEdit: () =>
+                            _showEditCylinderDialog(context, cylinder),
                         onDelete: () => _showDeleteConfirm(context, cylinder),
                       );
                     }).toList(),
@@ -161,7 +178,11 @@ class _CylinderManagementCardState
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.error_outline, size: 48, color: colors.error),
+                        Icon(
+                          Icons.error_outline,
+                          size: 48,
+                          color: colors.error,
+                        ),
                         const SizedBox(height: 12),
                         Text(
                           'Erreur lors du chargement',
@@ -189,9 +210,14 @@ class _CylinderManagementCardState
 
   void _showAddCylinderDialog(BuildContext context) {
     try {
+      final activeEnterpriseId =
+          ref.read(activeEnterpriseProvider).value?.id ?? '';
       showDialog(
         context: context,
-        builder: (dialogContext) => const CylinderFormDialog(),
+        builder: (dialogContext) => CylinderFormDialog(
+          enterpriseId: activeEnterpriseId,
+          moduleId: 'gaz',
+        ),
       );
     } catch (e) {
       AppLogger.error(
@@ -205,9 +231,15 @@ class _CylinderManagementCardState
 
   void _showEditCylinderDialog(BuildContext context, Cylinder cylinder) {
     try {
+      final activeEnterpriseId =
+          ref.read(activeEnterpriseProvider).value?.id ?? '';
       showDialog(
         context: context,
-        builder: (dialogContext) => CylinderFormDialog(cylinder: cylinder),
+        builder: (dialogContext) => CylinderFormDialog(
+          cylinder: cylinder,
+          enterpriseId: activeEnterpriseId,
+          moduleId: 'gaz',
+        ),
       );
     } catch (e) {
       AppLogger.error(

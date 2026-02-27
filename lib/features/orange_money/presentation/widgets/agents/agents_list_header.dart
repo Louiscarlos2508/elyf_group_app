@@ -7,9 +7,13 @@ class AgentsListHeader extends StatelessWidget {
     required this.agentCount,
     required this.onAddAgent,
     required this.onRecharge,
+    this.title = 'Liste des agents',
+    this.addButtonLabel = 'Nouvel agent',
   });
 
   final int agentCount;
+  final String title;
+  final String addButtonLabel;
   final void Function() onAddAgent;
   final void Function() onRecharge;
 
@@ -25,7 +29,7 @@ class AgentsListHeader extends StatelessWidget {
           children: [
             Expanded(
               child: Text(
-                'Liste des agents ($agentCount)',
+                '$title ($agentCount)',
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w800,
                   fontFamily: 'Outfit',
@@ -44,7 +48,7 @@ class AgentsListHeader extends StatelessWidget {
               child: ElevatedButton.icon(
                 onPressed: onAddAgent,
                 icon: const Icon(Icons.add_rounded, size: 18),
-                label: const Text('Nouvel agent'),
+                label: Text(addButtonLabel),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: theme.colorScheme.primary,
                   foregroundColor: Colors.white,

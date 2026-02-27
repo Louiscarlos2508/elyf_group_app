@@ -115,8 +115,14 @@ class StockTransfer {
   }
 
   factory StockTransfer.fromMap(Map<String, dynamic> map) {
+    // Prioritize embedded localId to maintain offline relations on new devices
+    final validLocalId = map['localId'] as String?;
+    final objectId = (validLocalId != null && validLocalId.trim().isNotEmpty)
+        ? validLocalId
+        : (map['id'] as String? ?? '');
+
     return StockTransfer(
-      id: map['id'] as String? ?? map['localId'] as String,
+      id: objectId,
       fromEnterpriseId: map['fromEnterpriseId'] as String,
       toEnterpriseId: map['toEnterpriseId'] as String,
       items: (map['items'] as List<dynamic>)

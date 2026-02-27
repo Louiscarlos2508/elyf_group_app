@@ -18,8 +18,4 @@ class GazTourCalculationService {
     final totalBottlesByWeight = calculateTotalBottlesByWeight(collections);
     return totalBottlesByWeight.values.fold<int>(0, (sum, qty) => sum + qty);
   }
-
-  static double calculateTourExpenses(List<GazExpense> expenses, String tourId) {
-    return expenses.where((e) => e.tourId == tourId).fold<double>(0, (sum, e) => sum + e.amount);
-  }
 }

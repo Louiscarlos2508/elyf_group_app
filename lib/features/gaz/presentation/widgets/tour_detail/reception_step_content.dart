@@ -8,7 +8,6 @@ import 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder_stock.dart';
 import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/gaz_settings.dart';
-import 'transport/loading_unloading_fees_section.dart';
 
 /// Contenu de l'étape Réception du tour.
 ///
@@ -41,7 +40,6 @@ class _ReceptionStepContentState extends ConsumerState<ReceptionStepContent> {
   late final TextEditingController _gasPurchaseCostController;
   late final TextEditingController _additionalFeesController;
   final Set<int> _expandedWeights = {};
-  Map<int, int> _nominalStocks = {};
   bool _isInitialized = false;
 
   @override
@@ -88,9 +86,7 @@ class _ReceptionStepContentState extends ConsumerState<ReceptionStepContent> {
       );
     }
     
-    if (settings != null) {
-      _nominalStocks = settings.nominalStocks;
-    }
+    // _nominalStocks = settings.nominalStocks; (removed)
 
     if (_expandedWeights.isEmpty && weights.isNotEmpty) {
       _expandedWeights.add(weights.first);
@@ -106,7 +102,6 @@ class _ReceptionStepContentState extends ConsumerState<ReceptionStepContent> {
         );
     if (settingsAsync != null && mounted) {
       setState(() {
-        _nominalStocks = settingsAsync.nominalStocks;
         for (final weight in weights) {
           final purchasePrice = settingsAsync.getPurchasePrice(weight);
           final fee = purchasePrice ?? settingsAsync.getSupplierExchangeFee(weight);
@@ -123,10 +118,18 @@ class _ReceptionStepContentState extends ConsumerState<ReceptionStepContent> {
 
   @override
   void dispose() {
-    for (final c in _receivedControllers.values) c.dispose();
-    for (final c in _returnedControllers.values) c.dispose();
-    for (final c in _purchasePriceControllers.values) c.dispose();
-    for (final c in _exchangeFeeControllers.values) c.dispose();
+    for (final c in _receivedControllers.values) {
+      c.dispose();
+    }
+    for (final c in _returnedControllers.values) {
+      c.dispose();
+    }
+    for (final c in _purchasePriceControllers.values) {
+      c.dispose();
+    }
+    for (final c in _exchangeFeeControllers.values) {
+      c.dispose();
+    }
     _supplierController.dispose();
     _gasPurchaseCostController.dispose();
     _additionalFeesController.dispose();
@@ -349,7 +352,6 @@ class _ReceptionStepContentState extends ConsumerState<ReceptionStepContent> {
               final loaded = widget.tour.emptyBottlesLoaded[weight] ?? 0;
               final leakingLoaded = widget.tour.leakingBottlesLoaded[weight] ?? 0;
               final totalLoaded = loaded + leakingLoaded;
-              final nominal = _nominalStocks[weight] ?? 0;
               final cylinderId = cylinders.any((c) => c.weight == weight) 
                   ? cylinders.firstWhere((c) => c.weight == weight).id 
                   : '';
@@ -495,34 +497,6 @@ class _ReceptionStepContentState extends ConsumerState<ReceptionStepContent> {
                                 ),
                               ],
                             ),
-                           if (nominal > 0 && !isPos) ...[
-                              const SizedBox(height: 12),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                decoration: BoxDecoration(
-                                  color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      'Capacité Cible : $nominal btl',
-                                      style: theme.textTheme.labelSmall,
-                                    ),
-                                    Text(
-                                      'Réel (Audit) : $totalWithReception/$nominal',
-                                      style: theme.textTheme.labelSmall?.copyWith(
-                                        color: (totalWithReception > nominal + 2) // small tolerance
-                                            ? theme.colorScheme.error 
-                                            : (totalWithReception >= nominal - 2 ? theme.colorScheme.primary : theme.colorScheme.secondary),
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
                           ],
                         ),
                       ),

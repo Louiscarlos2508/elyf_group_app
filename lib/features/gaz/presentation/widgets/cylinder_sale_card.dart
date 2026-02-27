@@ -10,13 +10,11 @@ class CylinderSaleCard extends StatelessWidget {
     required this.cylinder,
     required this.stock,
     required this.onTap,
-    this.onQuickExchange,
   });
 
   final Cylinder cylinder;
   final int stock;
   final VoidCallback onTap;
-  final VoidCallback? onQuickExchange;
 
   Color _getGradientColor(int weight) {
     switch (weight) {
@@ -232,41 +230,6 @@ class CylinderSaleCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (hasStock && onQuickExchange != null) ...[
-                  const SizedBox(height: 12),
-                  GestureDetector(
-                    onTap: onQuickExchange,
-                    child: Container(
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.secondaryContainer,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: theme.colorScheme.secondary.withValues(alpha: 0.2),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.bolt,
-                            size: 18,
-                            color: theme.colorScheme.secondary,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Échange Rapide (1)',
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: theme.colorScheme.onSecondaryContainer,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
               ],
             ),
           ),

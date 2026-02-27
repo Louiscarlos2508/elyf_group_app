@@ -13,15 +13,12 @@ class RetailNewSaleTab extends ConsumerWidget {
   const RetailNewSaleTab({
     super.key,
     required this.onCylinderTap,
-    this.onQuickExchange,
   });
 
   final ValueChanged<Cylinder> onCylinderTap;
-  final ValueChanged<Cylinder>? onQuickExchange;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final cylindersAsync = ref.watch(cylindersProvider);
     // Récupérer l'entreprise active depuis le contexte
     final activeEnterpriseIdAsync = ref.watch(activeEnterpriseIdProvider);
@@ -44,7 +41,6 @@ class RetailNewSaleTab extends ConsumerWidget {
               cylinders: cylinders,
               enterpriseId: enterpriseId,
               onCylinderTap: onCylinderTap,
-              onQuickExchange: onQuickExchange,
             ),
             loading: () => SliverFillRemaining(
               child: AppShimmers.list(context),

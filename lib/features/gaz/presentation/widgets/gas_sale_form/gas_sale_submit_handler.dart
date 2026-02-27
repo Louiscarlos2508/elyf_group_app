@@ -34,6 +34,8 @@ class GasSaleSubmitHandler {
     int emptyReturnedQuantity = 0,
     GasSaleDealType dealType = GasSaleDealType.exchange,
     PaymentMethod paymentMethod = PaymentMethod.cash,
+    double? cashAmount,
+    double? mobileMoneyAmount,
     required VoidCallback onLoadingChanged,
   }) async {
     // Vérifier le stock disponible
@@ -71,6 +73,8 @@ class GasSaleSubmitHandler {
         emptyReturnedQuantity: emptyReturnedQuantity,
         dealType: dealType,
         paymentMethod: paymentMethod,
+        cashAmount: cashAmount,
+        mobileMoneyAmount: mobileMoneyAmount,
       );
 
       // Exécuter la vente via la transaction atomique (bi-modal stock)

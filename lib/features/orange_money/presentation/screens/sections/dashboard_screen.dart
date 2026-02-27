@@ -4,7 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
 import 'package:elyf_groupe_app/features/orange_money/application/providers.dart';
-import '../../application/controllers/orange_money_controller.dart';
+import 'package:elyf_groupe_app/features/orange_money/application/controllers/orange_money_controller.dart';
+import 'package:elyf_groupe_app/features/orange_money/presentation/widgets/orange_money_header.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -43,39 +44,42 @@ class DashboardScreen extends ConsumerWidget {
     // Agent Cash Balance decreases on CashOut (gives cash)
     final currentCash = startCash + cashInTotal - cashOutTotal;
 
-    return CustomScrollView(
-      slivers: [
-        OrangeMoneyHeader(
-          title: 'Tableau de Bord',
-          subtitle: 'Vue d\'ensemble de votre activité du jour.',
-          additionalActions: [
-            if (stats['isNetworkView'] == true)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.secondary.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: theme.colorScheme.secondary.withValues(alpha: 0.3)),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.hub_rounded, color: theme.colorScheme.secondary, size: 14),
-                    const SizedBox(width: 6),
-                    Text(
-                      'RÉSEAU',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.secondary,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1.1,
-                        fontFamily: 'Outfit',
+    return Container(
+      color: theme.colorScheme.surfaceContainerHighest,
+      child: CustomScrollView(
+        slivers: [
+          OrangeMoneyHeader(
+            title: 'Tableau de Bord',
+            subtitle: 'Vue d\'ensemble de votre activité du jour.',
+            asSliver: true,
+            additionalActions: [
+              if (stats['isNetworkView'] == true)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.secondary.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: theme.colorScheme.secondary.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.hub_rounded, color: theme.colorScheme.secondary, size: 14),
+                      const SizedBox(width: 6),
+                      Text(
+                        'RÉSEAU',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.secondary,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.1,
+                          fontFamily: 'Outfit',
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-          ],
-        ),
-        const SliverToBoxAdapter(child: SizedBox(height: 24)),
+            ],
+          ),
+          const SliverToBoxAdapter(child: SizedBox(height: 24)),
 
         // 1. Pointage Alert (if missing)
         if (todayCheckpoint == null)
@@ -234,12 +238,12 @@ class DashboardScreen extends ConsumerWidget {
               padding: const EdgeInsets.all(24),
               child: ElyfCard(
                 isGlass: true,
-                backgroundColor: theme.colorScheme.warning.withValues(alpha: 0.1),
-                borderColor: theme.colorScheme.warning.withValues(alpha: 0.3),
+                backgroundColor: theme.colorScheme.error.withValues(alpha: 0.1),
+                borderColor: theme.colorScheme.error.withValues(alpha: 0.3),
                 padding: const EdgeInsets.all(16),
                 child: Row(
                   children: [
-                    Icon(Icons.warning_amber_rounded, color: theme.colorScheme.warning),
+                    Icon(Icons.warning_amber_rounded, color: theme.colorScheme.error),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
@@ -258,7 +262,8 @@ class DashboardScreen extends ConsumerWidget {
           ),
           
           const SliverToBoxAdapter(child: SizedBox(height: 100)),
-      ],
+        ],
+      ),
     );
   }
 
@@ -305,13 +310,20 @@ class DashboardScreen extends ConsumerWidget {
   }
 
   Widget _buildActionButton(BuildContext context, String label, IconData icon, Color color, VoidCallback onTap) {
+    final theme = Theme.of(context);
+    final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 16),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: EdgeInsets.symmetric(
+            vertical: isKeyboardOpen ? 8 : 12, 
+            horizontal: 16
+          ),
           decoration: BoxDecoration(
             color: color,
             borderRadius: BorderRadius.circular(16),
@@ -323,17 +335,17 @@ class DashboardScreen extends ConsumerWidget {
               ),
             ],
           ),
-          child: Column(
+          child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: Colors.white, size: 28),
-              const SizedBox(height: 8),
+              Icon(icon, color: Colors.white, size: isKeyboardOpen ? 18 : 22),
+              const SizedBox(width: 8),
               Text(
                 label,
-                style: const TextStyle(
+                style: theme.textTheme.titleSmall?.copyWith(
                   color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                  fontSize: isKeyboardOpen ? 13 : 15,
                   fontFamily: 'Outfit',
                 ),
               ),

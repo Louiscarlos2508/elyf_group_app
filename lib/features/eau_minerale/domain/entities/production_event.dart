@@ -100,7 +100,9 @@ class ProductionEvent {
 
   factory ProductionEvent.fromMap(Map<String, dynamic> map) {
     return ProductionEvent(
-      id: map['id'] as String? ?? '',
+      id: (map['localId'] as String?)?.trim().isNotEmpty == true 
+          ? map['localId'] as String 
+          : (map['id'] as String? ?? ''),
       productionId: map['productionId'] as String? ?? '',
       type: ProductionEventType.values.byName(map['type'] as String? ?? 'panne'),
       date: DateTime.parse(map['date'] as String),

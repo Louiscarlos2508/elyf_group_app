@@ -1,5 +1,6 @@
 import 'dart:developer' as developer;
 
+import '../../../../core/errors/app_exceptions.dart';
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/logging/app_logger.dart';
 import '../../domain/entities/user.dart';
@@ -296,8 +297,18 @@ class UserController {
           error: e,
           stackTrace: stackTrace,
         );
-        // Log error but continue with local deletion
-        // The user will be removed from local storage and sync queue
+        
+        // Rethrow sensitive authentication exceptions (like requires-recent-login)
+        // to prevent local deletion if Firebase Auth deletion fails for security reasons.
+        // This allows the UI to request re-authentication.
+        if (e.toString().contains('requires-recent-login') || 
+            appException is AuthenticationException) {
+          rethrow;
+        }
+        
+        // For other non-critical errors, we might continue, but for now 
+        // it's safer to rethrow to avoid inconsistent states.
+        rethrow;
       }
     }
 

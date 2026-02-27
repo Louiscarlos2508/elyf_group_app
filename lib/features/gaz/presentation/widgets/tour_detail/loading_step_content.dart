@@ -34,8 +34,7 @@ class LoadingStepContent extends ConsumerStatefulWidget {
 class _LoadingStepContentState extends ConsumerState<LoadingStepContent> {
   final Map<int, TextEditingController> _emptyControllers = {};
   final Map<int, TextEditingController> _leakingControllers = {};
-  Map<int, int> _nominalStocks = {};
-  bool _loadingSettings = false;
+  final bool _loadingSettings = false;
 
   @override
   void dispose() {
@@ -46,24 +45,6 @@ class _LoadingStepContentState extends ConsumerState<LoadingStepContent> {
       controller.dispose();
     }
     super.dispose();
-  }
-
-  Future<void> _loadSettings(List<int> weights) async {
-    if (_loadingSettings) return;
-    _loadingSettings = true;
-    
-    final settingsAsync = await ref.read(gazSettingsControllerProvider).getSettings(
-          enterpriseId: widget.enterpriseId,
-          moduleId: 'gaz',
-        );
-    if (mounted) {
-      setState(() {
-        if (settingsAsync != null) {
-          _nominalStocks = settingsAsync.nominalStocks;
-        }
-        _loadingSettings = false;
-      });
-    }
   }
 
   @override
@@ -102,10 +83,8 @@ class _LoadingStepContentState extends ConsumerState<LoadingStepContent> {
           }
         }
 
-        if (neededSettingsLoad || (_nominalStocks.isEmpty && !_loadingSettings)) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            _loadSettings(weights);
-          });
+        if (neededSettingsLoad) {
+          // Additional logic if required, skipped nominal stocks
         }
 
         return Container(
@@ -167,8 +146,6 @@ class _LoadingStepContentState extends ConsumerState<LoadingStepContent> {
                       .where((s) => s.cylinderId == cylinderId && s.status == CylinderStatus.leakInTransit)
                       .fold<int>(0, (sum, s) => sum + s.quantity);
                   final availableLeak = leakQty + leakInTransitQty;
-
-                  final nominal = _nominalStocks[weight] ?? 0;
                   
                   final emptyController = _emptyControllers[weight];
                   final emptyTyped = int.tryParse(emptyController?.text ?? '0') ?? 0;
@@ -228,7 +205,6 @@ class _LoadingStepContentState extends ConsumerState<LoadingStepContent> {
                                 atStoreQty: atStoreQty,
                                 inTransitQty: inTransitQty,
                                 accentColor: theme.colorScheme.primary,
-                                nominal: isPos ? 0 : nominal,
                               ),
                               const SizedBox(height: 8),
                               // Leaking Row
@@ -441,7 +417,6 @@ class _LoadingStepContentState extends ConsumerState<LoadingStepContent> {
     required int atStoreQty,
     required int inTransitQty,
     required Color accentColor,
-    int? nominal,
     bool isLeak = false,
   }) {
     final theme = Theme.of(context);
@@ -457,8 +432,6 @@ class _LoadingStepContentState extends ConsumerState<LoadingStepContent> {
               _buildStockMini(context, atStoreLabel, atStoreQty, accentColor),
               if (inTransitQty > 0)
                 _buildStockMini(context, 'Transit', inTransitQty, Colors.orange),
-              if (nominal != null && nominal > 0)
-                _buildStockMini(context, 'Obj.', nominal, theme.colorScheme.outline, isItalic: true),
             ],
           ),
         ),

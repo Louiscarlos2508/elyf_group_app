@@ -114,12 +114,16 @@ class EnterpriseListItem extends ConsumerWidget {
                             color: enterprise.type.module.color,
                           ),
                           const SizedBox(width: 4),
-                          Text(
-                            enterprise.type.label,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: enterprise.type.module.color,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.2,
+                          Flexible(
+                            child: Text(
+                              enterprise.type.label,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: enterprise.type.module.color,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.2,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
                             ),
                           ),
                         ],

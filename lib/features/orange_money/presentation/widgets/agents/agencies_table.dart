@@ -1,25 +1,25 @@
 import 'package:flutter/material.dart';
 
-import '../../../domain/entities/agent.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import 'agents_table_cell.dart';
-import 'agents_table_row.dart';
+import 'agencies_table_row.dart';
 
-/// Tableau des agents.
-class AgentsTable extends StatelessWidget {
-  const AgentsTable({
+/// Tableau des agences.
+class AgenciesTable extends StatelessWidget {
+  const AgenciesTable({
     super.key,
-    required this.agents,
+    required this.agencies,
     required this.onView,
     required this.onRefresh,
     required this.onEdit,
     required this.onDelete,
   });
 
-  final List<Agent> agents;
-  final void Function(Agent) onView;
-  final void Function(Agent) onRefresh;
-  final void Function(Agent) onEdit;
-  final void Function(Agent) onDelete;
+  final List<Enterprise> agencies;
+  final void Function(Enterprise) onView;
+  final void Function(Enterprise) onRefresh;
+  final void Function(Enterprise) onEdit;
+  final void Function(Enterprise) onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -53,18 +53,17 @@ class AgentsTable extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    AgentsTableCell.buildHeader('Agent', 171.673),
+                    AgentsTableCell.buildHeader('Agence', 171.673),
                     AgentsTableCell.buildHeader('Téléphone', 122.274),
-                    AgentsTableCell.buildHeader('N° SIM', 135.989),
-                    AgentsTableCell.buildHeader('Opérateur', 84.741),
+                    AgentsTableCell.buildHeader('Type', 100.0),
                     AgentsTableCell.buildHeader(
-                      'Liquidité',
-                      100.884,
+                      'Solde Cash',
+                      110.0,
                       alignRight: false,
                     ),
                     AgentsTableCell.buildHeader(
-                      '%Commission',
-                      110.178,
+                      'Dette OM',
+                      110.0,
                       alignRight: true,
                     ),
                     AgentsTableCell.buildHeader('Statut', 62.246),
@@ -73,26 +72,26 @@ class AgentsTable extends StatelessWidget {
                 ),
               ),
               // Table body
-              if (agents.isEmpty)
+              if (agencies.isEmpty)
                 Container(
                   width: 973, // Total width of all columns
                   height: 128,
                   alignment: Alignment.center,
                   child: Text(
-                    'Aucun agent trouvé',
+                    'Aucune agence trouvée',
                     style: theme.textTheme.bodyLarge?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
                 )
               else
-                ...agents.map((agent) {
-                  return AgentsTableRow(
-                    agent: agent,
-                    onView: () => onView(agent),
-                    onRefresh: () => onRefresh(agent),
-                    onEdit: () => onEdit(agent),
-                    onDelete: () => onDelete(agent),
+                ...agencies.map((agency) {
+                  return AgenciesTableRow(
+                    agency: agency,
+                    onView: () => onView(agency),
+                    onRefresh: () => onRefresh(agency),
+                    onEdit: () => onEdit(agency),
+                    onDelete: () => onDelete(agency),
                   );
                 }),
             ],

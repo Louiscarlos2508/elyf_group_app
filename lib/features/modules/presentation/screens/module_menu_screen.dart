@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:developer' as developer;
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/auth/controllers/auth_controller.dart';
 import '../../../../core/tenant/tenant_provider.dart';
 import '../../../administration/domain/entities/enterprise.dart';
 import '../../../../shared/presentation/widgets/widgets.dart';
@@ -44,7 +45,14 @@ class _ModuleMenuScreenState extends ConsumerState<ModuleMenuScreen> {
               ? [
                   EnterpriseSelectorWidget(style: EnterpriseSelectorStyle.appBar),
                 ]
-              : null,
+              : [
+                  IconButton(
+                    onPressed: () => ref.read(authControllerProvider).signOut(),
+                    icon: const Icon(Icons.logout),
+                    tooltip: 'Se déconnecter',
+                  ),
+                  const SizedBox(width: 8),
+                ],
         ),
         extendBodyBehindAppBar: true, // For glassmorphism
         body: SafeArea(
@@ -819,6 +827,12 @@ class _ModuleMenuScreenState extends ConsumerState<ModuleMenuScreen> {
             ),
             textAlign: TextAlign.center,
           ),
+          const SizedBox(height: 32),
+          FilledButton.icon(
+            onPressed: () => ref.read(authControllerProvider).signOut(),
+            icon: const Icon(Icons.logout),
+            label: const Text('Se déconnecter'),
+          ),
         ],
       ),
     );
@@ -847,6 +861,12 @@ class _ModuleMenuScreenState extends ConsumerState<ModuleMenuScreen> {
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
             ),
+          ),
+          const SizedBox(height: 32),
+          FilledButton.icon(
+            onPressed: () => ref.read(authControllerProvider).signOut(),
+            icon: const Icon(Icons.logout),
+            label: const Text('Se déconnecter et réessayer'),
           ),
         ],
       ),

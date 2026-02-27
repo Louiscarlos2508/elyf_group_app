@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import 'package:elyf_groupe_app/core/permissions/modules/gaz_permissions.dart';
 import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 import 'package:elyf_groupe_app/features/gaz/presentation/widgets/dashboard_stock_by_capacity.dart';
@@ -86,6 +86,9 @@ class _DashboardContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final activeEnterprise = ref.watch(activeEnterpriseProvider).value;
+    final isPOS = activeEnterprise?.type == EnterpriseType.gasPointOfSale;
+
     return CustomScrollView(
       slivers: [
         // Header section with Premium Background
@@ -175,17 +178,18 @@ class _DashboardContent extends ConsumerWidget {
         ),
 
         // Performance par point de vente
-        const SliverPadding(
-          padding: EdgeInsets.fromLTRB(
-            AppSpacing.lg,
-            0,
-            AppSpacing.lg,
-            AppSpacing.xl,
+        if (!isPOS)
+          const SliverPadding(
+            padding: EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              0,
+              AppSpacing.lg,
+              AppSpacing.xl,
+            ),
+            sliver: SliverToBoxAdapter(
+              child: _DashboardPosPerformanceSliver(),
+            ),
           ),
-          sliver: SliverToBoxAdapter(
-            child: _DashboardPosPerformanceSliver(),
-          ),
-        ),
       ],
     );
   }

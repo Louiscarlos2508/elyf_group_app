@@ -93,7 +93,9 @@ class MaintenanceTicket {
 
   factory MaintenanceTicket.fromMap(Map<String, dynamic> map) {
     return MaintenanceTicket(
-      id: map['id'] as String,
+      id: (map['localId'] as String?)?.trim().isNotEmpty == true 
+          ? map['localId'] as String 
+          : (map['id'] as String? ?? ''),
       enterpriseId: map['enterpriseId'] as String,
       propertyId: map['propertyId'] as String,
       tenantId: map['tenantId'] as String?,

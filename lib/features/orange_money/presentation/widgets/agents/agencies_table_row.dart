@@ -1,22 +1,23 @@
 import 'package:flutter/material.dart';
 
-import '../../../domain/entities/agent.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
+import 'package:elyf_groupe_app/features/orange_money/domain/entities/orange_money_enterprise_extensions.dart';
 import 'agents_format_helpers.dart';
 import 'agents_table_cell.dart';
 import 'agents_table_components.dart';
 
-/// Ligne de tableau pour un agent.
-class AgentsTableRow extends StatelessWidget {
-  const AgentsTableRow({
+/// Ligne de tableau pour une agence.
+class AgenciesTableRow extends StatelessWidget {
+  const AgenciesTableRow({
     super.key,
-    required this.agent,
+    required this.agency,
     required this.onView,
     required this.onRefresh,
     required this.onEdit,
     required this.onDelete,
   });
 
-  final Agent agent;
+  final Enterprise agency;
   final VoidCallback onView;
   final VoidCallback onRefresh;
   final VoidCallback onEdit;
@@ -25,6 +26,8 @@ class AgentsTableRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final balance = agency.floatBalance ?? 0;
+    final debt = agency.floatDebt ?? 0;
     
     return Container(
       height: 56, // Standard row height
@@ -38,26 +41,23 @@ class AgentsTableRow extends StatelessWidget {
       ),
       child: Row(
         children: [
-          AgentsTableComponents.buildAgentNameCell(agent),
-          AgentsTableCell.buildCell(agent.phoneNumber, 122.274),
-          AgentsTableCell.buildCell(agent.simNumber, 135.989),
+          AgentsTableComponents.buildAgentNameCell(agency),
+          AgentsTableCell.buildCell(agency.phone ?? 'N/A', 122.274),
+          AgentsTableCell.buildCell(agency.type.label, 100.0),
           AgentsTableCell.buildCell(
-            AgentsTableComponents.buildOperatorBadge(agent.operator),
-            84.741,
-          ),
-          AgentsTableCell.buildCell(
-            AgentsFormatHelpers.formatCurrency(agent.liquidity),
-            100.884,
+            AgentsFormatHelpers.formatCurrency(balance),
+            110.0,
             alignRight: false,
-            color: agent.liquidity == 0 ? theme.colorScheme.error : null,
+            color: balance == 0 ? theme.colorScheme.error : null,
           ),
           AgentsTableCell.buildCell(
-            '${agent.commissionRate}%',
-            110.178,
+            AgentsFormatHelpers.formatCurrency(debt),
+            110.0,
             alignRight: true,
+            color: debt > 0 ? theme.colorScheme.error : null,
           ),
           AgentsTableCell.buildCell(
-            AgentsTableComponents.buildStatusChip(agent.status),
+            AgentsTableComponents.buildStatusChip(agency.isActive),
             62.246,
           ),
           AgentsTableComponents.buildActionsCell(

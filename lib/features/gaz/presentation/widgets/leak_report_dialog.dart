@@ -120,20 +120,24 @@ class _LeakReportDialogState extends ConsumerState<LeakReportDialog> {
 
                   // Sélection cylindre
                   cylindersAsync.when(
-                    data: (cylinders) => DropdownButtonFormField<Cylinder>(
-                      decoration: const InputDecoration(
-                        labelText: 'Bouteille concernée',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.inventory_2_outlined),
-                      ),
-                      initialValue: _selectedCylinder,
-                      items: cylinders.map((c) => DropdownMenuItem(
-                        value: c,
-                        child: Text('${c.weight} kg'),
-                      )).toList(),
-                      onChanged: (val) => setState(() => _selectedCylinder = val),
-                      validator: (val) => val == null ? 'Requis' : null,
-                    ),
+                    data: (cylinders) {
+                      // Déduplique par id pour éviter l'assertion Flutter "more than 1 item with same value"
+                      final unique = { for (final c in cylinders) c.id: c }.values.toList();
+                      return DropdownButtonFormField<Cylinder>(
+                        decoration: const InputDecoration(
+                          labelText: 'Bouteille concernée',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.inventory_2_outlined),
+                        ),
+                        initialValue: _selectedCylinder,
+                        items: unique.map((c) => DropdownMenuItem(
+                          value: c,
+                          child: Text('${c.weight} kg'),
+                        )).toList(),
+                        onChanged: (val) => setState(() => _selectedCylinder = val),
+                        validator: (val) => val == null ? 'Requis' : null,
+                      );
+                    },
                     loading: () => const LinearProgressIndicator(),
                     error: (e, _) => Text('Erreur: $e'),
                   ),

@@ -95,7 +95,9 @@ class ProductionPayment {
   factory ProductionPayment.fromMap(Map<String, dynamic> map) {
     final personsRaw = map['persons'] as List<dynamic>? ?? [];
     return ProductionPayment(
-      id: map['id'] as String? ?? map['localId'] as String,
+      id: (map['localId'] as String?)?.trim().isNotEmpty == true 
+          ? map['localId'] as String 
+          : (map['id'] as String? ?? ''),
       period: map['period'] as String? ?? '',
       paymentDate: DateTime.parse(map['paymentDate'] as String),
       persons: personsRaw

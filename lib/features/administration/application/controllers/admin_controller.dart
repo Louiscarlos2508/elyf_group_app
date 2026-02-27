@@ -1,5 +1,6 @@
 import '../../../../core/permissions/entities/user_role.dart';
 import '../../../../core/auth/entities/enterprise_module_user.dart';
+import '../../domain/entities/enterprise.dart';
 import '../../domain/repositories/admin_repository.dart';
 import '../../domain/repositories/user_repository.dart';
 import '../../domain/repositories/enterprise_repository.dart';
@@ -153,6 +154,15 @@ class AdminController {
     isActive: isActive,
     currentUserId: currentUserId,
   );
+
+  // ============================================================================
+  // Délégation aux méthodes de Enterprise
+  // ============================================================================
+
+  /// Récupère une entreprise par son ID.
+  Future<Enterprise?> getEnterpriseById(String enterpriseId) async {
+    return _enterpriseRepository?.getEnterpriseById(enterpriseId);
+  }
 
   /// Met à jour le rôle d'un utilisateur dans une entreprise et un module.
   Future<void> updateUserRole(

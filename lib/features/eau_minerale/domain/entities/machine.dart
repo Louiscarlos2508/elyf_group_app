@@ -62,7 +62,9 @@ class Machine {
 
   factory Machine.fromMap(Map<String, dynamic> map, String defaultEnterpriseId) {
     return Machine(
-      id: map['id'] as String? ?? map['localId'] as String,
+      id: (map['localId'] as String?)?.trim().isNotEmpty == true 
+          ? map['localId'] as String 
+          : (map['id'] as String? ?? ''),
       enterpriseId: map['enterpriseId'] as String? ?? defaultEnterpriseId,
       name: map['name'] as String? ?? map['nom'] as String? ?? '',
       reference: map['reference'] as String? ?? '',

@@ -105,6 +105,13 @@ class OrangeMoneyPermissions {
     description: 'Permet de créer un point de contrôle de liquidité',
   );
 
+  static const manageInternalSupply = ActionPermission(
+    id: 'manage_internal_supply',
+    name: 'Gérer l\'approvisionnement interne',
+    module: 'orange_money',
+    description: 'Permet de recharger ou retirer de la liquidité aux agents/agences',
+  );
+
   // Reports
   static const viewReports = ActionPermission(
     id: 'view_reports',
@@ -180,9 +187,7 @@ class OrangeMoneyPermissions {
     viewProfile,
     editProfile,
     changePassword,
-    viewProfile,
-    editProfile,
-    changePassword,
+    manageInternalSupply,
     
     // Hierarchy & Validation
     viewNetworkDashboard,

@@ -10,8 +10,8 @@ import '../expenses/expense_detail_dialog.dart';
 import '../expenses/expenses_category_tab.dart';
 import '../expenses/expenses_history_tab.dart';
 import '../expenses/expenses_kpi_section.dart';
-import '../expenses/expenses_tab_bar.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/services/gaz_financial_calculation_service.dart';
+import 'tour_expenses_tab.dart';
 
 class ExpensesTab extends ConsumerStatefulWidget {
   const ExpensesTab({super.key});
@@ -27,7 +27,7 @@ class _ExpensesTabState extends ConsumerState<ExpensesTab>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     _tabController.addListener(_onTabChanged);
   }
 
@@ -74,9 +74,14 @@ class _ExpensesTabState extends ConsumerState<ExpensesTab>
 
     return expensesAsync.when(
       data: (expenses) {
-        final todayTotal = GazFinancialCalculationService.calculateTodayExpensesTotal(expenses);
-        final todayExpenses = GazFinancialCalculationService.calculateTodayExpenses(expenses);
-        final totalExpenses = GazFinancialCalculationService.calculateTotalExpenses(expenses);
+        final todayTotal =
+            GazFinancialCalculationService.calculateTodayExpensesTotal(
+              expenses,
+            );
+        final todayExpenses =
+            GazFinancialCalculationService.calculateTodayExpenses(expenses);
+        final totalExpenses =
+            GazFinancialCalculationService.calculateTotalExpenses(expenses);
 
         return Column(
           children: [
@@ -87,13 +92,20 @@ class _ExpensesTabState extends ConsumerState<ExpensesTab>
               totalExpenses: totalExpenses,
               totalCount: expenses.length,
             ),
-            
-            // Nested Tabs for history/category
+
+            // Nested Tabs: Historique | Tournées | Par catégorie
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 0),
-              child: ExpensesTabBar(tabController: _tabController),
+              child: TabBar(
+                controller: _tabController,
+                tabs: const [
+                  Tab(text: 'Dépenses'),
+                  Tab(text: 'Tournées'),
+                  Tab(text: 'Par catégorie'),
+                ],
+              ),
             ),
-            
+
             Expanded(
               child: TabBarView(
                 controller: _tabController,
@@ -102,6 +114,7 @@ class _ExpensesTabState extends ConsumerState<ExpensesTab>
                     expenses: expenses,
                     onExpenseTap: _showExpenseDetail,
                   ),
+                  const TourExpensesTab(),
                   ExpensesCategoryTab(expenses: expenses),
                 ],
               ),

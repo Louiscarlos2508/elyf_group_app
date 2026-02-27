@@ -112,6 +112,7 @@ enum EnterpriseType {
     waterPointOfSale,
     shop,
     shopBranch,
+    pointOfSale,
   ].contains(this);
 
   /// Obtenir une icône représentative du type d'entité
@@ -289,7 +290,9 @@ class Enterprise extends Equatable {
   /// Crée depuis un Map (Firestore)
   factory Enterprise.fromMap(Map<String, dynamic> map) {
     return Enterprise(
-      id: map['id'] as String,
+      id: (map['localId'] as String?)?.trim().isNotEmpty == true 
+          ? map['localId'] as String 
+          : (map['id'] as String? ?? ''),
       name: map['name'] as String,
       type: EnterpriseType.fromId(map['type'] as String),
       parentEnterpriseId: map['parentEnterpriseId'] as String?,

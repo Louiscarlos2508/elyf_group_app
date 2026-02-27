@@ -1,3 +1,5 @@
+import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
+
 /// Représente une dépense liée à l'activité gaz.
 class GazExpense {
   const GazExpense({
@@ -8,6 +10,7 @@ class GazExpense {
     required this.date,
     required this.enterpriseId,
     required this.isFixed,
+    this.paymentMethod, // null = pas de déduction trésorerie auto
     this.notes,
     this.receiptPath,
     this.createdAt,
@@ -23,6 +26,7 @@ class GazExpense {
   final DateTime date;
   final String enterpriseId;
   final bool isFixed; // Charge fixe vs variable
+  final PaymentMethod? paymentMethod; // Mode de paiement (pour déduction auto de la trésorerie)
   final String? notes;
   final String? receiptPath;
   final DateTime? createdAt;
@@ -40,6 +44,7 @@ class GazExpense {
     DateTime? date,
     String? enterpriseId,
     bool? isFixed,
+    Object? paymentMethod = _sentinel,
     String? notes,
     String? receiptPath,
     DateTime? createdAt,
@@ -55,6 +60,7 @@ class GazExpense {
       date: date ?? this.date,
       enterpriseId: enterpriseId ?? this.enterpriseId,
       isFixed: isFixed ?? this.isFixed,
+      paymentMethod: paymentMethod == _sentinel ? this.paymentMethod : paymentMethod as PaymentMethod?,
       notes: notes ?? this.notes,
       receiptPath: receiptPath ?? this.receiptPath,
       createdAt: createdAt ?? this.createdAt,
@@ -64,9 +70,17 @@ class GazExpense {
     );
   }
 
+  static const _sentinel = Object();
+
   factory GazExpense.fromMap(Map<String, dynamic> map, String defaultEnterpriseId) {
+    // Prioritize embedded localId to maintain offline relations on new devices
+    final validLocalId = map['localId'] as String?;
+    final objectId = (validLocalId != null && validLocalId.trim().isNotEmpty)
+        ? validLocalId
+        : (map['id'] as String? ?? '');
+
     return GazExpense(
-      id: map['id'] as String? ?? map['localId'] as String,
+      id: objectId,
       category: ExpenseCategory.values.firstWhere(
         (e) => e.name == map['category'],
         orElse: () => ExpenseCategory.other,
@@ -76,6 +90,9 @@ class GazExpense {
       date: DateTime.parse(map['date'] as String),
       enterpriseId: map['enterpriseId'] as String? ?? defaultEnterpriseId,
       isFixed: map['isFixed'] as bool? ?? false,
+      paymentMethod: map['paymentMethod'] != null
+          ? PaymentMethod.values.byName(map['paymentMethod'] as String)
+          : null,
       notes: map['notes'] as String?,
       receiptPath: map['receiptPath'] as String?,
       createdAt: map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : null,
@@ -94,6 +111,7 @@ class GazExpense {
       'date': date.toIso8601String(),
       'enterpriseId': enterpriseId,
       'isFixed': isFixed,
+      'paymentMethod': paymentMethod?.name,
       'notes': notes,
       'receiptPath': receiptPath,
       'createdAt': createdAt?.toIso8601String(),

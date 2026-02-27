@@ -128,7 +128,9 @@ class Payment {
 
   factory Payment.fromMap(Map<String, dynamic> map) {
     return Payment(
-      id: map['id'] as String,
+      id: (map['localId'] as String?)?.trim().isNotEmpty == true 
+          ? map['localId'] as String 
+          : (map['id'] as String? ?? ''),
       enterpriseId: map['enterpriseId'] as String,
       contractId: map['contractId'] as String,
       amount: (map['amount'] as num).toInt(),

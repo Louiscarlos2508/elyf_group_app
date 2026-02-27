@@ -6,34 +6,39 @@ class GazReportTabsV2 extends StatelessWidget {
     super.key,
     required this.selectedTab,
     required this.onTabChanged,
+    this.showPosTab = false,
   });
 
   final int selectedTab;
   final void Function(int) onTabChanged;
+  final bool showPosTab;
 
-  static const _tabs = [
-    _TabInfo('Activité', Icons.local_fire_department_outlined),
-    _TabInfo('Trésorerie', Icons.account_balance_wallet_outlined),
-    _TabInfo('Stocks', Icons.inventory_2_outlined),
-  ];
+  List<_TabInfo> get _tabs => [
+        const _TabInfo('Activité', Icons.local_fire_department_outlined),
+        const _TabInfo('Trésorerie', Icons.account_balance_wallet_outlined),
+        const _TabInfo('Stocks', Icons.inventory_2_outlined),
+        if (showPosTab)
+          const _TabInfo('Réseau POS', Icons.store_mall_directory_outlined),
+      ];
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final tabs = _tabs;
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final isWide = constraints.maxWidth > 700;
 
         if (isWide) {
-          return _buildWideLayout(theme);
+          return _buildWideLayout(theme, tabs);
         }
-        return _buildCompactLayout(theme);
+        return _buildCompactLayout(theme, tabs);
       },
     );
   }
 
-  Widget _buildWideLayout(ThemeData theme) {
+  Widget _buildWideLayout(ThemeData theme, List<_TabInfo> tabs) {
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHighest,
@@ -42,7 +47,7 @@ class GazReportTabsV2 extends StatelessWidget {
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
-          children: _tabs.asMap().entries.map((entry) {
+          children: tabs.asMap().entries.map((entry) {
             return _buildTab(theme, entry.key, entry.value, false);
           }).toList(),
         ),
@@ -50,7 +55,7 @@ class GazReportTabsV2 extends StatelessWidget {
     );
   }
 
-  Widget _buildCompactLayout(ThemeData theme) {
+  Widget _buildCompactLayout(ThemeData theme, List<_TabInfo> tabs) {
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHighest,
@@ -60,7 +65,7 @@ class GazReportTabsV2 extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 4),
         child: Row(
-          children: _tabs.asMap().entries.map((entry) {
+          children: tabs.asMap().entries.map((entry) {
             return _buildTab(theme, entry.key, entry.value, true);
           }).toList(),
         ),

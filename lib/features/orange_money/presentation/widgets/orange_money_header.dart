@@ -25,10 +25,21 @@ class OrangeMoneyHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final viewInsets = MediaQuery.of(context).viewInsets;
+    final isKeyboardOpen = viewInsets.bottom > 0;
 
-    final content = Container(
-      margin: const EdgeInsets.fromLTRB(14, 14, 14, 6),
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 22),
+    final content = AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      margin: EdgeInsets.fromLTRB(
+        14, 
+        isKeyboardOpen ? 4 : 14, 
+        14, 
+        isKeyboardOpen ? 4 : 6
+      ),
+      padding: EdgeInsets.symmetric(
+        horizontal: 24, 
+        vertical: isKeyboardOpen ? 12 : 22
+      ),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -38,12 +49,12 @@ class OrangeMoneyHeader extends StatelessWidget {
             AppColors.orangeMoneyGradient[1],
           ],
         ),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(isKeyboardOpen ? 16 : 24),
         boxShadow: [
           BoxShadow(
             color: AppColors.orangeMoneyGradient[0].withValues(alpha: 0.2),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
+            blurRadius: isKeyboardOpen ? 10 : 16,
+            offset: Offset(0, isKeyboardOpen ? 4 : 8),
           ),
         ],
       ),
@@ -81,10 +92,10 @@ class OrangeMoneyHeader extends StatelessWidget {
                 Row(mainAxisSize: MainAxisSize.min, children: additionalActions!),
             ],
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: isKeyboardOpen ? 12 : 20),
           Text(
             title,
-            style: theme.textTheme.headlineSmall?.copyWith(
+            style: (isKeyboardOpen ? theme.textTheme.titleMedium : theme.textTheme.headlineSmall)?.copyWith(
               color: Colors.white,
               fontWeight: FontWeight.w900,
               letterSpacing: -0.5,
@@ -92,17 +103,19 @@ class OrangeMoneyHeader extends StatelessWidget {
               fontFamily: 'Outfit',
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            subtitle,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: Colors.white.withValues(alpha: 0.9),
-              fontWeight: FontWeight.w500,
-              height: 1.4,
+          if (!isKeyboardOpen) ...[
+            const SizedBox(height: 8),
+            Text(
+              subtitle,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: Colors.white.withValues(alpha: 0.9),
+                fontWeight: FontWeight.w500,
+                height: 1.4,
+              ),
             ),
-          ),
+          ],
           if (bottom != null) ...[
-            const SizedBox(height: 20),
+            SizedBox(height: isKeyboardOpen ? 12 : 20),
             bottom!,
           ],
         ],

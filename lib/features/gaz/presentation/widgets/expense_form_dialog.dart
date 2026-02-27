@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../../../core/tenant/tenant_provider.dart';
+import '../../../../core/auth/providers.dart';
 import '../../../../../../core/errors/app_exceptions.dart';
 import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
+import 'package:elyf_groupe_app/shared/domain/entities/treasury_operation.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/expense.dart';
 import 'expense_form/expense_amount_input.dart';
@@ -37,6 +41,7 @@ class _GazExpenseFormDialogState extends ConsumerState<GazExpenseFormDialog>
   bool _isFixed = false;
   String? _enterpriseId;
   String? _receiptPath;
+  PaymentMethod? _selectedPaymentMethod; // null = pas de déduction auto
 
   bool get isEditing => widget.expense != null;
 
@@ -56,6 +61,7 @@ class _GazExpenseFormDialogState extends ConsumerState<GazExpenseFormDialog>
       _isFixed = widget.expense!.isFixed;
       _enterpriseId = widget.expense!.enterpriseId;
       _receiptPath = widget.expense!.receiptPath;
+      _selectedPaymentMethod = widget.expense!.paymentMethod;
     }
   }
 
@@ -96,6 +102,7 @@ class _GazExpenseFormDialogState extends ConsumerState<GazExpenseFormDialog>
           date: _selectedDate,
           enterpriseId: _enterpriseId ?? enterpriseId,
           isFixed: _isFixed,
+          paymentMethod: _selectedPaymentMethod,
           notes: _notesController.text.trim().isEmpty
               ? null
               : _notesController.text.trim(),
@@ -105,6 +112,33 @@ class _GazExpenseFormDialogState extends ConsumerState<GazExpenseFormDialog>
         final controller = ref.read(expenseControllerProvider);
         if (widget.expense == null) {
           await controller.addExpense(expense);
+
+          // Auto-déduction trésorerie si mode de paiement choisi
+          if (_selectedPaymentMethod != null) {
+            try {
+              final treasuryRepo = ref.read(gazTreasuryRepositoryProvider);
+              final userId = ref.read(authControllerProvider).currentUser?.id ?? 'system';
+              final op = TreasuryOperation(
+                id: const Uuid().v4(),
+                enterpriseId: _enterpriseId ?? enterpriseId,
+                userId: userId,
+                amount: amount.round(),
+                type: TreasuryOperationType.removal,
+                fromAccount: _selectedPaymentMethod == PaymentMethod.mobileMoney
+                    ? PaymentMethod.mobileMoney
+                    : PaymentMethod.cash,
+                date: _selectedDate,
+                reason: expense.description,
+                referenceEntityId: expense.id,
+                referenceEntityType: 'gaz_expense',
+              );
+              await treasuryRepo.saveOperation(op);
+              ref.invalidate(gazTreasuryBalanceProvider);
+              ref.invalidate(gazTreasuryOperationsStreamProvider);
+            } catch (e) {
+              // Non-bloquant : la dépense est enregistrée même si la déduction échoue
+            }
+          }
         } else {
           await controller.updateExpense(expense);
         }
@@ -182,6 +216,12 @@ class _GazExpenseFormDialogState extends ConsumerState<GazExpenseFormDialog>
                   ),
                   const SizedBox(height: 16),
                   ExpenseNotesInput(controller: _notesController),
+                  const SizedBox(height: 16),
+                  // Sélecteur de méthode de paiement pour déduction auto de trésorerie
+                  _ExpensePaymentSelector(
+                    selected: _selectedPaymentMethod,
+                    onChanged: (pm) => setState(() => _selectedPaymentMethod = pm),
+                  ),
                   const SizedBox(height: 24),
                   FormDialogActions(
                     onCancel: () => Navigator.of(context).pop(),
@@ -196,6 +236,80 @@ class _GazExpenseFormDialogState extends ConsumerState<GazExpenseFormDialog>
           ),
         ),
       ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Sélecteur méthode de paiement (dépenses)
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _ExpensePaymentSelector extends StatelessWidget {
+  const _ExpensePaymentSelector({
+    required this.selected,
+    required this.onChanged,
+  });
+
+  final PaymentMethod? selected;
+  final void Function(PaymentMethod?) onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.account_balance_outlined, size: 16, color: theme.colorScheme.primary),
+            const SizedBox(width: 8),
+            Text(
+              'Déduire de la trésorerie',
+              style: theme.textTheme.labelLarge,
+            ),
+            const SizedBox(width: 4),
+            Tooltip(
+              message: 'Si vous sélectionnez une méthode, un retrait sera automatiquement créé dans la trésorerie.',
+              child: Icon(Icons.info_outline, size: 14, color: theme.colorScheme.outline),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          children: [
+            FilterChip(
+              label: const Text('Aucun'),
+              selected: selected == null,
+              onSelected: (_) => onChanged(null),
+              avatar: const Icon(Icons.block, size: 14),
+            ),
+            FilterChip(
+              label: const Text('Espèces'),
+              selected: selected == PaymentMethod.cash,
+              onSelected: (_) => onChanged(PaymentMethod.cash),
+              avatar: const Icon(Icons.payments_outlined, size: 14),
+            ),
+            FilterChip(
+              label: const Text('Orange Money'),
+              selected: selected == PaymentMethod.mobileMoney,
+              onSelected: (_) => onChanged(PaymentMethod.mobileMoney),
+              avatar: const Icon(Icons.account_balance_wallet_outlined, size: 14),
+            ),
+          ],
+        ),
+        if (selected != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Text(
+              'Un retrait sera enregistré dans la caisse ${selected == PaymentMethod.mobileMoney ? "Orange Money" : "Espèces"}.',
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.primary,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

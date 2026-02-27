@@ -46,9 +46,11 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
   String? _selectedWholesalerId;
   String? _selectedWholesalerName;
   GasSale? _completedSale;
-  bool _emptyReturned = true; // Par défaut, on suppose qu'un client rend une bouteille (échange standard)
   String _selectedTier = 'default';
-  final PaymentMethod _selectedPaymentMethod = PaymentMethod.cash;
+  PaymentMethod _selectedPaymentMethod = PaymentMethod.cash;
+  bool _isMixedPayment = false;
+  final _cashAmountController = TextEditingController();
+  final _mobileAmountController = TextEditingController();
   bool _isInitialized = false;
   bool _showAdvancedOptions = false;
 
@@ -72,6 +74,8 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
     _customerNameController.dispose();
     _customerPhoneController.dispose();
     _notesController.dispose();
+    _cashAmountController.dispose();
+    _mobileAmountController.dispose();
     super.dispose();
   }
 
@@ -79,24 +83,11 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
 
   double get _totalAmount {
     final quantity = int.tryParse(_quantityController.text) ?? 0;
-    
-    // Calculer la part de consigne si c'est une nouvelle bouteille
-    double depositPart = 0;
-    if (!_emptyReturned && _selectedCylinder != null) {
-      final enterpriseId = ref.read(activeEnterpriseProvider).value?.id;
-      if (enterpriseId != null) {
-        final settings = ref.read(gazSettingsProvider((enterpriseId: enterpriseId, moduleId: 'gaz'))).value;
-        if (settings is GazSettings) {
-          depositPart = settings.getDepositRate(_selectedCylinder!.weight) * quantity;
-        }
-      }
-    }
-
     return GazFinancialCalculationService.calculateTotalAmount(
       cylinder: _selectedCylinder,
       unitPrice: _unitPrice,
       quantity: quantity,
-    ) + depositPart;
+    );
   }
 
   Future<void> _updateUnitPrice(String? enterpriseId) async {
@@ -166,9 +157,11 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
       wholesalerName: widget.saleType == SaleType.wholesale
           ? _selectedWholesalerName
           : null,
-      emptyReturnedQuantity: _emptyReturned ? (int.tryParse(_quantityController.text) ?? 0) : 0,
-      dealType: _emptyReturned ? GasSaleDealType.exchange : GasSaleDealType.newCylinder,
-      paymentMethod: _selectedPaymentMethod,
+      emptyReturnedQuantity: 0,
+      dealType: GasSaleDealType.exchange,
+      paymentMethod: _isMixedPayment ? PaymentMethod.both : _selectedPaymentMethod,
+      cashAmount: _isMixedPayment ? double.tryParse(_cashAmountController.text) : null,
+      mobileMoneyAmount: _isMixedPayment ? double.tryParse(_mobileAmountController.text) : null,
       onLoadingChanged: () => setState(() => _isLoading = true),
     );
 
@@ -326,15 +319,23 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
                       availableStock: _availableStock,
                       unitPrice: _unitPrice,
                       onQuantityChanged: () => setState(() {}),
-                      emptyReturned: _emptyReturned,
-                      onEmptyReturnedChanged: (value) =>
-                          setState(() => _emptyReturned = value),
                     ),
-                    if (!_emptyReturned && _selectedCylinder != null) ...[
-                      const SizedBox(height: 8),
-                      _DepositInfoRow(
-                        weight: _selectedCylinder!.weight,
-                        quantity: int.tryParse(_quantityController.text) ?? 0,
+                    const SizedBox(height: 16),
+                    // Sélecteur méthode de paiement
+                    _PaymentMethodSelector(
+                      selected: _selectedPaymentMethod,
+                      isMixed: _isMixedPayment,
+                      onChanged: (method, isMixed) => setState(() {
+                        _selectedPaymentMethod = method;
+                        _isMixedPayment = isMixed;
+                      }),
+                    ),
+                    if (_isMixedPayment) ...[
+                      const SizedBox(height: 12),
+                      _MixedPaymentFields(
+                        cashController: _cashAmountController,
+                        mobileController: _mobileAmountController,
+                        totalAmount: _totalAmount,
                       ),
                     ],
                     const SizedBox(height: 16),
@@ -596,52 +597,137 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
   }
 }
 
-class _DepositInfoRow extends ConsumerWidget {
-  const _DepositInfoRow({required this.weight, required this.quantity});
-  final int weight;
-  final int quantity;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Sélecteur méthode de paiement
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _PaymentMethodSelector extends StatelessWidget {
+  const _PaymentMethodSelector({
+    required this.selected,
+    required this.isMixed,
+    required this.onChanged,
+  });
+
+  final PaymentMethod selected;
+  final bool isMixed;
+  final void Function(PaymentMethod method, bool isMixed) onChanged;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id;
-    if (enterpriseId == null) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Mode de paiement', style: theme.textTheme.labelLarge),
+        const SizedBox(height: 8),
+        SegmentedButton<String>(
+          segments: const [
+            ButtonSegment(
+              value: 'cash',
+              label: Text('Espèces'),
+              icon: Icon(Icons.payments_outlined, size: 16),
+            ),
+            ButtonSegment(
+              value: 'mobileMoney',
+              label: Text('Orange Money'),
+              icon: Icon(Icons.account_balance_wallet_outlined, size: 16),
+            ),
+            ButtonSegment(
+              value: 'mixed',
+              label: Text('Mixte'),
+              icon: Icon(Icons.shuffle, size: 16),
+            ),
+          ],
+          selected: {isMixed ? 'mixed' : selected.name},
+          onSelectionChanged: (s) {
+            final val = s.first;
+            if (val == 'mixed') {
+              onChanged(PaymentMethod.both, true);
+            } else {
+              onChanged(PaymentMethod.values.byName(val), false);
+            }
+          },
+        ),
+      ],
+    );
+  }
+}
 
-    final settingsAsync = ref.watch(gazSettingsProvider((enterpriseId: enterpriseId, moduleId: 'gaz')));
+// ─────────────────────────────────────────────────────────────────────────────
+// Champs de paiement mixte
+// ─────────────────────────────────────────────────────────────────────────────
 
-    return settingsAsync.when(
-      data: (settings) {
-        final rate = settings?.getDepositRate(weight) ?? 0.0;
-        if (rate <= 0) return const SizedBox.shrink();
-        
-        final totalDeposit = rate * quantity;
-        
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.secondaryContainer,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.2)),
-          ),
-          child: Row(
+class _MixedPaymentFields extends StatelessWidget {
+  const _MixedPaymentFields({
+    required this.cashController,
+    required this.mobileController,
+    required this.totalAmount,
+  });
+
+  final TextEditingController cashController;
+  final TextEditingController mobileController;
+  final double totalAmount;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
-              Icon(Icons.info_outline, size: 16, color: theme.colorScheme.onSecondaryContainer),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Inclut ${totalDeposit.toStringAsFixed(0)} FCFA de consigne (${rate.toStringAsFixed(0)} x $quantity)',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: theme.colorScheme.onSecondaryContainer,
-                    fontWeight: FontWeight.w500,
-                  ),
+              Icon(Icons.info_outline, size: 14, color: theme.colorScheme.primary),
+              const SizedBox(width: 6),
+              Text(
+                'Total: ${totalAmount.toStringAsFixed(0)} CFA',
+                style: theme.textTheme.labelMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.primary,
                 ),
               ),
             ],
           ),
-        );
-      },
-      loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: cashController,
+                  decoration: InputDecoration(
+                    labelText: 'Part Espèces (CFA)',
+                    prefixIcon: const Icon(Icons.payments_outlined, size: 18),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  ),
+                  keyboardType: TextInputType.number,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: TextFormField(
+                  controller: mobileController,
+                  decoration: InputDecoration(
+                    labelText: 'Part Orange Money (CFA)',
+                    prefixIcon: const Icon(Icons.account_balance_wallet_outlined, size: 18),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  ),
+                  keyboardType: TextInputType.number,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
+

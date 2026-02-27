@@ -4,17 +4,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
 import 'package:elyf_groupe_app/features/orange_money/application/providers.dart';
-import '../../../domain/entities/agent.dart';
-import '../../widgets/agents/agents_dialogs.dart';
-import '../../widgets/agents/agents_filters.dart';
-import '../../widgets/agents/agents_kpi_cards.dart';
-import '../../widgets/agents/agents_list_header.dart';
-import '../../widgets/agents/agents_low_liquidity_banner.dart';
-import '../../widgets/agents/agents_sort_button.dart';
-import '../../widgets/agents/agents_table.dart';
-import '../../widgets/orange_money_header.dart';
+import 'package:elyf_groupe_app/features/orange_money/domain/entities/agent.dart' show Agent, AgentStatus;
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
+import 'package:elyf_groupe_app/features/orange_money/presentation/widgets/agents/agents_dialogs.dart';
+import 'package:elyf_groupe_app/features/orange_money/presentation/widgets/agents/agents_filters.dart';
+import 'package:elyf_groupe_app/features/orange_money/presentation/widgets/agents/agents_kpi_cards.dart';
+import 'package:elyf_groupe_app/features/orange_money/presentation/widgets/agents/agents_list_header.dart';
+import 'package:elyf_groupe_app/features/orange_money/presentation/widgets/agents/agents_low_liquidity_banner.dart';
+import 'package:elyf_groupe_app/features/orange_money/presentation/widgets/agents/agents_sort_button.dart';
+import 'package:elyf_groupe_app/features/orange_money/presentation/widgets/agents/agent_account_table.dart';
+import 'package:elyf_groupe_app/features/orange_money/presentation/widgets/agents/agencies_table.dart';
+import 'package:elyf_groupe_app/features/orange_money/presentation/widgets/orange_money_header.dart';
+import 'package:elyf_groupe_app/core/permissions/modules/orange_money_permissions.dart';
 
-/// Screen for managing affiliated agents.
+/// Screen for managing affiliated agents (Mobile Money Enterprises).
 class AgentsScreen extends ConsumerStatefulWidget {
   const AgentsScreen({super.key, this.enterpriseId});
 
@@ -24,19 +27,33 @@ class AgentsScreen extends ConsumerStatefulWidget {
   ConsumerState<AgentsScreen> createState() => _AgentsScreenState();
 }
 
-class _AgentsScreenState extends ConsumerState<AgentsScreen> {
+class _AgentsScreenState extends ConsumerState<AgentsScreen> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
   String _searchQuery = '';
-  AgentStatus? _statusFilter;
   String? _sortBy;
+  AgentStatus? _statusFilter;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(() {
+      if (!_tabController.indexIsChanging) {
+        setState(() {});
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final agentsKey =
-        '${widget.enterpriseId ?? ''}|${_statusFilter?.name ?? ''}|$_searchQuery';
     final statsKey = widget.enterpriseId ?? '';
-
-    final agentsAsync = ref.watch(agentsProvider(agentsKey));
     final statsAsync = ref.watch(agentsDailyStatisticsProvider(statsKey));
 
     return Container(
@@ -44,45 +61,23 @@ class _AgentsScreenState extends ConsumerState<AgentsScreen> {
       child: CustomScrollView(
         slivers: [
           OrangeMoneyHeader(
-            title: 'Points de Vente',
-            subtitle:
-                'Gérez votre réseau de distribution, surveillez la liquidité et supervisez les recharges.',
-            badgeText: 'AGENTS AFFILIÉS',
-            badgeIcon: Icons.people_alt_rounded,
-            additionalActions: [
-              OutlinedButton.icon(
-                onPressed: () {
-                  NotificationService.showInfo(
-                    context,
-                    'Historique global - Fonctionnalité à venir',
-                  );
-                },
-                icon: const Icon(Icons.history_rounded,
-                    size: 16, color: Colors.white),
-                label: const Text(
-                  'Nouveau PDV',
-                  style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold),
-                ),
-                style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: Colors.white.withValues(alpha: 0.5)),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20)),
-                ),
-              ),
-            ],
+            title: 'Réseau d\'Agents',
+            subtitle: 'Gérez vos agents (SIM/Employés) et vos agences physiques.',
+            badgeText: 'GESTION RÉSEAU',
+            badgeIcon: Icons.account_tree_rounded,
+            asSliver: true,
           ),
           SliverPadding(
-            padding: EdgeInsets.all(AppSpacing.lg),
+            padding: const EdgeInsets.all(AppSpacing.lg),
             sliver: SliverToBoxAdapter(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildKpiSection(agentsAsync, statsAsync, ref),
+                  _buildStatisticsSection(statsAsync),
                   const SizedBox(height: AppSpacing.lg),
-                  _buildAgentsListSection(agentsAsync, ref),
+                  _buildTabsSection(),
+                  const SizedBox(height: AppSpacing.md),
+                  _buildListSection(ref),
                 ],
               ),
             ),
@@ -92,208 +87,183 @@ class _AgentsScreenState extends ConsumerState<AgentsScreen> {
     );
   }
 
-  Widget _buildKpiSection(
-    AsyncValue<List<Agent>> agentsAsync,
-    AsyncValue statsAsync,
-    WidgetRef ref,
-  ) {
-    // Check if any is loading
-    if (agentsAsync.isLoading || statsAsync.isLoading) {
-      return const LoadingIndicator(height: 140);
-    }
-
-    // Check if stats has error, but agents is loaded
-    if (statsAsync.hasError && agentsAsync.hasValue) {
-      // Show KPIs even if stats failed
-      final agents = agentsAsync.value!;
-      final lowLiquidityAgents = agents
-          .where((a) => a.isLowLiquidity(50000))
-          .toList();
-
-      return lowLiquidityAgents.isNotEmpty
-          ? Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                AgentsLowLiquidityBanner(agents: lowLiquidityAgents),
-                const SizedBox(height: AppSpacing.lg),
-                ErrorDisplayWidget(
-                  error: statsAsync.error!,
-                  title: 'Erreur de chargement des statistiques',
-                  onRetry: () => ref.refresh(
-                    agentsDailyStatisticsProvider(
-                      widget.enterpriseId ?? '',
-                    ),
-                  ),
-                ),
-              ],
-            )
-          : ErrorDisplayWidget(
-              error: statsAsync.error!,
-              title: 'Erreur de chargement des statistiques',
-              onRetry: () => ref.refresh(
-                agentsDailyStatisticsProvider(
-                  widget.enterpriseId ?? '',
-                ),
-              ),
-            );
-    }
-
-    // Check if agents has error
-    if (agentsAsync.hasError) {
-      return ErrorDisplayWidget(
-        error: agentsAsync.error!,
-        title: 'Erreur de chargement des agents',
-        onRetry: () => ref.refresh(
-          agentsProvider(
-            '${widget.enterpriseId ?? ''}|${_statusFilter?.name ?? ''}|$_searchQuery',
-          ),
-        ),
-      );
-    }
-
-    // All data available
-    final agents = agentsAsync.value!;
-    final stats = statsAsync.value!;
-
-    final lowLiquidityAgents = agents
-        .where((a) => a.isLowLiquidity(50000))
-        .toList();
-
-    return lowLiquidityAgents.isNotEmpty
-        ? Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              AgentsLowLiquidityBanner(agents: lowLiquidityAgents),
-              const SizedBox(height: AppSpacing.lg),
-              AgentsKpiCards(stats: stats),
-            ],
-          )
-        : AgentsKpiCards(stats: stats);
+  Widget _buildStatisticsSection(AsyncValue<Map<String, dynamic>> statsAsync) {
+    return statsAsync.when(
+      data: (stats) => AgentsKpiCards(stats: stats),
+      loading: () => const LoadingIndicator(height: 120),
+      error: (e, s) => ErrorDisplayWidget(error: e),
+    );
   }
 
-  Widget _buildAgentsListSection(
-    AsyncValue<List<Agent>> agentsAsync,
-    WidgetRef ref,
-  ) {
-    return agentsAsync.when(
-      data: (agents) => _buildAgentsList(context, agents),
-      loading: () => const LoadingIndicator(),
-      error: (error, stackTrace) => ErrorDisplayWidget(
-        error: error,
-        title: 'Erreur de chargement des agents',
-        onRetry: () => ref.refresh(
-          agentsProvider(
-            '${widget.enterpriseId ?? ''}|${_statusFilter?.name ?? ''}|$_searchQuery',
+  Widget _buildTabsSection() {
+    final theme = Theme.of(context);
+    return Container(
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: theme.colorScheme.outline.withValues(alpha: 0.2),
+            width: 1,
           ),
         ),
+      ),
+      child: TabBar(
+        controller: _tabController,
+        isScrollable: true,
+        tabAlignment: TabAlignment.start,
+        labelColor: theme.colorScheme.primary,
+        unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
+        indicatorColor: theme.colorScheme.primary,
+        indicatorWeight: 3,
+        dividerColor: Colors.transparent,
+        tabs: const [
+          Tab(
+            child: Row(
+              children: [
+                Icon(Icons.person_outline, size: 18),
+                SizedBox(width: 8),
+                Text('Agents (SIM/Employés)'),
+              ],
+            ),
+          ),
+          Tab(
+            child: Row(
+              children: [
+                Icon(Icons.business_outlined, size: 18),
+                SizedBox(width: 8),
+                Text('Agences (Points de Vente)'),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildAgentsList(BuildContext context, List<Agent> agents) {
-    return ElyfCard(
-      padding: const EdgeInsets.all(24),
-      child: Column(
+  Widget _buildListSection(WidgetRef ref) {
+    final tabIndex = _tabController.index;
+    if (tabIndex == 0) {
+          final agentsAsync = ref.watch(
+            agentAccountsProvider('${widget.enterpriseId ?? ''}||$_searchQuery'),
+          );
+          return _buildAgentsList(agentsAsync, ref);
+        } else {
+          final agenciesAsync = ref.watch(
+            agentAgenciesProvider('${widget.enterpriseId ?? ''}||$_searchQuery'),
+          );
+      return _buildAgenciesList(agenciesAsync, ref);
+    }
+  }
+
+  Widget _buildAgentsList(AsyncValue<List<Agent>> agentsAsync, WidgetRef ref) {
+    return agentsAsync.when(
+      data: (agents) => ElyfCard(
+        padding: const EdgeInsets.all(24),
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             AgentsListHeader(
               agentCount: agents.length,
-              onAddAgent: () => _showAgentDialog(context, null),
+              title: 'Liste des Agents (SIM)',
+              onAddAgent: () => _showAddDialog(),
               onRecharge: () => _showRechargeDialog(context),
             ),
             const SizedBox(height: 16),
-            AgentsFilters(
-              searchQuery: _searchQuery,
-              statusFilter: _statusFilter,
-              sortBy: _sortBy,
-              onSearchChanged: (value) {
-                setState(() {
-                  _searchQuery = value;
-                });
-              },
-              onStatusChanged: (value) {
-                setState(() {
-                  _statusFilter = value;
-                });
-              },
-              onSortChanged: (value) {
-                setState(() {
-                  _sortBy = value;
-                });
-              },
-              onReset: () {
-                setState(() {
-                  _searchQuery = '';
-                  _statusFilter = null;
-                  _sortBy = null;
-                });
-              },
-            ),
+            _buildFilters(),
             const SizedBox(height: 16),
-            AgentsSortButton(
-              onPressed: () {
-                // ✅ TODO résolu: Toggle sort order
-                setState(() {
-                  // Cycle through sort options: null -> name -> liquidity -> date -> null
-                  if (_sortBy == null) {
-                    _sortBy = 'name';
-                  } else if (_sortBy == 'name') {
-                    _sortBy = 'liquidity';
-                  } else if (_sortBy == 'liquidity') {
-                    _sortBy = 'date';
-                  } else {
-                    _sortBy = null;
-                  }
-                });
-              },
-            ),
-            const SizedBox(height: 16),
-            AgentsTable(
+            AgentAccountTable(
               agents: agents,
-              onView: (agent) {
-                // ✅ TODO résolu: View agent details
-                // Pour l'instant, on affiche un message
-                // L'écran de détails sera créé dans une prochaine étape
-                NotificationService.showInfo(
-                  context,
-                  'Détails de ${agent.name} - Fonctionnalité à venir',
-                );
-              },
-              onRefresh: (agent) {
-                // ✅ TODO résolu: Refresh agent
-                final agentsKey =
-                    '${widget.enterpriseId ?? ''}|${_statusFilter?.name ?? ''}|$_searchQuery';
-                ref.invalidate(agentsProvider((agentsKey)));
-                ref.invalidate(agentsDailyStatisticsProvider(widget.enterpriseId ?? ''));
-                
-                NotificationService.showSuccess(
-                  context,
-                  'Données de ${agent.name} actualisées',
-                );
-              },
-              onEdit: (agent) => _showAgentDialog(context, agent),
-              onDelete: (agent) => _deleteAgent(context, agent),
+              onView: (agent) => _onViewAgent(agent),
+              onRefresh: (agent) => ref.invalidate(agentAccountsProvider),
+              onEdit: (agent) => _onEditAgent(agent),
+              onDelete: (agent) => _onDeleteAgent(agent),
             ),
           ],
         ),
-      );
+      ),
+      loading: () => const LoadingIndicator(),
+      error: (e, s) => ErrorDisplayWidget(error: e),
+    );
   }
 
-  void _showAgentDialog(BuildContext context, Agent? agent) {
+  Widget _buildAgenciesList(AsyncValue<List<Enterprise>> agenciesAsync, WidgetRef ref) {
+    return agenciesAsync.when(
+      data: (agencies) => ElyfCard(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AgentsListHeader(
+              agentCount: agencies.length,
+              title: 'Liste des Agences (POS)',
+              onAddAgent: () => _showAddDialog(),
+              onRecharge: () => _showRechargeDialog(context),
+            ),
+            const SizedBox(height: 16),
+            _buildFilters(),
+            const SizedBox(height: 16),
+            AgenciesTable(
+              agencies: agencies,
+              onView: (agency) => _onViewAgency(agency),
+              onRefresh: (agency) => ref.invalidate(agentAgenciesProvider),
+              onEdit: (agency) => _onEditAgency(agency),
+              onDelete: (agency) => _onDeleteAgency(agency),
+            ),
+          ],
+        ),
+      ),
+      loading: () => const LoadingIndicator(),
+      error: (e, s) => ErrorDisplayWidget(error: e),
+    );
+  }
+
+  Widget _buildFilters() {
+    return Column(
+      children: [
+        AgentsFilters(
+          searchQuery: _searchQuery,
+          statusFilter: _statusFilter,
+          sortBy: _sortBy,
+          onSearchChanged: (v) => setState(() => _searchQuery = v),
+          onStatusChanged: (v) => setState(() => _statusFilter = v),
+          onSortChanged: (v) => setState(() => _sortBy = v),
+          onReset: () => setState(() { _searchQuery = ''; _statusFilter = null; _sortBy = null; }),
+        ),
+        const SizedBox(height: 16),
+        AgentsSortButton(
+          onPressed: () {
+            setState(() {
+              if (_sortBy == null) _sortBy = 'name';
+              else if (_sortBy == 'name') _sortBy = 'liquidity';
+              else _sortBy = null;
+            });
+          },
+        ),
+      ],
+    );
+  }
+
+  void _showAddDialog() {
+    if (_tabController.index == 0) {
+      AgentsDialogs.showAgentAccountDialog(
+        context,
+        ref,
+        null, // new agent
+        widget.enterpriseId,
+        () => ref.invalidate(agentAccountsProvider),
+      );
+    } else {
+      _showAgencyDialog(context, null);
+    }
+  }
+
+  void _showAgencyDialog(BuildContext context, Enterprise? agency) {
     AgentsDialogs.showAgentDialog(
       context,
       ref,
-      agent,
+      agency,
       widget.enterpriseId,
       _searchQuery,
-      _statusFilter,
-      () {
-        if (mounted) {
-          final agentsKey =
-              '${widget.enterpriseId ?? ''}|${_statusFilter?.name ?? ''}|$_searchQuery';
-          ref.invalidate(agentsProvider((agentsKey)));
-        }
-      },
+      () => ref.invalidate(agentAgenciesProvider),
     );
   }
 
@@ -303,28 +273,50 @@ class _AgentsScreenState extends ConsumerState<AgentsScreen> {
       ref,
       widget.enterpriseId,
       _searchQuery,
-      _statusFilter,
       () {
-        if (mounted) {
-          final agentsKey =
-              '${widget.enterpriseId ?? ''}|${_statusFilter?.name ?? ''}|$_searchQuery';
-          ref.invalidate(agentsProvider((agentsKey)));
-        }
+        ref.invalidate(agentAccountsProvider);
+        ref.invalidate(agentAgenciesProvider);
       },
     );
   }
 
-  Future<void> _deleteAgent(BuildContext context, Agent agent) async {
-    final confirmed = await AgentsDialogs.showDeleteDialog(context, agent);
+  void _onViewAgent(Agent agent) {
+    NotificationService.showInfo(context, 'Détails de l\'agent SIM ${agent.name}');
+  }
 
+  void _onEditAgent(Agent agent) {
+    AgentsDialogs.showAgentAccountDialog(
+      context,
+      ref,
+      agent,
+      widget.enterpriseId,
+      () => ref.invalidate(agentAccountsProvider),
+    );
+  }
+
+  Future<void> _onDeleteAgent(Agent agent) async {
+    final confirmed = await AgentsDialogs.showDeleteDialog(context, agent.name);
     if (confirmed == true && mounted) {
       final controller = ref.read(agentsControllerProvider);
       await controller.deleteAgent(agent.id);
-      if (mounted) {
-        final agentsKey =
-            '${widget.enterpriseId ?? ''}|${_statusFilter?.name ?? ''}|$_searchQuery';
-        ref.invalidate(agentsProvider((agentsKey)));
-      }
+      ref.invalidate(agentAccountsProvider);
+    }
+  }
+
+  void _onViewAgency(Enterprise agency) {
+    NotificationService.showInfo(context, 'Détails de l\'agence ${agency.name}');
+  }
+
+  void _onEditAgency(Enterprise agency) {
+    _showAgencyDialog(context, agency);
+  }
+
+  Future<void> _onDeleteAgency(Enterprise agency) async {
+    final confirmed = await AgentsDialogs.showDeleteDialog(context, agency.name);
+    if (confirmed == true && mounted) {
+      final controller = ref.read(agentsControllerProvider);
+      await controller.deleteAgency(agency.id);
+      ref.invalidate(agentAgenciesProvider);
     }
   }
 }

@@ -37,6 +37,7 @@ class CylinderSubmitHandler {
     try {
       final controller = ref.read(cylinderControllerProvider);
       final stockController = ref.read(cylinderStockControllerProvider);
+      final cylinderStockRepo = ref.read(cylinderStockRepositoryProvider);
       final settingsController = ref.read(gazSettingsControllerProvider);
       
       final weight = int.tryParse(weightText) ?? selectedWeight;
@@ -69,41 +70,72 @@ class CylinderSubmitHandler {
       // 1. Sauvegarder la bouteille
       if (existingCylinder == null) {
         await controller.addCylinder(cylinder);
-
-        // Initialisation du stock initial (Bi-modal)
-        final fullQuantity = int.tryParse(initialFullStockText ?? '0') ?? 0;
-        final emptyQuantity = int.tryParse(initialEmptyStockText ?? '0') ?? 0;
-
-        if (fullQuantity > 0) {
-          await stockController.addStock(CylinderStock(
-            id: 'stock-full-${cylinder.id}-${DateTime.now().millisecondsSinceEpoch}',
-            cylinderId: cylinder.id,
-            weight: cylinder.weight,
-            status: CylinderStatus.full,
-            quantity: fullQuantity,
-            enterpriseId: enterpriseId,
-            updatedAt: DateTime.now(),
-            createdAt: DateTime.now(),
-          ));
-        }
-
-        if (emptyQuantity > 0) {
-          await stockController.addStock(CylinderStock(
-            id: 'stock-empty-${cylinder.id}-${DateTime.now().millisecondsSinceEpoch}',
-            cylinderId: cylinder.id,
-            weight: cylinder.weight,
-            status: CylinderStatus.emptyAtStore,
-            quantity: emptyQuantity,
-            enterpriseId: enterpriseId,
-            updatedAt: DateTime.now(),
-            createdAt: DateTime.now(),
-          ));
-        }
       } else {
         await controller.updateCylinder(cylinder);
       }
 
-      // 2. Mettre à jour les prix dans les paramètres (Settings) pour la cohérence globale
+      // 2. Initialisation ou Mise à jour du stock (Bi-modal)
+      final fullQuantity = int.tryParse(initialFullStockText ?? '0') ?? 0;
+      final emptyQuantity = int.tryParse(initialEmptyStockText ?? '0') ?? 0;
+      
+      final dbStocks = await cylinderStockRepo.getAllForEnterprise(enterpriseId);
+      final cylinderStocks = dbStocks.where((s) => s.cylinderId == cylinder.id && s.siteId == null).toList();
+
+      // Gestion Stock Plein
+      final fullStocks = cylinderStocks.where((s) => s.status == CylinderStatus.full).toList();
+      if (fullStocks.isNotEmpty) {
+        final existingFull = fullStocks.first;
+        if (existingFull.quantity != fullQuantity) {
+          await stockController.updateStock(existingFull.copyWith(
+            quantity: fullQuantity,
+            updatedAt: DateTime.now(),
+          ));
+        }
+        // Supprimer les doublons accidentels pour forcer la source de vérité
+        for (int i = 1; i < fullStocks.length; i++) {
+          await stockController.updateStock(fullStocks[i].copyWith(quantity: 0, deletedAt: DateTime.now()));
+        }
+      } else if (fullQuantity > 0) {
+        await stockController.addStock(CylinderStock(
+          id: 'stock-full-${cylinder.id}-${DateTime.now().millisecondsSinceEpoch}',
+          cylinderId: cylinder.id,
+          weight: cylinder.weight,
+          status: CylinderStatus.full,
+          quantity: fullQuantity,
+          enterpriseId: enterpriseId,
+          updatedAt: DateTime.now(),
+          createdAt: DateTime.now(),
+        ));
+      }
+
+      // Gestion Stock Vide
+      final emptyStocks = cylinderStocks.where((s) => s.status == CylinderStatus.emptyAtStore).toList();
+      if (emptyStocks.isNotEmpty) {
+        final existingEmpty = emptyStocks.first;
+        if (existingEmpty.quantity != emptyQuantity) {
+          await stockController.updateStock(existingEmpty.copyWith(
+            quantity: emptyQuantity,
+            updatedAt: DateTime.now(),
+          ));
+        }
+        // Supprimer les doublons accidentels
+        for (int i = 1; i < emptyStocks.length; i++) {
+          await stockController.updateStock(emptyStocks[i].copyWith(quantity: 0, deletedAt: DateTime.now()));
+        }
+      } else if (emptyQuantity > 0) {
+        await stockController.addStock(CylinderStock(
+          id: 'stock-empty-${cylinder.id}-${DateTime.now().millisecondsSinceEpoch}',
+          cylinderId: cylinder.id,
+          weight: cylinder.weight,
+          status: CylinderStatus.emptyAtStore,
+          quantity: emptyQuantity,
+          enterpriseId: enterpriseId,
+          updatedAt: DateTime.now(),
+          createdAt: DateTime.now(),
+        ));
+      }
+
+      // 3. Mettre à jour les prix dans les paramètres (Settings) pour la cohérence globale
       await settingsController.setRetailPrice(
         enterpriseId: enterpriseId,
         moduleId: moduleId,

@@ -71,19 +71,6 @@ class StockKpiSection extends ConsumerWidget {
         final issueStocks = GazStockCalculationService.filterIssueStocks(allStocks);
         final issueByWeight = GazStockCalculationService.groupStocksByWeight(issueStocks);
 
-        final viewType = ref.watch(gazDashboardViewTypeProvider);
-        final settings = settingsAsync.value;
-        if (viewType == GazDashboardViewType.local && settings != null && settings.nominalStocks.isNotEmpty && !isPOS) {
-          for (final weight in allWeights) {
-            final nominal = settings.getNominalStock(weight);
-            if (nominal > 0) {
-              final full = fullByWeight[weight] ?? 0;
-              final issues = issueByWeight[weight] ?? 0;
-              emptyByWeight[weight] = (nominal - full - issues).clamp(0, nominal);
-            }
-          }
-        }
-
         final totalFull = fullByWeight.values.fold<int>(0, (sum, val) => sum + val);
         final totalEmpty = emptyByWeight.values.fold<int>(0, (sum, val) => sum + val);
         final totalIssues = issueByWeight.values.fold<int>(0, (sum, val) => sum + val);
@@ -92,9 +79,12 @@ class StockKpiSection extends ConsumerWidget {
           fullByWeight: fullByWeight,
           emptyByWeight: emptyByWeight,
           issueByWeight: issueByWeight,
+          centralizedByWeight: const {},
           activePointsOfSaleCount: activePointsOfSale.length,
           totalPointsOfSaleCount: pointsOfSale.length,
           availableWeights: allWeights,
+          stockByCapacity: const {},
+          transitBreakdown: const {},
         );
 
         return _StockKpiCards(

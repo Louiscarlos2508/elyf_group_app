@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/stock_transfer.dart';
 import 'package:elyf_groupe_app/features/gaz/presentation/widgets/stock_transfer_dialog.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 
@@ -63,7 +64,7 @@ class StockTransferScreen extends ConsumerWidget {
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (e, _) => Center(child: Text('Erreur: $e')),
         ),
-        floatingActionButton: FloatingActionButton.extended(
+        floatingActionButton: activeEnterprise.type == EnterpriseType.gasPointOfSale ? null : FloatingActionButton.extended(
           onPressed: () => showDialog(
             context: context,
             builder: (context) => StockTransferDialog(fromEnterpriseId: activeEnterprise.id),

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/tenant/tenant_provider.dart';
+import '../../../../core/auth/controllers/auth_controller.dart';
 
 /// Professional tenant selection screen with premium UI
 class TenantSelectionScreen extends ConsumerWidget {
@@ -20,6 +21,14 @@ class TenantSelectionScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Sélection d\'entreprise'),
         centerTitle: true,
+        actions: [
+          IconButton(
+            onPressed: () => ref.read(authControllerProvider).signOut(),
+            icon: const Icon(Icons.logout),
+            tooltip: 'Se déconnecter',
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: Container(
         decoration: BoxDecoration(
@@ -36,7 +45,7 @@ class TenantSelectionScreen extends ConsumerWidget {
           child: accessibleEnterprisesAsync.when(
             data: (enterprises) {
               if (enterprises.isEmpty) {
-                return _buildEmptyState(context, colors, textTheme);
+                return _buildEmptyState(context, ref, colors, textTheme);
               }
 
               return CustomScrollView(
@@ -78,6 +87,22 @@ class TenantSelectionScreen extends ConsumerWidget {
                     sliver: SliverList(
                       delegate: SliverChildBuilderDelegate(
                         (context, index) {
+                          if (index == enterprises.length) {
+                            return Padding(
+                              padding: const EdgeInsets.only(top: 16, bottom: 40),
+                              child: OutlinedButton.icon(
+                                onPressed: () => ref.read(authControllerProvider).signOut(),
+                                icon: const Icon(Icons.logout),
+                                label: const Text('Se déconnecter de ce compte'),
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.all(16),
+                                  side: BorderSide(color: colors.error.withValues(alpha: 0.5)),
+                                  foregroundColor: colors.error,
+                                ),
+                              ),
+                            );
+                          }
+
                           final enterprise = enterprises[index];
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 16),
@@ -100,7 +125,7 @@ class TenantSelectionScreen extends ConsumerWidget {
                             ),
                           );
                         },
-                        childCount: enterprises.length,
+                        childCount: enterprises.length + 1,
                       ),
                     ),
                   ),
@@ -110,6 +135,7 @@ class TenantSelectionScreen extends ConsumerWidget {
             loading: () => _buildLoadingState(context, colors),
             error: (error, stack) => _buildErrorState(
               context,
+              ref,
               colors,
               textTheme,
               error.toString(),
@@ -147,6 +173,7 @@ class TenantSelectionScreen extends ConsumerWidget {
 
   Widget _buildEmptyState(
     BuildContext context,
+    WidgetRef ref,
     ColorScheme colors,
     TextTheme textTheme,
   ) {
@@ -177,6 +204,12 @@ class TenantSelectionScreen extends ConsumerWidget {
               ),
               textAlign: TextAlign.center,
             ),
+            const SizedBox(height: 32),
+            FilledButton.icon(
+              onPressed: () => ref.read(authControllerProvider).signOut(),
+              icon: const Icon(Icons.logout),
+              label: const Text('Se déconnecter'),
+            ),
           ],
         ),
       ),
@@ -185,6 +218,7 @@ class TenantSelectionScreen extends ConsumerWidget {
 
   Widget _buildErrorState(
     BuildContext context,
+    WidgetRef ref,
     ColorScheme colors,
     TextTheme textTheme,
     String error,
@@ -215,6 +249,16 @@ class TenantSelectionScreen extends ConsumerWidget {
                 color: colors.onSurfaceVariant,
               ),
               textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 32),
+            FilledButton.icon(
+              onPressed: () => ref.read(authControllerProvider).signOut(),
+              icon: const Icon(Icons.logout),
+              label: const Text('Se déconnecter et réessayer'),
+              style: FilledButton.styleFrom(
+                backgroundColor: colors.error,
+                foregroundColor: colors.onError,
+              ),
             ),
           ],
         ),

@@ -99,7 +99,9 @@ class Property {
 
   factory Property.fromMap(Map<String, dynamic> map) {
     return Property(
-      id: map['id'] as String,
+      id: (map['localId'] as String?)?.trim().isNotEmpty == true 
+          ? map['localId'] as String 
+          : (map['id'] as String? ?? ''),
       enterpriseId: map['enterpriseId'] as String,
       address: map['address'] as String,
       city: map['city'] as String,

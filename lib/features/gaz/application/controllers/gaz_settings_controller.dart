@@ -178,28 +178,6 @@ class GazSettingsController {
     await repository.saveSettings(updated);
   }
 
-  /// Définit le stock nominal pour un poids donné.
-  Future<void> setNominalStock({
-    required String enterpriseId,
-    required String moduleId,
-    required int weight,
-    required int quantity,
-  }) async {
-    final existing = await repository.getSettings(
-      enterpriseId: enterpriseId,
-      moduleId: moduleId,
-    );
-
-    final updated = existing != null
-        ? existing.setNominalStock(weight, quantity)
-        : GazSettings(
-            enterpriseId: enterpriseId,
-            moduleId: moduleId,
-          ).setNominalStock(weight, quantity);
-
-    await repository.saveSettings(updated);
-  }
-
   /// Définit le frais de chargement par défaut.
   Future<void> setLoadingFee({
     required String enterpriseId,

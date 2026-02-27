@@ -162,10 +162,11 @@ class UserOfflineRepository extends OfflineRepository<User>
         enterpriseId: 'global',
         moduleType: 'administration',
       );
-      return records.map((record) {
+      final users = records.map((record) {
         final map = jsonDecode(record.dataJson) as Map<String, dynamic>;
         return fromMap(map);
       }).toList();
+      return deduplicateByRemoteId(users);
     } catch (e) {
       return [];
     }
@@ -180,7 +181,7 @@ class UserOfflineRepository extends OfflineRepository<User>
           moduleType: 'administration',
         )
         .map((records) {
-      return records.map((record) {
+      final users = records.map((record) {
         try {
           final map = jsonDecode(record.dataJson) as Map<String, dynamic>;
           return fromMap(map);
@@ -188,6 +189,7 @@ class UserOfflineRepository extends OfflineRepository<User>
           return null;
         }
       }).whereType<User>().toList();
+      return deduplicateByRemoteId(users);
     });
   }
 

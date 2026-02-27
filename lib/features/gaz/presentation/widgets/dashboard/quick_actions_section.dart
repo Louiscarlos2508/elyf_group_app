@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../leak_report_dialog.dart';
-import '../exchange_dialog.dart';
 
 class QuickActionsSection extends ConsumerWidget {
   const QuickActionsSection({super.key});
@@ -31,15 +30,6 @@ class QuickActionsSection extends ConsumerWidget {
                 onTap: () => _showLeakDialog(context),
               ),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _QuickActionButton(
-                label: 'Échange Bouteilles',
-                icon: Icons.swap_horiz,
-                color: Colors.orange,
-                onTap: () => _showExchangeDialog(context),
-              ),
-            ),
           ],
         ),
       ],
@@ -53,12 +43,6 @@ class QuickActionsSection extends ConsumerWidget {
     );
   }
 
-  void _showExchangeDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => const ExchangeDialog(),
-    );
-  }
 }
 
 class _QuickActionButton extends StatelessWidget {

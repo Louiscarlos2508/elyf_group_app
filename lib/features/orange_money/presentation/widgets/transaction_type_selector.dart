@@ -18,14 +18,17 @@ class TransactionTypeSelector extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(25, 25, 25, 25),
+      padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(
-          color: const Color(0xFFFFD6A7), // Orange border from design
-          width: 1.219,
-        ),
-        borderRadius: BorderRadius.circular(14),
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: theme.shadowColor.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         children: [
@@ -34,20 +37,18 @@ class TransactionTypeSelector extends StatelessWidget {
               context,
               TransactionType.cashIn,
               'Dépôt',
-              Icons.arrow_downward,
-              const Color(0xFF00A63E), // Green from design
-              true,
+              Icons.south_west_rounded,
+              const Color(0xFF00A63E), // Standard Success Green
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 8),
           Expanded(
             child: _buildTypeButton(
               context,
               TransactionType.cashOut,
               'Retrait',
-              Icons.arrow_upward,
-              theme.colorScheme.onSurface,
-              false,
+              Icons.north_east_rounded,
+              const Color(0xFFE7000B), // Standard Error Red
             ),
           ),
         ],
@@ -60,45 +61,43 @@ class TransactionTypeSelector extends StatelessWidget {
     TransactionType type,
     String label,
     IconData icon,
-    Color color,
-    bool isSelected,
+    Color activeColor,
   ) {
+    final theme = Theme.of(context);
     final isActive = selectedType == type;
-    // Couleurs selon Figma: vert pour Dépôt sélectionné, rouge pour Retrait sélectionné
-    final backgroundColor = isActive
-        ? (type == TransactionType.cashIn
-              ? const Color(0xFF00A63E) // Vert pour Dépôt
-              : const Color(0xFFE7000B)) // Rouge pour Retrait
-        : Colors.white;
-    final textColor = isActive ? Colors.white : const Color(0xFF0A0A0A);
-    final borderColor = isActive
-        ? (type == TransactionType.cashIn
-              ? const Color(0xFF00A63E)
-              : const Color(0xFFE7000B))
-        : const Color(0xFFE5E5E5);
-    final iconColor = isActive ? Colors.white : const Color(0xFF0A0A0A);
+    final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
 
     return InkWell(
       onTap: () => onTypeChanged(type),
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16),
+      borderRadius: BorderRadius.circular(12),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: EdgeInsets.symmetric(
+          vertical: isKeyboardOpen ? 10 : 12,
+          horizontal: 12
+        ),
         decoration: BoxDecoration(
-          color: backgroundColor,
-          border: Border.all(color: borderColor, width: 1.219),
-          borderRadius: BorderRadius.circular(8),
+          color: isActive ? activeColor : theme.colorScheme.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isActive ? activeColor : theme.colorScheme.outlineVariant,
+            width: 1.5,
+          ),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: iconColor, size: 16),
-            const SizedBox(width: 12),
+            Icon(
+              icon,
+              color: isActive ? Colors.white : theme.colorScheme.onSurfaceVariant,
+              size: isKeyboardOpen ? 18 : 22,
+            ),
+            const SizedBox(width: 8),
             Text(
               label,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w500,
-                color: textColor,
+              style: (isKeyboardOpen ? theme.textTheme.bodyMedium : theme.textTheme.titleMedium)?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: isActive ? Colors.white : theme.colorScheme.onSurface,
               ),
             ),
           ],

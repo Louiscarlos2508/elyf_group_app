@@ -54,8 +54,14 @@ class Wholesaler extends Equatable {
   }
 
   factory Wholesaler.fromMap(Map<String, dynamic> map) {
+    // Prioritize embedded localId to maintain offline relations on new devices
+    final validLocalId = map['localId'] as String?;
+    final objectId = (validLocalId != null && validLocalId.trim().isNotEmpty)
+        ? validLocalId
+        : (map['id'] as String? ?? '');
+
     return Wholesaler(
-      id: map['id'] as String,
+      id: objectId,
       enterpriseId: map['enterpriseId'] as String,
       name: map['name'] as String,
       phone: map['phone'] as String?,

@@ -2,17 +2,57 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../../domain/entities/agent.dart';
+import '../../../domain/entities/orange_money_enterprise_extensions.dart';
+import '../../../../administration/domain/entities/enterprise.dart';
 
-/// Composants réutilisables pour le tableau des agents.
+/// Composants réutilisables pour le tableau des agents (Entreprises Mobile Money).
 class AgentsTableComponents {
   /// Construit la cellule du nom de l'agent.
-  static Widget buildAgentNameCell(Agent agent) {
-    final isLowLiquidity = agent.isLowLiquidity(50000);
+  static Widget buildAgentNameCell(Enterprise agent) {
+    // Utiliser le seuil critique défini dans les métadonnées ou 50000 par défaut
+    final threshold = agent.metadata['criticalThreshold'] as int? ?? 50000;
+    final balance = agent.floatBalance ?? 0;
+    final isLowLiquidity = balance <= threshold;
+    
     final dateFormat = DateFormat('d/M/yyyy');
     final dateStr = agent.createdAt != null
         ? dateFormat.format(agent.createdAt!)
         : 'N/A';
 
+    return _buildNameCell(
+      name: agent.name,
+      subtitle: agent.type.label,
+      dateStr: dateStr,
+      isLowLiquidity: isLowLiquidity,
+      isMain: agent.type.isMain,
+    );
+  }
+
+  /// Construit la cellule du nom pour un compte agent (SIM).
+  static Widget buildAgentAccountNameCell(Agent agent) {
+    final isLowLiquidity = agent.isLowLiquidity(50000);
+    
+    final dateFormat = DateFormat('d/M/yyyy');
+    final dateStr = agent.createdAt != null
+        ? dateFormat.format(agent.createdAt!)
+        : 'N/A';
+
+    return _buildNameCell(
+      name: agent.name,
+      subtitle: 'Compte Agent',
+      dateStr: dateStr,
+      isLowLiquidity: isLowLiquidity,
+      isMain: false,
+    );
+  }
+
+  static Widget _buildNameCell({
+    required String name,
+    required String subtitle,
+    required String dateStr,
+    required bool isLowLiquidity,
+    required bool isMain,
+  }) {
     return Builder(
       builder: (context) {
         final theme = Theme.of(context);
@@ -28,7 +68,7 @@ class AgentsTableComponents {
                   children: [
                     Flexible(
                       child: Text(
-                        agent.name,
+                        name,
                         style: theme.textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.w700,
                           color: theme.colorScheme.onSurface,
@@ -55,23 +95,23 @@ class AgentsTableComponents {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: agent.type == AgentType.internal
+                        color: isMain
                             ? theme.colorScheme.primary.withValues(alpha: 0.1)
                             : theme.colorScheme.tertiary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(4),
                         border: Border.all(
-                          color: agent.type == AgentType.internal
+                          color: isMain
                               ? theme.colorScheme.primary.withValues(alpha: 0.2)
                               : theme.colorScheme.tertiary.withValues(alpha: 0.2),
                           width: 0.5,
                         ),
                       ),
                       child: Text(
-                        agent.type == AgentType.internal ? 'Succursale' : 'Partenaire',
+                        subtitle,
                         style: theme.textTheme.labelSmall?.copyWith(
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
-                          color: agent.type == AgentType.internal
+                          color: isMain
                               ? theme.colorScheme.primary
                               : theme.colorScheme.tertiary,
                           letterSpacing: 0.5,
@@ -101,10 +141,12 @@ class AgentsTableComponents {
   }
 
   /// Construit le badge de l'opérateur.
-  static Widget buildOperatorBadge(MobileOperator operator) {
+  static Widget buildOperatorBadge(String? operatorName) {
     return Builder(
       builder: (context) {
         final theme = Theme.of(context);
+        final label = operatorName ?? 'Non défini';
+        
         return Container(
           height: 24,
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
@@ -118,7 +160,7 @@ class AgentsTableComponents {
           ),
           child: Center(
             child: Text(
-              operator.label,
+              label,
               style: theme.textTheme.labelSmall?.copyWith(
                 fontWeight: FontWeight.w700,
                 color: theme.colorScheme.onSurface,
@@ -132,8 +174,7 @@ class AgentsTableComponents {
   }
 
   /// Construit le chip de statut.
-  static Widget buildStatusChip(AgentStatus status) {
-    final isActive = status == AgentStatus.active;
+  static Widget buildStatusChip(bool isActive) {
     return Builder(
       builder: (context) {
         final theme = Theme.of(context);
@@ -154,7 +195,7 @@ class AgentsTableComponents {
           ),
           child: Center(
             child: Text(
-              status.label,
+              isActive ? 'ACTIF' : 'INACTIF',
               style: theme.textTheme.labelSmall?.copyWith(
                 color: isActive ? theme.colorScheme.onPrimaryContainer : theme.colorScheme.onSurfaceVariant,
                 fontWeight: FontWeight.w800,

@@ -8,7 +8,8 @@ import 'package:cloud_firestore/cloud_firestore.dart'
         FieldValue,
         SetOptions,
         FirebaseException,
-        Query;
+        Query,
+        FieldPath;
 
 import '../../../../core/errors/app_exceptions.dart';
 import '../../../../core/errors/error_handler.dart';
@@ -78,14 +79,24 @@ class FirestoreSyncService {
   Future<void> _pullAndSaveUsers() async {
     final users = await pullUsersFromFirestore();
     for (final user in users) {
-      // Use driftService directly to save without queuing sync back
-      await driftService.records.upsert(
+      // Rechercher si un utilisateur avec ce remoteId existe déjà localement
+      // pour éviter de créer des doublons avec des localId différents
+      final existingRecord = await driftService.records.findByRemoteId(
         collectionName: _usersCollection,
-        localId: user.id,
         remoteId: user.id,
         enterpriseId: 'global',
         moduleType: 'administration',
-        dataJson: jsonEncode(user.toMap()), // Careful: user.toMap might behave differently for sync
+      );
+
+      final localId = existingRecord?.localId ?? user.id;
+
+      await driftService.records.upsert(
+        collectionName: _usersCollection,
+        localId: localId,
+        remoteId: user.id,
+        enterpriseId: 'global',
+        moduleType: 'administration',
+        dataJson: jsonEncode(user.toMap()),
         localUpdatedAt: user.updatedAt ?? DateTime.now(),
       );
     }
@@ -94,9 +105,18 @@ class FirestoreSyncService {
   Future<void> _pullAndSaveEnterprises() async {
     final enterprises = await pullEnterprisesFromFirestore();
     for (final enterprise in enterprises) {
+      final existingRecord = await driftService.records.findByRemoteId(
+        collectionName: _enterprisesCollection,
+        remoteId: enterprise.id,
+        enterpriseId: 'global',
+        moduleType: 'administration',
+      );
+
+      final localId = existingRecord?.localId ?? enterprise.id;
+
       await driftService.records.upsert(
         collectionName: _enterprisesCollection,
-        localId: enterprise.id,
+        localId: localId,
         remoteId: enterprise.id,
         enterpriseId: 'global',
         moduleType: 'administration',
@@ -109,9 +129,18 @@ class FirestoreSyncService {
   Future<void> _pullAndSaveRoles() async {
     final roles = await pullRolesFromFirestore();
     for (final role in roles) {
+      final existingRecord = await driftService.records.findByRemoteId(
+        collectionName: _rolesCollection,
+        remoteId: role.id,
+        enterpriseId: 'global',
+        moduleType: 'administration',
+      );
+
+      final localId = existingRecord?.localId ?? role.id;
+
       await driftService.records.upsert(
         collectionName: _rolesCollection,
-        localId: role.id,
+        localId: localId,
         remoteId: role.id,
         enterpriseId: 'global',
         moduleType: 'administration',
@@ -120,7 +149,7 @@ class FirestoreSyncService {
           'name': role.name,
           'description': role.description,
           'permissions': role.permissions.toList(),
-          'moduleId': role.moduleId,  // Assure la persistance du module associé
+          'moduleId': role.moduleId, // Assure la persistance du module associé
           'isSystemRole': role.isSystemRole,
         }),
         localUpdatedAt: DateTime.now(),
@@ -132,9 +161,18 @@ class FirestoreSyncService {
   Future<void> _pullAndSaveEnterpriseModuleUsers({String? userId}) async {
     final emus = await pullEnterpriseModuleUsersFromFirestore(userId: userId);
     for (final emu in emus) {
+      final existingRecord = await driftService.records.findByRemoteId(
+        collectionName: _enterpriseModuleUsersCollection,
+        remoteId: emu.documentId,
+        enterpriseId: 'global',
+        moduleType: 'administration',
+      );
+
+      final localId = existingRecord?.localId ?? emu.documentId;
+
       await driftService.records.upsert(
         collectionName: _enterpriseModuleUsersCollection,
-        localId: emu.documentId,
+        localId: localId,
         remoteId: emu.documentId,
         enterpriseId: 'global',
         moduleType: 'administration',
@@ -203,6 +241,107 @@ class FirestoreSyncService {
         stackTrace: stackTrace,
       );
     }
+  }
+
+  /// Synchronise une entreprise spécifique par son ID.
+  /// 
+  /// Utile quand un utilisateur est assigné à un sous-tenant (ex: POS) 
+  /// sans avoir l'entreprise parente synchronisée.
+  Future<void> syncSpecificEnterprise(String enterpriseId) async {
+    try {
+      // 1. Tenter de récupérer dans la collection globale
+      final enterpriseDoc = await firestore
+          .collection(_enterprisesCollection)
+          .doc(enterpriseId)
+          .get();
+
+      if (enterpriseDoc.exists) {
+        await _saveEnterpriseToDrift(Enterprise.fromMap(enterpriseDoc.data()!));
+        return;
+      }
+
+      // 2. Tenter de récupérer dans les sous-collections (via Collection Group)
+      // On cherche dans 'pointsOfSale' (Gaz)
+      final posSnapshot = await firestore
+          .collectionGroup('pointsOfSale')
+          .where(FieldPath.documentId, isEqualTo: enterpriseId)
+          .get();
+
+      if (posSnapshot.docs.isNotEmpty) {
+        final doc = posSnapshot.docs.first;
+        final data = Map<String, dynamic>.from(doc.data());
+        final parentId = doc.reference.parent.parent?.id;
+        
+        final pos = Enterprise(
+          id: doc.id,
+          name: data['name'] as String? ?? 'Point de Vente',
+          type: EnterpriseType.gasPointOfSale,
+          parentEnterpriseId: parentId,
+          isActive: data['isActive'] as bool? ?? true,
+          description: data['description'] as String?,
+        );
+
+        await _savePointOfSaleToDrift(pos, parentId!);
+        return;
+      }
+
+      AppLogger.warning(
+        'Enterprise $enterpriseId not found in Firestore (Global or POS)',
+        name: 'admin.firestore.sync',
+      );
+    } catch (e, stackTrace) {
+      AppLogger.error(
+        'Error syncing specific enterprise $enterpriseId: $e',
+        name: 'admin.firestore.sync',
+        error: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  Future<void> _saveEnterpriseToDrift(Enterprise enterprise) async {
+    final existingRecord = await driftService.records.findByRemoteId(
+      collectionName: _enterprisesCollection,
+      remoteId: enterprise.id,
+      enterpriseId: 'global',
+      moduleType: 'administration',
+    );
+
+    final localId = existingRecord?.localId ?? enterprise.id;
+
+    await driftService.records.upsert(
+      collectionName: _enterprisesCollection,
+      localId: localId,
+      remoteId: enterprise.id,
+      enterpriseId: 'global',
+      moduleType: 'administration',
+      dataJson: jsonEncode(enterprise.toMap()),
+      localUpdatedAt: DateTime.now(),
+    );
+  }
+
+  Future<void> _savePointOfSaleToDrift(Enterprise enterprise, String parentId) async {
+    final existingRecord = await driftService.records.findByRemoteId(
+      collectionName: 'pointOfSale',
+      remoteId: enterprise.id,
+      enterpriseId: parentId,
+      moduleType: 'gaz',
+    );
+
+    final localId = existingRecord?.localId ?? enterprise.id;
+
+    await driftService.records.upsert(
+      collectionName: 'pointOfSale',
+      localId: localId,
+      remoteId: enterprise.id,
+      enterpriseId: parentId,
+      moduleType: 'gaz',
+      dataJson: jsonEncode({
+        ...enterprise.toMap(),
+        'parentEnterpriseId': parentId,
+      }),
+      localUpdatedAt: DateTime.now(),
+    );
   }
 
   /// Sync a role to Firestore

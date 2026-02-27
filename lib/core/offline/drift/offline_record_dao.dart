@@ -248,6 +248,38 @@ class OfflineRecordDao {
     return (query..orderBy([(t) => OrderingTerm.desc(t.localUpdatedAt)])).get();
   }
 
+  /// Watches all records for a collection, regardless of enterpriseId.
+  Stream<List<OfflineRecord>> watchForCollection({
+    required String collectionName,
+    String? moduleType,
+  }) {
+    final query = _db.select(_db.offlineRecords)
+      ..where((t) => t.collectionName.equals(collectionName));
+    
+    if (moduleType != null) {
+      query.where((t) => t.moduleType.equals(moduleType));
+    }
+    
+    return (query..orderBy([(t) => OrderingTerm.desc(t.localUpdatedAt)])).watch();
+  }
+
+  /// Finds a record by its remote ID within a collection, regardless of enterpriseId.
+  Future<OfflineRecord?> findInCollectionByRemoteId({
+    required String collectionName,
+    required String remoteId,
+  }) async {
+    final list = await (_db.select(_db.offlineRecords)
+          ..where(
+            (t) =>
+                t.collectionName.equals(collectionName) &
+                t.remoteId.equals(remoteId),
+          )
+          ..orderBy([(t) => OrderingTerm.desc(t.localUpdatedAt)])
+          ..limit(1))
+        .get();
+    return list.isEmpty ? null : list.first;
+  }
+
   /// Updates the remote ID for a record after successful sync.
   ///
   /// Filtre par [enterpriseId] et [moduleType] lorsqu'ils sont fournis pour

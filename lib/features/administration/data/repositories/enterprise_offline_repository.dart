@@ -1,5 +1,6 @@
 import 'dart:developer' as developer;
 import 'dart:convert';
+import 'package:rxdart/rxdart.dart';
 
 import '../../../../core/errors/app_exceptions.dart';
 import '../../../../core/errors/error_handler.dart';
@@ -168,13 +169,21 @@ class EnterpriseOfflineRepository extends OfflineRepository<Enterprise>
   @override
   Future<List<Enterprise>> getAllEnterprises() async {
     try {
-      final records = await driftService.records.listForEnterprise(
-        collectionName: collectionName,
+      // 1. Fetch from 'enterprises' (administration)
+      final enterpriseRecords = await driftService.records.listForEnterprise(
+        collectionName: 'enterprises',
         enterpriseId: 'global',
         moduleType: 'administration',
       );
       
-      return records.map((record) {
+      // 2. Fetch from 'pointOfSale' (all modules)
+      final posRecords = await driftService.records.listForCollection(
+        collectionName: 'pointOfSale',
+      );
+      
+      final allRecords = [...enterpriseRecords, ...posRecords];
+      
+      return allRecords.map((record) {
         try {
           final map = jsonDecode(record.dataJson) as Map<String, dynamic>;
           map['localId'] = record.localId;
@@ -190,23 +199,32 @@ class EnterpriseOfflineRepository extends OfflineRepository<Enterprise>
 
   @override
   Stream<List<Enterprise>> watchAllEnterprises() {
-    return driftService.records
-        .watchForEnterprise(
-          collectionName: collectionName,
-          enterpriseId: 'global',
-          moduleType: 'administration',
-        )
-        .map((records) {
-      return records.map((record) {
-        try {
-          final map = jsonDecode(record.dataJson) as Map<String, dynamic>;
-          map['localId'] = record.localId;
-          return fromMap(map);
-        } catch (e) {
-          return null;
-        }
-      }).whereType<Enterprise>().toList();
-    });
+    final enterprisesStream = driftService.records.watchForEnterprise(
+      collectionName: 'enterprises',
+      enterpriseId: 'global',
+      moduleType: 'administration',
+    );
+    
+    final posStream = driftService.records.watchForCollection(
+      collectionName: 'pointOfSale',
+    );
+
+    return Rx.combineLatest2<List<dynamic>, List<dynamic>, List<Enterprise>>(
+      enterprisesStream,
+      posStream,
+      (enterpriseRecords, posRecords) {
+        final allRecords = [...enterpriseRecords, ...posRecords];
+        return allRecords.map((record) {
+          try {
+            final map = jsonDecode(record.dataJson) as Map<String, dynamic>;
+            map['localId'] = record.localId;
+            return fromMap(map);
+          } catch (e) {
+            return null;
+          }
+        }).whereType<Enterprise>().toList();
+      },
+    );
   }
 
   @override
@@ -266,18 +284,32 @@ class EnterpriseOfflineRepository extends OfflineRepository<Enterprise>
   @override
   Future<Enterprise?> getEnterpriseById(String id) async {
     try {
-      // Try to find by remote ID first
+      // 1. Try 'enterprises' collection
       final record = await driftService.records.findByRemoteId(
-        collectionName: collectionName,
+        collectionName: 'enterprises',
         remoteId: id,
         enterpriseId: 'global',
         moduleType: 'administration',
       );
+      
       if (record != null) {
         final map = jsonDecode(record.dataJson) as Map<String, dynamic>;
         return fromMap(map);
       }
-      // Try by local ID
+      
+      // 2. Try 'pointOfSale' collection
+      final posRecord = await driftService.records.findInCollectionByRemoteId(
+        collectionName: 'pointOfSale',
+        remoteId: id,
+      );
+      
+      if (posRecord != null) {
+        final map = jsonDecode(posRecord.dataJson) as Map<String, dynamic>;
+        map['localId'] = posRecord.localId;
+        return fromMap(map);
+      }
+
+      // 3. Try by local ID (fallback)
       return await getByLocalId(id);
     } catch (e, stackTrace) {
       final appException = ErrorHandler.instance.handleError(e, stackTrace);

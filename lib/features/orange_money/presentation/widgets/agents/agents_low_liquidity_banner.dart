@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 
-import '../../../domain/entities/agent.dart';
+import '../../../../administration/domain/entities/enterprise.dart';
+import '../../../domain/entities/orange_money_enterprise_extensions.dart';
 import 'agents_format_helpers.dart';
 
 /// Bannière d'alerte pour les agents avec liquidité faible.
 class AgentsLowLiquidityBanner extends StatelessWidget {
   const AgentsLowLiquidityBanner({super.key, required this.agents});
 
-  final List<Agent> agents;
+  final List<Enterprise> agents;
 
   @override
   Widget build(BuildContext context) {
@@ -49,6 +50,7 @@ class AgentsLowLiquidityBanner extends StatelessWidget {
                   spacing: 8,
                   runSpacing: 8,
                   children: agents.map((agent) {
+                    final balance = agent.floatBalance ?? 0;
                     return Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 10,
@@ -63,7 +65,7 @@ class AgentsLowLiquidityBanner extends StatelessWidget {
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
-                        '${agent.name}: ${AgentsFormatHelpers.formatCurrencyCompact(agent.liquidity)}',
+                        '${agent.name}: ${AgentsFormatHelpers.formatCurrencyCompact(balance)}',
                         style: theme.textTheme.labelSmall?.copyWith(
                           fontWeight: FontWeight.w700,
                           color: theme.colorScheme.error,

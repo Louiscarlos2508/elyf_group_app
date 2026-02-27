@@ -23,6 +23,7 @@ import '../../widgets/gaz_header.dart';
 import '../../widgets/stock_summary_content.dart';
 import '../../widgets/stock_history_content.dart';
 import '../../widgets/sessions_report_content.dart';
+import '../../widgets/pos_network_report_tab.dart';
 import '../../../../../shared/presentation/widgets/elyf_ui/atoms/elyf_icon_button.dart';
 import '../../../../../core/tenant/tenant_provider.dart' show activeEnterpriseProvider;
 
@@ -231,11 +232,13 @@ class _GazReportsScreenState extends ConsumerState<GazReportsScreen> {
   @override
   Widget build(BuildContext context) {
     final activeEnterpriseAsync = ref.watch(activeEnterpriseProvider);
-    final enterpriseId = activeEnterpriseAsync.when(
-      data: (e) => e?.id ?? '',
-      loading: () => '',
-      error: (_, __) => '',
+    final activeEnterprise = activeEnterpriseAsync.when(
+      data: (e) => e,
+      loading: () => null,
+      error: (_, __) => null,
     );
+    final isPOS = activeEnterprise?.isPointOfSale ?? true;
+    final showPosTab = !isPOS;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -289,6 +292,7 @@ class _GazReportsScreenState extends ConsumerState<GazReportsScreen> {
                 child: GazReportTabsV2(
                   selectedTab: _selectedTab,
                   onTabChanged: (index) => setState(() => _selectedTab = index),
+                  showPosTab: showPosTab,
                 ),
               ),
             ),
@@ -382,6 +386,11 @@ class _GazReportsScreenState extends ConsumerState<GazReportsScreen> {
               endDate: _endDate,
             ),
           ],
+        );
+      case 3: // Réseau POS
+        return PosNetworkReportTab(
+          startDate: _startDate,
+          endDate: _endDate,
         );
       default:
         return const SizedBox.shrink();

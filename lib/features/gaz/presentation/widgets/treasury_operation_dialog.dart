@@ -4,6 +4,8 @@ import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import 'package:elyf_groupe_app/shared/domain/entities/treasury_operation.dart';
 import 'package:elyf_groupe_app/core/offline/offline_repository.dart' show LocalIdGenerator;
 import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
+import 'package:elyf_groupe_app/core/auth/providers.dart';
+import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
 
 class GazTreasuryOperationDialog extends ConsumerStatefulWidget {
@@ -63,10 +65,11 @@ class _GazTreasuryOperationDialogState extends ConsumerState<GazTreasuryOperatio
       final activeEnterpriseId = ref.read(activeEnterpriseIdProvider).value;
       if (activeEnterpriseId == null) throw Exception('Entreprise active non trouvée');
 
+      final userId = ref.read(authControllerProvider).currentUser?.id ?? 'system';
       final operation = TreasuryOperation(
         id: LocalIdGenerator.generate(),
         enterpriseId: activeEnterpriseId,
-        userId: '', // TODO: Get from auth if available
+        userId: userId,
         amount: int.parse(_amountController.text.replaceAll(RegExp(r'[^0-9]'), '')),
         type: widget.type,
         fromAccount: _fromAccount,
@@ -82,24 +85,15 @@ class _GazTreasuryOperationDialogState extends ConsumerState<GazTreasuryOperatio
       
       // Invalidate providers
       ref.invalidate(gazTreasuryBalanceProvider(activeEnterpriseId));
+      ref.invalidate(gazTreasuryOperationsStreamProvider(activeEnterpriseId));
       
       if (mounted) {
         Navigator.of(context).pop(true);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Opération enregistrée avec succès'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        NotificationService.showSuccess(context, 'Opération enregistrée avec succès');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        NotificationService.showError(context, 'Erreur: $e');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);

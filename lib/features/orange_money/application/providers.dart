@@ -3,7 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 export 'providers/permission_providers.dart';
 export 'providers/section_providers.dart';
 import '../../audit_trail/application/providers.dart';
-import '../../administration/application/providers.dart';
+import 'package:elyf_groupe_app/features/administration/application/providers.dart';
+import 'package:elyf_groupe_app/features/administration/domain/repositories/enterprise_repository.dart';
+import '../data/repositories/treasury_offline_repository.dart';
+import '../domain/repositories/treasury_repository.dart';
+import 'package:elyf_groupe_app/shared/domain/entities/treasury_operation.dart';
 
 import '../application/controllers/agents_controller.dart';
 import '../application/controllers/commissions_controller.dart';
@@ -19,6 +23,7 @@ import '../data/repositories/liquidity_offline_repository.dart';
 import '../data/repositories/settings_offline_repository.dart';
 import '../data/repositories/transaction_offline_repository.dart';
 import '../domain/entities/agent.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import '../domain/entities/commission.dart';
 import '../domain/entities/liquidity_checkpoint.dart';
 import '../domain/entities/transaction.dart';
@@ -166,7 +171,9 @@ final agentRepositoryProvider = Provider<AgentRepository>((ref) {
 /// Provider for agents controller.
 final agentsControllerProvider = Provider<AgentsController>(
   (ref) => AgentsController(
+    ref.watch(enterpriseRepositoryProvider),
     ref.watch(agentRepositoryProvider),
+    ref.watch(transactionRepositoryProvider),
     ref.watch(auditTrailServiceProvider),
     ref.watch(currentUserIdProvider) ?? 'system',
     ref.watch(orangeMoneyPermissionAdapterProvider),
@@ -234,6 +241,54 @@ final settingsControllerProvider = Provider<SettingsController>(
   ),
 );
 
+/// Scoped enterprise IDs for Orange Money module data access (Hierarchy support).
+final orangeMoneyScopedEnterpriseIdsProvider = FutureProvider<List<String>>((
+  ref,
+) async {
+  final activeEnterprise = await ref.watch(activeEnterpriseProvider.future);
+  if (activeEnterprise == null) return [];
+
+  final List<String> scopedIds = [activeEnterprise.id];
+
+  // If hierarchy is supported/required for the active enterprise type
+  if (activeEnterprise.type.canHaveChildren) {
+    final allAccessibleEnterprises = await ref.watch(
+      userAccessibleEnterprisesProvider.future,
+    );
+    final childrenIds = allAccessibleEnterprises
+        .where(
+          (e) =>
+              e.parentEnterpriseId == activeEnterprise.id ||
+              e.ancestorIds.contains(activeEnterprise.id),
+        )
+        .map((e) => e.id);
+    scopedIds.addAll(childrenIds);
+  }
+
+  return scopedIds.toSet().toList();
+});
+
+/// Provider for Orange Money Treasury Repository.
+final orangeMoneyTreasuryRepositoryProvider = Provider<OrangeMoneyTreasuryRepository>((ref) {
+  final drift = ref.watch(driftServiceProvider);
+  final sync = ref.watch(syncManagerProvider);
+  return OrangeMoneyTreasuryOfflineRepository(drift.db, sync);
+});
+
+/// Provider for Orange Money Treasury Balances.
+final orangeMoneyTreasuryBalanceProvider =
+    FutureProvider.family<Map<String, int>, String>((ref, enterpriseId) {
+      final repo = ref.watch(orangeMoneyTreasuryRepositoryProvider);
+      return repo.getBalances(enterpriseId);
+    });
+
+/// Provider for Orange Money Treasury Operations Stream.
+final orangeMoneyTreasuryOperationsStreamProvider =
+    StreamProvider.family<List<TreasuryOperation>, String>((ref, enterpriseId) {
+      final repo = ref.watch(orangeMoneyTreasuryRepositoryProvider);
+      return repo.watchOperations(enterpriseId);
+    });
+
 /// Provider for liquidity repository.
 final liquidityRepositoryProvider = Provider<LiquidityRepository>((ref) {
   final enterpriseId =
@@ -276,26 +331,34 @@ final liquidityControllerProvider = Provider<LiquidityController>(
   ),
 );
 
-/// Provider for agents list with filters.
-final agentsProvider = FutureProvider.autoDispose.family<List<Agent>, String>((
+/// Provider for agencies (locations) list with filters.
+final agentAgenciesProvider = FutureProvider.autoDispose.family<List<Enterprise>, String>((
+  ref,
+  key,
+) async {
+  final parts = key.split('|');
+  final parentEnterpriseId = parts[0].isEmpty ? null : parts[0];
+  final searchQuery = parts.length > 2 && parts[2].isNotEmpty ? parts[2] : null;
+
+  final controller = ref.watch(agentsControllerProvider);
+  return await controller.fetchAgencies(
+    parentEnterpriseId: parentEnterpriseId,
+    searchQuery: searchQuery,
+  );
+});
+
+/// Provider for agent accounts (SIMs) list with filters.
+final agentAccountsProvider = FutureProvider.autoDispose.family<List<Agent>, String>((
   ref,
   key,
 ) async {
   final parts = key.split('|');
   final enterpriseId = parts[0].isEmpty ? null : parts[0];
-  final statusStr = parts.length > 1 && parts[1].isNotEmpty ? parts[1] : null;
-  final status = statusStr != null
-      ? AgentStatus.values.firstWhere(
-          (e) => e.name == statusStr,
-          orElse: () => AgentStatus.active,
-        )
-      : null;
   final searchQuery = parts.length > 2 && parts[2].isNotEmpty ? parts[2] : null;
 
   final controller = ref.watch(agentsControllerProvider);
   return await controller.fetchAgents(
     enterpriseId: enterpriseId,
-    status: status,
     searchQuery: searchQuery,
   );
 });

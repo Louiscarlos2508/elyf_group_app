@@ -1,7 +1,9 @@
-import '../../../../../shared/utils/notification_service.dart';
+import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
 import 'package:flutter/material.dart';
 
-import '../../domain/entities/agent.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
+import 'package:elyf_groupe_app/features/orange_money/domain/entities/agent.dart' as entity;
+import 'package:elyf_groupe_app/features/orange_money/domain/entities/orange_money_enterprise_extensions.dart';
 
 /// Type de transaction pour la recharge/retrait d'un agent.
 enum AgentTransactionType { recharge, retrait }
@@ -11,17 +13,18 @@ class AgentRechargeDialog extends StatefulWidget {
   const AgentRechargeDialog({
     super.key,
     required this.agents,
+    required this.agencies,
     required this.onConfirm,
   });
 
-  final List<Agent> agents;
+  final List<entity.Agent> agents;
+  final List<Enterprise> agencies;
   final Function(
-    Agent agent,
+    dynamic entity,
     AgentTransactionType type,
     int amount,
     String? notes,
-  )
-  onConfirm;
+  ) onConfirm;
 
   @override
   State<AgentRechargeDialog> createState() => _AgentRechargeDialogState();
@@ -33,7 +36,8 @@ class _AgentRechargeDialogState extends State<AgentRechargeDialog> {
   final _notesController = TextEditingController();
 
   AgentTransactionType _selectedType = AgentTransactionType.recharge;
-  Agent? _selectedAgent;
+  bool _isAgencyRecharge = false; // False = Agent (SIM), True = Agence (Cash)
+  dynamic _selectedEntity;
 
   @override
   void dispose() {
@@ -47,25 +51,22 @@ class _AgentRechargeDialogState extends State<AgentRechargeDialog> {
       return;
     }
 
-    if (_selectedAgent == null) {
+    if (_selectedEntity == null) {
       NotificationService.showWarning(
         context,
-        'Veuillez sélectionner un agent',
+        'Veuillez sélectionner une entité',
       );
       return;
     }
 
     final amount = int.tryParse(_amountController.text.trim()) ?? 0;
     if (amount <= 0) {
-      NotificationService.showWarning(
-        context,
-        'Le montant doit être supérieur à 0',
-      );
+      NotificationService.showWarning(context, 'Le montant doit être supérieur à 0');
       return;
     }
 
     widget.onConfirm(
-      _selectedAgent!,
+      _selectedEntity!,
       _selectedType,
       amount,
       _notesController.text.trim().isEmpty
@@ -77,13 +78,18 @@ class _AgentRechargeDialogState extends State<AgentRechargeDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+
     return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       child: Container(
         constraints: const BoxConstraints(maxWidth: 450),
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(isKeyboardOpen ? 16 : 24),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.1),
@@ -94,289 +100,285 @@ class _AgentRechargeDialogState extends State<AgentRechargeDialog> {
         ),
         child: Form(
           key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Header with close button
-              Stack(
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        '💵 Recharge agent',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF0A0A0A),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'L\'agent vient recharger sa liquidité chez vous',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.normal,
-                          color: Color(0xFF717182),
-                        ),
-                      ),
-                    ],
-                  ),
-                  Positioned(
-                    right: 0,
-                    top: 0,
-                    child: IconButton(
-                      icon: const Icon(Icons.close, size: 16),
-                      onPressed: () => Navigator.of(context).pop(),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              // Transaction type selector
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Type de transaction',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.normal,
-                      color: Color(0xFF0A0A0A),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildTypeButton(
-                          AgentTransactionType.recharge,
-                          'Recharge',
-                          Icons.arrow_downward,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _buildTypeButton(
-                          AgentTransactionType.retrait,
-                          'Retrait',
-                          Icons.arrow_upward,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              // Agent selector
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Agent *',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.normal,
-                      color: Color(0xFF0A0A0A),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    height: 36,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 13.219,
-                      vertical: 1.219,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF3F3F5),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: Colors.transparent,
-                        width: 1.219,
-                      ),
-                    ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<Agent?>(
-                        value: _selectedAgent,
-                        hint: const Text(
-                          'Sélectionner un agent',
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Header with close button
+                Stack(
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _selectedType == AgentTransactionType.recharge 
+                            ? '💵 Recharge entité'
+                            : '💸 Retrait entité',
                           style: TextStyle(
-                            fontSize: 14,
-                            color: Color(0xFF717182),
+                            fontSize: isKeyboardOpen ? 16 : 18,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF0A0A0A),
                           ),
                         ),
-                        isExpanded: true,
-                        icon: const Icon(Icons.keyboard_arrow_down, size: 16),
-                        items: widget.agents.map((agent) {
-                          return DropdownMenuItem(
-                            value: agent,
-                            child: Text(
-                              agent.name,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                color: Color(0xFF0A0A0A),
-                              ),
+                        if (!isKeyboardOpen) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            _selectedType == AgentTransactionType.recharge
+                              ? 'Attribution de liquidité Mobile Money au point de vente'
+                              : 'Récupération de liquidité Mobile Money depuis le point de vente',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.normal,
+                              color: Color(0xFF717182),
                             ),
-                          );
-                        }).toList(),
-                        onChanged: (value) {
-                          setState(() {
-                            _selectedAgent = value;
-                          });
-                        },
+                          ),
+                        ],
+                      ],
+                    ),
+                    Positioned(
+                      right: 0,
+                      top: 0,
+                      child: IconButton(
+                        icon: const Icon(Icons.close, size: 16),
+                        onPressed: () => Navigator.of(context).pop(),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
                       ),
                     ),
+                  ],
+                ),
+                SizedBox(height: isKeyboardOpen ? 12 : 24),
+                // Entity Type Selector
+                SegmentedButton<bool>(
+                  segments: const [
+                    ButtonSegment(value: false, label: Text('Agent (SIM)'), icon: Icon(Icons.person_outline)),
+                    ButtonSegment(value: true, label: Text('Agence (Cash)'), icon: Icon(Icons.business_outlined)),
+                  ],
+                  selected: {_isAgencyRecharge},
+                  onSelectionChanged: (val) => setState(() {
+                    _isAgencyRecharge = val.first;
+                    _selectedEntity = null;
+                  }),
+                  showSelectedIcon: false,
+                  style: SegmentedButton.styleFrom(
+                    visualDensity: isKeyboardOpen ? VisualDensity.compact : VisualDensity.standard,
                   ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              // Amount field
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Montant (FCFA) *',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.normal,
-                      color: Color(0xFF0A0A0A),
+                ),
+                SizedBox(height: isKeyboardOpen ? 12 : 16),
+                // Entity selector
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _isAgencyRecharge ? 'Sélectionner l\'Agence *' : 'Sélectionner le Compte Agent *',
+                      style: TextStyle(fontSize: isKeyboardOpen ? 13 : 14, color: const Color(0xFF0A0A0A)),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    controller: _amountController,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      hintText: 'Ex: 50000',
-                      hintStyle: const TextStyle(
-                        fontSize: 14,
-                        color: Color(0xFF717182),
-                      ),
-                      filled: true,
-                      fillColor: const Color(0xFFF3F3F5),
-                      border: OutlineInputBorder(
+                    const SizedBox(height: 8),
+                    Container(
+                      height: isKeyboardOpen ? 40 : 48,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF3F3F5),
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide.none,
                       ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 10,
-                      ),
-                    ),
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF0A0A0A),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Le montant est requis';
-                      }
-                      final amount = int.tryParse(value.trim());
-                      if (amount == null || amount <= 0) {
-                        return 'Montant invalide';
-                      }
-                      return null;
-                    },
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              // Notes field
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Notes (optionnel)',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.normal,
-                      color: Color(0xFF0A0A0A),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: _notesController,
-                    maxLines: 3,
-                    decoration: InputDecoration(
-                      hintText: 'Informations complémentaires...',
-                      hintStyle: const TextStyle(
-                        fontSize: 14,
-                        color: Color(0xFF717182),
-                      ),
-                      filled: true,
-                      fillColor: const Color(0xFFF3F3F5),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.all(12),
-                    ),
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF0A0A0A),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              // Action buttons
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      style: OutlinedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        side: BorderSide(
-                          color: Colors.black.withValues(alpha: 0.1),
-                          width: 1.219,
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 17,
-                          vertical: 9,
-                        ),
-                        minimumSize: const Size(0, 36),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<dynamic>(
+                          value: _selectedEntity,
+                          isExpanded: true,
+                          icon: const Icon(Icons.keyboard_arrow_down, size: 16),
+                          items: _isAgencyRecharge 
+                            ? widget.agencies.map((e) => DropdownMenuItem(value: e, child: Text(e.name))).toList()
+                            : widget.agents.map((a) => DropdownMenuItem(value: a, child: Text(a.name))).toList(),
+                          onChanged: (value) => setState(() => _selectedEntity = value),
                         ),
                       ),
-                      child: const Text(
-                        'Annuler',
-                        style: TextStyle(
+                    ),
+                  ],
+                ),
+                SizedBox(height: isKeyboardOpen ? 12 : 16),
+                // Transaction type selector
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                     Text(
+                      'Type de mouvement',
+                      style: TextStyle(
+                        fontSize: isKeyboardOpen ? 13 : 14,
+                        fontWeight: FontWeight.normal,
+                        color: const Color(0xFF0A0A0A),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildTypeButton(
+                            AgentTransactionType.recharge,
+                            'Recharge',
+                            Icons.arrow_downward,
+                            isKeyboardOpen,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _buildTypeButton(
+                            AgentTransactionType.retrait,
+                            'Retrait',
+                            Icons.arrow_upward,
+                            isKeyboardOpen,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                SizedBox(height: isKeyboardOpen ? 12 : 16),
+                // Amount field
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Montant (FCFA) *',
+                      style: TextStyle(
+                        fontSize: isKeyboardOpen ? 13 : 14,
+                        fontWeight: FontWeight.normal,
+                        color: const Color(0xFF0A0A0A),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: _amountController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        hintText: 'Ex: 50000',
+                        hintStyle: const TextStyle(
                           fontSize: 14,
-                          color: Color(0xFF0A0A0A),
+                          color: Color(0xFF717182),
                         ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: _handleConfirm,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF00A63E),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        minimumSize: const Size(0, 36),
-                        shape: RoundedRectangleBorder(
+                        filled: true,
+                        fillColor: const Color(0xFFF3F3F5),
+                        border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide.none,
+                        ),
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: isKeyboardOpen ? 8 : 10,
                         ),
                       ),
-                      child: const Text(
-                        'Valider',
-                        style: TextStyle(fontSize: 14),
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Color(0xFF0A0A0A),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Le montant est requis';
+                        }
+                        final amount = int.tryParse(value.trim());
+                        if (amount == null || amount <= 0) {
+                          return 'Montant invalide';
+                        }
+                        return null;
+                      },
+                    ),
+                  ],
+                ),
+                SizedBox(height: isKeyboardOpen ? 12 : 16),
+                // Notes field
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Notes (optionnel)',
+                      style: TextStyle(
+                        fontSize: isKeyboardOpen ? 13 : 14,
+                        fontWeight: FontWeight.normal,
+                        color: const Color(0xFF0A0A0A),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ],
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _notesController,
+                      maxLines: isKeyboardOpen ? 1 : 2,
+                      decoration: InputDecoration(
+                        hintText: 'Informations complémentaires...',
+                        hintStyle: const TextStyle(
+                          fontSize: 14,
+                          color: Color(0xFF717182),
+                        ),
+                        filled: true,
+                        fillColor: const Color(0xFFF3F3F5),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide.none,
+                        ),
+                        contentPadding: const EdgeInsets.all(12),
+                      ),
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Color(0xFF0A0A0A),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: isKeyboardOpen ? 16 : 24),
+                // Action buttons
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        style: OutlinedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          side: BorderSide(
+                            color: Colors.black.withValues(alpha: 0.1),
+                            width: 1.219,
+                          ),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 17,
+                            vertical: isKeyboardOpen ? 8 : 12,
+                          ),
+                          minimumSize: const Size(0, 36),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: Text(
+                          'Annuler',
+                          style: TextStyle(
+                            fontSize: isKeyboardOpen ? 13 : 14,
+                            color: const Color(0xFF0A0A0A),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: _handleConfirm,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF00A63E),
+                          foregroundColor: Colors.white,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: isKeyboardOpen ? 8 : 12,
+                          ),
+                          minimumSize: const Size(0, 36),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: Text(
+                          'Valider',
+                          style: TextStyle(fontSize: isKeyboardOpen ? 13 : 14),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -387,6 +389,7 @@ class _AgentRechargeDialogState extends State<AgentRechargeDialog> {
     AgentTransactionType type,
     String label,
     IconData icon,
+    bool isKeyboardOpen,
   ) {
     final isSelected = _selectedType == type;
     final backgroundColor = isSelected ? const Color(0xFF030213) : Colors.white;
@@ -402,8 +405,9 @@ class _AgentRechargeDialogState extends State<AgentRechargeDialog> {
         });
       },
       borderRadius: BorderRadius.circular(8),
-      child: Container(
-        height: 36,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        height: isKeyboardOpen ? 32 : 36,
         decoration: BoxDecoration(
           color: backgroundColor,
           border: Border.all(color: borderColor, width: 1.219),
@@ -412,12 +416,12 @@ class _AgentRechargeDialogState extends State<AgentRechargeDialog> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 16, color: textColor),
+            Icon(icon, size: isKeyboardOpen ? 14 : 16, color: textColor),
             const SizedBox(width: 8),
             Text(
               label,
               style: TextStyle(
-                fontSize: 14,
+                fontSize: isKeyboardOpen ? 12 : 14,
                 fontWeight: FontWeight.normal,
                 color: textColor,
               ),

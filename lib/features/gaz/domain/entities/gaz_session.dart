@@ -1,4 +1,4 @@
-import '../services/gaz_calculation_service.dart';
+import '../services/gaz_session_calculation_service.dart';
 
 class GazSession {
   const GazSession({
@@ -155,8 +155,14 @@ class GazSession {
   }
 
   factory GazSession.fromMap(Map<String, dynamic> map) {
+    // Prioritize embedded localId to maintain offline relations on new devices
+    final validLocalId = map['localId'] as String?;
+    final objectId = (validLocalId != null && validLocalId.trim().isNotEmpty)
+        ? validLocalId
+        : (map['id'] as String? ?? '');
+
     return GazSession(
-      id: map['id'] as String,
+      id: objectId,
       enterpriseId: map['enterpriseId'] as String,
       status: GazSessionStatus.values.byName(map['status'] as String? ?? 'closed'),
       openedAt: DateTime.parse(map['openedAt'] as String? ?? map['date'] as String),

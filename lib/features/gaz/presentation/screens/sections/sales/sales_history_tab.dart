@@ -36,31 +36,32 @@ class _SalesHistoryTabState extends ConsumerState<SalesHistoryTab> {
       data: (isManager) {
         final enterprise = enterpriseAsync.value;
         final isPOS = enterprise?.type == EnterpriseType.gasPointOfSale;
-        final showWholesale = !isPOS || isManager;
+        final showWholesale = !isPOS;
 
         return CustomScrollView(
           slivers: [
             // Action Buttons Row
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton.icon(
-                      onPressed: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const WholesalerManagementScreen(),
+            if (!isPOS)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton.icon(
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const WholesalerManagementScreen(),
+                          ),
                         ),
+                        icon: const Icon(Icons.people_outline),
+                        label: const Text('Gérer grossistes'),
                       ),
-                      icon: const Icon(Icons.people_outline),
-                      label: const Text('Gérer grossistes'),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
 
             // Filter section
             SliverToBoxAdapter(
