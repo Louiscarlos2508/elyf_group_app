@@ -164,6 +164,10 @@ class AppDatabase extends _$AppDatabase {
             'pointOfSale': 'gaz',
             'gaz_settings': 'gaz',
             'financial_reports': 'gaz',
+            'stock_transfers': 'gaz',
+            'gas_collections': 'gaz',
+            'gaz_sessions': 'gaz',
+            'gaz_treasury_operations': 'gaz',
             // boutique
             'products': 'boutique',
             'sales': 'boutique',

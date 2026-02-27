@@ -69,6 +69,10 @@ class ModuleDataSyncService {
       'pointOfSale',
       'gaz_settings',
       'financial_reports',
+      'stock_transfers',
+      'gas_collections',
+      'gaz_sessions',
+      'gaz_treasury_operations',
     ],
     'orange_money': [
       'transactions',

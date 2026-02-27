@@ -98,6 +98,10 @@ final collectionPaths = <String, String Function(String?)>{
       'enterprises/${enterpriseId!}/wholesalers',
   'financial_reports': (enterpriseId) =>
       'enterprises/${enterpriseId!}/financialReports',
+  'stock_transfers': (enterpriseId) =>
+      'enterprises/${enterpriseId!}/stockTransfers',
+  'gas_collections': (enterpriseId) =>
+      'enterprises/${enterpriseId!}/gasCollections',
   'gaz_sessions': (enterpriseId) =>
       'enterprises/${enterpriseId!}/gazSessions',
   'gaz_treasury_operations': (enterpriseId) =>
