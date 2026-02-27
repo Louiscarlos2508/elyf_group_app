@@ -260,25 +260,32 @@ class ModuleDataSyncService {
           // Note: specific logic for pointOfSale remains as is but integrated into batch
           
           // Vérifier si un enregistrement avec le même localId embarqué existe d'abord
+          // Utiliser les finders Any (sans filtre moduleType) pour trouver même les
+          // anciens enregistrements sauvés avec moduleType vide.
           final embeddedLocalId = sanitizedData['localId'] as String?;
           OfflineRecord? existingRecord;
 
           if (embeddedLocalId != null && embeddedLocalId.isNotEmpty) {
-            existingRecord = await driftService.records.findByLocalId(
+            existingRecord = await driftService.records.findByLocalIdAny(
               collectionName: collectionName,
               localId: embeddedLocalId,
               enterpriseId: storageEnterpriseId,
-              moduleType: moduleId,
             );
           }
 
-          // Si pas trouvé par localId embarqué, chercher par remoteId
-          existingRecord ??= await driftService.records.findByRemoteId(
+          // Si pas trouvé par localId embarqué, chercher par remoteId (sans filtre moduleType)
+          existingRecord ??= await driftService.records.findByRemoteIdAny(
               collectionName: collectionName,
               remoteId: documentId,
               enterpriseId: storageEnterpriseId,
-              moduleType: moduleId,
             );
+
+          // Si l'existingRecord a un moduleType différent (ex: ''), le supprimer d'abord
+          // pour éviter la violation de contrainte UNIQUE lors de l'upsert.
+          if (existingRecord != null && existingRecord.moduleType != moduleId) {
+            await driftService.records.deleteById(existingRecord.id);
+            existingRecord = null; // Sera recréé avec le bon moduleType
+          }
 
           // Utiliser le localId existant si trouvé, sinon le localId embarqué, sinon utiliser documentId
           final localIdToUse = existingRecord?.localId ?? embeddedLocalId ?? documentId;

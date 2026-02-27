@@ -86,6 +86,46 @@ class OfflineRecordDao {
     return list.isEmpty ? null : list.first;
   }
 
+  /// Like [findByRemoteId] but ignores moduleType — used during sync to find
+  /// records that may have been saved with an empty/wrong moduleType.
+  Future<OfflineRecord?> findByRemoteIdAny({
+    required String collectionName,
+    required String remoteId,
+    required String enterpriseId,
+  }) async {
+    final list = await (_db.select(_db.offlineRecords)
+          ..where(
+            (t) =>
+                t.collectionName.equals(collectionName) &
+                t.enterpriseId.equals(enterpriseId) &
+                t.remoteId.equals(remoteId),
+          )
+          ..orderBy([(t) => OrderingTerm.desc(t.localUpdatedAt)])
+          ..limit(1))
+        .get();
+    return list.isEmpty ? null : list.first;
+  }
+
+  /// Like [findByLocalId] but ignores moduleType — used during sync to find
+  /// records that may have been saved with an empty/wrong moduleType.
+  Future<OfflineRecord?> findByLocalIdAny({
+    required String collectionName,
+    required String localId,
+    required String enterpriseId,
+  }) async {
+    final list = await (_db.select(_db.offlineRecords)
+          ..where(
+            (t) =>
+                t.collectionName.equals(collectionName) &
+                t.enterpriseId.equals(enterpriseId) &
+                t.localId.equals(localId),
+          )
+          ..orderBy([(t) => OrderingTerm.desc(t.localUpdatedAt)])
+          ..limit(1))
+        .get();
+    return list.isEmpty ? null : list.first;
+  }
+
   Future<List<OfflineRecord>> listForEnterprise({
     required String collectionName,
     required String enterpriseId,
@@ -187,6 +227,14 @@ class OfflineRecordDao {
       moduleType: moduleType,
     );
     return records.length;
+  }
+
+  /// Deletes a single record by its auto-increment primary key.
+  /// Used during sync to remove stale records with incorrect moduleType.
+  Future<void> deleteById(int id) async {
+    await (_db.delete(_db.offlineRecords)
+          ..where((t) => t.id.equals(id)))
+        .go();
   }
 
   Future<void> deleteByLocalId({

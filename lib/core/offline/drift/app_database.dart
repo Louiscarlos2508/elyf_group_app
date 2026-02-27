@@ -80,7 +80,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(QueryExecutor? connection) : super(connection ?? openDriftConnection());
 
   @override
-  int get schemaVersion => 11;
+  int get schemaVersion => 12;
 
   @override
   MigrationStrategy get migration {
@@ -148,7 +148,46 @@ class AppDatabase extends _$AppDatabase {
             'INTEGER NOT NULL DEFAULT 0',
           );
         }
-      },
+        if (from < 12) {
+          // Backfill moduleType for records saved with empty moduleType.
+          // Uses collection name to determine the correct module.
+          // This fixes cylinders/gas_sales/etc. that were saved before
+          // moduleType was consistently populated during sync.
+          const collectionToModule = {
+            // gaz
+            'cylinders': 'gaz',
+            'gas_sales': 'gaz',
+            'cylinder_stocks': 'gaz',
+            'cylinder_leaks': 'gaz',
+            'gaz_expenses': 'gaz',
+            'tours': 'gaz',
+            'pointOfSale': 'gaz',
+            'gaz_settings': 'gaz',
+            'financial_reports': 'gaz',
+            // boutique
+            'products': 'boutique',
+            'sales': 'boutique',
+            'purchases': 'boutique',
+            'expenses': 'boutique',
+            'suppliers': 'boutique',
+            'supplier_settlements': 'boutique',
+            'treasury_operations': 'boutique',
+            'closings': 'boutique',
+            // orange_money
+            'transactions': 'orange_money',
+            'agents': 'orange_money',
+            'commissions': 'orange_money',
+            'liquidity_checkpoints': 'orange_money',
+            'orange_money_settings': 'orange_money',
+          };
+          for (final entry in collectionToModule.entries) {
+            await customStatement(
+              "UPDATE offline_records "
+              "SET module_type = '${entry.value}' "
+              "WHERE collection_name = '${entry.key}' AND (module_type = '' OR module_type IS NULL)",
+            );
+          }
+        }
     );
   }
 
