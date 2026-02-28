@@ -9,8 +9,9 @@ import '../drift/app_database.dart' show OfflineRecord;
 import '../drift_service.dart';
 import '../sync_manager.dart';
 import '../sync_status.dart';
-import '../security/data_sanitizer.dart';
 import '../sync/sync_conflict_resolver.dart';
+import '../module_data_sync_service.dart';
+import '../security/data_sanitizer.dart';
 
 /// Firebase Firestore implementation of [SyncOperationHandler].
 ///
@@ -33,14 +34,76 @@ class FirebaseSyncHandler implements SyncOperationHandler {
 
   @override
   Future<void> processOperation(SyncOperation operation) async {
-    final pathBuilder = collectionPaths[operation.collectionName];
+    var collectionName = operation.collectionName;
+    var effectiveEnterpriseId = operation.enterpriseId;
+    
+    // Legacy redirect for POS/Agence mistakenly queued to 'enterprises'
+    // This unblocks operations queued before the path hierarchy fixes.
+    if (collectionName == 'enterprises') {
+      if (operation.documentId.startsWith('pos_')) {
+        collectionName = 'pointOfSale';
+        AppLogger.info(
+          'Redirecting legacy POS sync operation ${operation.documentId} from "enterprises" to "pointOfSale"',
+          name: 'offline.firebase',
+        );
+        // Extract parent ID from documentId: pos_{parentID}_{timestamp}
+        if (effectiveEnterpriseId == 'global' || effectiveEnterpriseId.isEmpty) {
+          final parts = operation.documentId.split('_');
+          if (parts.length >= 3) {
+            effectiveEnterpriseId = parts.sublist(1, parts.length - 1).join('_');
+            AppLogger.debug('Extracted parent ID $effectiveEnterpriseId from legacy POS ID', name: 'offline.firebase');
+          }
+        }
+      } else if (operation.documentId.startsWith('agence_')) {
+        collectionName = 'agences';
+        AppLogger.info(
+          'Redirecting legacy Agence sync operation ${operation.documentId} from "enterprises" to "agences"',
+          name: 'offline.firebase',
+        );
+        // Same for agences
+        if (effectiveEnterpriseId == 'global' || effectiveEnterpriseId.isEmpty) {
+          final parts = operation.documentId.split('_');
+          if (parts.length >= 3) {
+            effectiveEnterpriseId = parts.sublist(1, parts.length - 1).join('_');
+            AppLogger.debug('Extracted parent ID $effectiveEnterpriseId from legacy Agence ID', name: 'offline.firebase');
+          }
+        }
+      }
+    }
+
+    final pathBuilder = collectionPaths[collectionName];
     if (pathBuilder == null) {
       throw SyncException(
-        'No path configured for collection: ${operation.collectionName}',
+        'No path configured for collection: $collectionName',
       );
     }
 
-    final collectionPath = pathBuilder(operation.enterpriseId);
+    // Safety check: ensure effectiveEnterpriseId is never empty for sub-tenant paths
+    if (collectionName != 'enterprises' && collectionName != 'users' && collectionName != 'roles' && collectionName != 'enterprise_module_users') {
+      if (effectiveEnterpriseId.isEmpty || effectiveEnterpriseId == 'global') {
+        throw SyncException(
+          'Invalid enterpriseId ($effectiveEnterpriseId) for sub-tenant collection: $collectionName',
+        );
+      }
+    }
+    
+    // Check if the collection is shared across sites (belongs to parent/company)
+    final bool isSharedCollection = ModuleDataSyncService.sharedCollections.values
+        .any((collections) => collections.contains(collectionName));
+
+    if (isSharedCollection) {
+      final parentId = await _getParentEnterpriseId(operation.enterpriseId);
+      if (parentId != null) {
+        effectiveEnterpriseId = parentId;
+        AppLogger.debug(
+          'Routing shared collection $collectionName to parent enterprise $parentId '
+          '(from site ${operation.enterpriseId})',
+          name: 'offline.firebase',
+        );
+      }
+    }
+
+    final collectionPath = pathBuilder(effectiveEnterpriseId);
     final collection = firestore.collection(collectionPath);
 
     switch (operation.operationType) {
@@ -462,6 +525,34 @@ class FirebaseSyncHandler implements SyncOperationHandler {
         return 'Erreur Firestore (${e.code}): ${e.message ?? "Erreur inconnue"} '
             'pour ${operation.collectionName}/${operation.documentId}.';
     }
+  }
+
+  /// Récupère l'ID de l'entreprise parente pour un sous-tenant.
+  Future<String?> _getParentEnterpriseId(String enterpriseId) async {
+    final drift = _driftService;
+    if (drift == null) return null;
+
+    try {
+      // On cherche l'enregistrement du point de vente/agence dans Drift
+      // On teste les deux collections possibles pour les sous-tenants
+      for (final collection in ['pointOfSale', 'agences']) {
+        final record = await drift.records.findInCollectionByRemoteId(
+          collectionName: collection,
+          remoteId: enterpriseId,
+        );
+
+        if (record != null) {
+          final decoded = jsonDecode(record.dataJson) as Map<String, dynamic>;
+          return decoded['parentEnterpriseId'] as String?;
+        }
+      }
+    } catch (e) {
+      AppLogger.warning(
+        'Error looking up parent enterprise for $enterpriseId: $e',
+        name: 'offline.firebase',
+      );
+    }
+    return null;
   }
 }
 

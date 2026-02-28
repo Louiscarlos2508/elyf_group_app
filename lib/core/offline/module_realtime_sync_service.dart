@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer' as developer;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:drift/drift.dart' hide Query;
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 import '../errors/app_exceptions.dart';
 import '../errors/error_handler.dart';
@@ -161,7 +163,18 @@ class ModuleRealtimeSyncService {
   Future<void> startRealtimeSync({
     required String enterpriseId,
     required String moduleId,
+    String? parentEnterpriseId,
   }) async {
+    if (kIsWeb) {
+      AppLogger.info(
+        'ModuleRealtimeSyncService: Skipping sync on Web',
+        name: 'module.realtime.sync',
+      );
+      _isListening = true;
+      _currentEnterpriseId = enterpriseId;
+      _currentModuleId = moduleId;
+      return;
+    }
     // Arrêter la sync précédente si nécessaire
     if (_isListening &&
         (_currentEnterpriseId != enterpriseId ||
@@ -197,6 +210,7 @@ class ModuleRealtimeSyncService {
       await syncService.syncModuleData(
         enterpriseId: enterpriseId,
         moduleId: moduleId,
+        parentEnterpriseId: parentEnterpriseId,
       );
 
       // 2. Démarrer l'écoute en temps réel pour les changements futurs
@@ -228,6 +242,7 @@ class ModuleRealtimeSyncService {
           await _listenToCollection(
             enterpriseId: enterpriseId,
             moduleId: moduleId,
+            parentEnterpriseId: parentEnterpriseId,
             collectionName: collectionName,
             subscriptionKey: subscriptionKey,
           );
@@ -267,6 +282,7 @@ class ModuleRealtimeSyncService {
   Future<void> _listenToCollection({
     required String enterpriseId,
     required String moduleId,
+    String? parentEnterpriseId,
     required String collectionName,
     required String subscriptionKey,
   }) async {
@@ -280,7 +296,13 @@ class ModuleRealtimeSyncService {
         );
       }
       
-      final fullPath = pathBuilder(enterpriseId);
+      // Déterminer l'ID de l'entreprise à utiliser pour le chemin Firestore
+      final isShared = ModuleDataSyncService.sharedCollections[moduleId]?.contains(collectionName) ?? false;
+      final effectivePathEnterpriseId = (isShared && parentEnterpriseId != null) 
+          ? parentEnterpriseId 
+          : enterpriseId;
+
+      final fullPath = pathBuilder(effectivePathEnterpriseId);
       final collectionRef = firestore.collection(fullPath);
 
       final subscription = collectionRef.snapshots().listen(
@@ -301,11 +323,12 @@ class ModuleRealtimeSyncService {
               final sanitizedData = DataSanitizer.sanitizeMap(jsonCompatibleData);
               final jsonPayload = jsonEncode(sanitizedData);
 
-              String storageEnterpriseId = enterpriseId;
+              String storageEnterpriseId = isShared ? effectivePathEnterpriseId : enterpriseId;
+
               if (collectionName == 'pointOfSale') {
-                storageEnterpriseId = sanitizedData['parentEnterpriseId'] as String? ??
-                                     sanitizedData['enterpriseId'] as String? ??
-                                     enterpriseId;
+                storageEnterpriseId = (sanitizedData['parentEnterpriseId'] as String?) ??
+                                     (sanitizedData['enterpriseId'] as String?) ??
+                                     storageEnterpriseId;
               }
 
               switch (docChange.type) {
@@ -391,6 +414,13 @@ class ModuleRealtimeSyncService {
           }
         },
         onError: (error, stackTrace) {
+          if (error is FirebaseException && error.code == 'permission-denied') {
+            developer.log(
+              'Permission denied for realtime stream on $collectionName for enterprise $enterpriseId. Ignoring.',
+              name: 'module.realtime.sync',
+            );
+            return;
+          }
           final appException = ErrorHandler.instance.handleError(error, stackTrace);
           AppLogger.error(
             'Error in $collectionName realtime stream: ${appException.message}',
@@ -402,6 +432,15 @@ class ModuleRealtimeSyncService {
       );
 
       _subscriptions[subscriptionKey]?.add(subscription);
+    } on FirebaseException catch (e) {
+      if (e.code == 'permission-denied') {
+        developer.log(
+          'Permission denied setting up realtime listener for $collectionName in enterprise $enterpriseId. Ignoring.',
+          name: 'module.realtime.sync',
+        );
+      } else {
+        rethrow;
+      }
     } catch (e, stackTrace) {
       final appException = ErrorHandler.instance.handleError(e, stackTrace);
       AppLogger.error(

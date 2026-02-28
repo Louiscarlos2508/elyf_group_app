@@ -82,7 +82,7 @@ class _GazSalesScreenState extends ConsumerState<GazSalesScreen>
     return isManagerAsync.when(
       data: (isManager) {
         final enterprise = enterpriseAsync.value;
-        final isPOS = enterprise?.type == EnterpriseType.gasPointOfSale;
+        final isPOS = enterprise?.isPointOfSale ?? false;
         
         // Wholesale (Gros) is restricted for POS unless manager.
         final showWholesale = !isPOS || isManager;

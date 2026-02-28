@@ -31,6 +31,7 @@ class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
   final _buyPriceController = TextEditingController();
   final _initialFullStockController = TextEditingController();
   final _initialEmptyStockController = TextEditingController();
+  final _registeredTotalController = TextEditingController();
 
   int? _selectedWeight;
   bool _isLoading = false;
@@ -50,7 +51,9 @@ class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
       _weightController.text = widget.cylinder!.weight.toString();
       _sellPriceController.text = widget.cylinder!.sellPrice.toStringAsFixed(0);
       _buyPriceController.text = widget.cylinder!.buyPrice.toStringAsFixed(0);
-      
+      if (widget.cylinder!.registeredTotal > 0) {
+        _registeredTotalController.text = widget.cylinder!.registeredTotal.toString();
+      }
       _loadExistingStocks();
     }
 
@@ -63,6 +66,7 @@ class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
     
     try {
       final stocks = await ref.read(gazStocksProvider.future);
+      // PIVOT: Utiliser cylinderId pour éviter les problèmes si le poids est déjà décalé
       final cylinderStocks = stocks.where((s) => s.cylinderId == widget.cylinder!.id && s.enterpriseId == _enterpriseId && s.siteId == null).toList();
       
       final fullStock = cylinderStocks.where((s) => s.status == CylinderStatus.full).fold<int>(0, (sum, s) => sum + s.quantity);
@@ -113,6 +117,7 @@ class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
     _buyPriceController.dispose();
     _initialFullStockController.dispose();
     _initialEmptyStockController.dispose();
+    _registeredTotalController.dispose();
     super.dispose();
   }
 
@@ -131,6 +136,7 @@ class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
       buyPriceText: _buyPriceController.text,
       initialFullStockText: _initialFullStockController.text,
       initialEmptyStockText: _initialEmptyStockController.text,
+      registeredTotalText: _registeredTotalController.text,
       enterpriseId: _enterpriseId,
       moduleId: _moduleId,
       existingCylinder: widget.cylinder,
@@ -376,6 +382,25 @@ class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
                         ),
                       ],
                     ),
+                  const SizedBox(height: 16),
+
+                  // Parc total de bouteilles
+                  TextFormField(
+                    controller: _registeredTotalController,
+                    decoration: InputDecoration(
+                      labelText: 'Parc Total (Toutes bouteilles)',
+                      hintText: 'Ex: 50 (plein + vide + en circulation)',
+                      helperText: 'Sert à détecter les pertes. Vide = non suivi.',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      prefixIcon: const Icon(Icons.analytics_outlined),
+                      filled: true,
+                      fillColor: Theme.of(context).colorScheme.primaryContainer.withAlpha(40),
+                    ),
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  ),
                   const SizedBox(height: 32),
                   
                   Row(

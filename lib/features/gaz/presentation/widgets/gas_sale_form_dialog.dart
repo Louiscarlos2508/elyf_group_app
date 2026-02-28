@@ -157,7 +157,7 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
       wholesalerName: widget.saleType == SaleType.wholesale
           ? _selectedWholesalerName
           : null,
-      emptyReturnedQuantity: 0,
+      emptyReturnedQuantity: quantity,
       dealType: GasSaleDealType.exchange,
       paymentMethod: _isMixedPayment ? PaymentMethod.both : _selectedPaymentMethod,
       cashAmount: _isMixedPayment ? double.tryParse(_cashAmountController.text) : null,
@@ -524,7 +524,7 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
             accessibleEnterprisesAsync.when(
               data: (enterprises) {
                 final posList = enterprises.where((e) => 
-                  e.type == EnterpriseType.gasPointOfSale && 
+                  e.isPointOfSale && 
                   (e.parentEnterpriseId == currentEnterprise.id || 
                    currentEnterprise.type == EnterpriseType.group ||
                    e.ancestorIds.contains(currentEnterprise.id))

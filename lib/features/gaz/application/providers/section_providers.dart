@@ -134,7 +134,7 @@ final accessibleGazSectionsProvider = FutureProvider<List<NavigationSection>>((
 
   // Filtrer les sections selon les permissions et le type d'entreprise
   final accessibleSections = <NavigationSection>[];
-  final isPOS = activeEnterprise.type == EnterpriseType.gasPointOfSale;
+  final isPOS = activeEnterprise.isPointOfSale;
 
   for (final item in allSections) {
     // Restriction : Logistique n'est pas pour les POS

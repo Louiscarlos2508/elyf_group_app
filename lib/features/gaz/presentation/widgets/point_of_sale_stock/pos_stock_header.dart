@@ -17,7 +17,7 @@ class PosStockHeader extends ConsumerWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final activeEnterprise = ref.watch(activeEnterpriseProvider).value;
-    final isPOS = activeEnterprise?.type == EnterpriseType.gasPointOfSale;
+    final isPOS = activeEnterprise?.isPointOfSale ?? false;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,

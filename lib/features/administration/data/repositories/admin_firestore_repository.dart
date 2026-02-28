@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:rxdart/rxdart.dart';
 
 import '../../../../core/auth/entities/enterprise_module_user.dart';
 import '../../../../core/permissions/entities/user_role.dart';
@@ -42,10 +43,14 @@ class AdminFirestoreRepository implements AdminRepository {
 
   /// Get all enterprises
   Future<List<Enterprise>> getAllEnterprises() async {
-    final snapshot = await _enterprises.get();
-    return snapshot.docs
-        .map((doc) => _enterpriseFromFirestore(doc))
-        .toList();
+    try {
+      final snapshot = await _enterprises.get();
+      return snapshot.docs
+          .map((doc) => _enterpriseFromFirestore(doc))
+          .toList();
+    } catch (e) {
+      return [];
+    }
   }
 
   /// Get enterprises by type
@@ -149,10 +154,14 @@ class AdminFirestoreRepository implements AdminRepository {
 
   @override
   Future<List<EnterpriseModuleUser>> getEnterpriseModuleUsers() async {
-    final snapshot = await _enterpriseModuleUsers.get();
-    return snapshot.docs
-        .map((doc) => EnterpriseModuleUser.fromMap(doc.data()))
-        .toList();
+    try {
+      final snapshot = await _enterpriseModuleUsers.get();
+      return snapshot.docs
+          .map((doc) => EnterpriseModuleUser.fromMap(doc.data()))
+          .toList();
+    } catch (e) {
+      return [];
+    }
   }
 
   @override
@@ -161,7 +170,7 @@ class AdminFirestoreRepository implements AdminRepository {
       (snapshot) => snapshot.docs
           .map((doc) => EnterpriseModuleUser.fromMap(doc.data()))
           .toList(),
-    );
+    ).onErrorReturn(<EnterpriseModuleUser>[]);
   }
 
   @override
@@ -278,10 +287,14 @@ class AdminFirestoreRepository implements AdminRepository {
 
   @override
   Future<List<UserRole>> getAllRoles() async {
-    final snapshot = await _roles.get();
-    return snapshot.docs
-        .map((doc) => UserRole.fromMap(doc.data()))
-        .toList();
+    try {
+      final snapshot = await _roles.get();
+      return snapshot.docs
+          .map((doc) => UserRole.fromMap(doc.data()))
+          .toList();
+    } catch (e) {
+      return [];
+    }
   }
 
   @override
@@ -290,7 +303,7 @@ class AdminFirestoreRepository implements AdminRepository {
       (snapshot) => snapshot.docs
           .map((doc) => UserRole.fromMap(doc.data()))
           .toList(),
-    );
+    ).onErrorReturn(<UserRole>[]);
   }
 
   @override

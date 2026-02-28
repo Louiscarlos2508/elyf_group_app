@@ -4,12 +4,14 @@ class AppUser {
   final String email;
   final String? displayName;
   final bool isAdmin;
+  final List<String> enterpriseIds;
 
   const AppUser({
     required this.id,
     required this.email,
     this.displayName,
     this.isAdmin = false,
+    this.enterpriseIds = const [],
   });
 
   Map<String, dynamic> toJson() => {
@@ -17,6 +19,7 @@ class AppUser {
         'email': email,
         'displayName': displayName,
         'isAdmin': isAdmin,
+        'enterpriseIds': enterpriseIds,
       };
 
   factory AppUser.fromJson(Map<String, dynamic> json) => AppUser(
@@ -24,5 +27,9 @@ class AppUser {
         email: json['email'] as String,
         displayName: json['displayName'] as String?,
         isAdmin: json['isAdmin'] as bool? ?? false,
+        enterpriseIds: (json['enterpriseIds'] as List<dynamic>?)
+                ?.map((e) => e.toString())
+                .toList() ??
+            const [],
       );
 }

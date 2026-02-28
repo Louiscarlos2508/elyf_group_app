@@ -31,6 +31,7 @@ class FirestoreUserService {
     String? phone,
     bool isActive = true,
     bool isAdmin = false,
+    List<String> enterpriseIds = const [],
   }) async {
     try {
       final userDoc = firestore.collection(_usersCollection).doc(userId);
@@ -45,6 +46,7 @@ class FirestoreUserService {
         'phone': phone ?? '',
         'isActive': isActive,
         'isAdmin': isAdmin,
+        'enterpriseIds': enterpriseIds,
         'updatedAt': FieldValue.serverTimestamp(),
       };
 

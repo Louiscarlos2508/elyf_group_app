@@ -33,13 +33,13 @@ class AdminEnterprisesSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final combinedAsync = ref.watch(enterprisesWithPointsOfSaleProvider);
+    final combinedAsync = ref.watch(enterprisesWithSubTenantsProvider);
     
     // Log pour déboguer
     combinedAsync.whenData((combined) {
-      final posCount = combined.where((item) => item.isPointOfSale).length;
+      final subCount = combined.where((item) => item.isSubTenant).length;
       developer.log(
-        '🔵 AdminEnterprisesSection: ${combined.length} éléments au total ($posCount points de vente)',
+        '🔵 AdminEnterprisesSection: ${combined.length} éléments au total ($subCount sous-tenants)',
         name: 'AdminEnterprisesSection',
       );
     });
@@ -54,9 +54,9 @@ class AdminEnterprisesSection extends ConsumerWidget {
         ),
         combinedAsync.when(
           data: (combined) {
-            final posCount = combined.where((item) => item.isPointOfSale).length;
+            final subCount = combined.where((item) => item.isSubTenant).length;
             developer.log(
-              '🔵 AdminEnterprisesSection: Affichage de ${combined.length} éléments ($posCount points de vente)',
+              '🔵 AdminEnterprisesSection: Affichage de ${combined.length} éléments ($subCount sous-tenants)',
               name: 'AdminEnterprisesSection',
             );
             final viewMode = ref.watch(_enterprisesViewModeProvider);
@@ -147,7 +147,7 @@ class AdminEnterprisesSection extends ConsumerWidget {
   Widget _buildEnterprisesList(
     BuildContext context,
     WidgetRef ref,
-    List<({Enterprise enterprise, bool isPointOfSale})> combined,
+    List<({Enterprise enterprise, bool isSubTenant})> combined,
   ) {
     if (combined.isEmpty) {
       return SliverToBoxAdapter(
@@ -166,7 +166,7 @@ class AdminEnterprisesSection extends ConsumerWidget {
         final item = combined[index];
         return EnterpriseListItem(
           enterprise: item.enterprise,
-          isPointOfSale: item.isPointOfSale,
+          isPointOfSale: item.isSubTenant,
           onEdit: () => EnterpriseActions.edit(context, ref, item.enterprise),
           onToggleStatus: () =>
               EnterpriseActions.toggleStatus(context, ref, item.enterprise),
@@ -253,7 +253,7 @@ class AdminEnterprisesSection extends ConsumerWidget {
   Widget _buildEnterprisesTree(
     BuildContext context,
     WidgetRef ref,
-    List<({Enterprise enterprise, bool isPointOfSale})> combined,
+    List<({Enterprise enterprise, bool isSubTenant})> combined,
   ) {
     if (combined.isEmpty) {
       return SliverToBoxAdapter(

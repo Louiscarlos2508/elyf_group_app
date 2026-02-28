@@ -80,26 +80,28 @@ class DashboardKpiSection extends ConsumerWidget {
                       color: theme.colorScheme.primary, // Vibrant Blue
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: ElyfStatsCard(
-                      label: "Dépenses du jour",
-                      value: CurrencyFormatter.formatDouble(todayExpensesAmount),
-                      subtitle: "${todayExpenses.length} dépense(s)",
-                      icon: Icons.trending_down_rounded,
-                      color: theme.colorScheme.error, // Vibrant Red
+                  if (!isPos) ...[
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: ElyfStatsCard(
+                        label: "Dépenses du jour",
+                        value: CurrencyFormatter.formatDouble(todayExpensesAmount),
+                        subtitle: "${todayExpenses.length} dépense(s)",
+                        icon: Icons.trending_down_rounded,
+                        color: theme.colorScheme.error, // Vibrant Red
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: ElyfStatsCard(
-                      label: "Bénéfice du jour",
-                      value: CurrencyFormatter.formatDouble(todayProfit),
-                      subtitle: todayProfit >= 0 ? "Bénéfice net" : "Déficit journalier",
-                      icon: Icons.account_balance_wallet_rounded,
-                      color: AppColors.success, // Emerald Green
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: ElyfStatsCard(
+                        label: "Bénéfice du jour",
+                        value: CurrencyFormatter.formatDouble(todayProfit),
+                        subtitle: todayProfit >= 0 ? "Bénéfice net" : "Déficit journalier",
+                        icon: Icons.account_balance_wallet_rounded,
+                        color: AppColors.success, // Emerald Green
+                      ),
                     ),
-                  ),
+                  ],
                   const SizedBox(width: 16),
                   Expanded(
                     child: ElyfStatsCard(
@@ -128,30 +130,32 @@ class DashboardKpiSection extends ConsumerWidget {
                         color: theme.colorScheme.primary,
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElyfStatsCard(
-                        label: "Dépenses du jour",
-                        value: CurrencyFormatter.formatDouble(todayExpensesAmount),
-                        subtitle: "${todayExpenses.length} dépense(s)",
-                        icon: Icons.trending_down_rounded,
-                        color: theme.colorScheme.error,
+                if (!isPos) ...[
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElyfStatsCard(
+                          label: "Dépenses du jour",
+                          value: CurrencyFormatter.formatDouble(todayExpensesAmount),
+                          subtitle: "${todayExpenses.length} dépense(s)",
+                          icon: Icons.trending_down_rounded,
+                          color: theme.colorScheme.error,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElyfStatsCard(
-                        label: "Bénéfice du jour",
-                        value: CurrencyFormatter.formatDouble(todayProfit),
-                        subtitle: todayProfit >= 0 ? "Bénéfice net" : "Déficit journalier",
-                        icon: Icons.account_balance_wallet_rounded,
-                        color: AppColors.success,
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElyfStatsCard(
+                          label: "Bénéfice du jour",
+                          value: CurrencyFormatter.formatDouble(todayProfit),
+                          subtitle: todayProfit >= 0 ? "Bénéfice net" : "Déficit journalier",
+                          icon: Icons.account_balance_wallet_rounded,
+                          color: AppColors.success,
+                        ),
                       ),
-                    ),
+                    ],
+                  ),
+                ],
                     const SizedBox(width: 12),
                     Expanded(
                       child: ElyfStatsCard(

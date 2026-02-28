@@ -44,7 +44,7 @@ class _GazInventoryScreenState extends ConsumerState<GazInventoryScreen>
     if (isManager) {
       newTabs.add('Distribution');
     }
-    if (enterprise?.type != EnterpriseType.gasPointOfSale) {
+    if (!(enterprise?.isPointOfSale ?? false)) {
       newTabs.add('Audits');
     }
     newTabs.add('Fuites');
@@ -124,7 +124,7 @@ class _GazInventoryScreenState extends ConsumerState<GazInventoryScreen>
               const CollectionHistoryTab(),
             if (isManager)
               const DistributionTab(),
-            if (enterprise?.type != EnterpriseType.gasPointOfSale)
+            if (!(enterprise?.isPointOfSale ?? false))
               StockAuditTab(enterpriseId: enterpriseId),
             LeakTrackingTab(
               enterpriseId: enterpriseId,

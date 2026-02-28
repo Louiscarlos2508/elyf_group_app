@@ -38,6 +38,11 @@ abstract class OfflineRepository<T> with OptimisticUIRepositoryMixin<T> {
   final bool enableAutoSync;
 
   String get collectionName;
+
+  /// Returns the collection name to use for sync operations.
+  /// Defaults to [collectionName], but can be overridden for sub-collections.
+  String getSyncCollectionName(T entity) => collectionName;
+
   T fromMap(Map<String, dynamic> map);
   Map<String, dynamic> toMap(T entity);
   String getLocalId(T entity);
@@ -56,6 +61,7 @@ abstract class OfflineRepository<T> with OptimisticUIRepositoryMixin<T> {
     final localId = getLocalId(entity);
     final remoteId = getRemoteId(entity);
     final enterpriseId = getEnterpriseId(entity);
+    final syncCollectionName = getSyncCollectionName(entity);
     
     // Sanitizer et valider les données avant de les sauvegarder
     final rawData = toMap(entity);
@@ -66,7 +72,7 @@ abstract class OfflineRepository<T> with OptimisticUIRepositoryMixin<T> {
       DataSanitizer.validateJsonSize(jsonEncode(sanitizedData));
     } on DataSizeException catch (e) {
       throw ValidationException(
-        'Données trop volumineuses pour $collectionName/$localId: ${e.message}',
+        'Données trop volumineuses pour $syncCollectionName/$localId: ${e.message}',
         'DATA_SIZE_EXCEEDED',
       );
     }
@@ -74,7 +80,7 @@ abstract class OfflineRepository<T> with OptimisticUIRepositoryMixin<T> {
     final data = sanitizedData;
 
     AppLogger.debug(
-      'OfflineRepository.save: $collectionName/$localId',
+      'OfflineRepository.save: $syncCollectionName/$localId',
       name: 'offline.repository',
     );
 
@@ -104,7 +110,7 @@ abstract class OfflineRepository<T> with OptimisticUIRepositoryMixin<T> {
             if (remoteId != null && remoteId.isNotEmpty) {
               // Update existing remote document
               await syncManager.queueUpdate(
-                collectionName: collectionName,
+                collectionName: syncCollectionName,
                 localId: localId,
                 remoteId: remoteId,
                 data: data,
@@ -113,7 +119,7 @@ abstract class OfflineRepository<T> with OptimisticUIRepositoryMixin<T> {
             } else {
               // Create new document
               await syncManager.queueCreate(
-                collectionName: collectionName,
+                collectionName: syncCollectionName,
                 localId: localId,
                 data: data,
                 enterpriseId: enterpriseId,
@@ -240,9 +246,10 @@ abstract class OfflineRepository<T> with OptimisticUIRepositoryMixin<T> {
     final localId = getLocalId(entity);
     final remoteId = getRemoteId(entity);
     final enterpriseId = getEnterpriseId(entity);
+    final syncCollectionName = getSyncCollectionName(entity);
 
     AppLogger.debug(
-      'OfflineRepository.delete: $collectionName/$localId',
+      'OfflineRepository.delete: $syncCollectionName/$localId',
       name: 'offline.repository',
     );
 
@@ -252,7 +259,7 @@ abstract class OfflineRepository<T> with OptimisticUIRepositoryMixin<T> {
     // Queue sync operation if auto-sync is enabled and has remote ID
     if (enableAutoSync && remoteId != null && remoteId.isNotEmpty) {
       await syncManager.queueDelete(
-        collectionName: collectionName,
+        collectionName: syncCollectionName,
         localId: localId,
         remoteId: remoteId,
         enterpriseId: enterpriseId,

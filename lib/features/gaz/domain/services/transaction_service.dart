@@ -300,29 +300,49 @@ class TransactionService {
         );
       }
 
-        // 3. Créditer le stock de bouteilles vides si c'est un échange ou un retour
-      if ((saleWithSession.isExchange || saleWithSession.dealType == GasSaleDealType.returnCylinder) && saleWithSession.emptyReturnedQuantity > 0) {
+      // 3. Créditer le stock de bouteilles vides si c'est un échange ou un retour
+      if ((saleWithSession.isExchange ||
+              saleWithSession.dealType == GasSaleDealType.returnCylinder) &&
+          saleWithSession.emptyReturnedQuantity > 0) {
+        // Robust lookup for empty stock: filter by both status AND cylinderId (and siteId)
         final emptyStock = stocks
-            .where((s) => s.status == CylinderStatus.emptyAtStore)
+            .where(
+              (s) =>
+                  s.status == CylinderStatus.emptyAtStore &&
+                  s.cylinderId == saleWithSession.cylinderId,
+            )
             .firstOrNull;
-  
+
         if (emptyStock != null) {
+          AppLogger.info(
+            'TransactionService: Incrementing existing empty stock ${emptyStock.id} by ${saleWithSession.emptyReturnedQuantity}',
+            name: 'transaction.sale',
+          );
           await stockRepository.updateStockQuantity(
             emptyStock.id,
             emptyStock.quantity + saleWithSession.emptyReturnedQuantity,
           );
         } else {
+          final newStockId =
+              'stock_empty_${DateTime.now().millisecondsSinceEpoch}_$weight';
+          AppLogger.info(
+            'TransactionService: Creating new empty stock record $newStockId for ${saleWithSession.cylinderId}',
+            name: 'transaction.sale',
+          );
           // Créer un enregistrement de stock vide si inexistant
-          await stockRepository.addStock(CylinderStock(
-            id: 'stock_empty_${DateTime.now().millisecondsSinceEpoch}_$weight',
-            cylinderId: saleWithSession.cylinderId,
-            weight: weight,
-            status: CylinderStatus.emptyAtStore,
-            quantity: saleWithSession.emptyReturnedQuantity,
-            enterpriseId: enterpriseId,
-            updatedAt: DateTime.now(),
-            createdAt: DateTime.now(),
-          ));
+          await stockRepository.addStock(
+            CylinderStock(
+              id: newStockId,
+              cylinderId: saleWithSession.cylinderId,
+              weight: weight,
+              status: CylinderStatus.emptyAtStore,
+              quantity: saleWithSession.emptyReturnedQuantity,
+              enterpriseId: enterpriseId,
+              siteId: siteId,
+              updatedAt: DateTime.now(),
+              createdAt: DateTime.now(),
+            ),
+          );
         }
       }
   

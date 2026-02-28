@@ -9,11 +9,13 @@ class DashboardPerformanceChart extends StatelessWidget {
     required this.profitData,
     required this.expensesData,
     required this.salesData,
+    this.showOnlySales = false,
   });
 
   final List<double> profitData; // 7 values
   final List<double> expensesData; // 7 values
   final List<double> salesData; // 7 values
+  final bool showOnlySales;
 
   @override
   Widget build(BuildContext context) {
@@ -143,55 +145,57 @@ class DashboardPerformanceChart extends StatelessWidget {
                 maxY: yMax,
                 lineBarsData: [
                   // Bénéfice (Blue)
-                  LineChartBarData(
-                    spots: profitSpots,
-                    isCurved: true,
-                    color: theme.colorScheme.primary,
-                    barWidth: 4,
-                    isStrokeCapRound: true,
-                    dotData: FlDotData(
-                      show: true,
-                      getDotPainter: (spot, percent, barData, index) {
-                        return FlDotCirclePainter(
-                          radius: 4,
-                          color: Colors.white,
-                          strokeWidth: 2,
-                          strokeColor: theme.colorScheme.primary,
-                        );
-                      },
-                    ),
-                    belowBarData: BarAreaData(
-                      show: true,
-                      gradient: LinearGradient(
-                        colors: [
-                          theme.colorScheme.primary.withValues(alpha: 0.15),
-                          theme.colorScheme.primary.withValues(alpha: 0.0),
-                        ],
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
+                  if (!showOnlySales)
+                    LineChartBarData(
+                      spots: profitSpots,
+                      isCurved: true,
+                      color: theme.colorScheme.primary,
+                      barWidth: 4,
+                      isStrokeCapRound: true,
+                      dotData: FlDotData(
+                        show: true,
+                        getDotPainter: (spot, percent, barData, index) {
+                          return FlDotCirclePainter(
+                            radius: 4,
+                            color: Colors.white,
+                            strokeWidth: 2,
+                            strokeColor: theme.colorScheme.primary,
+                          );
+                        },
+                      ),
+                      belowBarData: BarAreaData(
+                        show: true,
+                        gradient: LinearGradient(
+                          colors: [
+                            theme.colorScheme.primary.withValues(alpha: 0.15),
+                            theme.colorScheme.primary.withValues(alpha: 0.0),
+                          ],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                        ),
                       ),
                     ),
-                  ),
                   // Dépenses (Red)
-                  LineChartBarData(
-                    spots: expensesSpots,
-                    isCurved: true,
-                    color: theme.colorScheme.error,
-                    barWidth: 3,
-                    isStrokeCapRound: true,
-                    dotData: FlDotData(
-                      show: true,
-                      getDotPainter: (spot, percent, barData, index) {
-                        return FlDotCirclePainter(
-                          radius: 3,
-                          color: theme.colorScheme.surface,
-                          strokeWidth: 2,
-                          strokeColor: theme.colorScheme.error,
-                        );
-                      },
+                  if (!showOnlySales)
+                    LineChartBarData(
+                      spots: expensesSpots,
+                      isCurved: true,
+                      color: theme.colorScheme.error,
+                      barWidth: 3,
+                      isStrokeCapRound: true,
+                      dotData: FlDotData(
+                        show: true,
+                        getDotPainter: (spot, percent, barData, index) {
+                          return FlDotCirclePainter(
+                            radius: 3,
+                            color: theme.colorScheme.surface,
+                            strokeWidth: 2,
+                            strokeColor: theme.colorScheme.error,
+                          );
+                        },
+                      ),
+                      belowBarData: BarAreaData(show: false),
                     ),
-                    belowBarData: BarAreaData(show: false),
-                  ),
                   // Ventes (Emerald)
                   LineChartBarData(
                     spots: salesSpots,
@@ -223,8 +227,10 @@ class DashboardPerformanceChart extends StatelessWidget {
             spacing: 16,
             runSpacing: 8,
             children: [
-              _LegendItem(color: theme.colorScheme.primary, label: 'Bénéfice'),
-              _LegendItem(color: theme.colorScheme.error, label: 'Dépenses'),
+              if (!showOnlySales) ...[
+                _LegendItem(color: theme.colorScheme.primary, label: 'Bénéfice'),
+                _LegendItem(color: theme.colorScheme.error, label: 'Dépenses'),
+              ],
               _LegendItem(color: const Color(0xFF10B981), label: 'Ventes'),
             ],
           ),

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 import '../errors/error_handler.dart';
 import '../logging/app_logger.dart';
@@ -45,7 +46,9 @@ class GlobalModuleRealtimeSyncService {
   Future<void> startRealtimeSync({
     required String enterpriseId,
     required String moduleId,
+    String? parentEnterpriseId,
   }) async {
+    if (kIsWeb) return;
     final key = '$enterpriseId/$moduleId';
 
     // Vérifier si la sync est déjà active
@@ -77,6 +80,7 @@ class GlobalModuleRealtimeSyncService {
       await syncService.startRealtimeSync(
         enterpriseId: enterpriseId,
         moduleId: moduleId,
+        parentEnterpriseId: parentEnterpriseId,
       );
 
       _syncServices[key] = syncService;

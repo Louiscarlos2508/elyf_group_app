@@ -1,15 +1,11 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:cloud_firestore/cloud_firestore.dart'
-    show
-        FirebaseFirestore,
-        Timestamp,
-        FieldValue,
-        SetOptions,
-        FirebaseException,
-        Query,
-        FieldPath;
+    show FirebaseFirestore, QuerySnapshot, DocumentSnapshot, DocumentChangeType, Timestamp, FirebaseException, FieldPath, SetOptions, FieldValue, Query;
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:rxdart/rxdart.dart';
 
 import '../../../../core/errors/app_exceptions.dart';
 import '../../../../core/errors/error_handler.dart';
@@ -42,25 +38,54 @@ class FirestoreSyncService {
   ///
   /// This fetches Users, Enterprises, Roles, and EnterpriseModuleUsers.
   /// If [userId] is provided, only fetches assignments for that user.
-  Future<void> pullInitialData({String? userId}) async {
+
+  Future<void> pullInitialData({String? userId, List<String>? allowedEnterpriseIds}) async {
+    // Si on est sur le Web, l'administration utilise directement Firestore (online-only)
+    // On ne veut pas essayer d'écrire dans Drift (car sql.js n'est pas chargé)
+    if (kIsWeb) {
+      developer.log(
+        'FirestoreSyncService: Skipping initial pull on Web (using direct Firestore)',
+        name: 'admin.firestore.sync',
+      );
+      return;
+    }
+
     try {
       developer.log(
         'Starting initial pull of all collections...',
         name: 'admin.firestore.sync',
       );
 
-      // Parallel fetch for independent collections
+      // 1. D'abord, récupérer l'utilisateur courant pour obtenir ses enterpriseIds
+      User? currentUser;
+      if (userId != null) {
+        currentUser = await _pullAndSaveSpecificUser(userId);
+      }
+
+      final effectiveAllowedEnterpriseIds = <String>{
+        ...?allowedEnterpriseIds,
+        ...?currentUser?.enterpriseIds,
+      }.toList();
+      final bool isAdmin = (currentUser != null && currentUser.username == 'admin'); // Simple check, or use a proper isAdmin flag if available
+
+      // 2. Fetch EnterpriseModuleUsers FIRST to get all accessible enterprises
+      final emus = await pullEnterpriseModuleUsersFromFirestore(userId: userId);
+      for (final emu in emus) {
+        if (!effectiveAllowedEnterpriseIds.contains(emu.enterpriseId)) {
+          effectiveAllowedEnterpriseIds.add(emu.enterpriseId);
+        }
+        await _saveEnterpriseModuleUserToDrift(emu);
+      }
+
+      // 3. Parallel fetch for other collections using filters if not admin
       await Future.wait([
-        _pullAndSaveUsers(),
-        _pullAndSaveEnterprises(),
+        if (isAdmin || userId == null) _pullAndSaveUsers() else Future.value(),
+        _pullAndSaveEnterprises(allowedEnterpriseIds: isAdmin ? null : effectiveAllowedEnterpriseIds),
         _pullAndSaveRoles(),
       ]);
-      
-      // EnterpriseModuleUsers might depend on others conceptually, but technically can be fetched in parallel too
-      await _pullAndSaveEnterpriseModuleUsers(userId: userId);
 
       developer.log(
-        'Initial pull completed successfully',
+        'Initial pull completed successfully. Allowed enterprises: ${effectiveAllowedEnterpriseIds.length}',
         name: 'admin.firestore.sync',
       );
     } catch (e, stackTrace) {
@@ -77,52 +102,79 @@ class FirestoreSyncService {
   }
 
   Future<void> _pullAndSaveUsers() async {
-    final users = await pullUsersFromFirestore();
-    for (final user in users) {
-      // Rechercher si un utilisateur avec ce remoteId existe déjà localement
-      // pour éviter de créer des doublons avec des localId différents
-      final existingRecord = await driftService.records.findByRemoteId(
-        collectionName: _usersCollection,
-        remoteId: user.id,
-        enterpriseId: 'global',
-        moduleType: 'administration',
-      );
-
-      final localId = existingRecord?.localId ?? user.id;
-
-      await driftService.records.upsert(
-        collectionName: _usersCollection,
-        localId: localId,
-        remoteId: user.id,
-        enterpriseId: 'global',
-        moduleType: 'administration',
-        dataJson: jsonEncode(user.toMap()),
-        localUpdatedAt: user.updatedAt ?? DateTime.now(),
-      );
+    try {
+      final users = await pullUsersFromFirestore();
+      for (final user in users) {
+        await _saveUserToDrift(user);
+      }
+    } catch (e) {
+      AppLogger.warning('Failed to pull all users (likely permission denied)', name: 'admin.firestore.sync');
     }
   }
 
-  Future<void> _pullAndSaveEnterprises() async {
-    final enterprises = await pullEnterprisesFromFirestore();
-    for (final enterprise in enterprises) {
-      final existingRecord = await driftService.records.findByRemoteId(
-        collectionName: _enterprisesCollection,
-        remoteId: enterprise.id,
-        enterpriseId: 'global',
-        moduleType: 'administration',
-      );
+  Future<User?> _pullAndSaveSpecificUser(String userId) async {
+    try {
+      final doc = await firestore.collection(_usersCollection).doc(userId).get();
+      if (doc.exists) {
+        final data = doc.data()!;
+        final userData = Map<String, dynamic>.from(data);
+        if (!userData.containsKey('id')) userData['id'] = doc.id;
+        final user = User.fromMap(userData);
+        await _saveUserToDrift(user);
+        return user;
+      }
+    } catch (e) {
+      AppLogger.warning('Failed to pull specific user $userId: $e', name: 'admin.firestore.sync');
+    }
+    return null;
+  }
 
-      final localId = existingRecord?.localId ?? enterprise.id;
+  Future<void> _saveUserToDrift(User user) async {
+    final existingRecord = await driftService.records.findByRemoteId(
+      collectionName: _usersCollection,
+      remoteId: user.id,
+      enterpriseId: 'global',
+      moduleType: 'administration',
+    );
 
-      await driftService.records.upsert(
-        collectionName: _enterprisesCollection,
-        localId: localId,
-        remoteId: enterprise.id,
-        enterpriseId: 'global',
-        moduleType: 'administration',
-        dataJson: jsonEncode(enterprise.toMap()),
-        localUpdatedAt: DateTime.now(),
-      );
+    final localId = existingRecord?.localId ?? user.id;
+
+    await driftService.records.upsert(
+      collectionName: _usersCollection,
+      localId: localId,
+      remoteId: user.id,
+      enterpriseId: 'global',
+      moduleType: 'administration',
+      dataJson: jsonEncode(user.toMap()),
+      localUpdatedAt: user.updatedAt ?? DateTime.now(),
+    );
+  }
+
+  Future<void> _pullAndSaveEnterprises({List<String>? allowedEnterpriseIds}) async {
+    try {
+      final enterprises = await pullEnterprisesFromFirestore(allowedEnterpriseIds: allowedEnterpriseIds);
+      for (final enterprise in enterprises) {
+        final existingRecord = await driftService.records.findByRemoteId(
+          collectionName: _enterprisesCollection,
+          remoteId: enterprise.id,
+          enterpriseId: 'global',
+          moduleType: 'administration',
+        );
+
+        final localId = existingRecord?.localId ?? enterprise.id;
+
+        await driftService.records.upsert(
+          collectionName: _enterprisesCollection,
+          localId: localId,
+          remoteId: enterprise.id,
+          enterpriseId: 'global',
+          moduleType: 'administration',
+          dataJson: jsonEncode(enterprise.toMap()),
+          localUpdatedAt: DateTime.now(),
+        );
+      }
+    } catch (e) {
+      AppLogger.warning('Failed to pull enterprises: $e', name: 'admin.firestore.sync');
     }
   }
 
@@ -158,27 +210,31 @@ class FirestoreSyncService {
   }
 
   
+  Future<void> _saveEnterpriseModuleUserToDrift(EnterpriseModuleUser emu) async {
+    final existingRecord = await driftService.records.findByRemoteId(
+      collectionName: _enterpriseModuleUsersCollection,
+      remoteId: emu.documentId,
+      enterpriseId: 'global',
+      moduleType: 'administration',
+    );
+
+    final localId = existingRecord?.localId ?? emu.documentId;
+
+    await driftService.records.upsert(
+      collectionName: _enterpriseModuleUsersCollection,
+      localId: localId,
+      remoteId: emu.documentId,
+      enterpriseId: 'global',
+      moduleType: 'administration',
+      dataJson: jsonEncode(emu.toMap()),
+      localUpdatedAt: DateTime.now(),
+    );
+  }
+
   Future<void> _pullAndSaveEnterpriseModuleUsers({String? userId}) async {
     final emus = await pullEnterpriseModuleUsersFromFirestore(userId: userId);
     for (final emu in emus) {
-      final existingRecord = await driftService.records.findByRemoteId(
-        collectionName: _enterpriseModuleUsersCollection,
-        remoteId: emu.documentId,
-        enterpriseId: 'global',
-        moduleType: 'administration',
-      );
-
-      final localId = existingRecord?.localId ?? emu.documentId;
-
-      await driftService.records.upsert(
-        collectionName: _enterpriseModuleUsersCollection,
-        localId: localId,
-        remoteId: emu.documentId,
-        enterpriseId: 'global',
-        moduleType: 'administration',
-        dataJson: jsonEncode(emu.toMap()),
-        localUpdatedAt: DateTime.now(),
-      );
+      await _saveEnterpriseModuleUserToDrift(emu);
     }
   }
 
@@ -261,32 +317,28 @@ class FirestoreSyncService {
       }
 
       // 2. Tenter de récupérer dans les sous-collections (via Collection Group)
-      // On cherche dans 'pointsOfSale' (Gaz)
-      final posSnapshot = await firestore
-          .collectionGroup('pointsOfSale')
-          .where(FieldPath.documentId, isEqualTo: enterpriseId)
-          .get();
+      // On cherche dans 'pointsOfSale' (Gaz) et 'agences' (Mobile Money)
+      for (final subName in ['pointsOfSale', 'agences']) {
+        final groupSnapshot = await firestore
+            .collectionGroup(subName)
+            .where(FieldPath.documentId, isEqualTo: enterpriseId)
+            .get();
 
-      if (posSnapshot.docs.isNotEmpty) {
-        final doc = posSnapshot.docs.first;
-        final data = Map<String, dynamic>.from(doc.data());
-        final parentId = doc.reference.parent.parent?.id;
-        
-        final pos = Enterprise(
-          id: doc.id,
-          name: data['name'] as String? ?? 'Point de Vente',
-          type: EnterpriseType.gasPointOfSale,
-          parentEnterpriseId: parentId,
-          isActive: data['isActive'] as bool? ?? true,
-          description: data['description'] as String?,
-        );
-
-        await _savePointOfSaleToDrift(pos, parentId!);
-        return;
+        if (groupSnapshot.docs.isNotEmpty) {
+          final doc = groupSnapshot.docs.first;
+          final data = Map<String, dynamic>.from(doc.data());
+          final parentId = doc.reference.parent.parent?.id;
+          
+          if (parentId != null) {
+            final subTenant = Enterprise.fromMap({...data, 'id': doc.id, 'parentEnterpriseId': parentId});
+            await _saveSubTenantToDrift(subTenant, parentId);
+            return;
+          }
+        }
       }
 
       AppLogger.warning(
-        'Enterprise $enterpriseId not found in Firestore (Global or POS)',
+        'Enterprise $enterpriseId not found in Firestore (Global, pointsOfSale, or agences)',
         name: 'admin.firestore.sync',
       );
     } catch (e, stackTrace) {
@@ -320,12 +372,12 @@ class FirestoreSyncService {
     );
   }
 
-  Future<void> _savePointOfSaleToDrift(Enterprise enterprise, String parentId) async {
+  Future<void> _saveSubTenantToDrift(Enterprise enterprise, String parentId) async {
     final existingRecord = await driftService.records.findByRemoteId(
-      collectionName: 'pointOfSale',
+      collectionName: 'pointOfSale', // On garde 'pointOfSale' comme collection Drift unifiée pour les sous-tenants
       remoteId: enterprise.id,
       enterpriseId: parentId,
-      moduleType: 'gaz',
+      moduleType: enterprise.type.module.id,
     );
 
     final localId = existingRecord?.localId ?? enterprise.id;
@@ -335,7 +387,7 @@ class FirestoreSyncService {
       localId: localId,
       remoteId: enterprise.id,
       enterpriseId: parentId,
-      moduleType: 'gaz',
+      moduleType: enterprise.type.module.id,
       dataJson: jsonEncode({
         ...enterprise.toMap(),
         'parentEnterpriseId': parentId,
@@ -500,9 +552,6 @@ class FirestoreSyncService {
   }
 
   /// Pull users from Firestore
-  ///
-  /// Récupère tous les utilisateurs depuis Firestore et les convertit en entités User.
-  /// Gère les Timestamps Firestore et les convertit en DateTime.
   Future<List<User>> pullUsersFromFirestore() async {
     try {
       final snapshot = await firestore.collection(_usersCollection).get();
@@ -523,6 +572,10 @@ class FirestoreSyncService {
           email: data['email'] as String?,
           phone: data['phone'] as String?,
           isActive: data['isActive'] as bool? ?? true,
+          enterpriseIds: (data['enterpriseIds'] as List<dynamic>?)
+                  ?.map((e) => e.toString())
+                  .toList() ??
+              const [],
           createdAt: createdAt != null
               ? (createdAt is Timestamp
                     ? createdAt.toDate()
@@ -557,12 +610,128 @@ class FirestoreSyncService {
   }
 
   /// Pull enterprises from Firestore
-  Future<List<Enterprise>> pullEnterprisesFromFirestore() async {
+  Future<List<Enterprise>> pullEnterprisesFromFirestore({List<String>? allowedEnterpriseIds}) async {
     try {
-      final snapshot = await firestore.collection(_enterprisesCollection).get();
-      return snapshot.docs
-          .map((doc) => Enterprise.fromMap(doc.data()))
-          .toList();
+      final List<Enterprise> result = [];
+      final Set<String> foundIds = {};
+
+      // 1. Pull from root collection
+      Query<Map<String, dynamic>> snapshotQuery = firestore.collection(_enterprisesCollection);
+      
+      if (allowedEnterpriseIds != null) {
+        if (allowedEnterpriseIds.isEmpty) return [];
+        
+        // Split into chunks of 10 for 'whereIn'
+        for (var i = 0; i < allowedEnterpriseIds.length; i += 10) {
+          final chunk = allowedEnterpriseIds.sublist(
+            i, 
+            i + 10 > allowedEnterpriseIds.length ? allowedEnterpriseIds.length : i + 10,
+          );
+          final chunkSnapshot = await firestore
+              .collection(_enterprisesCollection)
+              .where(FieldPath.documentId, whereIn: chunk)
+              .get();
+          
+          for (final doc in chunkSnapshot.docs) {
+            result.add(Enterprise.fromMap(doc.data()));
+            foundIds.add(doc.id);
+          }
+        }
+      } else {
+        // Admin or all pull
+        final snapshot = await snapshotQuery.get();
+        result.addAll(snapshot.docs
+            .map((doc) => Enterprise.fromMap(doc.data())));
+            
+        // Pour les admins, on doit aussi récupérer TOUS les sous-tenants
+        // via collectionGroup sinon on ne les verra pas s'ils ne sont pas à la racine
+        for (final subCollection in ['pointsOfSale', 'agences']) {
+          try {
+            final groupSnapshot = await firestore
+                .collectionGroup(subCollection)
+                .get();
+            
+            for (final doc in groupSnapshot.docs) {
+              if (foundIds.contains(doc.id)) continue;
+              
+              final data = Map<String, dynamic>.from(doc.data());
+              final parentId = doc.reference.parent.parent?.id;
+              
+              result.add(Enterprise.fromMap({
+                ...data,
+                'id': doc.id,
+                'parentEnterpriseId': parentId,
+              }));
+              foundIds.add(doc.id);
+            }
+          } catch (e) {
+            AppLogger.warning('Error pulling collectionGroup $subCollection: $e', name: 'admin.firestore.sync');
+          }
+        }
+        
+        return result;
+      }
+
+      // 2. Search for missing IDs in sub-collections (pointsOfSale and agences)
+      final missingIds = allowedEnterpriseIds.where((id) => !foundIds.contains(id)).toList();
+      
+      if (missingIds.isNotEmpty) {
+        for (final id in missingIds) {
+          try {
+            DocumentSnapshot<Map<String, dynamic>>? doc;
+            
+            if (id.startsWith('pos_')) {
+              // Pattern: pos_{parentId}_{timestamp}
+              final parts = id.split('_');
+              if (parts.length >= 3) {
+                final parentId = '${parts[1]}_${parts[2]}';
+                doc = await firestore
+                    .collection(_enterprisesCollection)
+                    .doc(parentId)
+                    .collection('pointsOfSale')
+                    .doc(id)
+                    .get();
+              }
+            } else if (id.startsWith('agence_')) {
+              // Pattern: agence_{parentId}_{timestamp} ou agence_orange_money_{timestamp}
+              final parts = id.split('_');
+              if (parts.length >= 4 && parts[1] == 'orange' && parts[2] == 'money') {
+                final parentId = '${parts[1]}_${parts[2]}_${parts[3]}';
+                doc = await firestore
+                    .collection(_enterprisesCollection)
+                    .doc(parentId)
+                    .collection('agences')
+                    .doc(id)
+                    .get();
+              } else if (parts.length >= 3) {
+                final parentId = '${parts[1]}_${parts[2]}';
+                 doc = await firestore
+                    .collection(_enterprisesCollection)
+                    .doc(parentId)
+                    .collection('agences')
+                    .doc(id)
+                    .get();
+              }
+            }
+
+            if (doc != null && doc.exists) {
+              final data = Map<String, dynamic>.from(doc.data()!);
+              final parentId = doc.reference.parent.parent?.id;
+              
+              result.add(Enterprise.fromMap({
+                ...data,
+                'id': doc.id,
+                'parentEnterpriseId': parentId,
+              }));
+              foundIds.add(doc.id);
+            }
+          } catch (e) {
+             AppLogger.warning('Error pulling specific enterprise $id: $e', name: 'admin.firestore.sync');
+          }
+        }
+      }
+
+      return result;
     } catch (e, stackTrace) {
       final appException = ErrorHandler.instance.handleError(e, stackTrace);
       AppLogger.warning(

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 import '../errors/error_handler.dart';
 import '../logging/app_logger.dart';
@@ -83,6 +84,13 @@ class SyncManager {
 
   /// Initializes the sync manager and starts auto-sync if enabled.
   Future<void> initialize() async {
+    // On Web, the sync manager is a no-op as we use direct Firestore
+    if (kIsWeb) {
+      AppLogger.info('SyncManager: Skipping initialization on Web platform', name: 'offline.sync');
+      _isInitialized = true;
+      return;
+    }
+
     if (_isInitialized) {
       AppLogger.debug('SyncManager already initialized', name: 'offline.sync');
       return;
@@ -102,6 +110,8 @@ class SyncManager {
 
   /// Syncs all pending operations.
   Future<SyncResult> syncPendingOperations() async {
+    if (kIsWeb) return SyncResult(success: true, message: 'No-op on Web', syncedCount: 0);
+    
     if (_isSyncing) {
       AppLogger.debug('Sync already in progress', name: 'offline.sync');
       return SyncResult(
@@ -366,6 +376,8 @@ class SyncManager {
     String? enterpriseId,
     SyncPriority? priority,
   }) async {
+    if (kIsWeb) return;
+
     // Valider la taille du payload avant de le queue
     final jsonPayload = jsonEncode(data);
     try {
@@ -411,6 +423,8 @@ class SyncManager {
     required Map<String, dynamic> data,
     String? enterpriseId,
   }) async {
+    if (kIsWeb) return;
+
     // Valider la taille du payload avant de le queue
     final jsonPayload = jsonEncode(data);
     try {
@@ -455,6 +469,8 @@ class SyncManager {
     required String remoteId,
     String? enterpriseId,
   }) async {
+    if (kIsWeb) return;
+
     final operation = SyncOperation()
       ..operationType = 'delete'
       ..collectionName = collectionName

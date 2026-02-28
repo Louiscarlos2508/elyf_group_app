@@ -9,6 +9,7 @@ import '../../../../core/offline/drift_service.dart';
 import '../../../../core/offline/sync_manager.dart';
 import '../../../../core/offline/sync_status.dart';
 import '../../../../core/permissions/entities/user_role.dart';
+import '../../domain/repositories/user_repository.dart';
 import '../../domain/repositories/admin_repository.dart';
 import 'optimized_queries.dart';
 
@@ -18,11 +19,13 @@ class AdminOfflineRepository implements AdminRepository {
     required this.driftService,
     required this.syncManager,
     required this.connectivityService,
+    this.userRepository,
   });
 
   final DriftService driftService;
   final SyncManager syncManager;
   final ConnectivityService connectivityService;
+  final UserRepository? userRepository;
 
   static const String _rolesCollection = 'roles';
   static const String _enterpriseModuleUsersCollection =
@@ -258,6 +261,9 @@ class AdminOfflineRepository implements AdminRepository {
       data: _enterpriseModuleUserToMap(enterpriseModuleUser),
       enterpriseId: 'global',
     );
+
+    // Mettre à jour les enterpriseIds dans le document utilisateur pour les règles Firestore
+    await _syncUserEnterpriseIds(enterpriseModuleUser.userId);
   }
 
   @override
@@ -350,6 +356,73 @@ class AdminOfflineRepository implements AdminRepository {
         name: 'admin.repository',
       );
     });
+
+    // Mettre à jour les enterpriseIds dans le document utilisateur pour les règles Firestore
+    await _syncUserEnterpriseIds(userId);
+  }
+
+  /// Synchronise les enterpriseIds dans le document utilisateur Firestore
+  /// pour que les règles de sécurité Firestore fonctionnent.
+  Future<void> _syncUserEnterpriseIds(String userId) async {
+    if (userRepository == null) return;
+
+    try {
+      // 1. Récupérer toutes les assignations de l'utilisateur
+      final assignments = await getUserEnterpriseModuleUsers(userId);
+      
+      // 2. Extraire les IDs d'entreprise uniques (y compris les parents pour les sous-tenants)
+      final directIds = assignments
+          .where((a) => a.isActive)
+          .map((a) => a.enterpriseId)
+          .toSet();
+      
+      final enterpriseIdsSet = <String>{...directIds};
+      
+      // Propager les IDs parents pour les sous-tenants (POS/Agences)
+      // Cela permet aux règles Firestore de donner accès aux ressources partagées du parent
+      for (final id in directIds) {
+        if (id.startsWith('pos_')) {
+          final parts = id.split('_');
+          if (parts.length >= 3) {
+            enterpriseIdsSet.add('${parts[1]}_${parts[2]}');
+          }
+        } else if (id.startsWith('agence_')) {
+          final parts = id.split('_');
+          if (parts.length >= 4 && parts[1] == 'orange' && parts[2] == 'money') {
+             enterpriseIdsSet.add('${parts[1]}_${parts[2]}_${parts[3]}');
+          } else if (parts.length >= 3) {
+             enterpriseIdsSet.add('${parts[1]}_${parts[2]}');
+          }
+        }
+      }
+      
+      final enterpriseIds = enterpriseIdsSet.toList();
+
+      // 3. Récupérer l'utilisateur
+      final user = await userRepository!.getUserById(userId);
+      if (user != null) {
+        // 4. Mettre à jour l'utilisateur avec les nouveaux enterpriseIds
+        final updatedUser = user.copyWith(
+          enterpriseIds: enterpriseIds,
+          updatedAt: DateTime.now(),
+        );
+        
+        // 5. Sauvegarder l'utilisateur (cela déclenchera la sync vers Firestore)
+        await userRepository!.updateUser(updatedUser);
+        
+        developer.log(
+          '✅ User enterpriseIds synced: ${user.id}, count: ${enterpriseIds.length}',
+          name: 'admin.repository',
+        );
+      }
+    } catch (e, stackTrace) {
+      AppLogger.warning(
+        'Failed to sync user enterpriseIds: $e',
+        name: 'admin.repository',
+        error: e,
+        stackTrace: stackTrace,
+      );
+    }
   }
 
   @override

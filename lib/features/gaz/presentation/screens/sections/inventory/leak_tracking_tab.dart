@@ -58,7 +58,7 @@ class _LeakTrackingTabState extends ConsumerState<LeakTrackingTab> {
   @override
   Widget build(BuildContext context) {
     final activeEnterprise = ref.watch(activeEnterpriseProvider).value;
-    final isPos = activeEnterprise?.type == EnterpriseType.gasPointOfSale;
+    final isPos = activeEnterprise?.isPointOfSale ?? false;
 
     final leaksAsync = ref.watch(
       cylinderLeaksProvider((

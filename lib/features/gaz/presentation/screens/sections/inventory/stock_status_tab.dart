@@ -12,6 +12,7 @@ import '../stock/stock_kpi_section.dart';
 import '../stock/stock_pos_list.dart';
 import '../stock/stock_transfer_screen.dart';
 import '../../../widgets/wholesale/independent_collection_dialog.dart';
+import '../../../widgets/bottle_conservation_card.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/services/gaz_stock_calculation_service.dart';
 
 class StockStatusTab extends ConsumerWidget {
@@ -24,7 +25,7 @@ class StockStatusTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final activeEnterprise = ref.watch(activeEnterpriseProvider).value;
-    final isPOS = activeEnterprise?.type == EnterpriseType.gasPointOfSale;
+    final isPOS = activeEnterprise?.isPointOfSale ?? false;
 
     final pointsOfSaleAsync = ref.watch(
       enterprisesByParentAndTypeProvider((
@@ -35,10 +36,6 @@ class StockStatusTab extends ConsumerWidget {
 
     final allStocksAsync = ref.watch(gazStocksProvider);
     final cylindersAsync = ref.watch(cylindersProvider);
-    final settingsAsync = ref.watch(gazSettingsProvider((
-      enterpriseId: enterpriseId,
-      moduleId: moduleId,
-    )));
 
     return pointsOfSaleAsync.when(
       data: (pointsOfSale) {
@@ -110,6 +107,20 @@ class StockStatusTab extends ConsumerWidget {
               ),
             ),
 
+            // Conservation du parc bouteilles (dépôt uniquement)
+            if (!isPOS)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    0,
+                    AppSpacing.lg,
+                    AppSpacing.lg,
+                  ),
+                  child: BottleConservationCard(enterpriseId: enterpriseId),
+                ),
+              ),
+
             SliverToBoxAdapter(
               child: Padding(
                 padding: EdgeInsets.fromLTRB(
@@ -164,7 +175,7 @@ class StockStatusTab extends ConsumerWidget {
                     if (currentEnterprise == null) return const SizedBox.shrink();
 
                     final cylinders = cylindersAsync.value ?? [];
-                    final settings = settingsAsync.value;
+
                     final transfers = ref.watch(stockTransfersProvider(activeId)).value;
 
                     final metrics = GazStockCalculationService.calculatePosStockMetrics(

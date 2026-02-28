@@ -63,17 +63,19 @@ class SalesReportWholesaleStats extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Icon(Icons.local_shipping, size: 16, color: const Color(0xFF8B5CF6)),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Tour ${entry.key.substring(0, 8)}...',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w500,
+                Expanded(
+                  child: Row(
+                    children: [
+                      Icon(Icons.local_shipping, size: 16, color: const Color(0xFF8B5CF6)),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Tour ${entry.key.substring(0, 8)}...',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
@@ -134,20 +136,22 @@ class SalesReportWholesaleStats extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Icon(Icons.business, size: 16, color: const Color(0xFF8B5CF6)),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        wholesalerData.name,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w500,
+                Expanded(
+                  child: Row(
+                    children: [
+                      Icon(Icons.business, size: 16, color: const Color(0xFF8B5CF6)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          wholesalerData.name,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w500,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,

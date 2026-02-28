@@ -328,6 +328,23 @@ class OfflineRecordDao {
     return list.isEmpty ? null : list.first;
   }
 
+  /// Finds a record by its local ID within a collection, regardless of enterpriseId.
+  Future<OfflineRecord?> findInCollectionByLocalId({
+    required String collectionName,
+    required String localId,
+  }) async {
+    final list = await (_db.select(_db.offlineRecords)
+          ..where(
+            (t) =>
+                t.collectionName.equals(collectionName) &
+                t.localId.equals(localId),
+          )
+          ..orderBy([(t) => OrderingTerm.desc(t.localUpdatedAt)])
+          ..limit(1))
+        .get();
+    return list.isEmpty ? null : list.first;
+  }
+
   /// Updates the remote ID for a record after successful sync.
   ///
   /// Filtre par [enterpriseId] et [moduleType] lorsqu'ils sont fournis pour

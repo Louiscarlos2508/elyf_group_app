@@ -208,7 +208,7 @@ final gasRepositoryProvider = Provider<GasRepository>((ref) {
 
 final gasCylinderRepositoryProvider = Provider<GasRepository>((ref) {
   final activeEnterprise = ref.watch(activeEnterpriseProvider).value;
-  final enterpriseId = activeEnterprise?.type == EnterpriseType.gasPointOfSale
+  final enterpriseId = (activeEnterprise?.isPointOfSale == true && activeEnterprise?.type.module == EnterpriseModule.gaz)
       ? (activeEnterprise?.parentEnterpriseId ?? activeEnterprise?.id ?? 'default')
       : (activeEnterprise?.id ?? 'default');
   final driftService = DriftService.instance;
@@ -611,7 +611,7 @@ final leakReportSummaryProvider =
 
 final gazSettingsControllerProvider = Provider<GazSettingsController>((ref) {
   final activeEnterprise = ref.watch(activeEnterpriseProvider).value;
-  final enterpriseId = activeEnterprise?.type == EnterpriseType.gasPointOfSale
+  final enterpriseId = (activeEnterprise?.isPointOfSale == true && activeEnterprise?.type.module == EnterpriseModule.gaz)
       ? (activeEnterprise?.parentEnterpriseId ?? activeEnterprise?.id ?? 'default')
       : (activeEnterprise?.id ?? 'default');
   final repo = ref.watch(gazSettingsRepositoryProvider(enterpriseId));
@@ -1243,7 +1243,8 @@ final gazSettingsProvider =
     >((ref, params) {
       final activeEnterprise = ref.watch(activeEnterpriseProvider).value;
       final effectiveEnterpriseId = activeEnterprise != null &&
-              activeEnterprise.type == EnterpriseType.gasPointOfSale &&
+              activeEnterprise.isPointOfSale &&
+              activeEnterprise.type.module == EnterpriseModule.gaz &&
               activeEnterprise.id == params.enterpriseId
           ? (activeEnterprise.parentEnterpriseId ?? params.enterpriseId)
           : params.enterpriseId;

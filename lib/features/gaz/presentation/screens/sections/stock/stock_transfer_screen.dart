@@ -64,7 +64,7 @@ class StockTransferScreen extends ConsumerWidget {
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (e, _) => Center(child: Text('Erreur: $e')),
         ),
-        floatingActionButton: activeEnterprise.type == EnterpriseType.gasPointOfSale ? null : FloatingActionButton.extended(
+        floatingActionButton: activeEnterprise.isPointOfSale ? null : FloatingActionButton.extended(
           onPressed: () => showDialog(
             context: context,
             builder: (context) => StockTransferDialog(fromEnterpriseId: activeEnterprise.id),

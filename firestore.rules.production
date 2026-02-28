@@ -22,21 +22,18 @@ service cloud.firestore {
              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
     }
     
-    // Vérifie si l'utilisateur existe et a le champ isAdmin défini (même si false)
-    // Utile pour éviter les erreurs lors de la vérification
-    function hasAdminField(userId) {
-      return userExists(userId) && 
-             get(/databases/$(database)/documents/users/$(userId)).data.isAdmin != null;
-    }
-    
     // Vérifie si l'utilisateur appartient à une entreprise
     function hasEnterprise(enterpriseId) {
       return isAuthenticated() && 
              userExists(request.auth.uid) &&
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.enterpriseIds != null &&
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.enterpriseIds is list &&
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.enterpriseIds
-                 .hasAny([enterpriseId]);
+             (
+               (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.enterpriseIds != null &&
+                get(/databases/$(database)/documents/users/$(request.auth.uid)).data.enterpriseIds is list &&
+                get(/databases/$(database)/documents/users/$(request.auth.uid)).data.enterpriseIds.hasAny([enterpriseId]))
+               ||
+               (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.enterprises != null &&
+                enterpriseId in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.enterprises)
+             );
     }
     
     // Vérifie si l'utilisateur est admin de l'entreprise
@@ -259,7 +256,43 @@ service cloud.firestore {
         allow read: if hasEnterprise(enterpriseId);
         allow write: if hasPermission(enterpriseId, 'gaz:manage_settings');
       }
-      
+
+      match /wholesalers/{wholesalerId} {
+        allow read: if hasEnterprise(enterpriseId);
+        allow write: if hasPermission(enterpriseId, 'gaz:manage_wholesalers');
+      }
+
+      match /inventoryAudits/{auditId} {
+        allow read: if hasEnterprise(enterpriseId);
+        allow write: if hasPermission(enterpriseId, 'gaz:manage_stocks');
+      }
+
+      match /stockTransfers/{transferId} {
+        allow read, write: if hasEnterprise(enterpriseId);
+      }
+
+      match /gasCollections/{collectionId} {
+        allow read, write: if hasEnterprise(enterpriseId);
+      }
+
+      match /gazSessions/{sessionId} {
+        allow read, write: if hasEnterprise(enterpriseId);
+      }
+
+      match /gazTreasuryOperations/{opId} {
+        allow read, write: if hasEnterprise(enterpriseId);
+      }
+
+      match /auditTrail/{logId} {
+        allow read: if hasEnterprise(enterpriseId);
+        allow write: if isAuthenticated(); // Permettre d'écrire des logs d'audit depuis l'app
+      }
+
+      match /boutiqueSettings/{settingsId} {
+        allow read: if hasEnterprise(enterpriseId);
+        allow write: if hasPermission(enterpriseId, 'boutique:manage_settings');
+      }
+
       match /financialReports/{reportId} {
         allow read: if hasEnterprise(enterpriseId);
         allow write: if hasPermission(enterpriseId, 'gaz:view_reports') || 

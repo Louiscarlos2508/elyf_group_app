@@ -46,8 +46,8 @@ enum EnterpriseType {
   shopBranch('shop_branch', 'Succursale Boutique', 'Succursale de boutique', EnterpriseModule.boutique),
   
   // Mobile Money
-  mobileMoneyAgent('mm_agent', 'Agent Mobile Money', 'Agent principal', EnterpriseModule.mobileMoney, isMain: true),
-  mobileMoneySubAgent('mm_sub_agent', 'Sous-Agent', 'Sous-agent Mobile Money', EnterpriseModule.mobileMoney),
+  mobileMoneyAgent('mm_agent', 'Agence Mobile Money', 'Agence principale', EnterpriseModule.mobileMoney, isMain: true),
+  mobileMoneySubAgent('mm_sub_agent', 'Sous-Agence', 'Sous-agence Mobile Money', EnterpriseModule.mobileMoney),
   mobileMoneyDistributor('mm_distributor', 'Distributeur', 'Distributeur Mobile Money', EnterpriseModule.mobileMoney),
   mobileMoneyKiosk('mm_kiosk', 'Kiosque', 'Kiosque Mobile Money', EnterpriseModule.mobileMoney),
   
@@ -106,6 +106,13 @@ enum EnterpriseType {
   /// Vérifier si c'est un type Mobile Money
   bool get isMobileMoney => module == EnterpriseModule.mobileMoney;
 
+  /// Nom de la sous-collection Firestore pour ce type (si c'est un sous-tenant)
+  String get subCollectionName {
+    if (isGas) return 'pointsOfSale';
+    if (isMobileMoney) return 'agences';
+    return 'pointsOfSale'; // Par défaut
+  }
+
   /// Vérifier si c'est un type de point de vente
   bool get isPointOfSale => [
     gasPointOfSale,
@@ -113,6 +120,9 @@ enum EnterpriseType {
     shop,
     shopBranch,
     pointOfSale,
+    mobileMoneyAgent,
+    mobileMoneySubAgent,
+    mobileMoneyKiosk,
   ].contains(this);
 
   /// Obtenir une icône représentative du type d'entité
@@ -216,6 +226,9 @@ class Enterprise extends Equatable {
   /// Vérifier si c'est lié au Mobile Money
   bool get isMobileMoney => type.isMobileMoney;
 
+  /// Nom de la sous-collection Firestore pour cet établissement (si applicable)
+  String get subCollectionName => type.subCollectionName;
+
   /// Vérifier si cette entreprise peut avoir des sous-entreprises (enfants)
   /// Règle métier : Seul le groupe (racine) et les entités principales Gaz ou Mobile Money peuvent avoir des enfants.
   bool get supportsHierarchy => type.canHaveChildren;
@@ -293,8 +306,8 @@ class Enterprise extends Equatable {
       id: (map['localId'] as String?)?.trim().isNotEmpty == true 
           ? map['localId'] as String 
           : (map['id'] as String? ?? ''),
-      name: map['name'] as String,
-      type: EnterpriseType.fromId(map['type'] as String),
+      name: map['name'] as String? ?? 'Sans nom',
+      type: EnterpriseType.fromId(map['type'] as String? ?? 'gas_company'),
       parentEnterpriseId: map['parentEnterpriseId'] as String?,
       hierarchyLevel: map['hierarchyLevel'] as int? ?? 0,
       hierarchyPath: map['hierarchyPath'] as String? ?? '',

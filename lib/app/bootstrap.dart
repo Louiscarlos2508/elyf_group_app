@@ -22,8 +22,7 @@ import '../core/navigation/navigation_service.dart';
 import '../shared/utils/local_notification_service.dart';
 import '../core/offline/providers.dart';
 import '../core/firebase/providers.dart';
-
-
+import 'package:firebase_auth/firebase_auth.dart';
 /// Performs global asynchronous initialization before the app renders.
 ///
 /// This is where we initialize Firebase, Drift, Remote Config,
@@ -130,11 +129,24 @@ Future<void> _initializeOfflineServices(ProviderContainer container) async {
     // Initialize realtime sync for administration module
     try {
       final realtimeSyncService = container.read(realtimeSyncServiceProvider);
-      await realtimeSyncService.startRealtimeSync();
-      developer.log(
-        'Realtime sync started for administration module',
-        name: 'bootstrap',
-      );
+      final currentUser = FirebaseAuth.instance.currentUser;
+      
+      if (currentUser != null) {
+        // Démarrer en arrière-plan sans attendre (ne bloque pas le boot)
+        realtimeSyncService.startRealtimeSync(userId: currentUser.uid).catchError((e) {
+          developer.log('Failed to start realtime sync: $e', name: 'bootstrap');
+        });
+        developer.log(
+          'Realtime sync started for administration module (user: ${currentUser.uid})',
+          name: 'bootstrap',
+        );
+
+      } else {
+        developer.log(
+          'Skipping realtime sync start (no user logged in)',
+          name: 'bootstrap',
+        );
+      }
     } catch (e, stackTrace) {
       final appException = ErrorHandler.instance.handleError(e, stackTrace);
       AppLogger.warning(

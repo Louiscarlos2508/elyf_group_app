@@ -14,6 +14,7 @@ import '../../../../features/administration/application/providers.dart'
         adminStatsProvider;
 import '../../../../features/administration/domain/entities/enterprise.dart';
 import '../../../../shared/presentation/widgets/elyf_ui/atoms/elyf_icon_button.dart';
+import '../../../../core/auth/providers.dart' show currentUserIdProvider;
 
 /// Dialogue pour créer ou modifier un point de vente.
 class PointOfSaleFormDialog extends ConsumerStatefulWidget {
@@ -87,6 +88,7 @@ class _PointOfSaleFormDialogState extends ConsumerState<PointOfSaleFormDialog>
       onLoadingChanged: (isLoading) => setState(() => _isLoading = isLoading),
       onSubmit: () async {
         final controller = ref.read(enterpriseControllerProvider);
+        final currentUserId = ref.read(currentUserIdProvider);
 
         if (widget.enterprise == null) {
           final parentEnterpriseId = _enterpriseId!;
@@ -103,7 +105,7 @@ class _PointOfSaleFormDialogState extends ConsumerState<PointOfSaleFormDialog>
             updatedAt: DateTime.now(),
           );
           
-          await controller.createEnterprise(pointOfSale);
+          await controller.createEnterprise(pointOfSale, currentUserId: currentUserId);
         } else {
           final pointOfSale = widget.enterprise!.copyWith(
             name: _nameController.text.trim(),
@@ -111,7 +113,7 @@ class _PointOfSaleFormDialogState extends ConsumerState<PointOfSaleFormDialog>
             phone: _contactController.text.trim(),
             updatedAt: DateTime.now(),
           );
-          await controller.updateEnterprise(pointOfSale);
+          await controller.updateEnterprise(pointOfSale, currentUserId: currentUserId);
         }
 
         if (mounted) {

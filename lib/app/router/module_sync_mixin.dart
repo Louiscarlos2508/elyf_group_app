@@ -7,6 +7,7 @@ import '../../core/errors/error_handler.dart';
 import '../../core/logging/app_logger.dart';
 
 import '../../core/offline/providers.dart' show globalModuleRealtimeSyncServiceProvider;
+import '../../core/tenant/tenant_provider.dart' show activeEnterpriseProvider;
 
 /// Mixin pour déclencher la synchronisation en temps réel lors de l'accès à un module.
 ///
@@ -98,11 +99,26 @@ mixin ModuleSyncMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
       return;
     }
 
+    // Récupérer l'entreprise active pour obtenir son parent (si c'est un sous-tenant comme un POS)
+    final activeEnterprise = ref.read(activeEnterpriseProvider).value;
+    final parentEnterpriseId = activeEnterprise?.parentEnterpriseId;
+
+    if (parentEnterpriseId != null) {
+      developer.log(
+        'Detected child enterprise. Using parent $parentEnterpriseId for shared collections.',
+        name: 'module.sync.mixin',
+      );
+    }
+
     // Démarrer la synchronisation via le service global
     // Cela évite les duplications car le service global vérifie déjà
     // si une sync est active avant de démarrer
     globalSync
-        .startRealtimeSync(enterpriseId: enterpriseId, moduleId: moduleId)
+        .startRealtimeSync(
+          enterpriseId: enterpriseId, 
+          moduleId: moduleId,
+          parentEnterpriseId: parentEnterpriseId,
+        )
         .then((_) {
           if (!mounted || _isDisposed) {
             developer.log(

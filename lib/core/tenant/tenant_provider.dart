@@ -86,75 +86,9 @@ final userAssignmentsProvider = StreamProvider<List<EnterpriseModuleUser>>((ref)
   });
 });
 
-/// Provider pour toutes les entreprises (normales + points de vente)
-///
-/// Surveille les deux collections d'entreprises en temps réel
 final allEnterprisesStreamProvider = StreamProvider<List<Enterprise>>((ref) {
   final enterpriseRepo = ref.watch(enterpriseRepositoryProvider);
-  final driftService = ref.watch(driftServiceProvider);
-
-  // Écouter les entreprises normales
-  final enterprisesStream = enterpriseRepo.watchAllEnterprises();
-
-  // Sous-entités (Dépôts, Points de vente, Usines, etc. considérés comme des espaces dans le sélecteur)
-  // On surveille TOUS les espaces, quel que soit le module
-  final subEntitiesStream = driftService.db.watchRecordsByCollection('pointOfSale');
-
-  return Rx.combineLatest2<List<Enterprise>, List<OfflineRecord>, List<Enterprise>>(
-    enterprisesStream,
-    subEntitiesStream,
-    (enterprises, subEntityRecords) {
-      final all = <Enterprise>[...enterprises];
-      
-      // Convertir les records de sous-entités en objets Enterprise
-      for (final record in subEntityRecords) {
-        try {
-          final map = Map<String, dynamic>.from(jsonDecode(record.dataJson));
-          
-          final id = record.remoteId ?? record.localId;
-          final name = map['name'] as String? ?? 'Espace sans nom';
-          final parentId = map['parentEnterpriseId'] as String? ?? map['enterpriseId'] as String?;
-          final parent = enterprises.where((e) => e.id == parentId).firstOrNull;
-          
-          EnterpriseType childType = EnterpriseType.pointOfSale;
-          if (map['type'] != null) {
-            childType = EnterpriseType.fromId(map['type'] as String);
-          } else if (parent != null) {
-            if (parent.type.isGas) {
-              childType = EnterpriseType.gasPointOfSale;
-            } else if (parent.type.isWater) {
-              childType = EnterpriseType.waterPointOfSale;
-            } else if (parent.type.isShop) {
-              childType = EnterpriseType.shopBranch;
-            } else if (parent.type.isMobileMoney) {
-              childType = EnterpriseType.mobileMoneyKiosk;
-            } else if (parent.type.isRealEstate) {
-              childType = EnterpriseType.realEstateBranch;
-            }
-          }
-
-          all.add(Enterprise(
-            id: id,
-            name: name,
-            type: childType,
-            parentEnterpriseId: parentId,
-            description: map['description'] as String? ?? map['address'] as String?,
-            isActive: map['isActive'] as bool? ?? true,
-          ));
-        } catch (e) {
-          AppLogger.error('allEnterprisesStreamProvider: error parsing sub-entity: $e', name: 'tenant');
-        }
-      }
-      
-      // Dédupliquer par ID au cas où
-      final unique = <String, Enterprise>{};
-      for (final ent in all) {
-        unique[ent.id] = ent;
-      }
-      final result = unique.values.toList();
-      return result;
-    },
-  );
+  return enterpriseRepo.watchAllEnterprises();
 });
 
 /// Provider pour récupérer les entreprises accessibles à l'utilisateur actuel

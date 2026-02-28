@@ -52,6 +52,7 @@ class UserOfflineRepository extends OfflineRepository<User>
       'email': entity.email,
       'phone': entity.phone,
       'isActive': entity.isActive,
+      'enterpriseIds': entity.enterpriseIds,
       'createdAt': entity.createdAt?.toIso8601String(),
       'updatedAt': entity.updatedAt?.toIso8601String(),
     };

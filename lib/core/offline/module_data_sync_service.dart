@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:drift/drift.dart' hide Query;
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 import '../errors/app_exceptions.dart';
 import '../errors/error_handler.dart';
@@ -25,6 +26,19 @@ class ModuleDataSyncService {
   final FirebaseFirestore firestore;
   final DriftService driftService;
   final Map<String, String Function(String p1)> collectionPaths;
+
+  /// Configuration des collections partagées (qui doivent être sync depuis le parent si dispo).
+  static const Map<String, List<String>> sharedCollections = {
+    'gaz': [
+      'cylinders',
+      'gaz_settings',
+      'pointOfSale',
+    ],
+    'orange_money': [
+      'agences',
+      'orange_money_settings',
+    ],
+  };
 
   /// Configuration des collections par module.
   ///
@@ -58,6 +72,7 @@ class ModuleDataSyncService {
       CollectionNames.packagingStocks,
       CollectionNames.bobineStockMovements,
       CollectionNames.packagingStockMovements,
+      CollectionNames.eauMineraleTreasuryOperations,
     ],
     'gaz': [
       'cylinders',
@@ -80,13 +95,16 @@ class ModuleDataSyncService {
       'commissions',
       'liquidity_checkpoints',
       'orange_money_settings',
+      'agences',
     ],
     'immobilier': [
       'properties',
       'tenants',
       'contracts',
       'payments',
-      'property_expenses', // Correction: was 'expenses' which is ambiguous, verify bootstrap match
+      'property_expenses',
+      'immobilier_treasury',
+      'immobilier_settings',
     ],
   };
 
@@ -101,9 +119,12 @@ class ModuleDataSyncService {
   Future<void> syncModuleData({
     required String enterpriseId,
     required String moduleId,
+    String? parentEnterpriseId,
     List<String>? collections,
     DateTime? lastSyncAt,
   }) async {
+    if (kIsWeb) return;
+    
     // Utiliser la configuration par défaut si collections n'est pas fourni
     final collectionsToSync = collections ?? moduleCollections[moduleId] ?? [];
 
@@ -134,6 +155,7 @@ class ModuleDataSyncService {
           await _syncCollection(
             enterpriseId: enterpriseId,
             moduleId: moduleId,
+            parentEnterpriseId: parentEnterpriseId,
             collectionName: collectionName,
             lastSyncAt: lastSyncAt,
           );
@@ -188,9 +210,12 @@ class ModuleDataSyncService {
   Future<void> _syncCollection({
     required String enterpriseId,
     required String moduleId,
+    String? parentEnterpriseId,
     required String collectionName,
     DateTime? lastSyncAt,
   }) async {
+    if (kIsWeb) return;
+
     try {
       // Obtenir le chemin physique de la collection
       // La fonction retourne le path complet (ex: enterprises/123/gasSales)
@@ -202,7 +227,13 @@ class ModuleDataSyncService {
         );
       }
       
-      final fullPath = pathBuilder(enterpriseId);
+      // Déterminer l'ID de l'entreprise à utiliser pour le chemin Firestore
+      final isShared = sharedCollections[moduleId]?.contains(collectionName) ?? false;
+      final effectivePathEnterpriseId = (isShared && parentEnterpriseId != null) 
+          ? parentEnterpriseId 
+          : enterpriseId;
+
+      final fullPath = pathBuilder(effectivePathEnterpriseId);
       final collectionRef = firestore.collection(fullPath);
 
       Query query = collectionRef;
@@ -260,8 +291,14 @@ class ModuleDataSyncService {
             continue; // Skip ce document et continuer avec les autres
           }
 
-          String storageEnterpriseId = enterpriseId;
-          // Note: specific logic for pointOfSale remains as is but integrated into batch
+          String storageEnterpriseId = isShared ? effectivePathEnterpriseId : enterpriseId;
+          
+          // Special legacy handling for pointOfSale collection
+          if (collectionName == 'pointOfSale') {
+            storageEnterpriseId = (sanitizedData['parentEnterpriseId'] as String?) ?? 
+                                 (sanitizedData['enterpriseId'] as String?) ?? 
+                                 storageEnterpriseId;
+          }
           
           // Vérifier si un enregistrement avec le même localId embarqué existe d'abord
           // Utiliser les finders Any (sans filtre moduleType) pour trouver même les
@@ -313,7 +350,7 @@ class ModuleDataSyncService {
           ));
         } catch (e) {
           AppLogger.warning(
-            'Error preparing document ${doc.id} for sync: $e',
+            'SYNC ERROR: Error parsing document ${doc.id} in collection $collectionName for enterprise $enterpriseId: $e',
             name: 'module.sync',
           );
         }
@@ -327,6 +364,15 @@ class ModuleDataSyncService {
         'Completed syncing $collectionName: ${snapshot.docs.length} documents (Batched)',
         name: 'module.sync',
       );
+    } on FirebaseException catch (e) {
+      if (e.code == 'permission-denied') {
+         AppLogger.warning(
+          'SYNC PERMISSION: Permission denied reading collection $collectionName for enterprise $enterpriseId. Ignoring.',
+          name: 'module.sync',
+        );
+      } else {
+         rethrow;
+      }
     } catch (e, stackTrace) {
       final appException = ErrorHandler.instance.handleError(e, stackTrace);
       AppLogger.error(

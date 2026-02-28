@@ -107,16 +107,16 @@ class DataSanitizer {
     if (id == null || id.isEmpty) return false;
     if (id.length > 100) return false;
 
-    // Only allow alphanumeric, underscore, and hyphen
-    return RegExp(r'^[a-zA-Z0-9_-]+$').hasMatch(id);
+    // Permet les caractères alphanumériques, tirets, underscores, points et deux-points
+    return RegExp(r'^[a-zA-Z0-9\-_.:]+$').hasMatch(id);
   }
 
   /// Sanitizes an ID value.
   static String? sanitizeId(String? id) {
     if (id == null || id.isEmpty) return null;
 
-    // Remove any characters that aren't alphanumeric, underscore, or hyphen
-    final sanitized = id.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '');
+    // Remove any characters that aren't alphanumeric, underscore, hyphen, dot, or colon
+    final sanitized = id.replaceAll(RegExp(r'[^a-zA-Z0-9\-_.:]'), '');
 
     if (sanitized.isEmpty || sanitized.length > 100) return null;
 

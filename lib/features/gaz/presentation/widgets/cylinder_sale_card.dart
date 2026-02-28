@@ -49,191 +49,170 @@ class CylinderSaleCard extends StatelessWidget {
     final gradientColor = _getGradientColor(cylinder.weight);
     final gradientEndColor = _getGradientEndColor(cylinder.weight);
 
-    return Container(
-      width: 260,
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: theme.colorScheme.primary.withAlpha(40),
-          width: 1.2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: theme.colorScheme.primary.withAlpha(10),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+    return InkWell(
+      onTap: hasStock ? onTap : null,
+      borderRadius: BorderRadius.circular(24),
+      child: Container(
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: theme.colorScheme.outline.withValues(alpha: 0.08),
+            width: 1,
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header with weight and stock badge
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  '${cylinder.weight}kg',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontSize: 20,
-                    fontWeight: FontWeight.normal,
-                    color: theme.colorScheme.onSurface,
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primary.withAlpha(20),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: theme.colorScheme.primary.withAlpha(40), width: 1),
-                  ),
-                  child: Text(
-                    '$stock EN STOCK',
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.primary,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ),
-              ],
+          boxShadow: [
+            BoxShadow(
+              color: theme.colorScheme.shadow.withValues(alpha: 0.03),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
             ),
-          ),
-          // Content
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Image placeholder with gradient
-                Container(
-                  height: 140,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [gradientColor, gradientEndColor],
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.1),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: Stack(
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Visual Header
+                  Container(
+                    height: 100,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          gradientColor,
+                          gradientEndColor,
+                        ],
                       ),
-                    ],
-                  ),
-                  child: Stack(
-                    children: [
-                      // Icon placeholder in center
-                      Center(
-                        child: Container(
-                          width: 80,
-                          height: 80,
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.surface.withValues(alpha: 0.3),
-                            shape: BoxShape.circle,
-                          ),
+                    ),
+                    child: Stack(
+                      children: [
+                        Positioned(
+                          right: -20,
+                          bottom: -20,
                           child: Icon(
                             Icons.local_fire_department,
-                            size: 40,
-                            color: Colors.white.withValues(alpha: 0.8),
+                            size: 100,
+                            color: Colors.white.withValues(alpha: 0.15),
                           ),
                         ),
-                      ),
-                      // Overlay if no stock
-                      if (!hasStock)
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.5),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Center(
-                            child: Icon(
-                              Icons.block,
-                              size: 48,
-                              color: Colors.white.withValues(alpha: 0.8),
+                        Center(
+                          child: Text(
+                            '${cylinder.weight}kg',
+                            style: theme.textTheme.displaySmall?.copyWith(
+                              fontSize: 32,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              letterSpacing: -1,
                             ),
                           ),
                         ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                // Price section
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primary.withValues(alpha: 0.05),
-                    borderRadius: BorderRadius.circular(12),
+                  
+                  // Info Content
+                  Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Gaz',
+                              style: theme.textTheme.labelMedium?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: hasStock 
+                                  ? Colors.green.withValues(alpha: 0.1) 
+                                  : Colors.red.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                hasStock ? '$stock' : 'Rupture',
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: hasStock ? Colors.green : Colors.red,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          CurrencyFormatter.formatDouble(cylinder.sellPrice),
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 18,
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        // Mini Action
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          decoration: BoxDecoration(
+                            color: hasStock 
+                              ? theme.colorScheme.primary.withValues(alpha: 0.05)
+                              : theme.colorScheme.surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: hasStock 
+                                ? theme.colorScheme.primary.withValues(alpha: 0.1)
+                                : theme.colorScheme.outline.withValues(alpha: 0.05),
+                            ),
+                          ),
+                          child: Center(
+                            child: Text(
+                              hasStock ? 'Vendre' : 'Indisponible',
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                color: hasStock 
+                                  ? theme.colorScheme.primary 
+                                  : theme.colorScheme.onSurfaceVariant,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  child: Column(
-                    children: [
-                      Text(
-                        'Prix unitaire',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontSize: 12,
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        CurrencyFormatter.formatDouble(
-                          cylinder.sellPrice,
-                        ).replaceAll(' FCFA', ''),
-                        style: theme.textTheme.headlineSmall?.copyWith(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w900,
-                          color: theme.colorScheme.primary,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'FCFA',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          fontSize: 14,
-                          color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-                // Action button
-                GestureDetector(
-                  onTap: hasStock ? onTap : null,
+                ],
+              ),
+              if (!hasStock)
+                Positioned.fill(
                   child: Container(
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: hasStock
-                          ? theme.colorScheme.primary
-                          : theme.colorScheme.outline.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                    color: Colors.white.withValues(alpha: 0.4),
                     child: Center(
-                      child: Text(
-                        hasStock ? 'Vendre' : 'Rupture de stock',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: hasStock
-                              ? theme.colorScheme.onPrimary
-                              : theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.do_not_disturb_on_outlined,
+                          color: Colors.red,
                         ),
                       ),
                     ),
                   ),
                 ),
-              ],
-            ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

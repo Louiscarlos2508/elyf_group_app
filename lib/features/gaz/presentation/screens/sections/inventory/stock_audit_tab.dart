@@ -11,6 +11,7 @@ import 'package:elyf_groupe_app/features/administration/domain/entities/enterpri
 import 'package:elyf_groupe_app/features/administration/application/providers.dart';
 import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/services/gaz_stock_calculation_service.dart';
+import '../../../../domain/entities/stock_transfer.dart';
 
 class StockAuditTab extends ConsumerStatefulWidget {
   const StockAuditTab({super.key, required this.enterpriseId});
@@ -194,15 +195,14 @@ class _StockAuditTabState extends ConsumerState<StockAuditTab> {
             }
           }
 
-          final auditList = <CylinderStock>[];
           final Map<int, List<CylinderStock>> groupedByWeight = {};
 
-          final isPosAudit = _selectedSite != null;
           final statusesToShow = [
             CylinderStatus.full,
             CylinderStatus.emptyAtStore,
-            if (!isPosAudit) CylinderStatus.emptyInTransit,
+            CylinderStatus.emptyInTransit, // PIVOT: Toujours montrer le transit local (tournées) pour audit exhaustif
             CylinderStatus.leak,
+            CylinderStatus.leakInTransit, // NOUVEAU: Ajouter les fuites en transit
             CylinderStatus.defective,
           ];
 
@@ -259,6 +259,20 @@ class _StockAuditTabState extends ConsumerState<StockAuditTab> {
                             color: Colors.blue,
                           ),
                         ),
+                        const SizedBox(width: 12),
+                        // NOUVEAU: Affichage du Parc Total pour référence
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
+                          ),
+                          child: Text(
+                            'Parc: ${uniqueCylinders[weight]?.registeredTotal ?? 0}',
+                            style: const TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold),
+                          ),
+                        ),
                         const SizedBox(width: 8),
                         Expanded(child: Divider(color: Colors.blue.withValues(alpha: 0.2))),
                       ],
@@ -298,6 +312,10 @@ class _StockAuditTabState extends ConsumerState<StockAuditTab> {
                             Row(
                               children: [
                                 _buildCountBadge('Théorique', theoretical, Colors.grey),
+                                const SizedBox(width: 16),
+                                // NOUVEAU: Info sur le transit inter-site pour expliquer les écarts visuels avec le dashboard global
+                                if (stock.status == CylinderStatus.full || stock.status == CylinderStatus.emptyAtStore)
+                                  _buildTransitInfo(stock, transfers, targetId),
                                 const SizedBox(width: 16),
                                 Expanded(
                                   child: TextFormField(
@@ -402,6 +420,42 @@ class _StockAuditTabState extends ConsumerState<StockAuditTab> {
     );
   }
 
+  Widget _buildTransitInfo(CylinderStock stock, List<StockTransfer>? transfers, String targetId) {
+    if (transfers == null) return const SizedBox.shrink();
+    
+    // Calculer le transit inter-site (bouteilles expédiées vers ce site mais non reçues)
+    final incomingQty = transfers
+        .where((t) => 
+            t.toEnterpriseId == targetId && 
+            t.status == StockTransferStatus.shipped)
+        .expand((t) => t.items)
+        .where((i) => i.weight == stock.weight && i.status == stock.status)
+        .fold<int>(0, (sum, i) => sum + i.quantity);
+
+    if (incomingQty == 0) return const SizedBox.shrink();
+
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: Colors.orange.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Column(
+        children: [
+          const Text('Transfert', style: TextStyle(fontSize: 8, color: Colors.orange)),
+          Text(
+            '+$incomingQty',
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: Colors.orange,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Color _getStatusColor(CylinderStatus status) {
     switch (status) {
       case CylinderStatus.full:
@@ -450,19 +504,6 @@ class _StockAuditTabState extends ConsumerState<StockAuditTab> {
     try {
       final cylinders = await ref.read(cylindersProvider.future);
       final stocks = await ref.read(gazStocksProvider.future);
-      final settings = await ref.read(gazSettingsProvider((
-        enterpriseId: targetId,
-        moduleId: 'gaz',
-      )).future);
-
-      final transfers = await ref.read(stockTransfersProvider(targetId).future);
-      final theoreticalMetrics = GazStockCalculationService.calculatePosStockMetrics(
-        enterpriseId: targetId,
-        siteId: siteIdParam,
-        allStocks: stocks,
-        transfers: transfers,
-        cylinders: cylinders,
-      );
 
       final uniqueCylinders = <int, Cylinder>{};
       for (final c in cylinders) {
@@ -471,12 +512,12 @@ class _StockAuditTabState extends ConsumerState<StockAuditTab> {
         }
       }
 
-      final isPosAudit = _selectedSite != null;
       final statusesToShow = [
         CylinderStatus.full,
         CylinderStatus.emptyAtStore,
-        if (!isPosAudit) CylinderStatus.emptyInTransit,
+        CylinderStatus.emptyInTransit,
         CylinderStatus.leak,
+        CylinderStatus.leakInTransit,
         CylinderStatus.defective,
       ];
 
@@ -554,14 +595,26 @@ class _AuditHistoryCard extends StatelessWidget {
     return Card(
       child: ExpansionTile(
         title: Text(
-          'Audit du ${audit.auditDate.toIso8601String().substring(0, 10)}',
+          'Audit du ${audit.auditDate.toIso8601String().substring(0, 10)}${audit.siteId != null ? " - Site" : " - Global"}',
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
-        subtitle: Text(
-          'Écart total: $totalDiscrepancy',
-          style: TextStyle(
-            color: totalDiscrepancy == 0 ? Colors.green : Colors.orange,
-          ),
+        subtitle: Consumer(
+          builder: (context, ref, _) {
+            final sites = ref.watch(enterprisesByParentAndTypeProvider((
+              parentId: audit.enterpriseId,
+              type: EnterpriseType.gasPointOfSale,
+            ))).value ?? [];
+            final siteName = audit.siteId != null 
+                ? sites.where((s) => s.id == audit.siteId).firstOrNull?.name ?? "Site inconnu"
+                : "Magasin Central";
+            
+            return Text(
+              '$siteName | Écart total: $totalDiscrepancy',
+              style: TextStyle(
+                color: totalDiscrepancy == 0 ? Colors.green : Colors.orange,
+              ),
+            );
+          },
         ),
         children: [
           Padding(

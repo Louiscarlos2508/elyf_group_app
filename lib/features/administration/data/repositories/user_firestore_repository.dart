@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:rxdart/rxdart.dart';
 
 import '../../domain/entities/user.dart';
 import '../../domain/repositories/user_repository.dart';
@@ -17,10 +18,15 @@ class UserFirestoreRepository implements UserRepository {
 
   @override
   Future<List<User>> getAllUsers() async {
-    final snapshot = await _users.get();
-    return snapshot.docs
-        .map((doc) => User.fromMap(doc.data()))
-        .toList();
+    try {
+      final snapshot = await _users.get();
+      return snapshot.docs
+          .map((doc) => User.fromMap(doc.data()))
+          .toList();
+    } catch (e) {
+      // Return empty list on permission denied
+      return [];
+    }
   }
 
   @override
@@ -29,7 +35,7 @@ class UserFirestoreRepository implements UserRepository {
       (snapshot) => snapshot.docs
           .map((doc) => User.fromMap(doc.data()))
           .toList(),
-    );
+    ).onErrorReturn(<User>[]);
   }
 
   @override
@@ -158,6 +164,7 @@ class UserFirestoreRepository implements UserRepository {
       firstName: 'Admin',
       lastName: 'System',
       isActive: true,
+      isAdmin: true,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );

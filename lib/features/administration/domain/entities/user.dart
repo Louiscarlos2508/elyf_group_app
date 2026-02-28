@@ -10,6 +10,8 @@ class User {
     this.email,
     this.phone,
     this.isActive = true,
+    this.isAdmin = false,
+    this.enterpriseIds = const [],
     this.createdAt,
     this.updatedAt,
   });
@@ -35,6 +37,12 @@ class User {
   /// Indique si l'utilisateur est actif
   final bool isActive;
 
+  /// Indique si l'utilisateur est un administrateur système
+  final bool isAdmin;
+
+  /// Liste des IDs d'entreprises auxquelles l'utilisateur a accès
+  final List<String> enterpriseIds;
+
   /// Date de création du compte
   final DateTime? createdAt;
 
@@ -53,6 +61,8 @@ class User {
     String? email,
     String? phone,
     bool? isActive,
+    bool? isAdmin,
+    List<String>? enterpriseIds,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -64,6 +74,8 @@ class User {
       email: email ?? this.email,
       phone: phone ?? this.phone,
       isActive: isActive ?? this.isActive,
+      isAdmin: isAdmin ?? this.isAdmin,
+      enterpriseIds: enterpriseIds ?? this.enterpriseIds,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -79,6 +91,8 @@ class User {
       'email': email,
       'phone': phone,
       'isActive': isActive,
+      'isAdmin': isAdmin,
+      'enterpriseIds': enterpriseIds,
       'createdAt': createdAt?.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
     };
@@ -96,6 +110,11 @@ class User {
       email: map['email'] as String?,
       phone: map['phone'] as String?,
       isActive: map['isActive'] as bool? ?? true,
+      isAdmin: map['isAdmin'] as bool? ?? false,
+      enterpriseIds: (map['enterpriseIds'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const [],
       createdAt: _parseTimestamp(map['createdAt']),
       updatedAt: _parseTimestamp(map['updatedAt']),
     );

@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../errors/app_exceptions.dart';
@@ -72,27 +73,21 @@ class AuthController {
       // Démarrer la synchronisation en arrière-plan (ne bloque pas la connexion)
       // Les données se chargeront progressivement après la connexion
       final realtimeSyncService = _ref.read(realtimeSyncServiceProvider);
-      // Si la synchronisation n'est pas en cours, la démarrer en arrière-plan
-      if (!realtimeSyncService.isListening) {
-        AppLogger.info(
-          'Starting realtime sync in background after login...',
+      
+      AppLogger.info(
+        'Initializing realtime sync with user context...',
+        name: 'auth.controller',
+      );
+      
+      // Démarrer la sync en arrière-plan sans attendre
+      // startRealtimeSync gère maintenant le redémarrage si nécessaire
+      realtimeSyncService.startRealtimeSync(userId: user.id).catchError((error) {
+        AppLogger.error(
+          'Error starting realtime sync for user context',
           name: 'auth.controller',
+          error: error,
         );
-        // Démarrer la sync en arrière-plan sans attendre
-        realtimeSyncService.startRealtimeSync(userId: user.id).catchError((error) {
-          AppLogger.error(
-            'Error starting realtime sync in background',
-            name: 'auth.controller',
-            error: error,
-          );
-          // Continuer même si le démarrage échoue - les données peuvent déjà être en cache
-        });
-      } else {
-        AppLogger.info(
-          'Realtime sync already running, skipping start',
-          name: 'auth.controller',
-        );
-      }
+      });
       
       // Ne PAS attendre le pull initial - permettre à l'utilisateur de se connecter immédiatement
       // Les données se chargeront progressivement en arrière-plan
@@ -307,6 +302,14 @@ class AuthController {
   ///
   /// Ne bloque pas la connexion - s'exécute en arrière-plan.
   Future<void> _syncUserModulesInBackground(String userId) async {
+    // Sur le Web, on n'utilise pas le cache Drift pour l'admin, donc pas besoin de sync
+    if (kIsWeb) {
+      AppLogger.info(
+        'Skipping background module sync on Web platform',
+        name: 'auth.controller',
+      );
+      return;
+    }
     // Ne pas synchroniser si AdminController ou Firestore ne sont pas disponibles
     final adminController = _adminController;
     final firestore = _firestore;
@@ -428,6 +431,19 @@ class AuthController {
                   'Realtime sync started for module $moduleId in enterprise $enterpriseId',
                   name: 'auth.controller',
                 );
+
+                // If POS has a parent, start realtime sync for parent's data as well
+                if (parentEnterpriseId != null) {
+                  await globalModuleSync.startRealtimeSync(
+                    enterpriseId: parentEnterpriseId,
+                    moduleId: moduleId,
+                  );
+                  realtimeSyncCount++;
+                  AppLogger.info(
+                    'Realtime sync started for module $moduleId in parent enterprise $parentEnterpriseId',
+                    name: 'auth.controller',
+                  );
+                }
             } catch (e, stackTrace) {
               final appException = ErrorHandler.instance.handleError(e, stackTrace);
               AppLogger.warning(

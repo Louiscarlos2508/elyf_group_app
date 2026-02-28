@@ -21,6 +21,8 @@ class RetailCylinderList extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    // Decision based on screen width using MediaQuery to avoid LayoutBuilder/Sliver conflict
+    final isWide = MediaQuery.of(context).size.width > 800;
 
     if (cylinders.isEmpty) {
       return SliverFillRemaining(
@@ -29,60 +31,46 @@ class RetailCylinderList extends ConsumerWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.local_fire_department_outlined,
-                size: 64,
-                color: theme.colorScheme.outline,
-              ),
+              Icon(Icons.local_fire_department_outlined, size: 64, color: theme.colorScheme.outline),
               const SizedBox(height: 16),
-              Text(
-                'Aucune bouteille configurée',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
+              Text('Aucune bouteille configurée', style: theme.textTheme.titleMedium),
             ],
           ),
         ),
       );
     }
 
+    // Use a single SliverToBoxAdapter and put the conditional logic inside
     return SliverToBoxAdapter(
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final isWide = constraints.maxWidth > 800;
-          if (isWide) {
-            return Wrap(
-              alignment: WrapAlignment.center,
-              spacing: 16,
-              runSpacing: 16,
-              children: cylinders.map((cylinder) {
-                return _CylinderCardWithStock(
-                  cylinder: cylinder,
-                  enterpriseId: enterpriseId,
-                  onTap: () => onCylinderTap(cylinder),
-                );
-              }).toList(),
-            );
-          }
-
-          // Mobile: scrollable horizontal list
-          return SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: cylinders.map((cylinder) {
-                return Padding(
-                  padding: const EdgeInsets.only(right: 16),
-                  child: _CylinderCardWithStock(
-                    cylinder: cylinder,
-                    enterpriseId: enterpriseId,
-                    onTap: () => onCylinderTap(cylinder),
-                  ),
-                );
-              }).toList(),
-            ),
+      child: isWide
+          ? Wrap(
+        alignment: WrapAlignment.center,
+        spacing: 16,
+        runSpacing: 16,
+        children: cylinders.map((cylinder) {
+          return _CylinderCardWithStock(
+            cylinder: cylinder,
+            enterpriseId: enterpriseId,
+            onTap: () => onCylinderTap(cylinder),
           );
-        },
+        }).toList(),
+      )
+          : SizedBox(
+        height: 420,
+        child: ListView.separated( // Use ListView for better performance than SingleChildScrollView+Row
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          itemCount: cylinders.length,
+          separatorBuilder: (context, index) => const SizedBox(width: 16),
+          itemBuilder: (context, index) {
+            final cylinder = cylinders[index];
+            return _CylinderCardWithStock(
+              cylinder: cylinder,
+              enterpriseId: enterpriseId,
+              onTap: () => onCylinderTap(cylinder),
+            );
+          },
+        ),
       ),
     );
   }

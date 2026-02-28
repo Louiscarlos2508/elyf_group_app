@@ -277,6 +277,10 @@ class CylinderStockOfflineRepository extends OfflineRepository<CylinderStock>
           quantity: newQuantity,
           updatedAt: DateTime.now(),
         );
+        AppLogger.info(
+          'CylinderStockOfflineRepository: Updating stock quantity for $id from ${stock.quantity} to $newQuantity',
+          name: 'gaz.stock',
+        );
         await save(updated);
       }
     } catch (error, stackTrace) {
@@ -339,6 +343,10 @@ class CylinderStockOfflineRepository extends OfflineRepository<CylinderStock>
     try {
       final localId = getLocalId(stock);
       final stockWithLocalId = stock.copyWith(id: localId);
+      AppLogger.info(
+        'CylinderStockOfflineRepository: Adding new stock record $localId (weight: ${stock.weight}, status: ${stock.status.name}, quantity: ${stock.quantity})',
+        name: 'gaz.stock',
+      );
       await save(stockWithLocalId);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);

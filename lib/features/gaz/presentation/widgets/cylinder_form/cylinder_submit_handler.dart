@@ -20,6 +20,7 @@ class CylinderSubmitHandler {
     required String buyPriceText,
     String? initialFullStockText,
     String? initialEmptyStockText,
+    String? registeredTotalText,
     required String? enterpriseId,
     required String? moduleId,
     required Cylinder? existingCylinder,
@@ -44,7 +45,8 @@ class CylinderSubmitHandler {
       final sellPrice = double.tryParse(sellPriceText) ?? 0.0;
       final wholesalePrice = double.tryParse(wholesalePriceText) ?? sellPrice;
       final buyPrice = double.tryParse(buyPriceText) ?? 0.0;
-      const depositPrice = 0.0; // Plus de vente de bouteille, uniquement échange
+      const depositPrice = 0.0;
+      final registeredTotal = int.tryParse(registeredTotalText ?? '') ?? 0;
 
       Cylinder cylinder;
       if (existingCylinder != null) {
@@ -53,6 +55,8 @@ class CylinderSubmitHandler {
           buyPrice: buyPrice,
           sellPrice: sellPrice,
           depositPrice: depositPrice,
+          // Mise à jour du parc only si une valeur est fournie
+          registeredTotal: registeredTotal > 0 ? registeredTotal : existingCylinder.registeredTotal,
         );
       } else {
         cylinder = Cylinder(
@@ -64,6 +68,7 @@ class CylinderSubmitHandler {
           moduleId: moduleId,
           stock: 0,
           depositPrice: depositPrice,
+          registeredTotal: registeredTotal,
         );
       }
 
@@ -72,9 +77,26 @@ class CylinderSubmitHandler {
         await controller.addCylinder(cylinder);
       } else {
         await controller.updateCylinder(cylinder);
+        
+        // PIVOT: Si le poids a changé, synchroniser TOUS les stocks existants (tous sites/entreprises)
+        if (existingCylinder.weight != cylinder.weight) {
+          final scopedIds = await ref.read(gazScopedEnterpriseIdsProvider.future);
+          final allStocks = await cylinderStockRepo.getAllForEnterprises(scopedIds);
+          final relatedStocks = allStocks.where((s) => s.cylinderId == cylinder.id).toList();
+          
+          for (final stock in relatedStocks) {
+            if (stock.weight != cylinder.weight) {
+              await stockController.updateStock(stock.copyWith(
+                weight: cylinder.weight,
+                updatedAt: DateTime.now(),
+              ));
+            }
+          }
+        }
       }
 
       // 2. Initialisation ou Mise à jour du stock (Bi-modal)
+      // On ne traite ici que le stock du dépôt central (siteId == null)
       final fullQuantity = int.tryParse(initialFullStockText ?? '0') ?? 0;
       final emptyQuantity = int.tryParse(initialEmptyStockText ?? '0') ?? 0;
       
@@ -85,9 +107,11 @@ class CylinderSubmitHandler {
       final fullStocks = cylinderStocks.where((s) => s.status == CylinderStatus.full).toList();
       if (fullStocks.isNotEmpty) {
         final existingFull = fullStocks.first;
+        // PIVOT: On ne met à jour la quantité que si elle est différente
         if (existingFull.quantity != fullQuantity) {
           await stockController.updateStock(existingFull.copyWith(
             quantity: fullQuantity,
+            weight: cylinder.weight, // Sécurité de poids
             updatedAt: DateTime.now(),
           ));
         }
@@ -115,6 +139,7 @@ class CylinderSubmitHandler {
         if (existingEmpty.quantity != emptyQuantity) {
           await stockController.updateStock(existingEmpty.copyWith(
             quantity: emptyQuantity,
+            weight: cylinder.weight, // Sécurité de poids
             updatedAt: DateTime.now(),
           ));
         }
