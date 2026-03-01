@@ -9,7 +9,7 @@ import '../../../domain/services/transaction_service.dart';
 import '../../widgets/form_field_with_label.dart';
 import '../../widgets/new_customer_form_card.dart';
 import '../../widgets/transaction_type_selector.dart';
-import '../../widgets/orange_money_header.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import '../../widgets/operator_balance_summary.dart';
 import 'transactions_history_screen.dart';
 
@@ -136,15 +136,13 @@ class _TransactionsV2ScreenState extends ConsumerState<TransactionsV2Screen>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
-      color: theme.colorScheme.surfaceContainerHighest,
+      color: Colors.transparent,
       child: NestedScrollView(
         headerSliverBuilder: (context, innerBoxIsScrolled) => [
-          OrangeMoneyHeader(
+          ElyfModuleHeader(
             title: 'Flux de Trésorerie',
             subtitle: 'Gérez vos dépôts et retraits avec une traçabilité complète.',
-            badgeText: 'TRANSACTIONS',
-            badgeIcon: Icons.swap_horiz_rounded,
-            asSliver: true,
+            module: EnterpriseModule.mobileMoney,
           ),
           SliverToBoxAdapter(
             child: _buildTabBar(),
@@ -341,7 +339,7 @@ class _TransactionsV2ScreenState extends ConsumerState<TransactionsV2Screen>
             ElyfField(
               label: 'Numéro de téléphone client',
               controller: _phoneController,
-              hint: 'Ex: 0670000000',
+              hint: 'Ex: 74******',
               prefixIcon: Icons.phone_android,
               keyboardType: TextInputType.phone,
               validator: TransactionService.validatePhoneNumber,

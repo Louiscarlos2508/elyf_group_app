@@ -50,11 +50,11 @@ class StockOfflineRepository extends OfflineRepository<StockMovement>
   String? getEnterpriseId(StockMovement entity) => enterpriseId;
 
   @override
-  Future<void> saveToLocal(StockMovement entity) async {
+  Future<void> saveToLocal(StockMovement entity, {String? userId}) async {
     final localId = getLocalId(entity);
     final remoteId = getRemoteId(entity);
     final map = toMap(entity)..['localId'] = localId;
-    await driftService.records.upsert(
+    await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
       collectionName: collectionName,
       localId: localId,
       remoteId: remoteId,
@@ -66,13 +66,13 @@ class StockOfflineRepository extends OfflineRepository<StockMovement>
   }
 
   @override
-  Future<void> deleteFromLocal(StockMovement entity) async {
+  Future<void> deleteFromLocal(StockMovement entity, {String? userId}) async {
     // Soft-delete
     final deletedStock = entity.copyWith(
       deletedAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );
-    await saveToLocal(deletedStock);
+    await saveToLocal(deletedStock, userId: syncManager.getUserId() ?? '');
     
     AppLogger.info(
       'Soft-deleted stock movement: ${entity.id}',

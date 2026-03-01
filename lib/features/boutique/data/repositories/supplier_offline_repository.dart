@@ -51,11 +51,11 @@ class SupplierOfflineRepository extends OfflineRepository<Supplier> implements S
   String? getEnterpriseId(Supplier entity) => enterpriseId;
 
   @override
-  Future<void> saveToLocal(Supplier entity) async {
+  Future<void> saveToLocal(Supplier entity, {String? userId}) async {
     final localId = getLocalId(entity);
     final remoteId = getRemoteId(entity);
     final map = toMap(entity)..['localId'] = localId;
-    await driftService.records.upsert(
+    await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
       collectionName: collectionName,
       localId: localId,
       remoteId: remoteId,
@@ -67,7 +67,7 @@ class SupplierOfflineRepository extends OfflineRepository<Supplier> implements S
   }
 
   @override
-  Future<void> deleteFromLocal(Supplier entity) async {
+  Future<void> deleteFromLocal(Supplier entity, {String? userId}) async {
     final localId = getLocalId(entity);
     await driftService.records.deleteByLocalId(
       collectionName: collectionName,
@@ -181,7 +181,7 @@ class SupplierOfflineRepository extends OfflineRepository<Supplier> implements S
         AuditRecord(
           id: '',
           enterpriseId: enterpriseId,
-          userId: userId,
+          userId: syncManager.getUserId() ?? '',
           module: 'boutique',
           action: action,
           entityId: entityId,

@@ -78,6 +78,7 @@ void main() {
         reason: 'Test',
         quantity: 100.0,
         unit: 'unit',
+        enterpriseId: 'test_enterprise',
       );
 
       await repository.recordMovement(movement);
@@ -99,6 +100,7 @@ void main() {
         reason: 'Test',
         quantity: 50.0,
         unit: 'unit',
+        enterpriseId: 'test_enterprise',
       );
 
       final movement2 = StockMovement(
@@ -109,6 +111,7 @@ void main() {
         reason: 'Test',
         quantity: 30.0,
         unit: 'unit',
+        enterpriseId: 'test_enterprise',
       );
 
       await repository.recordMovement(movement1);

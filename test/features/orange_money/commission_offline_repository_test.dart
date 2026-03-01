@@ -6,6 +6,10 @@ import 'package:elyf_groupe_app/core/offline/connectivity_service.dart';
 import 'package:elyf_groupe_app/core/offline/handlers/firebase_sync_handler.dart';
 import 'package:elyf_groupe_app/features/orange_money/data/repositories/commission_offline_repository.dart';
 import 'package:elyf_groupe_app/features/orange_money/domain/entities/commission.dart';
+import 'package:mockito/mockito.dart';
+import 'package:elyf_groupe_app/features/audit_trail/domain/repositories/audit_trail_repository.dart';
+import 'package:elyf_groupe_app/features/audit_trail/domain/entities/audit_record.dart';
+import 'package:elyf_groupe_app/core/offline/sync_operation_processor.dart';
 
 /// Mock connectivity service for testing.
 class MockConnectivityService implements ConnectivityService {
@@ -35,6 +39,11 @@ class MockConnectivityService implements ConnectivityService {
   }
 }
 
+class MockAuditTrailRepository extends Mock implements AuditTrailRepository {
+  @override
+  Future<String> log(AuditRecord record) async => '';
+}
+
 void main() {
   group('CommissionOfflineRepository', () {
     late CommissionOfflineRepository repository;
@@ -62,6 +71,8 @@ void main() {
         connectivityService: connectivityService,
         enterpriseId: 'test_enterprise',
         moduleType: 'orange_money',
+        auditTrailRepository: MockAuditTrailRepository(),
+        userId: 'test_user',
       );
     });
 
@@ -72,10 +83,9 @@ void main() {
       final commission = Commission(
         id: '',
         period: period,
-        amount: 50000,
-        status: CommissionStatus.pending,
-        transactionsCount: 100,
         estimatedAmount: 50000,
+        status: CommissionStatus.estimated,
+        transactionsCount: 100,
         enterpriseId: 'test_enterprise',
       );
 
@@ -85,7 +95,7 @@ void main() {
       final created = await repository.getCommission(id);
       expect(created, isNotNull);
       expect(created?.period, equals(period));
-      expect(created?.amount, equals(50000));
+      expect(created?.estimatedAmount, equals(50000));
     });
 
     test('should filter commissions by status', () async {
@@ -97,20 +107,18 @@ void main() {
       final commission1 = Commission(
         id: '',
         period: period1,
-        amount: 50000,
-        status: CommissionStatus.pending,
-        transactionsCount: 100,
         estimatedAmount: 50000,
+        status: CommissionStatus.estimated,
+        transactionsCount: 100,
         enterpriseId: 'test_enterprise',
       );
 
       final commission2 = Commission(
         id: '',
         period: period2,
-        amount: 30000,
+        estimatedAmount: 30000,
         status: CommissionStatus.paid,
         transactionsCount: 60,
-        estimatedAmount: 30000,
         enterpriseId: 'test_enterprise',
       );
 
@@ -119,11 +127,11 @@ void main() {
 
       final pending = await repository.fetchCommissions(
         enterpriseId: 'test_enterprise',
-        status: CommissionStatus.pending,
+        status: CommissionStatus.estimated,
       );
 
       expect(
-        pending.every((c) => c.status == CommissionStatus.pending),
+        pending.every((c) => c.status == CommissionStatus.estimated),
         isTrue,
       );
     });
@@ -135,20 +143,18 @@ void main() {
       final commission1 = Commission(
         id: '',
         period: period,
-        amount: 50000,
-        status: CommissionStatus.pending,
-        transactionsCount: 100,
         estimatedAmount: 50000,
+        status: CommissionStatus.estimated,
+        transactionsCount: 100,
         enterpriseId: 'test_enterprise',
       );
 
       final commission2 = Commission(
         id: '',
         period: '${now.year}-${(now.month - 1).toString().padLeft(2, '0')}',
-        amount: 30000,
+        estimatedAmount: 30000,
         status: CommissionStatus.paid,
         transactionsCount: 60,
-        estimatedAmount: 30000,
         enterpriseId: 'test_enterprise',
       );
 

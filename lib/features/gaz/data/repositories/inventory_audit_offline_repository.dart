@@ -136,7 +136,7 @@ class GazInventoryAuditOfflineRepository implements GazInventoryAuditRepository 
 
       final map = _toMap(audit)..['localId'] = localId..['id'] = localId;
 
-      await driftService.records.upsert(
+      await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
         collectionName: _collectionName,
         localId: localId,
         remoteId: remoteId,

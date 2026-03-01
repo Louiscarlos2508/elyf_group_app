@@ -12,16 +12,20 @@ import '../../../../helpers/test_helpers.dart';
 
 import 'cylinder_leak_controller_test.mocks.dart';
 
-@GenerateMocks([CylinderLeakRepository, CylinderStockRepository])
+import 'package:elyf_groupe_app/features/gaz/domain/services/transaction_service.dart';
+
+@GenerateMocks([CylinderLeakRepository, CylinderStockRepository, TransactionService])
 void main() {
   late CylinderLeakController controller;
   late MockCylinderLeakRepository mockLeakRepository;
   late MockCylinderStockRepository mockStockRepository;
+  late MockTransactionService mockTransactionService;
 
   setUp(() {
     mockLeakRepository = MockCylinderLeakRepository();
     mockStockRepository = MockCylinderStockRepository();
-    controller = CylinderLeakController(mockLeakRepository, mockStockRepository);
+    mockTransactionService = MockTransactionService();
+    controller = CylinderLeakController(mockLeakRepository, mockStockRepository, mockTransactionService);
   });
 
   group('CylinderLeakController', () {
@@ -47,43 +51,28 @@ void main() {
     });
 
     group('reportLeak', () {
-      test('should report leak and update stock', () async {
+      test('should report leak via transaction service', () async {
         // Arrange
-        const cylinderId = 'cylinder-1';
-        const weight = 12;
-        final stocks = [
-          CylinderStock(
-            id: 'stock-1',
-            cylinderId: cylinderId,
-            weight: weight,
-            status: CylinderStatus.full,
-            quantity: 10,
-            enterpriseId: TestIds.enterprise1,
-            updatedAt: DateTime(2026, 1, 1),
-          ),
-        ];
-        when(mockLeakRepository.reportLeak(any))
-            .thenAnswer((_) async => 'leak-1');
-        when(mockStockRepository.getStocksByWeight(
-          TestIds.enterprise1,
-          weight,
-        )).thenAnswer((_) async => stocks);
-        when(mockStockRepository.updateStockQuantity(any, any))
-            .thenAnswer((_) async => {});
+        const cylinderId = 'cyl-1';
+        const weight = 6;
+
+        when(mockTransactionService.executeLeakDeclaration(
+          leak: anyNamed('leak'),
+          userId: anyNamed('userId'),
+        )).thenAnswer((_) async => {});
 
         // Act
-        final result = await controller.reportLeak(
+        await controller.reportLeak(
           cylinderId,
           weight,
           TestIds.enterprise1,
+          userId: 'user-1',
         );
 
         // Assert
-        expect(result, equals('leak-1'));
-        verify(mockLeakRepository.reportLeak(any)).called(1);
-        verify(mockStockRepository.getStocksByWeight(
-          TestIds.enterprise1,
-          weight,
+        verify(mockTransactionService.executeLeakDeclaration(
+          leak: anyNamed('leak'),
+          userId: anyNamed('userId'),
         )).called(1);
       });
     });

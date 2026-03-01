@@ -15,12 +15,12 @@ import 'package:elyf_groupe_app/features/audit_trail/domain/services/audit_trail
 class MockAuditTrailService extends Mock implements AuditTrailService {
   @override
   Future<String> logAction({
-    required String? enterpriseId,
-    required String? userId,
-    required String? module,
-    required String? action,
-    required String? entityId,
-    required String? entityType,
+    required String enterpriseId,
+    required String userId,
+    required String module,
+    required String action,
+    required String entityId,
+    required String entityType,
     Map<String, dynamic>? metadata,
   }) =>
       super.noSuchMethod(

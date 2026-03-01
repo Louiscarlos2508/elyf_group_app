@@ -242,7 +242,7 @@ class GasOfflineRepository implements GasRepository {
       );
       final map = _cylinderToMap(newCylinder);
       
-      await driftService.records.upsert(
+      await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
         collectionName: _cylindersCollection,
         localId: localId,
         remoteId: remoteId,
@@ -338,7 +338,7 @@ class GasOfflineRepository implements GasRepository {
       );
       final map = _cylinderToMap(updatedCylinder)..['localId'] = localId..['id'] = localId;
 
-      await driftService.records.upsert(
+      await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
         collectionName: _cylindersCollection,
         localId: localId,
         remoteId: remoteId,
@@ -396,7 +396,7 @@ class GasOfflineRepository implements GasRepository {
       final remoteId = existingRecord?.remoteId ?? (cylinder.id.startsWith('local_') ? null : cylinder.id);
       final map = _cylinderToMap(deletedCylinder);
 
-      await driftService.records.upsert(
+      await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
         collectionName: _cylindersCollection,
         localId: localId,
         remoteId: remoteId,
@@ -564,7 +564,7 @@ class GasOfflineRepository implements GasRepository {
 
       final map = _gasSaleToMap(sale)..['localId'] = localId;
 
-      await driftService.records.upsert(
+      await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
         collectionName: _salesCollection,
         localId: localId,
         remoteId: remoteId,
@@ -621,7 +621,7 @@ class GasOfflineRepository implements GasRepository {
 
       final map = _gasSaleToMap(sale)..['localId'] = localId..['id'] = localId;
 
-      await driftService.records.upsert(
+      await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
         collectionName: _salesCollection,
         localId: localId,
         remoteId: remoteId,
@@ -674,7 +674,7 @@ class GasOfflineRepository implements GasRepository {
       final remoteId = existingRecord?.remoteId ?? (sale.id.startsWith('local_') ? null : sale.id);
       final map = _gasSaleToMap(deletedSale);
 
-      await driftService.records.upsert(
+      await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
         collectionName: _salesCollection,
         localId: localId,
         remoteId: remoteId,

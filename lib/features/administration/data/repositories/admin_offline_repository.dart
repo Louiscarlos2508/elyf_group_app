@@ -243,7 +243,7 @@ class AdminOfflineRepository implements AdminRepository {
     final map = _enterpriseModuleUserToMap(enterpriseModuleUser)
       ..['localId'] = localId;
     
-    await driftService.records.upsert(
+    await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
       collectionName: _enterpriseModuleUsersCollection,
       localId: localId,
       remoteId: remoteId,
@@ -280,7 +280,7 @@ class AdminOfflineRepository implements AdminRepository {
           e.enterpriseId == enterpriseId &&
           e.moduleId == moduleId,
       orElse: () => EnterpriseModuleUser(
-        userId: userId,
+        userId: syncManager.getUserId() ?? '',
         enterpriseId: enterpriseId,
         moduleId: moduleId,
         roleIds: roleIds,
@@ -303,7 +303,7 @@ class AdminOfflineRepository implements AdminRepository {
           e.enterpriseId == enterpriseId &&
           e.moduleId == moduleId,
       orElse: () => EnterpriseModuleUser(
-        userId: userId,
+        userId: syncManager.getUserId() ?? '',
         enterpriseId: enterpriseId,
         moduleId: moduleId,
         roleIds: const [], // Default roles
@@ -526,7 +526,7 @@ class AdminOfflineRepository implements AdminRepository {
     final localId = _getLocalId(role.id);
     final remoteId = _getRemoteId(role.id);
     final map = _userRoleToMap(role)..['localId'] = localId;
-    await driftService.records.upsert(
+    await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
       collectionName: _rolesCollection,
       localId: localId,
       remoteId: remoteId,

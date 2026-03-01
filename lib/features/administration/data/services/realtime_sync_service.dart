@@ -585,32 +585,94 @@ class RealtimeSyncService {
     }
   }
 
-  /// Helper pour écouter seulement les assignations de l'utilisateur courant
-  void _retryListenToUserEnterpriseModuleUsers(
+  /// Helper pour écouter les assignations de l'utilisateur ET de ses entreprises
+  Future<void> _retryListenToUserEnterpriseModuleUsers(
     Function(QuerySnapshot) onSnapshot,
-  ) {
+  ) async {
     if (_currentUserId == null) return;
 
     // Annuler la souscription précédente qui a échoué
     _enterpriseModuleUsersSubscription?.cancel();
 
     developer.log(
-      'Starting filtered sync for user: $_currentUserId',
+      'Starting filtered sync for user: $_currentUserId and their enterprises',
       name: 'admin.realtime.sync',
     );
 
     try {
-      _enterpriseModuleUsersSubscription = firestore
+      // 1. Récupérer les IDs d'entreprises de l'utilisateur depuis le local
+      final userRecord = await driftService.records.findByRemoteId(
+        collectionName: _usersCollection,
+        remoteId: _currentUserId!,
+        enterpriseId: 'global',
+        moduleType: 'administration',
+      );
+
+      final Set<String> targetEnterpriseIds = {};
+      if (userRecord != null) {
+        try {
+          final userData = jsonDecode(userRecord.dataJson);
+          final ids = (userData['enterpriseIds'] as List?)?.map((e) => e.toString()).toList();
+          if (ids != null) {
+            targetEnterpriseIds.addAll(ids);
+          }
+        } catch (e) {
+          developer.log('Error parsing user enterpriseIds for sync: $e', name: 'admin.realtime.sync');
+        }
+      }
+
+      // 1.5 Découverte locale des sous-tenants (POS/Agences) pour les enterprises déjà connues
+      // On cherche localement les entités dont le parent est dans targetEnterpriseIds
+      try {
+        final allEnterprises = await driftService.records.listForCollection(collectionName: 'enterprises');
+        final posEnterprises = await driftService.records.listForCollection(collectionName: 'pointOfSale');
+        final agencesEnterprises = await driftService.records.listForCollection(collectionName: 'agences');
+        
+        final Set<String> discoveredIds = {};
+        for (final record in [...allEnterprises, ...posEnterprises, ...agencesEnterprises]) {
+          try {
+            final data = jsonDecode(record.dataJson);
+            final parentId = data['parentEnterpriseId'] as String?;
+            if (parentId != null && targetEnterpriseIds.contains(parentId)) {
+              discoveredIds.add(record.remoteId ?? record.localId);
+            }
+          } catch (_) {}
+        }
+        targetEnterpriseIds.addAll(discoveredIds);
+      } catch (e) {
+        developer.log('Error discovering child enterprises locally: $e', name: 'admin.realtime.sync');
+      }
+
+      // 2. Créer les streams
+      final List<Stream<QuerySnapshot>> streams = [];
+      
+      // Toujours écouter ses propres assignations (sécurité/fallback)
+      streams.add(firestore
           .collection(_enterpriseModuleUsersCollection)
           .where('userId', isEqualTo: _currentUserId)
-          .snapshots()
-          .listen(
+          .snapshots());
+
+      // Écouter toutes les assignations des entreprises auxquelles on appartient (+ sous-tenants découverts)
+      if (targetEnterpriseIds.isNotEmpty) {
+        final idsList = targetEnterpriseIds.toList();
+        // Chunk par 30 pour respecter les limites Firestore
+        for (var i = 0; i < idsList.length; i += 30) {
+          final chunk = idsList.sublist(i, i + 30 > idsList.length ? idsList.length : i + 30);
+          streams.add(firestore
+              .collection(_enterpriseModuleUsersCollection)
+              .where('enterpriseId', whereIn: chunk)
+              .snapshots());
+        }
+      }
+
+      // Combiner tous les streams et traiter les snapshots
+      _enterpriseModuleUsersSubscription = Rx.merge(streams).listen(
             (snapshot) => onSnapshot(snapshot),
             onError: (error, stackTrace) {
               final appException =
                   ErrorHandler.instance.handleError(error, stackTrace);
               AppLogger.error(
-                'Error in user-specific enterprise_module_users realtime stream: ${appException.message}',
+                'Error in enterprise_module_users filtered stream: ${appException.message}',
                 name: 'admin.realtime.sync',
                 error: error,
                 stackTrace: stackTrace,
@@ -619,7 +681,7 @@ class RealtimeSyncService {
           );
     } catch (e, stackTrace) {
       AppLogger.error(
-        'Error setting up user-specific listener fallback',
+        'Error setting up filtered enterprise_module_users listener',
         name: 'admin.realtime.sync',
         error: e,
         stackTrace: stackTrace,
@@ -842,25 +904,48 @@ class RealtimeSyncService {
   /// Sauvegarde une entreprise localement (sans déclencher de sync).
   Future<void> _saveEnterpriseToLocal(Enterprise enterprise) async {
     try {
+      // Déterminer la collection correcte (identique à FirestoreSyncService)
+      String targetCollection = _enterprisesCollection;
+      if (enterprise.type.isGas && !enterprise.type.isMain) {
+        targetCollection = 'pointOfSale';
+      } else if (enterprise.type.isMobileMoney && !enterprise.type.isMain) {
+        targetCollection = 'agences';
+      }
+
+      final parentId = enterprise.parentEnterpriseId ?? 'global';
+      final moduleType = (!enterprise.type.isMain) 
+          ? enterprise.type.module.id 
+          : (enterprise.moduleId ?? 'administration');
+
       final existingRecord = await driftService.records.findByRemoteId(
-        collectionName: _enterprisesCollection,
+        collectionName: targetCollection,
         remoteId: enterprise.id,
-        enterpriseId: 'global',
-        moduleType: 'administration',
+        enterpriseId: parentId,
+        moduleType: moduleType,
       );
 
       final localId = existingRecord?.localId ?? enterprise.id;
       final map = enterprise.toMap();
       
       await driftService.records.upsert(
-        collectionName: _enterprisesCollection,
+        collectionName: targetCollection,
         localId: localId,
         remoteId: enterprise.id,
-        enterpriseId: 'global',
-        moduleType: 'administration',
+        enterpriseId: parentId,
+        moduleType: moduleType,
         dataJson: jsonEncode(map),
         localUpdatedAt: DateTime.now(),
       );
+
+      // Si c'était un sous-tenant indûment enregistré dans 'enterprises', le supprimer pour éviter les doublons
+      if (targetCollection != _enterprisesCollection) {
+        await driftService.records.deleteByRemoteId(
+          collectionName: _enterprisesCollection,
+          remoteId: enterprise.id,
+          enterpriseId: 'global',
+          moduleType: 'administration',
+        );
+      }
     } catch (e, stackTrace) {
       final appException = ErrorHandler.instance.handleError(e, stackTrace);
       AppLogger.error(

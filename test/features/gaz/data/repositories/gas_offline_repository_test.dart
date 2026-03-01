@@ -5,11 +5,12 @@ import 'package:elyf_groupe_app/core/offline/drift_service.dart';
 import 'package:elyf_groupe_app/core/offline/sync_manager.dart';
 import 'package:elyf_groupe_app/core/offline/connectivity_service.dart';
 import 'package:elyf_groupe_app/features/gaz/data/repositories/gas_offline_repository.dart';
+import 'package:elyf_groupe_app/features/gaz/domain/repositories/cylinder_stock_repository.dart';
 import '../../../../helpers/test_helpers.dart';
 
 import 'gas_offline_repository_test.mocks.dart';
 
-@GenerateMocks([DriftService, SyncManager, ConnectivityService])
+@GenerateMocks([DriftService, SyncManager, ConnectivityService, CylinderStockRepository])
 void main() {
   group('GasOfflineRepository', () {
     // Note: Les tests d'intégration complets nécessitent une base Drift en mémoire
@@ -27,8 +28,8 @@ void main() {
         driftService: mockDriftService,
         syncManager: mockSyncManager,
         connectivityService: mockConnectivityService,
+        cylinderStockRepository: MockCylinderStockRepository(),
         enterpriseId: TestIds.enterprise1,
-
       );
 
       // Assert

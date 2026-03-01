@@ -56,11 +56,11 @@ class LiquidityOfflineRepository extends OfflineRepository<LiquidityCheckpoint>
   String? getEnterpriseId(LiquidityCheckpoint entity) => entity.enterpriseId;
 
   @override
-  Future<void> saveToLocal(LiquidityCheckpoint entity) async {
+  Future<void> saveToLocal(LiquidityCheckpoint entity, {String? userId}) async {
     final localId = getLocalId(entity);
     final remoteId = getRemoteId(entity);
     final map = toMap(entity)..['localId'] = localId;
-    await driftService.records.upsert(
+    await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
       collectionName: collectionName,
       localId: localId,
       remoteId: remoteId,
@@ -72,7 +72,7 @@ class LiquidityOfflineRepository extends OfflineRepository<LiquidityCheckpoint>
   }
 
   @override
-  Future<void> deleteFromLocal(LiquidityCheckpoint entity) async {
+  Future<void> deleteFromLocal(LiquidityCheckpoint entity, {String? userId}) async {
     final remoteId = getRemoteId(entity);
     if (remoteId != null) {
       await driftService.records.deleteByRemoteId(
@@ -278,7 +278,7 @@ class LiquidityOfflineRepository extends OfflineRepository<LiquidityCheckpoint>
         AuditRecord(
           id: IdGenerator.generate(),
           enterpriseId: enterpriseId,
-          userId: userId,
+          userId: syncManager.getUserId() ?? '',
           module: 'orange_money',
           action: 'create_liquidity_checkpoint',
           entityId: localId,
@@ -317,7 +317,7 @@ class LiquidityOfflineRepository extends OfflineRepository<LiquidityCheckpoint>
         AuditRecord(
           id: IdGenerator.generate(),
           enterpriseId: enterpriseId,
-          userId: userId,
+          userId: syncManager.getUserId() ?? '',
           module: 'orange_money',
           action: 'update_liquidity_checkpoint',
           entityId: checkpoint.id,
@@ -359,7 +359,7 @@ class LiquidityOfflineRepository extends OfflineRepository<LiquidityCheckpoint>
           AuditRecord(
             id: IdGenerator.generate(),
             enterpriseId: enterpriseId,
-            userId: userId,
+            userId: syncManager.getUserId() ?? '',
             module: 'orange_money',
             action: 'delete_liquidity_checkpoint',
             entityId: checkpointId,
@@ -412,7 +412,7 @@ class LiquidityOfflineRepository extends OfflineRepository<LiquidityCheckpoint>
         AuditRecord(
           id: IdGenerator.generate(),
           enterpriseId: enterpriseId,
-          userId: userId,
+          userId: syncManager.getUserId() ?? '',
           module: 'orange_money',
           action: 'restore_liquidity_checkpoint',
           entityId: checkpointId,
@@ -612,7 +612,7 @@ class LiquidityOfflineRepository extends OfflineRepository<LiquidityCheckpoint>
         AuditRecord(
           id: LocalIdGenerator.generate(),
           enterpriseId: enterpriseId,
-          userId: userId,
+          userId: syncManager.getUserId() ?? '',
           module: 'orange_money',
           action: 'validate_liquidity_discrepancy',
           entityId: checkpointId,

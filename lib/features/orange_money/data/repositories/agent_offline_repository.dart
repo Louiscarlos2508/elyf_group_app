@@ -57,10 +57,10 @@ class AgentOfflineRepository extends OfflineRepository<Agent>
   String? getEnterpriseId(Agent entity) => entity.enterpriseId;
 
   @override
-  Future<void> saveToLocal(Agent entity) async {
+  Future<void> saveToLocal(Agent entity, {String? userId}) async {
     final localId = getLocalId(entity);
     final map = toMap(entity)..['localId'] = localId;
-    await driftService.records.upsert(
+    await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
       collectionName: collectionName,
       localId: localId,
       remoteId: getRemoteId(entity),
@@ -72,7 +72,7 @@ class AgentOfflineRepository extends OfflineRepository<Agent>
   }
 
   @override
-  Future<void> deleteFromLocal(Agent entity) async {
+  Future<void> deleteFromLocal(Agent entity, {String? userId}) async {
     final remoteId = getRemoteId(entity);
     if (remoteId != null) {
       await driftService.records.deleteByRemoteId(
@@ -211,7 +211,7 @@ class AgentOfflineRepository extends OfflineRepository<Agent>
         AuditRecord(
           id: LocalIdGenerator.generate(),
           enterpriseId: enterpriseId,
-          userId: userId,
+          userId: syncManager.getUserId() ?? '',
           module: 'orange_money',
           action: 'create_agent',
           entityId: localId,
@@ -249,7 +249,7 @@ class AgentOfflineRepository extends OfflineRepository<Agent>
         AuditRecord(
           id: LocalIdGenerator.generate(),
           enterpriseId: enterpriseId,
-          userId: userId,
+          userId: syncManager.getUserId() ?? '',
           module: 'orange_money',
           action: 'update_agent',
           entityId: agent.id,
@@ -291,7 +291,7 @@ class AgentOfflineRepository extends OfflineRepository<Agent>
           AuditRecord(
             id: LocalIdGenerator.generate(),
             enterpriseId: enterpriseId,
-            userId: userId,
+            userId: syncManager.getUserId() ?? '',
             module: 'orange_money',
             action: 'delete_agent',
             entityId: agentId,
@@ -344,7 +344,7 @@ class AgentOfflineRepository extends OfflineRepository<Agent>
         AuditRecord(
           id: LocalIdGenerator.generate(),
           enterpriseId: enterpriseId,
-          userId: userId,
+          userId: syncManager.getUserId() ?? '',
           module: 'orange_money',
           action: 'restore_agent',
           entityId: agentId,

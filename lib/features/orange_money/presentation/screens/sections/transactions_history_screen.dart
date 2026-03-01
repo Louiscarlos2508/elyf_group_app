@@ -78,7 +78,7 @@ class _TransactionsHistoryScreenState
     );
 
     return Container(
-      color: const Color(0xFFF9FAFB),
+      color: Colors.transparent,
       child: SingleChildScrollView(
         padding: EdgeInsets.all(AppSpacing.lg),
         child: Column(

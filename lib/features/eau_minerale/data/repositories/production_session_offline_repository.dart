@@ -47,7 +47,7 @@ class ProductionSessionOfflineRepository
   String? getEnterpriseId(ProductionSession entity) => enterpriseId;
 
   @override
-  Future<void> saveToLocal(ProductionSession entity) async {
+  Future<void> saveToLocal(ProductionSession entity, {String? userId}) async {
     String localId;
     final remoteId = getRemoteId(entity);
 
@@ -75,7 +75,7 @@ class ProductionSessionOfflineRepository
     final map = toMap(entity);
     map['localId'] = localId; // Assurer la cohérence dans le JSON stocké
     
-    await driftService.records.upsert(
+    await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
       collectionName: collectionName,
       localId: localId,
       remoteId: remoteId,
@@ -87,13 +87,13 @@ class ProductionSessionOfflineRepository
   }
 
   @override
-  Future<void> deleteFromLocal(ProductionSession entity) async {
+  Future<void> deleteFromLocal(ProductionSession entity, {String? userId}) async {
     // Soft-delete
     final deletedSession = entity.copyWith(
       deletedAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );
-    await saveToLocal(deletedSession);
+    await saveToLocal(deletedSession, userId: syncManager.getUserId() ?? '');
     
     AppLogger.info(
       'Soft-deleted production session: ${entity.id}',

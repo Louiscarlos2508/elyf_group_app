@@ -178,8 +178,15 @@ class UserAssignmentController {
     final now = DateTime.now();
 
     // Créer toutes les assignations
-    final assignments = enterpriseIds.map((enterpriseId) {
-      return EnterpriseModuleUser(
+    final assignments = <EnterpriseModuleUser>[];
+    for (final enterpriseId in enterpriseIds) {
+      String? parentId;
+      if (enterpriseRepository != null) {
+        final ent = await enterpriseRepository!.getEnterpriseById(enterpriseId);
+        parentId = ent?.parentEnterpriseId;
+      }
+
+      assignments.add(EnterpriseModuleUser(
         userId: userId,
         enterpriseId: enterpriseId,
         moduleId: moduleId,
@@ -187,8 +194,9 @@ class UserAssignmentController {
         isActive: isActive,
         createdAt: now,
         updatedAt: now,
-      );
-    }).toList();
+        parentEnterpriseId: parentId,
+      ));
+    }
 
     // Assigner toutes les entreprises
     for (final assignment in assignments) {
@@ -338,6 +346,7 @@ class UserAssignmentController {
               isActive: isActive,
               createdAt: now,
               updatedAt: now,
+              parentEnterpriseId: enterprise.parentEnterpriseId,
             ),
           );
         } else {

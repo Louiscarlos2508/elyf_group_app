@@ -102,7 +102,7 @@ class _GazLogisticsScreenState extends ConsumerState<GazLogisticsScreen>
             title: 'LOGISTIQUE',
             subtitle: _getSubtitle(),
             asSliver: true,
-            additionalActions: [
+            actions: [
               IconButton(
                 onPressed: _handleNewTour,
                 icon: const Icon(Icons.add_road, color: Colors.white),

@@ -213,7 +213,7 @@ class _PropertiesScreenState extends ConsumerState<PropertiesScreen> {
                   ImmobilierHeader(
                     title: 'PROPRIÉTÉS',
                     subtitle: 'Gestion du parc',
-                    additionalActions: [
+                    actions: [
                       Semantics(
                         label: 'Actualiser',
                         button: true,

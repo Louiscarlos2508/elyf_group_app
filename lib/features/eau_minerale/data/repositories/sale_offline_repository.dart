@@ -43,12 +43,12 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
   Map<String, dynamic> toMap(Sale entity) => entity.toMap();
 
   @override
-  Future<void> saveToLocal(Sale entity) async {
+  Future<void> saveToLocal(Sale entity, {String? userId}) async {
     final map = toMap(entity);
     final localId = getLocalId(entity);
     map['localId'] = localId; // Ensure localId is present in map for some legacy consumers
     
-    await driftService.records.upsert(
+    await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
       collectionName: collectionName,
       localId: localId,
       remoteId: getRemoteId(entity),
@@ -60,14 +60,14 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
   }
 
   @override
-  Future<void> deleteFromLocal(Sale entity) async {
+  Future<void> deleteFromLocal(Sale entity, {String? userId}) async {
     // Soft-delete: update the record with deletedAt instead of removing it
     final deletedSale = entity.copyWith(
       deletedAt: DateTime.now(),
       updatedAt: DateTime.now(),
       // deletedBy could be added here if we had the current user
     );
-    await saveToLocal(deletedSale);
+    await saveToLocal(deletedSale, userId: syncManager.getUserId() ?? '');
     
     AppLogger.info(
       'Soft-deleted sale: ${entity.id} (enterprise: $enterpriseId)',

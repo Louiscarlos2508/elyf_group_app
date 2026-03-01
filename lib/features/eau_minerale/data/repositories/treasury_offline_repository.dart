@@ -54,12 +54,12 @@ class TreasuryOfflineRepository extends OfflineRepository<TreasuryOperation> imp
   String? getEnterpriseId(TreasuryOperation entity) => enterpriseId;
 
   @override
-  Future<void> saveToLocal(TreasuryOperation entity) async {
+  Future<void> saveToLocal(TreasuryOperation entity, {String? userId}) async {
     final localId = getLocalId(entity);
     final remoteId = getRemoteId(entity);
     final map = toMap(entity)..['localId'] = localId;
     
-    await driftService.records.upsert(
+    await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
       collectionName: collectionName,
       localId: localId,
       remoteId: remoteId,
@@ -71,7 +71,7 @@ class TreasuryOfflineRepository extends OfflineRepository<TreasuryOperation> imp
   }
 
   @override
-  Future<void> deleteFromLocal(TreasuryOperation entity) async {
+  Future<void> deleteFromLocal(TreasuryOperation entity, {String? userId}) async {
     final localId = getLocalId(entity);
     await driftService.records.deleteByLocalId(
       collectionName: collectionName,
@@ -122,7 +122,7 @@ class TreasuryOfflineRepository extends OfflineRepository<TreasuryOperation> imp
     final entity = operation.copyWith(
       id: id, 
       enterpriseId: enterpriseId, 
-      userId: userId,
+      userId: syncManager.getUserId() ?? '',
     );
     
     await save(entity);
@@ -202,7 +202,7 @@ class TreasuryOfflineRepository extends OfflineRepository<TreasuryOperation> imp
         AuditRecord(
           id: '',
           enterpriseId: enterpriseId,
-          userId: userId,
+          userId: syncManager.getUserId() ?? '',
           module: 'eau_minerale',
           action: action,
           entityId: entityId,

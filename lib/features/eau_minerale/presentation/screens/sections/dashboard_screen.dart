@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
@@ -27,86 +28,27 @@ class DashboardScreen extends ConsumerWidget {
     return CustomScrollView(
           slivers: [
             // Header with Premium Gradient
-            SliverToBoxAdapter(
-              child: Container(
-                margin: const EdgeInsets.fromLTRB(20, 24, 20, 12),
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 48),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      Color(0xFF0F4C75), // Deep Water Blue
-                      Color(0xFF3282B8), // Mid Water Blue
-                      Color(0xFF00C2FF), // Vibrant Cyan
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(32),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF0F4C75).withValues(alpha: 0.25),
-                      blurRadius: 25,
-                      offset: const Offset(0, 12),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(24),
-                              border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.3),
-                                width: 1,
-                              ),
-                            ),
-                            child: Text(
-                              activeEnterprise?.name.toUpperCase() ?? "EAU MINÉRALE",
-                              style: theme.textTheme.labelMedium?.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 1.5,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          Text(
-                            "Tableau de Bord",
-                            style: theme.textTheme.headlineLarge?.copyWith(
-                              fontWeight: FontWeight.w900,
-                              color: Colors.white,
-                              letterSpacing: -1.5,
-                              fontSize: 36,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    RefreshButton(
-                      // color: Colors.white,
-                      onRefresh: () async {
-                        ref.invalidate(salesStateProvider);
-                        ref.invalidate(financesStateProvider);
-                        ref.invalidate(clientsStateProvider);
-                        ref.invalidate(stockStateProvider);
-                        ref.invalidate(productionSessionsStateProvider);
-                        ref.invalidate(suppliersProvider);
-                        ref.invalidate(purchasesProvider);
-                        ref.invalidate(closingHistoryProvider);
-                        ref.invalidate(currentClosingSessionProvider);
-                      },
-                      tooltip: 'Actualiser',
-                    ),
-                  ],
-                ),
+          ElyfModuleHeader(
+            title: "Tableau de Bord",
+            subtitle: "Suivez votre production, vos stocks et vos ventes d'eau en temps réel.",
+            module: EnterpriseModule.eau,
+            actions: [
+              RefreshButton(
+                onRefresh: () async {
+                  ref.invalidate(salesStateProvider);
+                  ref.invalidate(financesStateProvider);
+                  ref.invalidate(clientsStateProvider);
+                  ref.invalidate(stockStateProvider);
+                  ref.invalidate(productionSessionsStateProvider);
+                  ref.invalidate(suppliersProvider);
+                  ref.invalidate(purchasesProvider);
+                  ref.invalidate(closingHistoryProvider);
+                  ref.invalidate(currentClosingSessionProvider);
+                },
+                tooltip: 'Actualiser',
               ),
-            ),
+            ],
+          ),
 
             // Stock alerts
             const SliverToBoxAdapter(

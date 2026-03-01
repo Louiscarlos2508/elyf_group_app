@@ -211,7 +211,7 @@ class AgentsTableComponents {
   /// Construit la cellule d'actions.
   static Widget buildActionsCell({
     required VoidCallback onView,
-    required VoidCallback onRefresh,
+    VoidCallback? onRefresh,
     required VoidCallback onEdit,
     required VoidCallback onDelete,
     required double width,
@@ -232,8 +232,10 @@ class AgentsTableComponents {
               children: [
                 _buildActionButton(icon: Icons.visibility, onPressed: onView),
                 const SizedBox(width: 4),
-                _buildActionButton(icon: Icons.refresh, onPressed: onRefresh),
-                const SizedBox(width: 4),
+                if (onRefresh != null) ...[
+                  _buildActionButton(icon: Icons.refresh, onPressed: onRefresh),
+                  const SizedBox(width: 4),
+                ],
                 _buildActionButton(icon: Icons.edit, onPressed: onEdit),
                 const SizedBox(width: 4),
                 _buildActionButton(

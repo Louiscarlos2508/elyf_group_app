@@ -116,7 +116,7 @@ class EnterpriseOfflineRepository extends OfflineRepository<Enterprise>
   }
 
   @override
-  Future<void> saveToLocal(Enterprise entity) async {
+  Future<void> saveToLocal(Enterprise entity, {String? userId}) async {
     final targetCollection = getSyncCollectionName(entity);
     final syncEnterpriseId = getEnterpriseId(entity) ?? 'global';
     
@@ -137,7 +137,7 @@ class EnterpriseOfflineRepository extends OfflineRepository<Enterprise>
       name: 'EnterpriseOfflineRepository.saveToLocal',
     );
     
-    await driftService.records.upsert(
+    await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
       collectionName: targetCollection,
       localId: localId,
       remoteId: remoteId,
@@ -149,7 +149,7 @@ class EnterpriseOfflineRepository extends OfflineRepository<Enterprise>
   }
 
   @override
-  Future<void> deleteFromLocal(Enterprise entity) async {
+  Future<void> deleteFromLocal(Enterprise entity, {String? userId}) async {
     final targetCollection = getSyncCollectionName(entity);
     final syncEnterpriseId = getEnterpriseId(entity) ?? 'global';
     final moduleType = (!entity.type.isMain) 

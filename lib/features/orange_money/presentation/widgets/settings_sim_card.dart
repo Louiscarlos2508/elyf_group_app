@@ -48,7 +48,7 @@ class _SettingsSimCardState extends State<SettingsSimCard> {
     
     return ElyfCard(
       padding: const EdgeInsets.all(24),
-      elevation: 4,
+      elevation: 0,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -133,7 +133,7 @@ class _SettingsSimCardState extends State<SettingsSimCard> {
       decoration: BoxDecoration(
         color: const Color(0xFF00C897).withValues(alpha: 0.05),
         border: Border.all(color: const Color(0xFF00C897).withValues(alpha: 0.1)),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(24),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,

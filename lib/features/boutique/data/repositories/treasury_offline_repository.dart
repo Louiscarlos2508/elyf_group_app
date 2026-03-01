@@ -56,7 +56,7 @@ class TreasuryOfflineRepository extends OfflineRepository<TreasuryOperation> imp
   String? getEnterpriseId(TreasuryOperation entity) => enterpriseId;
 
   @override
-  Future<void> saveToLocal(TreasuryOperation entity) async {
+  Future<void> saveToLocal(TreasuryOperation entity, {String? userId}) async {
     // 1. Chain hash if not already hashed (e.g. from createOperation)
     TreasuryOperation toSave = entity;
     if (toSave.hash == null) {
@@ -72,7 +72,7 @@ class TreasuryOfflineRepository extends OfflineRepository<TreasuryOperation> imp
     final localId = getLocalId(toSave);
     final remoteId = getRemoteId(toSave);
     final map = toMap(toSave)..['localId'] = localId;
-    await driftService.records.upsert(
+    await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
       collectionName: collectionName,
       localId: localId,
       remoteId: remoteId,
@@ -91,7 +91,7 @@ class TreasuryOfflineRepository extends OfflineRepository<TreasuryOperation> imp
   }
 
   @override
-  Future<void> deleteFromLocal(TreasuryOperation entity) async {
+  Future<void> deleteFromLocal(TreasuryOperation entity, {String? userId}) async {
     final localId = getLocalId(entity);
     await driftService.records.deleteByLocalId(
       collectionName: collectionName,
@@ -150,7 +150,7 @@ class TreasuryOfflineRepository extends OfflineRepository<TreasuryOperation> imp
     final entity = operation.copyWith(
       id: id, 
       enterpriseId: enterpriseId, 
-      userId: userId,
+      userId: syncManager.getUserId() ?? '',
       hash: hash,
       previousHash: lastOp?.hash,
     );
@@ -233,7 +233,7 @@ class TreasuryOfflineRepository extends OfflineRepository<TreasuryOperation> imp
         AuditRecord(
           id: '',
           enterpriseId: enterpriseId,
-          userId: userId,
+          userId: syncManager.getUserId() ?? '',
           module: 'boutique',
           action: action,
           entityId: entityId,

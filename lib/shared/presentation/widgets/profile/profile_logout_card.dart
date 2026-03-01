@@ -64,7 +64,7 @@ class ProfileLogoutCard extends ConsumerWidget {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.red.withValues(alpha: 0.3),
@@ -110,7 +110,7 @@ class ProfileLogoutCard extends ConsumerWidget {
                 foregroundColor: theme.colorScheme.error,
                 side: BorderSide(color: theme.colorScheme.error.withValues(alpha: 0.5)),
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
               ),
             ),
           ),
@@ -188,7 +188,7 @@ class _LogoutConfirmationDialog extends StatelessWidget {
                         style: TextButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(24),
                           ),
                         ),
                         child: const Text('Annuler'),

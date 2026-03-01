@@ -20,7 +20,7 @@ class ExpensesHeader extends StatelessWidget {
       title: 'DÉPENSES',
       subtitle: 'Suivi des dépenses',
       asSliver: false,
-      additionalActions: [
+      actions: [
         ElyfButton(
           onPressed: onNewExpense,
           icon: Icons.add,

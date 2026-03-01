@@ -18,7 +18,7 @@ class ProfileSecurityNoteCard extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(
           color: Colors.blue.withValues(alpha: 0.2),
         ),

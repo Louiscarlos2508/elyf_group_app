@@ -81,6 +81,7 @@ void main() {
     test('uses PackStockAdapter for finished goods', () async {
       final pf = Product(
         id: 'PF1',
+        enterpriseId: 'test',
         name: 'PF1',
         type: ProductType.finishedGood,
         unitPrice: 500,
@@ -97,6 +98,7 @@ void main() {
     test('uses StockRepository for raw materials', () async {
       final mp = Product(
         id: 'MP1',
+        enterpriseId: 'test',
         name: 'MP1',
         type: ProductType.rawMaterial,
         unitPrice: 100,

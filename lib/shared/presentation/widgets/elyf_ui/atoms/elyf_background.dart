@@ -70,7 +70,7 @@ class _ElyfBackgroundState extends State<ElyfBackground>
     final primary = colors.primary.withValues(alpha: isDark ? 0.3 : 0.8);
     final secondary = colors.secondaryContainer.withValues(alpha: isDark ? 0.3 : 0.6);
     final tertiary = colors.tertiaryContainer.withValues(alpha: isDark ? 0.3 : 0.6);
-    final background = colors.surface;
+    final background = theme.scaffoldBackgroundColor;
 
     return LayoutBuilder(
       builder: (context, constraints) {

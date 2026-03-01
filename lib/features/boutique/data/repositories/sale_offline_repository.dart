@@ -81,7 +81,7 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
   // --- Data Access Overrides (Relational) ---
 
   @override
-  Future<void> saveToLocal(Sale sale) async {
+  Future<void> saveToLocal(Sale sale, {String? userId}) async {
     // 1. Generate Secure Hash
     final lastSale = await (db.select(db.salesTable)
           ..where((t) => t.enterpriseId.equals(enterpriseId))
@@ -147,7 +147,7 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
   }
 
   @override
-  Future<void> deleteFromLocal(Sale entity) async {
+  Future<void> deleteFromLocal(Sale entity, {String? userId}) async {
     // Soft delete is preferred in our system, but if hard delete is requested:
     await (db.delete(db.salesTable)..where((t) => t.id.equals(entity.id))).go();
     // Cascade delete of items handles the rest if configured, else:
@@ -445,7 +445,7 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
         AuditRecord(
           id: '', 
           enterpriseId: enterpriseId,
-          userId: userId, 
+          userId: syncManager.getUserId() ?? '', 
           module: 'boutique',
           action: action,
           entityId: entityId,

@@ -35,7 +35,7 @@ class RetailNewSaleTab extends ConsumerWidget {
 
         // Cylinder cards
         SliverPadding(
-          padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+          padding: const EdgeInsets.fromLTRB(12, 0, 12, 32),
           sliver: cylindersAsync.when(
             data: (cylinders) => RetailCylinderList(
               cylinders: cylinders,

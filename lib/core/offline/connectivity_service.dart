@@ -31,7 +31,16 @@ class ConnectivityService {
   /// Initializes the connectivity service and starts listening.
   Future<void> initialize() async {
     try {
-      final results = await _connectivity.checkConnectivity();
+      final results = await _connectivity.checkConnectivity().timeout(
+        const Duration(seconds: 3),
+        onTimeout: () {
+          AppLogger.warning(
+            'Initial connectivity check timed out',
+            name: 'offline.connectivity',
+          );
+          return [ConnectivityResult.none];
+        },
+      );
       _updateStatus(results);
 
       _subscription = _connectivity.onConnectivityChanged.listen(
@@ -93,7 +102,16 @@ class ConnectivityService {
   /// Checks current connectivity status.
   Future<ConnectivityStatus> checkConnectivity() async {
     try {
-      final results = await _connectivity.checkConnectivity();
+      final results = await _connectivity.checkConnectivity().timeout(
+        const Duration(seconds: 3),
+        onTimeout: () {
+          AppLogger.warning(
+            'Manual connectivity check timed out',
+            name: 'offline.connectivity',
+          );
+          return [ConnectivityResult.none];
+        },
+      );
       _updateStatus(results);
       return _currentStatus;
     } catch (error, stackTrace) {

@@ -76,6 +76,7 @@ void main() {
     test('should create and save stock movement locally', () async {
       final movement = StockMovement(
         id: '',
+        enterpriseId: 'test_enterprise',
         date: DateTime.now(),
         productName: 'Test Product',
         type: StockMovementType.entry,
@@ -94,6 +95,7 @@ void main() {
     test('should filter movements by product', () async {
       final movement1 = StockMovement(
         id: '',
+        enterpriseId: 'test_enterprise',
         date: DateTime.now(),
         productName: 'Product A',
         type: StockMovementType.entry,
@@ -104,6 +106,7 @@ void main() {
 
       final movement2 = StockMovement(
         id: '',
+        enterpriseId: 'test_enterprise',
         date: DateTime.now(),
         productName: 'Product B',
         type: StockMovementType.entry,
@@ -123,6 +126,7 @@ void main() {
     test('should calculate stock correctly', () async {
       final entry = StockMovement(
         id: '',
+        enterpriseId: 'test_enterprise',
         date: DateTime.now(),
         productName: 'Test Product',
         type: StockMovementType.entry,
@@ -133,6 +137,7 @@ void main() {
 
       final exit = StockMovement(
         id: '',
+        enterpriseId: 'test_enterprise',
         date: DateTime.now(),
         productName: 'Test Product',
         type: StockMovementType.exit,

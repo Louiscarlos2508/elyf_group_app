@@ -218,200 +218,31 @@ class FirebaseSyncHandler implements SyncOperationHandler {
   ) async {
     final docRef = collection.doc(operation.documentId);
     
+    // Sanitizer les données locales
+    final rawLocalData = operation.payloadMap ?? {};
+    final localData = DataSanitizer.sanitizeMap(rawLocalData);
+    
+    // Ajouter les métadonnées
+    localData['updatedAt'] = FieldValue.serverTimestamp();
+    localData['localId'] = operation.documentId;
+
     try {
-      final docSnapshot = await docRef.get();
-
-      if (!docSnapshot.exists) {
-        // Si le document n'existe pas, convertir l'opération update en create
-        AppLogger.warning(
-          'Document ${operation.documentId} not found for update, converting to create',
-          name: 'offline.firebase',
-        );
-        
-        // Créer le document avec l'ID spécifié (comme pour les entités avec ID prédéfini)
-        final rawData = operation.payloadMap ?? {};
-        final sanitizedData = DataSanitizer.sanitizeMap(rawData);
-        
-        // Ajouter les métadonnées
-        sanitizedData['createdAt'] = FieldValue.serverTimestamp();
-        sanitizedData['updatedAt'] = FieldValue.serverTimestamp();
-        sanitizedData['localId'] = operation.documentId;
-        
-        // Utiliser l'ID du document comme remoteId
-        await docRef.set(sanitizedData, SetOptions(merge: false));
-        
-        AppLogger.debug(
-          'Created document (converted from update): ${operation.documentId}',
-          name: 'offline.firebase',
-        );
-        
-        // Mettre à jour le remoteId dans la base locale
-        final driftService = _driftService;
-        if (driftService != null) {
-          try {
-            await driftService.records.updateRemoteId(
-              collectionName: operation.collectionName,
-              localId: operation.documentId,
-              remoteId: operation.documentId,
-              serverUpdatedAt: DateTime.now(),
-              enterpriseId: operation.enterpriseId,
-            );
-          } catch (e) {
-            // Logger mais ne pas bloquer
-            AppLogger.error(
-              'Error updating remoteId after create (from update): $e',
-              name: 'offline.firebase',
-              error: e,
-            );
-          }
-        }
-        
-        return;
-      }
-
-      // Sanitizer les données locales avant de les comparer/envoyer
-      final rawLocalData = operation.payloadMap ?? {};
-      final localData = DataSanitizer.sanitizeMap(rawLocalData);
-      final rawServerData = docSnapshot.data() as Map<String, dynamic>?;
-
-      // Si pas de données serveur, utiliser les données locales (déjà sanitizées)
-      if (rawServerData == null) {
-        final finalData = Map<String, dynamic>.from(localData)
-          ..['updatedAt'] = FieldValue.serverTimestamp();
-        await docRef.update(finalData);
-        AppLogger.debug(
-          'Updated document ${operation.documentId} (no server data)',
-          name: 'offline.firebase',
-        );
-        return;
-      }
-
-      // Convertir les Timestamp Firestore en format JSON-compatible avant de comparer
-      final serverData = _convertToJsonCompatible(rawServerData) as Map<String, dynamic>;
-
-      // Vérifier les timestamps pour détecter les conflits
-      final localUpdatedAtStr = localData['updatedAt'] as String?;
-      final serverUpdatedAtStr = serverData['updatedAt'] as String?;
-
-      final localUpdatedAt = localUpdatedAtStr != null
-          ? DateTime.tryParse(localUpdatedAtStr)
-          : null;
-      final serverUpdatedAt = serverUpdatedAtStr != null
-          ? DateTime.tryParse(serverUpdatedAtStr)
-          : null;
-
-      // Si Firestore est plus récent que la version locale, ne pas écraser
-      // sauf si c'est une suppression locale (dans ce cas on veut résoudre le conflit)
-      final localIsDeleted = localData['deletedAt'] != null;
-      if (serverUpdatedAt != null &&
-          localUpdatedAt != null &&
-          serverUpdatedAt.isAfter(localUpdatedAt) &&
-          !localIsDeleted) {
+      // Stratégie optimisée : set(merge: true) évite un docRef.get() initial.
+      // C'est idéal pour le "Last Write Wins" et pour créer le document s'il manque.
+      await docRef.set(localData, SetOptions(merge: true));
+      
       AppLogger.debug(
-        'Conflict detected: Firestore version is newer than local for ${operation.documentId}. '
-        'Updating local data instead of overwriting Firestore.',
-        name: 'offline.firebase',
-      );
-
-      // Mettre à jour la version locale avec la version Firestore
-      final driftService = _driftService;
-      if (driftService != null) {
-        try {
-          final knownModules = [
-            'gaz',
-            'immobilier',
-            'boutique',
-            'eau_minerale',
-            'orange_money',
-          ];
-          OfflineRecord? existingRecord;
-
-          for (final module in knownModules) {
-            existingRecord = await driftService.records.findByLocalId(
-              collectionName: operation.collectionName,
-              localId: operation.documentId,
-              enterpriseId: operation.enterpriseId,
-              moduleType: module,
-            );
-            if (existingRecord != null) break;
-          }
-          if (existingRecord == null) {
-            for (final module in knownModules) {
-              existingRecord = await driftService.records.findByRemoteId(
-                collectionName: operation.collectionName,
-                remoteId: operation.documentId,
-                enterpriseId: operation.enterpriseId,
-                moduleType: module,
-              );
-              if (existingRecord != null) break;
-            }
-          }
-
-          final localIdToUse =
-              existingRecord?.localId ?? operation.documentId;
-          final moduleType = existingRecord?.moduleType ?? '';
-
-          final serverDataJson = _convertToJsonCompatible(serverData);
-          await driftService.records.upsert(
-            collectionName: operation.collectionName,
-            localId: localIdToUse,
-            remoteId: operation.documentId,
-            enterpriseId: operation.enterpriseId,
-            moduleType: moduleType,
-            dataJson: jsonEncode(serverDataJson),
-            localUpdatedAt: DateTime.now(),
-          );
-          AppLogger.debug(
-            'Local data updated with Firestore version for $localIdToUse',
-            name: 'offline.firebase',
-          );
-        } catch (e, stackTrace) {
-          final appException = ErrorHandler.instance.handleError(e, stackTrace);
-          AppLogger.warning(
-            'Error updating local data with Firestore version: ${appException.message}',
-            name: 'offline.firebase',
-            error: e,
-            stackTrace: stackTrace,
-          );
-        }
-      }
-
-      // Ne pas envoyer la modification locale vers Firestore
-      // L'opération sera marquée comme synced car on a mis à jour localement
-      return;
-    }
-
-      // Résoudre le conflit en utilisant SyncConflictResolver
-      final resolution = conflictResolver.resolve(
-        localData: localData,
-        serverData: serverData,
-        collectionName: operation.collectionName,
-      );
-      final finalData = resolution.resolvedData;
-
-      // Vérifier si la résolution a choisi la version serveur
-      // (dans ce cas, on n'a pas besoin de mettre à jour Firestore)
-      final choseServer = finalData == serverData;
-      if (choseServer) {
-        AppLogger.debug(
-          'Conflict resolved in favor of server for ${operation.documentId}. '
-          'No update needed.',
-          name: 'offline.firebase',
-        );
-        return;
-      }
-
-      // Sanitizer les données finales avant de les envoyer
-      final sanitizedFinalData = DataSanitizer.sanitizeMap(finalData);
-      sanitizedFinalData['updatedAt'] = FieldValue.serverTimestamp();
-      await docRef.update(sanitizedFinalData);
-
-      AppLogger.debug(
-        'Updated document ${operation.documentId} (conflict resolved)',
+        'Optimized update (set-merge) for: ${operation.collectionName}/${operation.documentId}',
         name: 'offline.firebase',
       );
     } on FirebaseException catch (e) {
-      // Gestion spécifique des erreurs Firestore
+      if (e.code == 'permission-denied') {
+        // En cas d'erreur de permission sur un set, on peut essayer de voir si c'est un conflit
+        // ou un vrai problème de droits.
+        final errorMessage = _handleFirestoreError(e, operation);
+        throw SyncException(errorMessage);
+      }
+      
       final errorMessage = _handleFirestoreError(e, operation);
       throw SyncException(errorMessage);
     }

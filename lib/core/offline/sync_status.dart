@@ -83,6 +83,7 @@ class SyncOperation {
   late String collectionName;
   late String documentId;
   late String enterpriseId;
+  String? userId;
   String? payload;
   int retryCount = 0;
   String? lastError;

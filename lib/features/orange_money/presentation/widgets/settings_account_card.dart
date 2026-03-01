@@ -11,7 +11,7 @@ class SettingsAccountCard extends StatelessWidget {
     
     return ElyfCard(
       padding: const EdgeInsets.all(24),
-      elevation: 4,
+      elevation: 0,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

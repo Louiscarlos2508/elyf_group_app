@@ -59,7 +59,7 @@ class ClosingOfflineRepository implements ClosingRepository {
       final entity = session.copyWith(id: localId, enterpriseId: enterpriseId);
       final map = entity.toMap()..['localId'] = localId;
 
-      await driftService.records.upsert(
+      await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
         collectionName: collectionName,
         localId: localId,
         enterpriseId: enterpriseId,
@@ -101,7 +101,7 @@ class ClosingOfflineRepository implements ClosingRepository {
         moduleType: 'eau_minerale',
       );
 
-      await driftService.records.upsert(
+      await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
         collectionName: collectionName,
         localId: session.id,
         remoteId: record?.remoteId,
@@ -173,7 +173,7 @@ class ClosingOfflineRepository implements ClosingRepository {
         AuditRecord(
           id: '',
           enterpriseId: enterpriseId,
-          userId: userId,
+          userId: syncManager.getUserId() ?? '',
           module: 'eau_minerale',
           action: action,
           entityId: entityId,

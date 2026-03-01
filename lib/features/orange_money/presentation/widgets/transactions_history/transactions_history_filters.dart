@@ -123,35 +123,37 @@ class TransactionsHistoryFilters extends StatelessWidget {
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: Colors.transparent, width: 1.219),
           ),
-          child: DropdownButtonFormField<TransactionType?>(
-            initialValue: selectedTypeFilter,
-            decoration: const InputDecoration(
-              border: InputBorder.none,
-              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            ),
-            hint: const Text(
-              'Tous les types',
-              style: TextStyle(fontSize: 14, color: Color(0xFF0A0A0A)),
-            ),
-            items: [
-              const DropdownMenuItem<TransactionType?>(
-                value: null,
-                child: Text('Tous les types'),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<TransactionType?>(
+              value: selectedTypeFilter,
+              isExpanded: true,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              hint: const Text(
+                'Tous',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 14, color: Color(0xFF0A0A0A)),
               ),
-              DropdownMenuItem<TransactionType>(
-                value: TransactionType.cashIn,
-                child: Text(TransactionType.cashIn.label),
+              items: [
+                const DropdownMenuItem<TransactionType?>(
+                  value: null,
+                  child: Text('Tous', style: TextStyle(fontSize: 14)),
+                ),
+                DropdownMenuItem<TransactionType>(
+                  value: TransactionType.cashIn,
+                  child: Text(TransactionType.cashIn.label, style: const TextStyle(fontSize: 14)),
+                ),
+                DropdownMenuItem<TransactionType>(
+                  value: TransactionType.cashOut,
+                  child: Text(TransactionType.cashOut.label, style: const TextStyle(fontSize: 14)),
+                ),
+              ],
+              onChanged: onTypeChanged,
+              icon: const Icon(
+                Icons.keyboard_arrow_down,
+                size: 16,
+                color: Color(0xFF0A0A0A),
               ),
-              DropdownMenuItem<TransactionType>(
-                value: TransactionType.cashOut,
-                child: Text(TransactionType.cashOut.label),
-              ),
-            ],
-            onChanged: onTypeChanged,
-            icon: const Icon(
-              Icons.keyboard_arrow_down,
-              size: 16,
-              color: Color(0xFF0A0A0A),
             ),
           ),
         ),
@@ -194,7 +196,9 @@ class TransactionsHistoryFilters extends StatelessWidget {
                   child: Text(
                     selectedDate != null
                         ? '${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}'
-                        : 'Sélectionner une date',
+                        : 'Sélectionner',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: 14,
                       color: selectedDate != null

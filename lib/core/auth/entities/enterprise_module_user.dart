@@ -18,6 +18,7 @@ class EnterpriseModuleUser {
     this.customPermissions = const {},
     this.isActive = true,
     this.includesChildren = false,
+    this.parentEnterpriseId,
     this.createdAt,
     this.updatedAt,
   });
@@ -47,6 +48,10 @@ class EnterpriseModuleUser {
   /// Si true, l'utilisateur a accès à cette entreprise ET à tous ses enfants
   final bool includesChildren;
 
+  /// ID de l'entreprise parente (pour validation des permissions hiérarchiques)
+  /// Crucial si enterpriseId est un sous-tenant (Agence/POS)
+  final String? parentEnterpriseId;
+
   /// Date de création de l'accès
   final DateTime? createdAt;
 
@@ -62,6 +67,7 @@ class EnterpriseModuleUser {
     Set<String>? customPermissions,
     bool? isActive,
     bool? includesChildren,
+    String? parentEnterpriseId,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -73,6 +79,7 @@ class EnterpriseModuleUser {
       customPermissions: customPermissions ?? this.customPermissions,
       isActive: isActive ?? this.isActive,
       includesChildren: includesChildren ?? this.includesChildren,
+      parentEnterpriseId: parentEnterpriseId ?? this.parentEnterpriseId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -88,6 +95,7 @@ class EnterpriseModuleUser {
       'customPermissions': customPermissions.toList(),
       'isActive': isActive,
       'includesChildren': includesChildren,
+      'parentEnterpriseId': parentEnterpriseId,
       'createdAt': createdAt?.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
     };
@@ -117,6 +125,7 @@ class EnterpriseModuleUser {
           {},
       isActive: map['isActive'] as bool? ?? true,
       includesChildren: map['includesChildren'] as bool? ?? false,
+      parentEnterpriseId: map['parentEnterpriseId'] as String?,
       createdAt: _parseTimestamp(map['createdAt']),
       updatedAt: _parseTimestamp(map['updatedAt']),
     );

@@ -49,10 +49,10 @@ class MachineOfflineRepository extends OfflineRepository<Machine>
   String? getEnterpriseId(Machine entity) => enterpriseId;
 
   @override
-  Future<void> saveToLocal(Machine entity) async {
+  Future<void> saveToLocal(Machine entity, {String? userId}) async {
     final localId = getLocalId(entity);
     final map = toMap(entity)..['localId'] = localId;
-    await driftService.records.upsert(
+    await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
       collectionName: collectionName,
       localId: localId,
       remoteId: getRemoteId(entity),
@@ -64,13 +64,13 @@ class MachineOfflineRepository extends OfflineRepository<Machine>
   }
 
   @override
-  Future<void> deleteFromLocal(Machine entity) async {
+  Future<void> deleteFromLocal(Machine entity, {String? userId}) async {
     // Soft-delete
     final deletedMachine = entity.copyWith(
       deletedAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );
-    await saveToLocal(deletedMachine);
+    await saveToLocal(deletedMachine, userId: syncManager.getUserId() ?? '');
     
     AppLogger.info(
       'Soft-deleted machine: ${entity.id}',

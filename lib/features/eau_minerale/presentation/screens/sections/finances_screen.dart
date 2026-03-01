@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -129,96 +130,45 @@ class _ExpensesContent extends StatelessWidget {
         return CustomScrollView(
           slivers: [
             // Premium Header for Finances
-            SliverToBoxAdapter(
-              child: Container(
-                margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      const Color(0xFF991B1B), // Dark Red
-                      const Color(0xFFDC2626), // Premium Red
-                      const Color(0xFFEF4444),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.red.withValues(alpha: 0.2),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
+            ElyfModuleHeader(
+              title: "Dépenses & Charges",
+              subtitle: "Gérez vos charges opérationnelles et suivez l'équilibre financier de votre production.",
+              module: EnterpriseModule.eau,
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.analytics_outlined, color: Colors.white),
+                  onPressed: onBalanceTap,
+                  tooltip: 'Bilan',
                 ),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                "GESTION FINANCIÈRE",
-                                style: theme.textTheme.labelLarge?.copyWith(
-                                  color: Colors.white.withValues(alpha: 0.9),
-                                  fontWeight: FontWeight.w500,
-                                  letterSpacing: 1.2,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                "Dépenses & Charges",
-                                style: theme.textTheme.headlineMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Row(
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.analytics_outlined, color: Colors.white),
-                              onPressed: onBalanceTap,
-                              tooltip: 'Bilan',
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.refresh, color: Colors.white),
-                              onPressed: () => ref.invalidate(financesStateProvider),
-                              tooltip: 'Actualiser',
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    EauMineralePermissionGuard(
-                      permission: EauMineralePermissions.createExpense,
-                      child: FilledButton.icon(
-                        onPressed: onNewExpense,
-                        style: FilledButton.styleFrom(
-                          backgroundColor: Colors.white.withValues(alpha: 0.2),
-                          foregroundColor: Colors.white,
-                          minimumSize: const Size(double.infinity, 54),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                        icon: const Icon(Icons.add_card_rounded, size: 22),
-                        label: const Text(
-                          'Enregistrer une Dépense',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                IconButton(
+                  icon: const Icon(Icons.refresh, color: Colors.white),
+                  onPressed: () => ref.invalidate(financesStateProvider),
+                  tooltip: 'Actualiser',
+                ),
+              ],
+              bottom: Padding(
+                padding: const EdgeInsets.only(top: 24),
+                child: EauMineralePermissionGuard(
+                  permission: EauMineralePermissions.createExpense,
+                  child: FilledButton.icon(
+                    onPressed: onNewExpense,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Colors.white.withValues(alpha: 0.2),
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size(double.infinity, 54),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
                       ),
                     ),
-                  ],
+                    icon: const Icon(Icons.add_card_rounded, size: 22),
+                    label: const Text(
+                      'Enregistrer une Dépense',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ),

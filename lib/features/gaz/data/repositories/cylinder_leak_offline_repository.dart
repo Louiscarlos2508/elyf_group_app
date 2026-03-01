@@ -46,13 +46,13 @@ class CylinderLeakOfflineRepository extends OfflineRepository<CylinderLeak>
   String? getEnterpriseId(CylinderLeak entity) => enterpriseId;
 
   @override
-  Future<void> saveToLocal(CylinderLeak entity) async {
+  Future<void> saveToLocal(CylinderLeak entity, {String? userId}) async {
     // Utiliser la méthode utilitaire pour trouver le localId existant
     final existingLocalId = await findExistingLocalId(entity, moduleType: moduleType);
     final localId = existingLocalId ?? getLocalId(entity);
     final remoteId = getRemoteId(entity);
     final map = toMap(entity)..['localId'] = localId..['id'] = localId;
-    await driftService.records.upsert(
+    await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
       collectionName: collectionName,
       localId: localId,
       remoteId: remoteId,
@@ -64,13 +64,13 @@ class CylinderLeakOfflineRepository extends OfflineRepository<CylinderLeak>
   }
 
   @override
-  Future<void> deleteFromLocal(CylinderLeak entity) async {
+  Future<void> deleteFromLocal(CylinderLeak entity, {String? userId}) async {
     // Soft-delete
     final deletedLeak = entity.copyWith(
       deletedAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );
-    await saveToLocal(deletedLeak);
+    await saveToLocal(deletedLeak, userId: syncManager.getUserId() ?? '');
     
     AppLogger.info(
       'Soft-deleted cylinder leak: ${entity.id}',

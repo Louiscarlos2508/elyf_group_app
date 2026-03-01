@@ -20,7 +20,7 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     
     <application
-        android:label="elyf_groupe_app"
+        android:label="Elyf Gestion"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:enableOnBackInvokedCallback="true">

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 import '../core/navigation/navigation_service.dart';
 import '../shared/providers/app_boot_status_provider.dart';
@@ -39,6 +40,16 @@ class _ElyfAppState extends ConsumerState<ElyfApp> {
       darkTheme: AppTheme.dark(bootStatus),
       themeMode: ThemeMode.system,
       debugShowCheckedModeBanner: false,
+      // Ajout des délégués de localisation pour corriger l'erreur DatePickerDialog
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('fr', ''), // Français
+        Locale('en', ''), // Anglais
+      ],
       builder: (context, child) {
         // Configurer SystemUIOverlayStyle pour s'assurer que les AppBar
         // respectent les safe areas sur Android

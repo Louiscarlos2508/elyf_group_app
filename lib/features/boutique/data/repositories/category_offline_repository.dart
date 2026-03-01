@@ -40,10 +40,10 @@ class CategoryOfflineRepository extends OfflineRepository<Category>
   String? getEnterpriseId(Category entity) => enterpriseId;
 
   @override
-  Future<void> saveToLocal(Category entity) async {
+  Future<void> saveToLocal(Category entity, {String? userId}) async {
     final localId = getLocalId(entity);
     final map = toMap(entity)..['localId'] = localId;
-    await driftService.records.upsert(
+    await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
       collectionName: collectionName,
       localId: localId,
       remoteId: getRemoteId(entity),
@@ -55,7 +55,7 @@ class CategoryOfflineRepository extends OfflineRepository<Category>
   }
 
   @override
-  Future<void> deleteFromLocal(Category entity) async {
+  Future<void> deleteFromLocal(Category entity, {String? userId}) async {
     await driftService.records.deleteByLocalId(
       collectionName: collectionName,
       localId: getLocalId(entity),

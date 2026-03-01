@@ -50,11 +50,11 @@ class SalaryOfflineRepository extends OfflineRepository<Employee>
   String? getEnterpriseId(Employee entity) => enterpriseId;
 
   @override
-  Future<void> saveToLocal(Employee entity) async {
+  Future<void> saveToLocal(Employee entity, {String? userId}) async {
     final localId = getLocalId(entity);
     final remoteId = getRemoteId(entity);
     final map = toMap(entity)..['localId'] = localId;
-    await driftService.records.upsert(
+    await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
       collectionName: collectionName,
       localId: localId,
       remoteId: remoteId,
@@ -66,13 +66,13 @@ class SalaryOfflineRepository extends OfflineRepository<Employee>
   }
 
   @override
-  Future<void> deleteFromLocal(Employee entity) async {
+  Future<void> deleteFromLocal(Employee entity, {String? userId}) async {
     // Soft-delete
     final deletedSalary = entity.copyWith(
       deletedAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );
-    await saveToLocal(deletedSalary);
+    await saveToLocal(deletedSalary, userId: syncManager.getUserId() ?? '');
     
     AppLogger.info(
       'Soft-deleted employee: ${entity.id}',
@@ -249,7 +249,7 @@ class SalaryOfflineRepository extends OfflineRepository<Employee>
         final payment = ProductionPayment.fromMap(map);
         final deletedPayment = payment.copyWith(deletedAt: DateTime.now(), updatedAt: DateTime.now());
         
-        await driftService.records.upsert(
+        await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
           collectionName: productionPaymentsCollection,
           localId: paymentId,
           remoteId: record.remoteId,
@@ -286,7 +286,7 @@ class SalaryOfflineRepository extends OfflineRepository<Employee>
 
       await driftService.db.transaction(() async {
         // 1. Sauvegarder localement
-        await driftService.records.upsert(
+        await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
           collectionName: productionPaymentsCollection,
           localId: localId,
           remoteId: null,
@@ -357,7 +357,7 @@ class SalaryOfflineRepository extends OfflineRepository<Employee>
 
       await driftService.db.transaction(() async {
         // 1. Sauvegarder localement
-        await driftService.records.upsert(
+        await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
           collectionName: salaryPaymentsCollection,
           localId: localId,
           remoteId: null,

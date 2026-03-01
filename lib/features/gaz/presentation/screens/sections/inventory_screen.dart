@@ -99,7 +99,7 @@ class _GazInventoryScreenState extends ConsumerState<GazInventoryScreen>
             title: 'STOCK',
             subtitle: _getSubtitle(),
             asSliver: true,
-            additionalActions: [
+            actions: [
 
               IconButton(
                 onPressed: () => DepositRefundDialog.show(context),

@@ -66,10 +66,10 @@ class StockMovementOfflineRepository extends OfflineRepository<StockMovement>
   String? getEnterpriseId(StockMovement entity) => enterpriseId;
 
   @override
-  Future<void> saveToLocal(StockMovement entity) async {
+  Future<void> saveToLocal(StockMovement entity, {String? userId}) async {
     final localId = getLocalId(entity);
     final map = toMap(entity)..['localId'] = localId;
-    await driftService.records.upsert(
+    await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
       collectionName: collectionName,
       localId: localId,
       remoteId: getRemoteId(entity),
@@ -81,7 +81,7 @@ class StockMovementOfflineRepository extends OfflineRepository<StockMovement>
   }
 
   @override
-  Future<void> deleteFromLocal(StockMovement entity) async {
+  Future<void> deleteFromLocal(StockMovement entity, {String? userId}) async {
     await driftService.records.deleteByLocalId(
       collectionName: collectionName,
       localId: getLocalId(entity),

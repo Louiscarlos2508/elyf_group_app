@@ -12,7 +12,7 @@ import '../../widgets/settings_sim_card.dart';
 import '../../widgets/settings_system_info_card.dart';
 import '../../widgets/settings_thresholds_card.dart';
 import '../../widgets/settings_tips_card.dart';
-import '../../widgets/orange_money_header.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 
 /// Settings screen for Orange Money configuration.
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -158,14 +158,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
 
     return Scaffold(
-      backgroundColor: theme.colorScheme.surface,
       body: CustomScrollView(
         slivers: [
-          OrangeMoneyHeader(
+          ElyfModuleHeader(
             title: 'Paramètres du Module',
             subtitle: 'Personnalisez vos alertes, seuils de liquidité et informations système.',
-            badgeText: 'CONFIGURATION',
-            badgeIcon: Icons.settings_rounded,
+            module: EnterpriseModule.mobileMoney,
           ),
           SliverPadding(
             padding: const EdgeInsets.all(24),
@@ -220,7 +218,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 24),
               side: BorderSide(color: theme.colorScheme.outline.withValues(alpha: 0.5)),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(24),
               ),
             ),
             child: Text(
@@ -261,7 +259,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               elevation: 2,
               padding: const EdgeInsets.symmetric(horizontal: 24),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(24),
               ),
             ),
           ),

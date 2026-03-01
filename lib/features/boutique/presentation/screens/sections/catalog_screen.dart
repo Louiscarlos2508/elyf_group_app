@@ -74,7 +74,7 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
             const Color(0xFF047857), // Emerald 700
           ],
           shadowColor: const Color(0xFF059669),
-          additionalActions: [
+          actions: [
             BoutiquePermissionGuard(
               permission: BoutiquePermissions.viewReports, // Or stock permission?
               child: IconButton(

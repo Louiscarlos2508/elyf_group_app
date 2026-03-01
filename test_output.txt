@@ -1,0 +1,124 @@
+00:00 +0: loading /home/carlos-simpore/StudioProjects/elyf_group_app/test/core/offline/sync_manager_integration_test.dart                                                                              00:01 +0: loading /home/carlos-simpore/StudioProjects/elyf_group_app/test/core/offline/sync_manager_integration_test.dart                                                                              00:02 +0: loading /home/carlos-simpore/StudioProjects/elyf_group_app/test/core/offline/sync_manager_integration_test.dart                                                                              00:02 +0: SyncManager Integration Tests should queue and sync create operation                                                                                                                         00:02 +0 -1: SyncManager Integration Tests should queue and sync create operation [E]                                                                                                                  
+  Binding has not yet been initialized.
+  The "instance" getter on the ServicesBinding binding mixin is only available once that binding has been initialized.
+  Typically, this is done by calling "WidgetsFlutterBinding.ensureInitialized()" or "runApp()" (the latter calls the former). Typically this call is done in the "void main()" method. The "ensureInitialized" method is idempotent; calling it multiple times is not harmful. After calling that method, the "instance" getter will return the binding.
+  In a test, one can call "TestWidgetsFlutterBinding.ensureInitialized()" as the first line in the test's "main()" method to initialize the binding.
+  If ServicesBinding is a custom binding mixin, there must also be a custom binding class, like WidgetsFlutterBinding, but that mixes in the selected binding, and that is the class that must be constructed before using the "instance" getter.
+  package:flutter/src/foundation/binding.dart 314:9                                     BindingBase.checkInstance.<fn>
+  package:flutter/src/foundation/binding.dart 401:6                                     BindingBase.checkInstance
+  package:flutter/src/services/binding.dart 73:54                                       ServicesBinding.instance
+  package:flutter/src/services/platform_channel.dart 179:25                             _findBinaryMessenger
+  package:flutter/src/services/platform_channel.dart 320:56                             MethodChannel.binaryMessenger
+  package:flutter/src/services/platform_channel.dart 360:17                             MethodChannel._invokeMethod
+  package:flutter/src/services/platform_channel.dart 540:12                             MethodChannel.invokeMethod
+  package:path_provider_platform_interface/src/method_channel_path_provider.dart 52:10  MethodChannelPathProvider.getApplicationDocumentsPath
+  package:path_provider/path_provider.dart 121:40                                       getApplicationDocumentsDirectory
+  package:elyf_groupe_app/core/offline/drift/connection_native.dart 10:23               openDriftConnection.<fn>
+  dart:async                                                                            new Future.sync
+  package:drift/src/utils/lazy_database.dart 57:14                                      LazyDatabase._awaitOpened
+  package:drift/src/utils/lazy_database.dart 74:12                                      LazyDatabase.ensureOpen
+  package:drift/src/runtime/api/connection_user.dart 169:21                             DatabaseConnectionUser.doWhenOpened
+  package:drift/src/runtime/api/connection_user.dart 728:19                             InternalConnectionUserApi.withCurrentExecutor
+  package:drift/src/runtime/query_builder/statements/delete.dart 52:21                  DeleteStatement.go
+  package:elyf_groupe_app/core/offline/drift/sync_operation_dao.dart 405:10             SyncOperationDao.deleteOldSynced
+  package:elyf_groupe_app/core/offline/sync_manager.dart 586:42                         SyncManager._cleanupOldOperations
+  package:elyf_groupe_app/core/offline/sync_manager.dart 100:11                         SyncManager.initialize
+  test/core/offline/sync_manager_integration_test.dart 36:25                            main.<fn>.<fn>
+  ===== asynchronous gap ===========================
+  dart:async                                                                            Future.then
+  package:drift/src/utils/lazy_database.dart 57:27                                      LazyDatabase._awaitOpened
+  package:drift/src/utils/lazy_database.dart 74:12                                      LazyDatabase.ensureOpen
+  package:drift/src/runtime/api/connection_user.dart 169:21                             DatabaseConnectionUser.doWhenOpened
+  package:drift/src/runtime/api/connection_user.dart 728:19                             InternalConnectionUserApi.withCurrentExecutor
+  package:drift/src/runtime/query_builder/statements/delete.dart 52:21                  DeleteStatement.go
+  package:elyf_groupe_app/core/offline/drift/sync_operation_dao.dart 405:10             SyncOperationDao.deleteOldSynced
+  package:elyf_groupe_app/core/offline/sync_manager.dart 586:42                         SyncManager._cleanupOldOperations
+  package:elyf_groupe_app/core/offline/sync_manager.dart 100:11                         SyncManager.initialize
+  test/core/offline/sync_manager_integration_test.dart 36:25                            main.<fn>.<fn>
+  ===== asynchronous gap ===========================
+  dart:async                                                                            _CustomZone.registerUnaryCallback
+  test/core/offline/sync_manager_integration_test.dart 17:7                             main.<fn>.<fn>
+  
+  Binding has not yet been initialized.
+  The "instance" getter on the ServicesBinding binding mixin is only available once that binding has been initialized.
+  Typically, this is done by calling "WidgetsFlutterBinding.ensureInitialized()" or "runApp()" (the latter calls the former). Typically this call is done in the "void main()" method. The "ensureInitialized" method is idempotent; calling it multiple times is not harmful. After calling that method, the "instance" getter will return the binding.
+  In a test, one can call "TestWidgetsFlutterBinding.ensureInitialized()" as the first line in the test's "main()" method to initialize the binding.
+  If ServicesBinding is a custom binding mixin, there must also be a custom binding class, like WidgetsFlutterBinding, but that mixes in the selected binding, and that is the class that must be constructed before using the "instance" getter.
+  package:flutter/src/foundation/binding.dart 314:9                                     BindingBase.checkInstance.<fn>
+  package:flutter/src/foundation/binding.dart 401:6                                     BindingBase.checkInstance
+  package:flutter/src/services/binding.dart 73:54                                       ServicesBinding.instance
+  package:flutter/src/services/platform_channel.dart 179:25                             _findBinaryMessenger
+  package:flutter/src/services/platform_channel.dart 320:56                             MethodChannel.binaryMessenger
+  package:flutter/src/services/platform_channel.dart 360:17                             MethodChannel._invokeMethod
+  package:flutter/src/services/platform_channel.dart 540:12                             MethodChannel.invokeMethod
+  package:path_provider_platform_interface/src/method_channel_path_provider.dart 52:10  MethodChannelPathProvider.getApplicationDocumentsPath
+  package:path_provider/path_provider.dart 121:40                                       getApplicationDocumentsDirectory
+  package:elyf_groupe_app/core/offline/drift/connection_native.dart 10:23               openDriftConnection.<fn>
+  dart:async                                                                            new Future.sync
+  package:drift/src/utils/lazy_database.dart 57:14                                      LazyDatabase._awaitOpened
+  package:drift/src/utils/lazy_database.dart 74:12                                      LazyDatabase.ensureOpen
+  package:drift/src/runtime/api/connection_user.dart 169:21                             DatabaseConnectionUser.doWhenOpened
+  package:drift/src/runtime/api/connection_user.dart 728:19                             InternalConnectionUserApi.withCurrentExecutor
+  package:drift/src/runtime/query_builder/statements/delete.dart 52:21                  DeleteStatement.go
+  package:elyf_groupe_app/core/offline/drift/sync_operation_dao.dart 405:10             SyncOperationDao.deleteOldSynced
+  package:elyf_groupe_app/core/offline/sync_manager.dart 586:42                         SyncManager._cleanupOldOperations
+  package:elyf_groupe_app/core/offline/sync_manager.dart 100:11                         SyncManager.initialize
+  test/core/offline/sync_manager_integration_test.dart 36:25                            main.<fn>.<fn>
+  ===== asynchronous gap ===========================
+  dart:async                                                                            Future.then
+  package:drift/src/utils/lazy_database.dart 57:27                                      LazyDatabase._awaitOpened
+  package:drift/src/utils/lazy_database.dart 74:12                                      LazyDatabase.ensureOpen
+  package:drift/src/runtime/api/connection_user.dart 169:21                             DatabaseConnectionUser.doWhenOpened
+  package:drift/src/runtime/api/connection_user.dart 728:19                             InternalConnectionUserApi.withCurrentExecutor
+  package:drift/src/runtime/query_builder/statements/delete.dart 52:21                  DeleteStatement.go
+  package:elyf_groupe_app/core/offline/drift/sync_operation_dao.dart 405:10             SyncOperationDao.deleteOldSynced
+  package:elyf_groupe_app/core/offline/sync_manager.dart 586:42                         SyncManager._cleanupOldOperations
+  package:elyf_groupe_app/core/offline/sync_manager.dart 100:11                         SyncManager.initialize
+  test/core/offline/sync_manager_integration_test.dart 36:25                            main.<fn>.<fn>
+  ===== asynchronous gap ===========================
+  dart:async                                                                            _CustomZone.registerUnaryCallback
+  test/core/offline/sync_manager_integration_test.dart 17:7                             main.<fn>.<fn>
+  
+  Binding has not yet been initialized.
+  The "instance" getter on the ServicesBinding binding mixin is only available once that binding has been initialized.
+  Typically, this is done by calling "WidgetsFlutterBinding.ensureInitialized()" or "runApp()" (the latter calls the former). Typically this call is done in the "void main()" method. The "ensureInitialized" method is idempotent; calling it multiple times is not harmful. After calling that method, the "instance" getter will return the binding.
+  In a test, one can call "TestWidgetsFlutterBinding.ensureInitialized()" as the first line in the test's "main()" method to initialize the binding.
+  If ServicesBinding is a custom binding mixin, there must also be a custom binding class, like WidgetsFlutterBinding, but that mixes in the selected binding, and that is the class that must be constructed before using the "instance" getter.
+  package:flutter/src/foundation/binding.dart 314:9                                     BindingBase.checkInstance.<fn>
+  package:flutter/src/foundation/binding.dart 401:6                                     BindingBase.checkInstance
+  package:flutter/src/services/binding.dart 73:54                                       ServicesBinding.instance
+  package:flutter/src/services/platform_channel.dart 179:25                             _findBinaryMessenger
+  package:flutter/src/services/platform_channel.dart 320:56                             MethodChannel.binaryMessenger
+  package:flutter/src/services/platform_channel.dart 360:17                             MethodChannel._invokeMethod
+  package:flutter/src/services/platform_channel.dart 540:12                             MethodChannel.invokeMethod
+  package:path_provider_platform_interface/src/method_channel_path_provider.dart 52:10  MethodChannelPathProvider.getApplicationDocumentsPath
+  package:path_provider/path_provider.dart 121:40                                       getApplicationDocumentsDirectory
+  package:elyf_groupe_app/core/offline/drift/connection_native.dart 10:23               openDriftConnection.<fn>
+  dart:async                                                                            new Future.sync
+  package:drift/src/utils/lazy_database.dart 57:14                                      LazyDatabase._awaitOpened
+  package:drift/src/utils/lazy_database.dart 74:12                                      LazyDatabase.ensureOpen
+  package:drift/src/runtime/api/connection_user.dart 169:21                             DatabaseConnectionUser.doWhenOpened
+  package:drift/src/runtime/api/connection_user.dart 728:19                             InternalConnectionUserApi.withCurrentExecutor
+  package:drift/src/runtime/query_builder/statements/delete.dart 52:21                  DeleteStatement.go
+  package:elyf_groupe_app/core/offline/drift/sync_operation_dao.dart 405:10             SyncOperationDao.deleteOldSynced
+  package:elyf_groupe_app/core/offline/sync_manager.dart 586:42                         SyncManager._cleanupOldOperations
+  package:elyf_groupe_app/core/offline/sync_manager.dart 100:11                         SyncManager.initialize
+  test/core/offline/sync_manager_integration_test.dart 36:25                            main.<fn>.<fn>
+  ===== asynchronous gap ===========================
+  dart:async                                                                            Future.then
+  package:drift/src/utils/lazy_database.dart 57:27                                      LazyDatabase._awaitOpened
+  package:drift/src/utils/lazy_database.dart 74:12                                      LazyDatabase.ensureOpen
+  package:drift/src/runtime/api/connection_user.dart 169:21                             DatabaseConnectionUser.doWhenOpened
+  package:drift/src/runtime/api/connection_user.dart 728:19                             InternalConnectionUserApi.withCurrentExecutor
+  package:drift/src/runtime/query_builder/statements/delete.dart 52:21                  DeleteStatement.go
+  package:elyf_groupe_app/core/offline/drift/sync_operation_dao.dart 405:10             SyncOperationDao.deleteOldSynced
+  package:elyf_groupe_app/core/offline/sync_manager.dart 586:42                         SyncManager._cleanupOldOperations
+  package:elyf_groupe_app/core/offline/sync_manager.dart 100:11                         SyncManager.initialize
+  test/core/offline/sync_manager_integration_test.dart 36:25                            main.<fn>.<fn>
+  ===== asynchronous gap ===========================
+  dart:async                                                                            _CustomZone.registerUnaryCallback
+  test/core/offline/sync_manager_integration_test.dart 17:7                             main.<fn>.<fn>
+  
+
+To run this test again: /home/carlos-simpore/develop/flutter/bin/cache/dart-sdk/bin/dart test /home/carlos-simpore/StudioProjects/elyf_group_app/test/core/offline/sync_manager_integration_test.dart -p vm --plain-name 'SyncManager Integration Tests should queue and sync create operation'
+00:02 +0 -1: Some tests failed.                                                                                                                                                                        

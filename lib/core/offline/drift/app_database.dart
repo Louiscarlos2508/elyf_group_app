@@ -24,6 +24,7 @@ class OfflineRecords extends Table {
   TextColumn get remoteId => text().nullable()(); // Firestore doc id (optional)
 
   TextColumn get enterpriseId => text()();
+  TextColumn get userId => text().nullable()(); // To partition records by user
   TextColumn get moduleType => text().withDefault(const Constant(''))();
 
   TextColumn get dataJson => text()(); // serialized Map<String, dynamic>
@@ -46,6 +47,7 @@ class SyncOperations extends Table {
   TextColumn get collectionName => text()();
   TextColumn get documentId => text()(); // localId or remoteId
   TextColumn get enterpriseId => text()();
+  TextColumn get userId => text().nullable()(); // User who created this operation
   TextColumn get payload =>
       text().nullable()(); // JSON payload for create/update
   IntColumn get retryCount => integer().withDefault(const Constant(0))();
@@ -80,7 +82,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(QueryExecutor? connection) : super(connection ?? openDriftConnection());
 
   @override
-  int get schemaVersion => 12;
+  int get schemaVersion => 13;
 
   @override
   MigrationStrategy get migration {
@@ -191,6 +193,18 @@ class AppDatabase extends _$AppDatabase {
               "WHERE collection_name = '${entry.key}' AND (module_type = '' OR module_type IS NULL)",
             );
           }
+        }
+        if (from < 13) {
+          await _addColumnIfNotExists(
+            'offline_records',
+            'user_id',
+            'TEXT',
+          );
+          await _addColumnIfNotExists(
+            'sync_operations',
+            'user_id',
+            'TEXT',
+          );
         }
       },
     );

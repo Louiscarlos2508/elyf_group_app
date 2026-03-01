@@ -46,7 +46,7 @@ class PropertyExpenseOfflineRepository extends OfflineRepository<PropertyExpense
   String? getEnterpriseId(PropertyExpense entity) => enterpriseId;
 
   @override
-  Future<void> saveToLocal(PropertyExpense entity) async {
+  Future<void> saveToLocal(PropertyExpense entity, {String? userId}) async {
     final localId = getLocalId(entity);
     final companion = PropertyExpensesTableCompanion(
       id: Value(localId),
@@ -68,7 +68,7 @@ class PropertyExpenseOfflineRepository extends OfflineRepository<PropertyExpense
   }
 
   @override
-  Future<void> deleteFromLocal(PropertyExpense entity) async {
+  Future<void> deleteFromLocal(PropertyExpense entity, {String? userId}) async {
     final localId = getLocalId(entity);
     await (driftService.db.delete(driftService.db.propertyExpensesTable)
           ..where((t) => t.id.equals(localId)))

@@ -1,5 +1,6 @@
 
 import 'package:flutter/material.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/wholesaler.dart';
@@ -20,6 +21,8 @@ class WholesalerManagementScreen extends ConsumerWidget {
     return Scaffold(
       appBar: ElyfAppBar(
         title: 'Gestion des Grossistes',
+        subtitle: 'PARTENAIRES GAZ',
+        module: EnterpriseModule.gaz,
         actions: [
           EnterpriseSelectorWidget(style: EnterpriseSelectorStyle.appBar),
           IconButton(

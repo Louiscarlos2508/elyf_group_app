@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:elyf_groupe_app/features/gaz/domain/services/gaz_calculation_service.dart';
+import 'package:elyf_groupe_app/features/gaz/domain/services/gaz_sales_calculation_service.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/gas_sale.dart';
 import '../../../../helpers/test_helpers.dart';
 
 void main() {
-  group('GazCalculationService', () {
+  group('GazSalesCalculationService', () {
     group('filterSalesByDateRange', () {
       test('should filter sales by date range', () {
         // Arrange
@@ -17,7 +17,7 @@ void main() {
         final endDate = DateTime(2026, 1, 31);
 
         // Act
-        final result = GazCalculationService.filterSalesByDateRange(
+        final result = GazSalesCalculationService.filterSalesByDateRange(
           sales,
           startDate: startDate,
           endDate: endDate,
@@ -36,7 +36,7 @@ void main() {
         ];
 
         // Act
-        final result = GazCalculationService.filterSalesByDateRange(sales);
+        final result = GazSalesCalculationService.filterSalesByDateRange(sales);
 
         // Assert
         expect(result.length, equals(2));
@@ -53,7 +53,7 @@ void main() {
         ];
 
         // Act
-        final result = GazCalculationService.filterSalesByType(
+        final result = GazSalesCalculationService.filterSalesByType(
           sales,
           SaleType.retail,
         );
@@ -74,7 +74,7 @@ void main() {
         ];
 
         // Act
-        final result = GazCalculationService.filterWholesaleSales(sales);
+        final result = GazSalesCalculationService.filterWholesaleSales(sales);
 
         // Assert
         expect(result.length, equals(2));
@@ -92,7 +92,7 @@ void main() {
         ];
 
         // Act
-        final result = GazCalculationService.filterRetailSales(sales);
+        final result = GazSalesCalculationService.filterRetailSales(sales);
 
         // Assert
         expect(result.length, equals(2));

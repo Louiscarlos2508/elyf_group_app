@@ -32,7 +32,7 @@ class SalesScreen extends ConsumerWidget {
                   const Color(0xFF0F766E), // Teal 700
                 ],
                 shadowColor: const Color(0xFF0D9488),
-                additionalActions: [
+                actions: [
                   IconButton(
                     icon: const Icon(Icons.refresh, color: Colors.white),
                     onPressed: () => ref.invalidate(recentSalesProvider),

@@ -44,7 +44,7 @@ class _SuppliersScreenState extends ConsumerState<SuppliersScreen> {
             Color(0xFF4F46E5), // Indigo 600
           ],
           shadowColor: const Color(0xFF6366F1),
-          additionalActions: [
+          actions: [
             IconButton(
               icon: const Icon(Icons.add, color: Colors.white),
               onPressed: () => _showAddEditSupplierDialog(context),

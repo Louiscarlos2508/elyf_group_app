@@ -5,12 +5,17 @@ import 'package:elyf_groupe_app/core/offline/drift_service.dart';
 import 'package:elyf_groupe_app/core/offline/sync_manager.dart';
 import 'package:elyf_groupe_app/features/boutique/data/repositories/product_offline_repository.dart';
 import 'package:elyf_groupe_app/features/boutique/domain/entities/product.dart';
+import 'package:elyf_groupe_app/features/audit_trail/domain/repositories/audit_trail_repository.dart';
+import 'package:mockito/mockito.dart';
+
+class MockAuditTrailRepository extends Mock implements AuditTrailRepository {}
 
 void main() {
   group('ProductOfflineRepository', () {
     late DriftService driftService;
     late ConnectivityService connectivityService;
     late SyncManager syncManager;
+    late MockAuditTrailRepository auditTrailRepository;
     late ProductOfflineRepository repository;
 
     setUpAll(() async {
@@ -25,12 +30,14 @@ void main() {
         driftService: driftService,
         connectivityService: connectivityService,
       );
+      auditTrailRepository = MockAuditTrailRepository();
       repository = ProductOfflineRepository(
         driftService: driftService,
         syncManager: syncManager,
         connectivityService: connectivityService,
         enterpriseId: 'test_enterprise',
         moduleType: 'boutique',
+        auditTrailRepository: auditTrailRepository,
       );
     });
 

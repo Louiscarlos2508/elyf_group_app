@@ -48,11 +48,11 @@ class InventoryOfflineRepository extends OfflineRepository<StockItem>
   String? getEnterpriseId(StockItem entity) => enterpriseId;
 
   @override
-  Future<void> saveToLocal(StockItem entity) async {
+  Future<void> saveToLocal(StockItem entity, {String? userId}) async {
     final localId = getLocalId(entity);
     final remoteId = getRemoteId(entity);
     final map = toMap(entity)..['localId'] = localId;
-    await driftService.records.upsert(
+    await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
       collectionName: collectionName,
       localId: localId,
       remoteId: remoteId,
@@ -64,13 +64,13 @@ class InventoryOfflineRepository extends OfflineRepository<StockItem>
   }
 
   @override
-  Future<void> deleteFromLocal(StockItem entity) async {
+  Future<void> deleteFromLocal(StockItem entity, {String? userId}) async {
     // Soft-delete
     final deletedInventory = entity.copyWith(
       deletedAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );
-    await saveToLocal(deletedInventory);
+    await saveToLocal(deletedInventory, userId: syncManager.getUserId() ?? '');
     
     AppLogger.info(
       'Soft-deleted stock item: ${entity.id}',

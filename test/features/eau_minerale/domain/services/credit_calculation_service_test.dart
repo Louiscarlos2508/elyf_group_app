@@ -10,6 +10,7 @@ void main() {
         final credits = [
           CustomerCredit(
             id: '1',
+            enterpriseId: 'test',
             saleId: 's1',
             amount: 10000,
             amountPaid: 6000,
@@ -18,6 +19,7 @@ void main() {
           ),
           CustomerCredit(
             id: '2',
+            enterpriseId: 'test',
             saleId: 's2',
             amount: 5000,
             amountPaid: 2000,
@@ -40,6 +42,7 @@ void main() {
         final payments = [
           CreditPayment(
             id: '1',
+            enterpriseId: 'test',
             saleId: 's1',
             amount: 3000,
             date: DateTime.now(),
@@ -47,6 +50,7 @@ void main() {
           ),
           CreditPayment(
             id: '2',
+            enterpriseId: 'test',
             saleId: 's2',
             amount: 2000,
             date: DateTime.now(),

@@ -157,7 +157,7 @@ class _TenantsScreenState extends ConsumerState<TenantsScreen> {
                   ImmobilierHeader(
                     title: 'LOCATAIRES',
                     subtitle: 'Gestion des locataires',
-                    additionalActions: [
+                    actions: [
                       Semantics(
                         label: 'Actualiser',
                         button: true,

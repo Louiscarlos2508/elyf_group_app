@@ -107,7 +107,7 @@ class WholesalerOfflineRepository implements WholesalerRepository {
 
       final map = _toMap(wholesaler)..['localId'] = localId..['id'] = localId;
 
-      await driftService.records.upsert(
+      await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
         collectionName: _collectionName,
         localId: localId,
         remoteId: remoteId,
@@ -144,7 +144,7 @@ class WholesalerOfflineRepository implements WholesalerRepository {
 
       final map = _toMap(wholesaler);
 
-      await driftService.records.upsert(
+      await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
         collectionName: _collectionName,
         localId: localId,
         remoteId: remoteId,

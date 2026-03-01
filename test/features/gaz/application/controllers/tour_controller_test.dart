@@ -55,8 +55,7 @@ void main() {
           id: '',
           enterpriseId: TestIds.enterprise1,
           tourDate: DateTime(2026, 1, 1),
-          status: TourStatus.collection,
-          collections: const [],
+          status: TourStatus.open,
           loadingFeePerBottle: 100.0,
           unloadingFeePerBottle: 100.0,
         );
@@ -71,18 +70,5 @@ void main() {
       });
     });
 
-    group('moveToNextStep', () {
-      test('should move to next step via service', () async {
-        // Arrange
-        const tourId = 'tour-1';
-        when(mockService.moveToNextStep(tourId)).thenAnswer((_) async => {});
-
-        // Act
-        await controller.moveToNextStep(tourId);
-
-        // Assert
-        verify(mockService.moveToNextStep(tourId)).called(1);
-      });
-    });
   });
 }

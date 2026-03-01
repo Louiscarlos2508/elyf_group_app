@@ -210,14 +210,14 @@ class _LiquidityCheckpointDialogState extends State<LiquidityCheckpointDialog> {
                       FormFieldWithLabel(
                         label: '📱 Solde sur la SIM (FCFA) *',
                         controller: _simController,
-                        hintText: 'Solde Orange Money / MTN / Moov',
+                        hintText: 'Solde Orange Money',
                         keyboardType: TextInputType.number,
                         validator: LiquidityCheckpointService.validateAmount,
                       ),
                       if (!isKeyboardOpen) ...[
                         const SizedBox(height: 4),
                         const Text(
-                          'Vérifiez votre solde : *144# (Orange), *126# (MTN)',
+                          'Vérifiez votre solde : *144#',
                           style: TextStyle(fontSize: 12, color: Color(0xFF4A5565)),
                         ),
                       ],

@@ -83,7 +83,7 @@ class _SettingsThresholdsCardState extends State<SettingsThresholdsCard> {
     
     return ElyfCard(
       padding: const EdgeInsets.all(24),
-      elevation: 4,
+      elevation: 0,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -276,7 +276,7 @@ class _SettingsThresholdsCardState extends State<SettingsThresholdsCard> {
       decoration: BoxDecoration(
         color: theme.colorScheme.primary.withValues(alpha: 0.05),
         border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.1)),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(24),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

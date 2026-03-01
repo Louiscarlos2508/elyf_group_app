@@ -200,7 +200,7 @@ class _ContractsScreenState extends ConsumerState<ContractsScreen> {
                   ImmobilierHeader(
                     title: 'CONTRATS',
                     subtitle: 'Baux & Locations',
-                    additionalActions: [
+                    actions: [
                       Semantics(
                         label: 'Actualiser',
                         button: true,

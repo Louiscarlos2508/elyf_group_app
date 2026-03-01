@@ -9,6 +9,7 @@ export 'elyf_ui/atoms/elyf_button.dart';
 export 'elyf_ui/atoms/elyf_field.dart';
 export 'elyf_ui/organisms/elyf_card.dart';
 export 'elyf_ui/organisms/elyf_app_bar.dart';
+export 'elyf_ui/organisms/elyf_module_header.dart';
 export 'elyf_ui/organisms/elyf_drawer.dart';
 export 'elyf_ui/organisms/elyf_navigation.dart';
 

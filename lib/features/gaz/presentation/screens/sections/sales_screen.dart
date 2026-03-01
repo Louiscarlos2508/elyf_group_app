@@ -93,34 +93,31 @@ class _GazSalesScreenState extends ConsumerState<GazSalesScreen>
 
         _initTabController(tabs.length, isManager);
         
-        return Container(
-          color: theme.colorScheme.surface,
-          child: GazSessionGuard(
-            child: NestedScrollView(
-              headerSliverBuilder: (context, innerBoxIsScrolled) => [
-                GazHeader(
-                  title: 'VENTES',
-                  subtitle: _getSubtitle(tabs),
-                  asSliver: true,
-                  bottom: SalesTabBar(
-                    tabController: _tabController!,
-                    tabs: tabs,
-                  ),
+        return GazSessionGuard(
+          child: NestedScrollView(
+            headerSliverBuilder: (context, innerBoxIsScrolled) => [
+              GazHeader(
+                title: 'VENTES',
+                subtitle: _getSubtitle(tabs),
+                asSliver: true,
+                bottom: SalesTabBar(
+                  tabController: _tabController!,
+                  tabs: tabs,
                 ),
-              ],
-              body: TabBarView(
-                controller: _tabController,
-                children: [
-                  RetailNewSaleTab(
-                    onCylinderTap: (c) => _showSaleDialog(c, SaleType.retail),
-                  ),
-                  if (showWholesale)
-                    WholesaleNewSaleTab(
-                      onCylinderTap: (c) => _showSaleDialog(c, SaleType.wholesale),
-                    ),
-                   const SalesHistoryTab(),
-                ],
               ),
+            ],
+            body: TabBarView(
+              controller: _tabController,
+              children: [
+                RetailNewSaleTab(
+                  onCylinderTap: (c) => _showSaleDialog(c, SaleType.retail),
+                ),
+                if (showWholesale)
+                  WholesaleNewSaleTab(
+                    onCylinderTap: (c) => _showSaleDialog(c, SaleType.wholesale),
+                  ),
+                 const SalesHistoryTab(),
+              ],
             ),
           ),
         );

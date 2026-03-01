@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
@@ -70,11 +71,12 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
         body: Column(
           children: [
             // Standard Immobilier Header
-            ImmobilierHeader(
-              title: 'PAIEMENTS',
-              subtitle: 'Gestion & Suivi',
+            ElyfModuleHeader(
+              title: 'Gestion & Suivi',
+              subtitle: 'Suivez vos encaissements et gérez l\'historique des paiements.',
+              module: EnterpriseModule.immobilier,
               asSliver: false,
-              additionalActions: [
+              actions: [
                 Semantics(
                   label: 'Actualiser',
                   button: true,

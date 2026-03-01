@@ -84,7 +84,7 @@ class AuthSessionService {
             name: 'auth.session',
           );
           firebaseUser = await _firebaseAuth.authStateChanges().first.timeout(
-            const Duration(seconds: 5),
+            const Duration(seconds: 3),
             onTimeout: () => null,
           );
         } catch (e) {

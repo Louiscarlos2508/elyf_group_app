@@ -57,10 +57,10 @@ class TransactionOfflineRepository extends OfflineRepository<Transaction>
   String? getEnterpriseId(Transaction entity) => enterpriseId;
 
   @override
-  Future<void> saveToLocal(Transaction entity) async {
+  Future<void> saveToLocal(Transaction entity, {String? userId}) async {
     final localId = getLocalId(entity);
     final map = toMap(entity)..['localId'] = localId;
-    await driftService.records.upsert(
+    await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
       collectionName: collectionName,
       localId: localId,
       remoteId: getRemoteId(entity),
@@ -72,7 +72,7 @@ class TransactionOfflineRepository extends OfflineRepository<Transaction>
   }
 
   @override
-  Future<void> deleteFromLocal(Transaction entity) async {
+  Future<void> deleteFromLocal(Transaction entity, {String? userId}) async {
     final remoteId = getRemoteId(entity);
     if (remoteId != null) {
       await driftService.records.deleteByRemoteId(
@@ -241,7 +241,7 @@ class TransactionOfflineRepository extends OfflineRepository<Transaction>
         AuditRecord(
           id: LocalIdGenerator.generate(),
           enterpriseId: enterpriseId,
-          userId: userId,
+          userId: syncManager.getUserId() ?? '',
           module: 'orange_money',
           action: 'create_transaction',
           entityId: localId,
@@ -290,7 +290,7 @@ class TransactionOfflineRepository extends OfflineRepository<Transaction>
             AuditRecord(
               id: LocalIdGenerator.generate(),
               enterpriseId: enterpriseId,
-              userId: userId,
+              userId: syncManager.getUserId() ?? '',
               module: 'orange_money',
               action: 'update_transaction_status',
               entityId: transactionId,
@@ -334,7 +334,7 @@ class TransactionOfflineRepository extends OfflineRepository<Transaction>
           AuditRecord(
             id: LocalIdGenerator.generate(),
             enterpriseId: enterpriseId,
-            userId: userId,
+            userId: syncManager.getUserId() ?? '',
             module: 'orange_money',
             action: 'delete_transaction',
             entityId: transactionId,
@@ -387,7 +387,7 @@ class TransactionOfflineRepository extends OfflineRepository<Transaction>
         AuditRecord(
           id: LocalIdGenerator.generate(),
           enterpriseId: enterpriseId,
-          userId: userId,
+          userId: syncManager.getUserId() ?? '',
           module: 'orange_money',
           action: 'restore_transaction',
           entityId: transactionId,

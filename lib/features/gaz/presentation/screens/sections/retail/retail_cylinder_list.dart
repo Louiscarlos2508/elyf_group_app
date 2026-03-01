@@ -40,37 +40,43 @@ class RetailCylinderList extends ConsumerWidget {
       );
     }
 
-    // Use a single SliverToBoxAdapter and put the conditional logic inside
     return SliverToBoxAdapter(
-      child: isWide
-          ? Wrap(
-        alignment: WrapAlignment.center,
-        spacing: 16,
-        runSpacing: 16,
-        children: cylinders.map((cylinder) {
-          return _CylinderCardWithStock(
-            cylinder: cylinder,
-            enterpriseId: enterpriseId,
-            onTap: () => onCylinderTap(cylinder),
-          );
-        }).toList(),
-      )
-          : SizedBox(
-        height: 420,
-        child: ListView.separated( // Use ListView for better performance than SingleChildScrollView+Row
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          itemCount: cylinders.length,
-          separatorBuilder: (context, index) => const SizedBox(width: 16),
-          itemBuilder: (context, index) {
-            final cylinder = cylinders[index];
-            return _CylinderCardWithStock(
-              cylinder: cylinder,
-              enterpriseId: enterpriseId,
-              onTap: () => onCylinderTap(cylinder),
-            );
-          },
-        ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: isWide
+            ? Wrap(
+                alignment: WrapAlignment.center,
+                spacing: 16,
+                runSpacing: 16,
+                children: cylinders.map((cylinder) {
+                  return SizedBox(
+                    width: 200, // Fixed width only on desktop wrap
+                    child: _CylinderCardWithStock(
+                      cylinder: cylinder,
+                      enterpriseId: enterpriseId,
+                      onTap: () => onCylinderTap(cylinder),
+                    ),
+                  );
+                }).toList(),
+              )
+            : GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: cylinders.length,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: 0.75,
+                ),
+                itemBuilder: (context, index) {
+                  return _CylinderCardWithStock(
+                    cylinder: cylinders[index],
+                    enterpriseId: enterpriseId,
+                    onTap: () => onCylinderTap(cylinders[index]),
+                  );
+                },
+              ),
       ),
     );
   }
@@ -89,7 +95,6 @@ class _CylinderCardWithStock extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final stocksAsync = ref.watch(
       cylinderStocksProvider((
         enterpriseId: enterpriseId,
@@ -110,31 +115,13 @@ class _CylinderCardWithStock extends ConsumerWidget {
           onTap: onTap,
         );
       },
-      loading: () => Container(
-        width: 260,
-        height: 400,
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: theme.colorScheme.outline.withValues(alpha: 0.1),
-            width: 1.3,
-          ),
-        ),
-        child: const Center(child: CircularProgressIndicator()),
+      loading: () => const AspectRatio(
+        aspectRatio: 0.75,
+        child: Card(child: Center(child: CircularProgressIndicator())),
       ),
-      error: (_, __) => Container(
-        width: 260,
-        height: 400,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: Colors.black.withValues(alpha: 0.1),
-            width: 1.3,
-          ),
-        ),
-        child: const Center(child: Icon(Icons.error)),
+      error: (_, __) => const AspectRatio(
+        aspectRatio: 0.75,
+        child: Card(child: Center(child: Icon(Icons.error))),
       ),
     );
   }

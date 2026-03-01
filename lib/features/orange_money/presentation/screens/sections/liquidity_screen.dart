@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../../widgets/liquidity/liquidity_tabs.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
@@ -12,8 +14,7 @@ import '../../widgets/liquidity/liquidity_filters_card.dart';
 import '../../widgets/liquidity/liquidity_checkpoints_list.dart';
 import '../../widgets/liquidity/liquidity_empty_state.dart';
 import '../../widgets/liquidity/liquidity_checkpoint_card.dart';
-import '../../widgets/liquidity/liquidity_tabs.dart';
-import '../../widgets/orange_money_header.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import '../../widgets/liquidity/justification_dialog.dart';
 
 /// Screen for managing liquidity checkpoints.
@@ -54,15 +55,13 @@ class _LiquidityScreenState extends ConsumerState<LiquidityScreen> {
     );
 
     return Scaffold(
-      backgroundColor: theme.colorScheme.surface,
+      backgroundColor: Colors.transparent,
       body: CustomScrollView(
         slivers: [
-          OrangeMoneyHeader(
+          ElyfModuleHeader(
             title: 'Suivi de Liquidité',
             subtitle: 'Contrôlez vos pointages matin et soir pour garantir la sécurité de vos fonds.',
-            badgeText: 'LIQUIDITÉ',
-            badgeIcon: Icons.water_drop_rounded,
-            asSliver: true,
+            module: EnterpriseModule.mobileMoney,
           ),
           SliverPadding(
             padding: const EdgeInsets.all(24),

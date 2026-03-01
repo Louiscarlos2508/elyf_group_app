@@ -4,8 +4,10 @@ import 'package:flutter/services.dart';
 class ElyfField extends StatelessWidget {
   const ElyfField({
     super.key,
-    required this.controller,
+    this.controller,
     required this.label,
+    this.initialValue,
+    this.readOnly = false,
     this.hint,
     this.prefixIcon,
     this.suffixText,
@@ -17,8 +19,10 @@ class ElyfField extends StatelessWidget {
     this.inputFormatters,
   });
 
-  final TextEditingController controller;
+  final TextEditingController? controller;
   final String label;
+  final String? initialValue;
+  final bool readOnly;
   final String? hint;
   final IconData? prefixIcon;
   final String? suffixText;
@@ -48,6 +52,8 @@ class ElyfField extends StatelessWidget {
         ],
         TextFormField(
           controller: controller,
+          initialValue: controller == null ? initialValue : null,
+          readOnly: readOnly,
           keyboardType: keyboardType,
           validator: validator,
           maxLines: maxLines,

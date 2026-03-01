@@ -6,6 +6,7 @@ import 'package:elyf_groupe_app/features/boutique/domain/entities/sale.dart';
 import 'package:elyf_groupe_app/core/offline/connectivity_service.dart';
 import 'package:elyf_groupe_app/core/offline/drift_service.dart';
 import 'package:elyf_groupe_app/core/offline/sync_manager.dart';
+import 'package:elyf_groupe_app/features/audit_trail/domain/repositories/audit_trail_repository.dart';
 
 void main() {
   group('SaleOfflineRepository', () {
@@ -76,6 +77,7 @@ class TestSaleOfflineRepository extends SaleOfflineRepository {
           connectivityService: MockConnectivityService(),
           enterpriseId: 'test-enterprise',
           moduleType: 'boutique',
+          auditTrailRepository: MockAuditTrailRepository(),
         );
 
   @override
@@ -88,4 +90,5 @@ class TestSaleOfflineRepository extends SaleOfflineRepository {
 class MockDriftService extends Mock implements DriftService {}
 class MockSyncManager extends Mock implements SyncManager {}
 class MockConnectivityService extends Mock implements ConnectivityService {}
+class MockAuditTrailRepository extends Mock implements AuditTrailRepository {}
 

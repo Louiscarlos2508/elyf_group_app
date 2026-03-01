@@ -50,11 +50,11 @@ class CreditOfflineRepository extends OfflineRepository<CreditPayment>
   String? getEnterpriseId(CreditPayment entity) => enterpriseId;
 
   @override
-  Future<void> saveToLocal(CreditPayment entity) async {
+  Future<void> saveToLocal(CreditPayment entity, {String? userId}) async {
     final localId = getLocalId(entity);
     final remoteId = getRemoteId(entity);
     final map = toMap(entity)..['localId'] = localId;
-    await driftService.records.upsert(
+    await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
       collectionName: collectionName,
       localId: localId,
       remoteId: remoteId,
@@ -66,13 +66,13 @@ class CreditOfflineRepository extends OfflineRepository<CreditPayment>
   }
 
   @override
-  Future<void> deleteFromLocal(CreditPayment entity) async {
+  Future<void> deleteFromLocal(CreditPayment entity, {String? userId}) async {
     // Soft-delete
     final deletedCredit = entity.copyWith(
       deletedAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );
-    await saveToLocal(deletedCredit);
+    await saveToLocal(deletedCredit, userId: syncManager.getUserId() ?? '');
     
     AppLogger.info(
       'Soft-deleted credit payment: ${entity.id}',
@@ -299,7 +299,7 @@ class CreditOfflineRepository extends OfflineRepository<CreditPayment>
       );
       
       // Enregistrer localement
-      await saveToLocal(paymentToSave);
+      await saveToLocal(paymentToSave, userId: syncManager.getUserId() ?? '');
       
       // Mettre en file d'attente pour la synchronisation
       await syncManager.queueCreate(

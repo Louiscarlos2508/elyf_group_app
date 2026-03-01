@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:developer' as developer;
 
 import 'package:firebase_core/firebase_core.dart';
@@ -11,7 +12,7 @@ import '../core/errors/error_handler.dart';
 import '../core/logging/app_logger.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart'
-    show FirebaseFirestore, Settings;
+    show Settings;
 
 import '../firebase_options.dart';
 import '../core/permissions/services/permission_initializer.dart';
@@ -27,44 +28,29 @@ import 'package:firebase_auth/firebase_auth.dart';
 ///
 /// This is where we initialize Firebase, Drift, Remote Config,
 /// crash reporting, and any other shared services.
-/// Returning a [ProviderContainer] to be used in the [UncontrolledProviderScope].
 Future<ProviderContainer> bootstrap() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Load environment variables (optional - uses fallback values if missing)
-  try {
-    await dotenv.load(fileName: '.env');
-    developer.log('Environment variables loaded', name: 'bootstrap');
-  } catch (e) {
-    developer.log(
-      'No .env file found - using default values',
-      name: 'bootstrap',
-    );
-  }
+  // Initialisations de base en parallèle
+  final results = await Future.wait([
+    // Load environment variables
+    dotenv.load(fileName: '.env').catchError((_) {
+      developer.log('No .env file found - using default values', name: 'bootstrap');
+      return null;
+    }),
+    
+    // Initialize Firebase
+    Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform),
+    
+    // Initialize date formatting
+    initializeDateFormatting('fr', null),
+    
+    // Initialize SharedPreferences
+    SharedPreferences.getInstance(),
+  ]);
 
-  // Initialize Firebase
-  try {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-    developer.log('Firebase initialized successfully', name: 'bootstrap');
-  } catch (e, stackTrace) {
-    final appException = ErrorHandler.instance.handleError(e, stackTrace);
-    AppLogger.critical(
-      'Error initializing Firebase: ${appException.message}',
-      name: 'bootstrap',
-      error: e,
-      stackTrace: stackTrace,
-    );
-    rethrow; // Ne pas continuer si Firebase ne peut pas s'initialiser
-  }
-
-  // Initialize date formatting for French locale
-  await initializeDateFormatting('fr', null);
-
-  // Initialize SharedPreferences
-  final prefs = await SharedPreferences.getInstance();
-  developer.log('SharedPreferences initialized', name: 'bootstrap');
+  final prefs = results[3] as SharedPreferences;
+  developer.log('Base services initialized (Firebase, Prefs, Env, Dates)', name: 'bootstrap');
 
   // Initialize permissions registry
   PermissionInitializer.initializeAllPermissions();
@@ -76,106 +62,71 @@ Future<ProviderContainer> bootstrap() async {
     ],
   );
 
-  // Initialize offline-first infrastructure
-  await _initializeOfflineServices(container);
+  // Initialize critical offline-first infrastructure (Drift and Connectivity)
+  // We await these because they are needed for the app to function
+  await _initializeCriticalOfflineServices(container);
 
-  // Initialize Firebase Cloud Messaging (FCM)
-  await _initializeFCM(container);
+  // Start background initializations without awaiting (Non-blocking)
+  _startBackgroundServices(container);
 
   developer.log('Bootstrap completed successfully', name: 'bootstrap');
   return container;
 }
 
-/// Initializes offline-first services (Drift database and connectivity).
-Future<void> _initializeOfflineServices(ProviderContainer container) async {
+/// Initializes critical services needed for the first screen.
+Future<void> _initializeCriticalOfflineServices(ProviderContainer container) async {
   try {
-    // Initialize Drift database
-    await container.read(driftServiceProvider).initialize();
-    developer.log('DriftService initialized', name: 'bootstrap');
-
-    // Initialize connectivity monitoring
-    final connectivityService = container.read(connectivityServiceProvider);
-    await connectivityService.initialize();
-    developer.log('ConnectivityService initialized', name: 'bootstrap');
-
-    // Initialize sync manager with Firebase handler
-    // Note: Firebase must be initialized before this point
-    // Configure Firestore settings to handle database initialization
-    FirebaseFirestore firestore;
-    try {
-      firestore = container.read(firestoreProvider);
-      firestore.settings = const Settings(
-        persistenceEnabled: true,
-        cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
-      );
-      developer.log('Firestore configured successfully', name: 'bootstrap');
-    } catch (e, stackTrace) {
-      // Firestore peut ne pas être immédiatement disponible après Firebase.initializeApp()
-      // C'est normal et n'empêche pas l'app de fonctionner (mode offline-first)
-      developer.log(
-        'Firestore configuration warning (will work offline-first): ${e.toString()}',
-        name: 'bootstrap',
-        error: e,
-        stackTrace: stackTrace,
-      );
-      // Récupérer l'instance même en cas d'erreur pour permettre la création du handler
-      firestore = container.read(firestoreProvider);
-    }
-
-    // Initialize sync manager
-    final syncManager = container.read(syncManagerProvider);
-    await syncManager.initialize();
-
-    // Initialize realtime sync for administration module
-    try {
-      final realtimeSyncService = container.read(realtimeSyncServiceProvider);
-      final currentUser = FirebaseAuth.instance.currentUser;
-      
-      if (currentUser != null) {
-        // Démarrer en arrière-plan sans attendre (ne bloque pas le boot)
-        realtimeSyncService.startRealtimeSync(userId: currentUser.uid).catchError((e) {
-          developer.log('Failed to start realtime sync: $e', name: 'bootstrap');
-        });
-        developer.log(
-          'Realtime sync started for administration module (user: ${currentUser.uid})',
+    // 1. Initialize Drift and Connectivity in parallel with a safety timeout
+    await Future.wait([
+      container.read(driftServiceProvider).initialize(),
+      container.read(connectivityServiceProvider).initialize(),
+    ]).timeout(
+      const Duration(seconds: 5),
+      onTimeout: () {
+        AppLogger.warning(
+          'Critical offline services initialization timed out',
           name: 'bootstrap',
         );
-
-      } else {
-        developer.log(
-          'Skipping realtime sync start (no user logged in)',
-          name: 'bootstrap',
-        );
-      }
-    } catch (e, stackTrace) {
-      final appException = ErrorHandler.instance.handleError(e, stackTrace);
-      AppLogger.warning(
-        'Failed to start realtime sync (will continue with periodic sync): ${appException.message}',
-        name: 'bootstrap',
-        error: e,
-        stackTrace: stackTrace,
-      );
-      // Continue app startup even if realtime sync fails
-    }
-
-    // Global module realtime sync service is available via provider:
-    // container.read(globalModuleRealtimeSyncServiceProvider)
-
-    developer.log(
-      'Offline services initialized successfully',
-      name: 'bootstrap',
+        return [];
+      },
     );
-  } catch (error, stackTrace) {
-    final appException = ErrorHandler.instance.handleError(error, stackTrace);
-    AppLogger.critical(
-      'Failed to initialize offline services: ${appException.message}',
-      name: 'bootstrap',
-      error: error,
-      stackTrace: stackTrace,
+
+    // 2. Configure Firestore (Local persistence)
+    final firestore = container.read(firestoreProvider);
+    firestore.settings = const Settings(
+      persistenceEnabled: true,
+      cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+      // Note: Low-level timeouts are handled by Firestore internally.
+      // By using persistence, we ensure the app is ready immediately.
     );
-    // Continue app startup even if offline services fail
-    // The app should still work in online-only mode
+    
+    developer.log('Critical offline services ready', name: 'bootstrap');
+  } catch (e) {
+    AppLogger.critical('Failed critical boot services: $e', name: 'bootstrap');
   }
+}
+
+/// Starts services that can run in background after the initial render.
+void _startBackgroundServices(ProviderContainer container) {
+  // Sync manager initialization (can be background)
+  container.read(syncManagerProvider).initialize().then((_) {
+    // Start realtime sync if user is logged in
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser != null) {
+      container.read(realtimeSyncServiceProvider)
+          .startRealtimeSync(userId: currentUser.uid)
+        .catchError((e) {
+          developer.log('Realtime sync background failed: $e');
+          return null;
+        });
+    }
+  }).catchError((e) {
+    developer.log('SyncManager background failed: $e');
+    return null;
+  });
+
+  // FCM and Notifications (Background)
+  _initializeFCM(container).catchError((e) => developer.log('FCM background failed: $e'));
 }
 
 /// Initializes Firebase Cloud Messaging (FCM).

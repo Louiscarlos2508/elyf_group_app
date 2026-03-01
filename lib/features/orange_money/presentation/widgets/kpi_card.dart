@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:elyf_groupe_app/shared.dart';
 
 /// KPI card widget for displaying statistics.
 class KpiCard extends StatelessWidget {
@@ -26,55 +27,46 @@ class KpiCard extends StatelessWidget {
     final theme = Theme.of(context);
     final isMobile = MediaQuery.of(context).size.width < 600;
 
-    return Card(
-      color: backgroundColor ?? Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-        side: BorderSide(
-          color: Colors.black.withValues(alpha: 0.1),
-          width: 1.22,
-        ),
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(isMobile ? 16 : 25),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (icon != null || iconWidget != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child:
-                    iconWidget ??
-                    Icon(
-                      icon,
-                      size: 32,
-                      color: valueColor ?? theme.colorScheme.primary,
-                    ),
-              ),
-            Text(
-              label,
-              style: const TextStyle(
-                color: Color(0xFF4A5565),
-                fontSize: 12,
-                fontWeight: FontWeight.normal,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              style:
-                  valueStyle ??
-                  TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: valueColor ?? const Color(0xFF101828),
-                    fontSize: isMobile ? 18 : 24,
+    return ElyfCard(
+      backgroundColor: backgroundColor,
+      padding: EdgeInsets.all(isMobile ? 16 : 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null || iconWidget != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child:
+                  iconWidget ??
+                  Icon(
+                    icon,
+                    size: 28,
+                    color: valueColor ?? theme.colorScheme.primary,
                   ),
-              textAlign: TextAlign.center,
             ),
-          ],
-        ),
+          Text(
+            label,
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+              fontFamily: 'Outfit',
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: valueStyle ??
+                theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  color: valueColor ?? theme.colorScheme.onSurface,
+                  fontFamily: 'Outfit',
+                  fontSize: isMobile ? 20 : 24,
+                ),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }

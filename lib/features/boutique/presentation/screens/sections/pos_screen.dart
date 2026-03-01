@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -354,15 +355,11 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                         flex: isWide ? 2 : 1,
                         child: CustomScrollView(
                           slivers: [
-                            BoutiqueHeader(
-                              title: "POINT DE VENTE",
-                              subtitle: "Caisse & Panier",
-                              gradientColors: const [
-                                Color(0xFF2563EB), // Blue 600
-                                Color(0xFF1D4ED8), // Blue 700
-                              ],
-                              shadowColor: const Color(0xFF2563EB),
-                              additionalActions: [
+                            ElyfModuleHeader(
+                              title: "Point de Vente",
+                              subtitle: "Gérez vos ventes et votre panier en temps réel.",
+                              module: EnterpriseModule.boutique,
+                              actions: [
                                 if (_hasHeldCart)
                                   IconButton(
                                     icon: const Icon(Icons.shopping_basket_outlined, color: Colors.white),

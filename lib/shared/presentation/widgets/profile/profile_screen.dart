@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:elyf_groupe_app/shared.dart';
 
 import 'profile_logout_card.dart';
 import 'profile_personal_info_card.dart';
@@ -45,30 +46,14 @@ class ProfileScreen extends ConsumerWidget {
     final profileAsync = ref.watch(currentUserProfileProvider);
     final currentUserAsync = ref.watch(currentUserProvider);
 
-    return Scaffold( // Wrapped in Scaffold to support ElyfAppBar
-      backgroundColor: theme.colorScheme.surface,
+    return Scaffold(
       body: CustomScrollView(
         slivers: [
-          // Premium App Bar
-          // Premium Sliver App Bar
-          SliverAppBar(
-            pinned: true,
-            floating: true,
-            backgroundColor: theme.colorScheme.surface.withValues(alpha: 0.85),
-            elevation: 0,
-            centerTitle: true,
-            title: Text(
-              'Mon Profil',
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            flexibleSpace: ClipRect(
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                child: Container(color: Colors.transparent),
-              ),
-            ),
+          // Dynamic Premium Header
+          ElyfModuleHeader(
+            title: 'Mon Profil',
+            subtitle: 'Gérez vos informations personnelles et votre sécurité.',
+            showBackButton: Navigator.canPop(context),
           ),
           
           // Header with Avatar

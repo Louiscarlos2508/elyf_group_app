@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/orange_money/application/providers.dart';
@@ -85,11 +86,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       color: const Color(0xFFF9FAFB),
       child: CustomScrollView(
         slivers: [
-          OrangeMoneyHeader(
+          ElyfModuleHeader(
             title: 'Analytique Performance',
             subtitle: "Visualisez vos performances historiques et exportez vos données d'activité.",
-            badgeText: 'RAPPORTS & ANALYSES',
-            badgeIcon: Icons.bar_chart_rounded,
+            module: EnterpriseModule.mobileMoney,
           ),
           SliverPadding(
             padding: const EdgeInsets.all(24),

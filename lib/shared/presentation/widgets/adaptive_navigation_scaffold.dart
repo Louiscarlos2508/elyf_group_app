@@ -222,7 +222,6 @@ class _AdaptiveNavigationScaffoldState
         actions: widget.appBarActions,
         useGlassmorphism: false,
         elevation: 0,
-        backgroundColor: theme.colorScheme.surface,
       ),
       body: _getWidgetForIndex(_selectedIndex),
       bottomNavigationBar: ElyfBottomNavigationBar(
@@ -263,7 +262,6 @@ class _AdaptiveNavigationScaffoldState
         ),
         actions: widget.appBarActions,
         elevation: 0,
-        backgroundColor: theme.colorScheme.surface,
       ),
       drawer: ElyfDrawer(
         sections: widget.sections,

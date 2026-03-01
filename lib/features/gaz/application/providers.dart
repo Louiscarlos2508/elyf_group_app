@@ -360,7 +360,11 @@ final wholesalerRepositoryProvider = Provider<WholesalerRepository>((ref) {
 
 final collectionRepositoryProvider = Provider<CollectionRepository>((ref) {
   final driftService = ref.watch(driftServiceProvider);
-  return CollectionOfflineRepository(driftService: driftService);
+  final syncManager = ref.watch(syncManagerProvider);
+  return CollectionOfflineRepository(
+    driftService: driftService,
+    syncManager: syncManager,
+  );
 });
 
 final gazSettingsRepositoryProvider =

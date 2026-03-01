@@ -24,7 +24,7 @@ class TreasuryScreen extends ConsumerWidget {
             Color(0xFF047857), // Emerald 700
           ],
           shadowColor: const Color(0xFF059669),
-          additionalActions: [
+          actions: [
             IconButton(
               icon: const Icon(Icons.refresh, color: Colors.white),
               onPressed: () => ref.invalidate(treasuryBalancesProvider),

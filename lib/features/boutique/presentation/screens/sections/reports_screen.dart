@@ -139,7 +139,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 const Color(0xFF6D28D9), // Violet 700
               ],
               shadowColor: const Color(0xFF7C3AED),
-              additionalActions: [
+              actions: [
                 Container(
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.2),

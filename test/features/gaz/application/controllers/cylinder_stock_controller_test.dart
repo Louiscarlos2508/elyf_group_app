@@ -11,16 +11,20 @@ import '../../../../helpers/test_helpers.dart';
 
 import 'cylinder_stock_controller_test.mocks.dart';
 
-@GenerateMocks([CylinderStockRepository, StockService])
+import 'package:elyf_groupe_app/features/gaz/domain/services/transaction_service.dart';
+
+@GenerateMocks([CylinderStockRepository, StockService, TransactionService])
 void main() {
   late CylinderStockController controller;
   late MockCylinderStockRepository mockRepository;
   late MockStockService mockStockService;
+  late MockTransactionService mockTransactionService;
 
   setUp(() {
     mockRepository = MockCylinderStockRepository();
     mockStockService = MockStockService();
-    controller = CylinderStockController(mockRepository, mockStockService);
+    mockTransactionService = MockTransactionService();
+    controller = CylinderStockController(mockRepository, mockStockService, mockTransactionService);
   });
 
   group('CylinderStockController', () {
@@ -81,17 +85,37 @@ void main() {
     });
 
     group('adjustStockQuantity', () {
-      test('should adjust stock quantity via service', () async {
+      test('should adjust stock quantity via transaction service', () async {
         // Arrange
         const stockId = 'stock-1';
-        when(mockStockService.adjustStockQuantity(stockId, 50))
-            .thenAnswer((_) async => {});
+        final stock = CylinderStock(
+          id: stockId,
+          cylinderId: 'cylinder-1',
+          weight: 12,
+          status: CylinderStatus.full,
+          quantity: 100,
+          enterpriseId: TestIds.enterprise1,
+          updatedAt: DateTime.now(),
+        );
+        
+        when(mockRepository.getStockById(stockId)).thenAnswer((_) async => stock);
+        when(mockTransactionService.executeStockAdjustment(
+          stock: anyNamed('stock'),
+          newQuantity: anyNamed('newQuantity'),
+          userId: anyNamed('userId'),
+          reason: anyNamed('reason'),
+        )).thenAnswer((_) async => {});
 
         // Act
-        await controller.adjustStockQuantity(stockId, 50);
+        await controller.adjustStockQuantity(stockId, 50, userId: 'user-1', reason: 'Correction');
 
         // Assert
-        verify(mockStockService.adjustStockQuantity(stockId, 50)).called(1);
+        verify(mockTransactionService.executeStockAdjustment(
+          stock: anyNamed('stock'),
+          newQuantity: 50,
+          userId: 'user-1',
+          reason: 'Correction',
+        )).called(1);
       });
     });
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -11,8 +12,8 @@ import '../../widgets/commission_validation_dialog.dart';
 import '../../../domain/services/commission_calculation_service.dart';
 import '../../widgets/commission_form_dialog.dart';
 import 'package:elyf_groupe_app/shared.dart';
-import '../../../../../shared/providers/storage_provider.dart';
-import '../../widgets/orange_money_header.dart';
+import 'package:elyf_groupe_app/shared/providers/storage_provider.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 
 /// Screen for managing commissions.
 class CommissionsScreen extends ConsumerWidget {
@@ -32,15 +33,13 @@ class CommissionsScreen extends ConsumerWidget {
     );
 
     return Scaffold(
-      backgroundColor: theme.colorScheme.surface,
+      backgroundColor: Colors.transparent,
       body: CustomScrollView(
         slivers: [
-          OrangeMoneyHeader(
+          ElyfModuleHeader(
             title: 'Gestion des Commissions',
             subtitle: 'Consultez vos estimations, déclarez vos SMS et validez vos gains mensuels.',
-            badgeText: 'COMMISSIONS',
-            badgeIcon: Icons.payments_rounded,
-            asSliver: true,
+            module: EnterpriseModule.mobileMoney,
           ),
           SliverPadding(
             padding: const EdgeInsets.all(24),
@@ -191,41 +190,48 @@ class CommissionsScreen extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
+              Expanded(
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(Icons.calendar_month_rounded,
+                          color: theme.colorScheme.primary, size: 22),
                     ),
-                    child: Icon(Icons.calendar_month_rounded,
-                        color: theme.colorScheme.primary, size: 22),
-                  ),
-                  const SizedBox(width: 16),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Mois en cours',
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
-                          fontWeight: FontWeight.w700,
-                          fontFamily: 'Outfit',
-                        ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Mois en cours',
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                              fontWeight: FontWeight.w700,
+                              fontFamily: 'Outfit',
+                            ),
+                          ),
+                          Text(
+                            periodLabel,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w900,
+                              color: theme.colorScheme.onSurface,
+                              fontFamily: 'Outfit',
+                            ),
+                          ),
+                        ],
                       ),
-                      Text(
-                        periodLabel,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w900,
-                          color: theme.colorScheme.onSurface,
-                          fontFamily: 'Outfit',
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               if (commission != null)
                 CommissionStatusBadge(
                   status: commission.status,
@@ -244,7 +250,7 @@ class CommissionsScreen extends ConsumerWidget {
                   iconColor: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 12),
               Expanded(
                 child: _buildStatBox(
                   'Estimé (Système)',
@@ -257,7 +263,7 @@ class CommissionsScreen extends ConsumerWidget {
                 ),
               ),
               if (commission?.declaredAmount != null) ...[
-                const SizedBox(width: 16),
+                const SizedBox(width: 12),
                 Expanded(
                   child: _buildStatBox(
                     'Décl. (SMS)',
@@ -386,7 +392,7 @@ class CommissionsScreen extends ConsumerWidget {
     bool isStatus = false,
   }) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.grey.shade50,
         borderRadius: BorderRadius.circular(12),
@@ -398,28 +404,33 @@ class CommissionsScreen extends ConsumerWidget {
           Row(
             children: [
               if (icon != null) ...[
-                Icon(icon, size: 16, color: iconColor ?? Colors.grey),
-                const SizedBox(width: 8),
+                Icon(icon, size: 14, color: iconColor ?? Colors.grey),
+                const SizedBox(width: 4),
               ],
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey.shade600,
-                  fontWeight: FontWeight.w500,
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: isStatus ? 14 : 20,
-              fontWeight: FontWeight.bold,
-              color: valueColor ?? const Color(0xFF101828),
+          const SizedBox(height: 6),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: isStatus ? 13 : 16,
+                fontWeight: FontWeight.bold,
+                color: valueColor ?? const Color(0xFF101828),
+              ),
             ),
           ),
           if (subtitle != null) ...[
@@ -427,10 +438,12 @@ class CommissionsScreen extends ConsumerWidget {
             Text(
               subtitle,
               style: const TextStyle(
-                fontSize: 11,
+                fontSize: 10,
                 color: Color(0xFF6A7282),
                 fontWeight: FontWeight.normal,
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ],

@@ -104,9 +104,10 @@ void main() {
   });
 
   group('ProductionService - chargerBobinesNonFinies', () {
-    final machine1 = Machine(id: 'M1', nom: 'M1', reference: 'REF1');
+    final machine1 = Machine(id: 'M1', name: 'M1', enterpriseId: 'test', reference: 'REF1');
     final stock1 = BobineStock(
       id: 'ST1',
+      enterpriseId: 'test',
       type: 'T1',
       quantity: 10,
       unit: 'pcs',

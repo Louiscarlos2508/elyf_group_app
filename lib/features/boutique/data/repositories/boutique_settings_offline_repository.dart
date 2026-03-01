@@ -34,10 +34,10 @@ class BoutiqueSettingsOfflineRepository extends OfflineRepository<BoutiqueSettin
   String? getEnterpriseId(BoutiqueSettings entity) => entity.enterpriseId;
 
   @override
-  Future<void> saveToLocal(BoutiqueSettings entity) async {
+  Future<void> saveToLocal(BoutiqueSettings entity, {String? userId}) async {
     final localId = getLocalId(entity);
     final map = toMap(entity)..['localId'] = localId;
-    await driftService.records.upsert(
+    await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
       collectionName: collectionName,
       localId: localId,
       remoteId: localId,
@@ -49,7 +49,7 @@ class BoutiqueSettingsOfflineRepository extends OfflineRepository<BoutiqueSettin
   }
 
   @override
-  Future<void> deleteFromLocal(BoutiqueSettings entity) async {
+  Future<void> deleteFromLocal(BoutiqueSettings entity, {String? userId}) async {
     // Soft delete if needed, but per-module settings usually aren't deleted
     await saveToLocal(entity.copyWith(deletedAt: DateTime.now(), updatedAt: DateTime.now()));
   }

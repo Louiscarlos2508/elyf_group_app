@@ -47,13 +47,13 @@ class FinancialReportOfflineRepository
   String? getEnterpriseId(FinancialReport entity) => entity.enterpriseId;
 
   @override
-  Future<void> saveToLocal(FinancialReport entity) async {
+  Future<void> saveToLocal(FinancialReport entity, {String? userId}) async {
     // Utiliser la méthode utilitaire pour trouver le localId existant
     final existingLocalId = await findExistingLocalId(entity, moduleType: moduleType);
     final localId = existingLocalId ?? getLocalId(entity);
     final remoteId = getRemoteId(entity);
     final map = toMap(entity)..['localId'] = localId..['id'] = localId;
-    await driftService.records.upsert(
+    await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
       collectionName: collectionName,
       localId: localId,
       remoteId: remoteId,
@@ -65,13 +65,13 @@ class FinancialReportOfflineRepository
   }
 
   @override
-  Future<void> deleteFromLocal(FinancialReport entity) async {
+  Future<void> deleteFromLocal(FinancialReport entity, {String? userId}) async {
     // Soft-delete
     final deletedReport = entity.copyWith(
       deletedAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );
-    await saveToLocal(deletedReport);
+    await saveToLocal(deletedReport, userId: syncManager.getUserId() ?? '');
     
     AppLogger.info(
       'Soft-deleted financial report: ${entity.id}',

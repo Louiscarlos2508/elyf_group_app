@@ -46,7 +46,7 @@ class PaymentOfflineRepository extends OfflineRepository<Payment>
   String? getEnterpriseId(Payment entity) => enterpriseId;
 
   @override
-  Future<void> saveToLocal(Payment entity) async {
+  Future<void> saveToLocal(Payment entity, {String? userId}) async {
     final localId = getLocalId(entity);
     final companion = ImmobilierPaymentsTableCompanion(
       id: Value(localId),
@@ -75,7 +75,7 @@ class PaymentOfflineRepository extends OfflineRepository<Payment>
   }
 
   @override
-  Future<void> deleteFromLocal(Payment entity) async {
+  Future<void> deleteFromLocal(Payment entity, {String? userId}) async {
     final localId = getLocalId(entity);
     await (driftService.db.delete(driftService.db.immobilierPaymentsTable)
           ..where((t) => t.id.equals(localId)))

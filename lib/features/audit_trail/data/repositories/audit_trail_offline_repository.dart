@@ -74,10 +74,10 @@ class AuditTrailOfflineRepository extends OfflineRepository<AuditRecord>
   String? getEnterpriseId(AuditRecord entity) => entity.enterpriseId;
 
   @override
-  Future<void> saveToLocal(AuditRecord entity) async {
+  Future<void> saveToLocal(AuditRecord entity, {String? userId}) async {
     final localId = getLocalId(entity);
     final map = toMap(entity)..['localId'] = localId;
-    await driftService.records.upsert(
+    await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
       collectionName: collectionName,
       localId: localId,
       remoteId: getRemoteId(entity),
@@ -89,7 +89,7 @@ class AuditTrailOfflineRepository extends OfflineRepository<AuditRecord>
   }
 
   @override
-  Future<void> deleteFromLocal(AuditRecord entity) async {
+  Future<void> deleteFromLocal(AuditRecord entity, {String? userId}) async {
     final remoteId = getRemoteId(entity);
     if (remoteId != null) {
       await driftService.records.deleteByRemoteId(
@@ -164,7 +164,7 @@ class AuditTrailOfflineRepository extends OfflineRepository<AuditRecord>
         module: module,
         action: action,
         entityId: entityId,
-        userId: userId,
+        userId: syncManager.getUserId() ?? '',
       );
     } catch (e, stack) {
       final appException = ErrorHandler.instance.handleError(e, stack);
@@ -192,7 +192,7 @@ class AuditTrailOfflineRepository extends OfflineRepository<AuditRecord>
         module: module,
         action: action,
         entityId: entityId,
-        userId: userId,
+        userId: syncManager.getUserId() ?? '',
       );
     } catch (e, stack) {
       final appException = ErrorHandler.instance.handleError(e, stack);

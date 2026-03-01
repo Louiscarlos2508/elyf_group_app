@@ -31,11 +31,12 @@ class ImmobilierKpiCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: cardColor.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: cardColor.withValues(alpha: 0.15)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
+            color: (theme.brightness == Brightness.dark ? Colors.black : theme.colorScheme.primary)
+                .withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -43,7 +44,7 @@ class ImmobilierKpiCard extends StatelessWidget {
       ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(24),
         child: Padding(
           padding: EdgeInsets.all(isMobile ? 12 : 20),
           child: Row(

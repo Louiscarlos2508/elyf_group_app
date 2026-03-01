@@ -88,9 +88,10 @@ abstract class OfflineRepository<T> with OptimisticUIRepositoryMixin<T> {
     // (saveToLocal + queue sync doivent être atomiques)
     try {
       await driftService.db.transaction(() async {
+        final userId = syncManager.getUserId();
         // Save to local storage first
         try {
-          await saveToLocal(entity);
+          await saveToLocal(entity, userId: userId);
         } catch (e, stackTrace) {
           final appException = ErrorHandler.instance.handleError(e, stackTrace);
           AppLogger.warning(
@@ -150,7 +151,7 @@ abstract class OfflineRepository<T> with OptimisticUIRepositoryMixin<T> {
     }
   }
 
-  Future<void> saveToLocal(T entity);
+  Future<void> saveToLocal(T entity, {String? userId});
 
   /// Cherche le localId existant d'une entité avant de sauvegarder.
   ///
@@ -253,8 +254,10 @@ abstract class OfflineRepository<T> with OptimisticUIRepositoryMixin<T> {
       name: 'offline.repository',
     );
 
+    final userId = syncManager.getUserId();
+
     // Delete from local storage first
-    await deleteFromLocal(entity);
+    await deleteFromLocal(entity, userId: userId);
 
     // Queue sync operation if auto-sync is enabled and has remote ID
     if (enableAutoSync && remoteId != null && remoteId.isNotEmpty) {
@@ -267,7 +270,7 @@ abstract class OfflineRepository<T> with OptimisticUIRepositoryMixin<T> {
     }
   }
 
-  Future<void> deleteFromLocal(T entity);
+  Future<void> deleteFromLocal(T entity, {String? userId});
 
   /// Décode de manière sécurisée un JSON depuis Drift.
   ///

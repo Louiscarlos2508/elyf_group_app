@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:open_file/open_file.dart';
 
@@ -122,72 +123,25 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           return CustomScrollView(
             slivers: [
               // Premium Header for Reports
-              SliverToBoxAdapter(
-                child: Container(
-                  margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                  padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        const Color(0xFF312E81), // Dark Indigo
-                        const Color(0xFF4338CA), // Premium Indigo
-                        const Color(0xFF6366F1), // Violet
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(24),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.indigo.withValues(alpha: 0.2),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
+              ElyfModuleHeader(
+                title: "Performance Eau",
+                subtitle: "Analysez vos indicateurs clés, suivez la rentabilité et générez des rapports détaillés.",
+                module: EnterpriseModule.eau,
+                actions: [
+                  IconButton(
+                    icon: const Icon(Icons.refresh, color: Colors.white),
+                    onPressed: _invalidateProviders,
+                    tooltip: 'Actualiser',
                   ),
-                  child: Column(
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  "ANALYTIQUES & RAPPORTS",
-                                  style: theme.textTheme.labelLarge?.copyWith(
-                                    color: Colors.white.withValues(alpha: 0.9),
-                                    fontWeight: FontWeight.w500,
-                                    letterSpacing: 1.2,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  "Performance Eau",
-                                  style: theme.textTheme.headlineMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.refresh, color: Colors.white),
-                            onPressed: _invalidateProviders,
-                            tooltip: 'Actualiser',
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-                      ReportPeriodSelector(
-                        startDate: _startDate,
-                        endDate: _endDate,
-                        onStartDateSelected: () => _selectDate(context, true),
-                        onEndDateSelected: () => _selectDate(context, false),
-                        onDownload: _downloadReport,
-                      ),
-                    ],
+                ],
+                bottom: Padding(
+                  padding: const EdgeInsets.only(top: 24),
+                  child: ReportPeriodSelector(
+                    startDate: _startDate,
+                    endDate: _endDate,
+                    onStartDateSelected: () => _selectDate(context, true),
+                    onEndDateSelected: () => _selectDate(context, false),
+                    onDownload: _downloadReport,
                   ),
                 ),
               ),

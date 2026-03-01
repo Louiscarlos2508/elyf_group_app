@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 
@@ -80,13 +81,15 @@ class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
   }
 
   PreferredSizeWidget _buildAppBar(BuildContext context, Tour tour) {
-    return AppBar(
-      title: const Text('Gestion du Tour'),
+    return ElyfAppBar(
+      title: 'Gestion du Tour',
+      subtitle: 'APPROVISIONNEMENT GAZ',
+      module: EnterpriseModule.gaz,
       actions: [
         if (tour.status == TourStatus.open)
           IconButton(
             onPressed: () => _showCancelDialog(tour),
-            icon: const Icon(Icons.cancel_outlined, color: Colors.red),
+            icon: const Icon(Icons.cancel_outlined, color: Colors.white),
             tooltip: 'Annuler le tour',
           ),
       ],

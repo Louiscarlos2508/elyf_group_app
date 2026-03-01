@@ -54,10 +54,10 @@ class SettingsOfflineRepository extends OfflineRepository<OrangeMoneySettings>
   String? getEnterpriseId(OrangeMoneySettings entity) => entity.enterpriseId;
 
   @override
-  Future<void> saveToLocal(OrangeMoneySettings entity) async {
+  Future<void> saveToLocal(OrangeMoneySettings entity, {String? userId}) async {
     final localId = getLocalId(entity);
     final map = toMap(entity)..['localId'] = localId;
-    await driftService.records.upsert(
+    await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
       collectionName: collectionName,
       localId: localId,
       remoteId: localId,
@@ -69,7 +69,7 @@ class SettingsOfflineRepository extends OfflineRepository<OrangeMoneySettings>
   }
 
   @override
-  Future<void> deleteFromLocal(OrangeMoneySettings entity) async {
+  Future<void> deleteFromLocal(OrangeMoneySettings entity, {String? userId}) async {
     final localId = getLocalId(entity);
     await driftService.records.deleteByLocalId(
       collectionName: collectionName,
@@ -141,7 +141,7 @@ class SettingsOfflineRepository extends OfflineRepository<OrangeMoneySettings>
         AuditRecord(
           id: IdGenerator.generate(),
           enterpriseId: enterpriseId,
-          userId: userId,
+          userId: syncManager.getUserId() ?? '',
           module: 'orange_money',
           action: 'update_settings',
           entityId: _getSettingsId(settings.enterpriseId),
@@ -190,7 +190,7 @@ class SettingsOfflineRepository extends OfflineRepository<OrangeMoneySettings>
           AuditRecord(
             id: IdGenerator.generate(),
             enterpriseId: enterpriseId,
-            userId: userId,
+            userId: syncManager.getUserId() ?? '',
             module: 'orange_money',
             action: 'update_notifications',
             entityId: _getSettingsId(enterpriseId),
@@ -241,7 +241,7 @@ class SettingsOfflineRepository extends OfflineRepository<OrangeMoneySettings>
           AuditRecord(
             id: IdGenerator.generate(),
             enterpriseId: enterpriseId,
-            userId: userId,
+            userId: syncManager.getUserId() ?? '',
             module: 'orange_money',
             action: 'update_thresholds',
             entityId: _getSettingsId(enterpriseId),
@@ -310,7 +310,7 @@ class SettingsOfflineRepository extends OfflineRepository<OrangeMoneySettings>
           AuditRecord(
             id: IdGenerator.generate(),
             enterpriseId: enterpriseId,
-            userId: userId,
+            userId: syncManager.getUserId() ?? '',
             module: 'orange_money',
             action: 'update_commission_tiers',
             entityId: _getSettingsId(enterpriseId),
@@ -359,7 +359,7 @@ class SettingsOfflineRepository extends OfflineRepository<OrangeMoneySettings>
           AuditRecord(
             id: IdGenerator.generate(),
             enterpriseId: enterpriseId,
-            userId: userId,
+            userId: syncManager.getUserId() ?? '',
             module: 'orange_money',
             action: 'update_commission_validation',
             entityId: _getSettingsId(enterpriseId),
@@ -402,7 +402,7 @@ class SettingsOfflineRepository extends OfflineRepository<OrangeMoneySettings>
           AuditRecord(
             id: IdGenerator.generate(),
             enterpriseId: enterpriseId,
-            userId: userId,
+            userId: syncManager.getUserId() ?? '',
             module: 'orange_money',
             action: 'update_sim_number',
             entityId: _getSettingsId(enterpriseId),

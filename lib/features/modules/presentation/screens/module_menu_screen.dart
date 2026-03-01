@@ -29,7 +29,6 @@ class _ModuleMenuScreenState extends ConsumerState<ModuleMenuScreen> {
 
     return DoubleTapToExit(
       child: Scaffold(
-        backgroundColor: theme.colorScheme.surface,
         appBar: ElyfAppBar(
           title: activeEnterpriseAsync.when(
             data: (enterprise) => enterprise == null
@@ -287,7 +286,7 @@ class _ModuleMenuScreenState extends ConsumerState<ModuleMenuScreen> {
           margin: const EdgeInsets.only(bottom: 8),
           decoration: BoxDecoration(
             color: theme.colorScheme.surface,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
                 color: theme.shadowColor.withValues(alpha: 0.05),
@@ -300,7 +299,7 @@ class _ModuleMenuScreenState extends ConsumerState<ModuleMenuScreen> {
           child: Material(
             color: Colors.transparent,
             child: InkWell(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(24),
               onTap: () => _selectEnterprise(enterprise),
               child: Padding(
                 padding: const EdgeInsets.all(16),
@@ -317,7 +316,7 @@ class _ModuleMenuScreenState extends ConsumerState<ModuleMenuScreen> {
                               module.color.withValues(alpha: 0.2),
                            ],
                         ),
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(24),
                       ),
                       child: Icon(
                         enterprise.type.icon,
@@ -391,7 +390,7 @@ class _ModuleMenuScreenState extends ConsumerState<ModuleMenuScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
             color: module.color.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(24),
           ),
           child: Row(
             children: [
@@ -410,7 +409,7 @@ class _ModuleMenuScreenState extends ConsumerState<ModuleMenuScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: module.color.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(24),
                 ),
                 child: Text(
                   '${nodes.length}',
@@ -449,7 +448,7 @@ class _ModuleMenuScreenState extends ConsumerState<ModuleMenuScreen> {
         ),
         decoration: BoxDecoration(
           color: theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(24),
           border: Border.all(
             color: module.color.withValues(alpha: 0.3),
             width: 2,
@@ -471,7 +470,7 @@ class _ModuleMenuScreenState extends ConsumerState<ModuleMenuScreen> {
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: module.color.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(24),
               ),
               child: Icon(
                 enterprise.type.icon,
@@ -501,7 +500,7 @@ class _ModuleMenuScreenState extends ConsumerState<ModuleMenuScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
                     color: module.color.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(24),
                   ),
                   child: Text(
                     '${node.children.length} ${node.children.length > 1 ? 'sites' : 'site'}',
@@ -521,7 +520,7 @@ class _ModuleMenuScreenState extends ConsumerState<ModuleMenuScreen> {
                   color: module.color.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(12),
                   child: InkWell(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(24),
                     onTap: () => _selectEnterprise(enterprise),
                     child: Padding(
                       padding: const EdgeInsets.all(12),
@@ -565,7 +564,7 @@ class _ModuleMenuScreenState extends ConsumerState<ModuleMenuScreen> {
       ),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(
           color: theme.colorScheme.outlineVariant,
         ),
@@ -573,7 +572,7 @@ class _ModuleMenuScreenState extends ConsumerState<ModuleMenuScreen> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(24),
           onTap: () => _selectEnterprise(enterprise),
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -583,7 +582,7 @@ class _ModuleMenuScreenState extends ConsumerState<ModuleMenuScreen> {
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: module.color.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(24),
                   ),
                   child: Icon(
                     enterprise.type.icon,
@@ -639,7 +638,7 @@ class _ModuleMenuScreenState extends ConsumerState<ModuleMenuScreen> {
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(
           color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
         ),
@@ -647,7 +646,7 @@ class _ModuleMenuScreenState extends ConsumerState<ModuleMenuScreen> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(24),
           onTap: () => _selectEnterprise(enterprise),
           child: Padding(
             padding: const EdgeInsets.all(12),

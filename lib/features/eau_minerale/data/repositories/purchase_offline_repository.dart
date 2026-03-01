@@ -76,7 +76,7 @@ class PurchaseOfflineRepository implements PurchaseRepository {
       final entity = purchase.copyWith(id: localId, enterpriseId: enterpriseId);
       final map = entity.toMap()..['localId'] = localId;
 
-      await driftService.records.upsert(
+      await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
         collectionName: collectionName,
         localId: localId,
         enterpriseId: enterpriseId,
@@ -119,7 +119,7 @@ class PurchaseOfflineRepository implements PurchaseRepository {
         moduleType: 'eau_minerale',
       );
 
-      await driftService.records.upsert(
+      await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
         collectionName: collectionName,
         localId: purchase.id,
         remoteId: record?.remoteId,
@@ -158,7 +158,7 @@ class PurchaseOfflineRepository implements PurchaseRepository {
 
       final map = purchase.toMap()..['deletedAt'] = DateTime.now().toIso8601String();
       
-      await driftService.records.upsert(
+      await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
         collectionName: collectionName,
         localId: id,
         enterpriseId: enterpriseId,
@@ -228,7 +228,7 @@ class PurchaseOfflineRepository implements PurchaseRepository {
         AuditRecord(
           id: '',
           enterpriseId: enterpriseId,
-          userId: userId,
+          userId: syncManager.getUserId() ?? '',
           module: 'eau_minerale',
           action: action,
           entityId: entityId,

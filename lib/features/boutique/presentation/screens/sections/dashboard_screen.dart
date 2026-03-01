@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:intl/intl.dart';
@@ -33,15 +34,11 @@ class DashboardScreen extends ConsumerWidget {
       body: CustomScrollView(
         slivers: [
           // Header with Gradient
-          BoutiqueHeader(
-            title: activeEnterprise?.name.toUpperCase() ?? "BOUTIQUE",
-            subtitle: "Tableau de Bord",
-            gradientColors: [
-              const Color(0xFF08BDBA), // Primary Teal/Cyan
-              const Color(0xFF0F766E), // Darker Teal
-            ],
-            shadowColor: const Color(0xFF08BDBA),
-            additionalActions: [
+          ElyfModuleHeader(
+            title: "Tableau de Bord",
+            subtitle: "Suivez vos ventes, stocks et sessions de caisse en temps réel.",
+            module: EnterpriseModule.boutique,
+            actions: [
               Container(
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.2),

@@ -7,6 +7,10 @@ import 'package:elyf_groupe_app/features/boutique/domain/entities/expense.dart';
 import 'package:elyf_groupe_app/features/boutique/domain/repositories/sale_repository.dart';
 import 'package:elyf_groupe_app/features/boutique/domain/repositories/purchase_repository.dart';
 import 'package:elyf_groupe_app/features/boutique/domain/repositories/expense_repository.dart';
+import 'package:elyf_groupe_app/features/boutique/domain/entities/supplier.dart';
+import 'package:elyf_groupe_app/features/boutique/domain/entities/supplier_settlement.dart';
+import 'package:elyf_groupe_app/features/boutique/domain/repositories/supplier_repository.dart';
+import 'package:elyf_groupe_app/features/boutique/domain/repositories/supplier_settlement_repository.dart';
 
 class ManualMockSaleRepository implements SaleRepository {
   List<Sale> sales = [];
@@ -17,9 +21,23 @@ class ManualMockSaleRepository implements SaleRepository {
   @override
   Stream<List<Sale>> watchRecentSales({int limit = 50}) => Stream.value(sales);
   @override
-  Future<String> createSale(Sale sale) async => 'id';
+  Future<Sale> createSale(Sale sale) async => sale;
   @override
   Future<Sale?> getSale(String id) async => null;
+  @override
+  Future<int> getCountForDate(DateTime date) async => 0;
+  @override
+  Future<void> deleteSale(String id, {String? deletedBy}) async {}
+  @override
+  Future<void> restoreSale(String id) async {}
+  @override
+  Future<List<Sale>> getDeletedSales() async => [];
+  @override
+  Stream<List<Sale>> watchDeletedSales() => Stream.value([]);
+  @override
+  Future<bool> verifyChain() async => true;
+  @override
+  Future<List<Sale>> fetchSales({int limit = 1000}) async => sales;
 }
 
 class ManualMockPurchaseRepository implements PurchaseRepository {
@@ -28,13 +46,24 @@ class ManualMockPurchaseRepository implements PurchaseRepository {
   Future<List<Purchase>> getPurchasesInPeriod(DateTime start, DateTime end) async => purchases;
   @override
   Future<List<Purchase>> fetchPurchases({int limit = 50}) async => purchases;
-  Future<List<Purchase>> fetchRecentPurchases({int limit = 50}) async => purchases;
   @override
   Stream<List<Purchase>> watchPurchases({int limit = 50}) => Stream.value(purchases);
   @override
   Future<String> createPurchase(Purchase purchase) async => 'id';
   @override
   Future<Purchase?> getPurchase(String id) async => null;
+  @override
+  Future<int> getCountForDate(DateTime date) async => 0;
+  @override
+  Future<void> deletePurchase(String id, {String? deletedBy}) async {}
+  @override
+  Future<void> restorePurchase(String id) async {}
+  @override
+  Future<List<Purchase>> getDeletedPurchases() async => [];
+  @override
+  Stream<List<Purchase>> watchDeletedPurchases() => Stream.value([]);
+  @override
+  Future<bool> verifyChain() async => true;
 }
 
 class ManualMockExpenseRepository implements ExpenseRepository {
@@ -43,7 +72,6 @@ class ManualMockExpenseRepository implements ExpenseRepository {
   Future<List<Expense>> getExpensesInPeriod(DateTime start, DateTime end) async => expenses;
   @override
   Future<List<Expense>> fetchExpenses({int limit = 50}) async => expenses;
-  Future<List<Expense>> fetchRecentExpenses({int limit = 50}) async => expenses;
   @override
   Stream<List<Expense>> watchExpenses({int limit = 50}) => Stream.value(expenses);
   @override
@@ -58,6 +86,46 @@ class ManualMockExpenseRepository implements ExpenseRepository {
   Future<List<Expense>> getDeletedExpenses() async => [];
   @override
   Stream<List<Expense>> watchDeletedExpenses() => Stream.value([]);
+  @override
+  Future<int> getCountForDate(DateTime date) async => 0;
+  @override
+  Future<bool> verifyChain() async => true;
+}
+
+class ManualMockSupplierRepository implements SupplierRepository {
+  @override
+  Future<List<Supplier>> searchSuppliers(String query) async => [];
+  @override
+  Future<List<Supplier>> fetchSuppliers({int? limit}) async => [];
+  @override
+  Stream<List<Supplier>> watchSuppliers({int? limit}) => Stream.value([]);
+  @override
+  Future<String> createSupplier(Supplier supplier) async => 'id';
+  @override
+  Future<Supplier?> getSupplier(String id) async => null;
+  @override
+  Future<void> updateSupplier(Supplier supplier) async {}
+  @override
+  Future<void> deleteSupplier(String id) async {}
+}
+
+class ManualMockSupplierSettlementRepository implements SupplierSettlementRepository {
+  @override
+  Future<List<SupplierSettlement>> fetchSettlements({int? limit, String? supplierId}) async => [];
+  @override
+  Stream<List<SupplierSettlement>> watchSettlements({int? limit, String? supplierId}) => Stream.value([]);
+  @override
+  Future<String> createSettlement(SupplierSettlement settlement) async => 'id';
+  @override
+  Future<SupplierSettlement?> getSettlement(String id) async => null;
+  @override
+  Future<void> deleteSettlement(String settlementId, {String? deletedBy}) async {}
+  @override
+  Future<int> getCountForDate(DateTime date) async => 0;
+  @override
+  Future<bool> verifyChain() async => true;
+  @override
+  Stream<List<SupplierSettlement>> watchDeletedSettlements({String? supplierId}) => Stream.value([]);
 }
 
 void main() {
@@ -66,15 +134,22 @@ void main() {
     late ManualMockSaleRepository mockSaleRepository;
     late ManualMockPurchaseRepository mockPurchaseRepository;
     late ManualMockExpenseRepository mockExpenseRepository;
+    late ManualMockSupplierRepository mockSupplierRepository;
+    late ManualMockSupplierSettlementRepository mockSettlementRepository;
 
     setUp(() {
       mockSaleRepository = ManualMockSaleRepository();
       mockPurchaseRepository = ManualMockPurchaseRepository();
       mockExpenseRepository = ManualMockExpenseRepository();
+      mockSupplierRepository = ManualMockSupplierRepository();
+      mockSettlementRepository = ManualMockSupplierSettlementRepository();
+      
       repository = ReportOfflineRepository(
         saleRepository: mockSaleRepository,
         purchaseRepository: mockPurchaseRepository,
         expenseRepository: mockExpenseRepository,
+        supplierRepository: mockSupplierRepository,
+        settlementRepository: mockSettlementRepository,
       );
     });
 

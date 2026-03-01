@@ -62,7 +62,7 @@ class AgenciesTableRow extends StatelessWidget {
           ),
           AgentsTableComponents.buildActionsCell(
             onView: onView,
-            onRefresh: onRefresh,
+            onRefresh: () {}, // Handled by Agent Account now, but keeping for signature until removed from constructor
             onEdit: onEdit,
             onDelete: onDelete,
             width: 185.92,

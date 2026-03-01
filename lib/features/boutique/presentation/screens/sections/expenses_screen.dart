@@ -60,7 +60,7 @@ class ExpensesScreen extends ConsumerWidget {
                       const Color(0xFFB91C1C), // Red 700
                     ],
                     shadowColor: const Color(0xFFDC2626),
-                    additionalActions: [
+                    actions: [
                       Container(
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.2),

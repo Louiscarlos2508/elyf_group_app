@@ -56,7 +56,6 @@ class GazSettingsScreen extends ConsumerWidget {
             final isMobile = MediaQuery.of(context).size.width < 800;
 
             return Scaffold(
-              backgroundColor: theme.colorScheme.surface,
               body: CustomScrollView(
                 slivers: [
                   const GazHeader(
@@ -138,7 +137,7 @@ class GazSettingsScreen extends ConsumerWidget {
       elevation: 0,
       color: theme.colorScheme.surface,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(24),
         side: BorderSide(color: theme.colorScheme.outlineVariant),
       ),
       child: Padding(
@@ -243,7 +242,7 @@ class GazSettingsScreen extends ConsumerWidget {
       elevation: 0,
       color: theme.colorScheme.surface,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(24),
         side: BorderSide(color: theme.colorScheme.outlineVariant),
       ),
       child: Padding(
@@ -374,7 +373,7 @@ class GazSettingsScreen extends ConsumerWidget {
       elevation: 0,
       color: theme.colorScheme.surface,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(24),
         side: BorderSide(color: theme.colorScheme.outlineVariant),
       ),
       child: Padding(
@@ -530,7 +529,7 @@ class GazSettingsScreen extends ConsumerWidget {
       elevation: 0,
       color: theme.colorScheme.surface,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(24),
         side: BorderSide(color: theme.colorScheme.outlineVariant),
       ),
       child: Padding(

@@ -28,13 +28,20 @@ service cloud.firestore {
           enterpriseId in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('enterprises', {})
         )) ||
         // Fallback: check if an assignment document exists for this user/enterprise
-        // (ID pattern: userId_enterpriseId_moduleId)
         exists(/databases/$(database)/documents/enterprise_module_users/$(request.auth.uid + "_" + enterpriseId + "_gaz")) ||
         exists(/databases/$(database)/documents/enterprise_module_users/$(request.auth.uid + "_" + enterpriseId + "_boutique")) ||
         exists(/databases/$(database)/documents/enterprise_module_users/$(request.auth.uid + "_" + enterpriseId + "_eau_minerale")) ||
         exists(/databases/$(database)/documents/enterprise_module_users/$(request.auth.uid + "_" + enterpriseId + "_immobilier")) ||
         exists(/databases/$(database)/documents/enterprise_module_users/$(request.auth.uid + "_" + enterpriseId + "_orange_money"))
       ));
+    }
+
+    // Vérifie l'accès à une entreprise ou à ses parents (hiérarchie)
+    function hasEffectiveAccess(enterpriseId) {
+      return isSystemAdmin() || 
+             hasEnterprise(enterpriseId) || 
+             (exists(/databases/$(database)/documents/enterprises/$(enterpriseId)) && 
+              hasEnterprise(get(/databases/$(database)/documents/enterprises/$(enterpriseId)).data.get('parentEnterpriseId', '')));
     }
     
     // Vérifie si l'utilisateur est admin de l'entreprise
@@ -86,7 +93,7 @@ service cloud.firestore {
     // Collection des entreprises
     match /enterprises/{enterpriseId} {
       // Les admins système peuvent tout lire, les autres seulement s'ils appartiennent à l'entreprise
-      allow read: if isSystemAdmin() || resource == null || hasEnterprise(enterpriseId);
+      allow read: if isSystemAdmin() || resource == null || hasEffectiveAccess(enterpriseId);
       
       // Seuls les admins système peuvent créer/modifier une entreprise
       // Les admins d'entreprise peuvent modifier leur entreprise
@@ -97,140 +104,140 @@ service cloud.firestore {
       
       // Module Boutique
       match /sales/{saleId} {
-        allow read, write: if hasEnterprise(enterpriseId);
+        allow read, write: if hasEffectiveAccess(enterpriseId);
       }
       
       match /products/{productId} {
-        allow read: if hasEnterprise(enterpriseId);
+        allow read: if hasEffectiveAccess(enterpriseId);
         allow write: if hasPermission(enterpriseId, 'boutique:manage_products');
       }
       
       match /expenses/{expenseId} {
-        allow read, write: if hasEnterprise(enterpriseId);
+        allow read, write: if hasEffectiveAccess(enterpriseId);
       }
       
       match /purchases/{purchaseId} {
-        allow read, write: if hasEnterprise(enterpriseId);
+        allow read, write: if hasEffectiveAccess(enterpriseId);
       }
       
       // Module Eau Minérale
       match /customers/{customerId} {
-        allow read, write: if hasEnterprise(enterpriseId);
+        allow read, write: if hasEffectiveAccess(enterpriseId);
       }
       
       match /machines/{machineId} {
-        allow read: if hasEnterprise(enterpriseId);
+        allow read: if hasEffectiveAccess(enterpriseId);
         allow write: if hasPermission(enterpriseId, 'eau_minerale:manage_machines');
       }
       
       match /bobines/{bobineId} {
-        allow read: if hasEnterprise(enterpriseId);
+        allow read: if hasEffectiveAccess(enterpriseId);
         allow write: if hasPermission(enterpriseId, 'eau_minerale:manage_bobines');
       }
       
       match /productionSessions/{sessionId} {
-        allow read, write: if hasEnterprise(enterpriseId);
+        allow read, write: if hasEffectiveAccess(enterpriseId);
       }
       
       match /employees/{employeeId} {
-        allow read: if hasEnterprise(enterpriseId);
+        allow read: if hasEffectiveAccess(enterpriseId);
         allow write: if hasPermission(enterpriseId, 'eau_minerale:manage_employees');
       }
       
       match /salaryPayments/{paymentId} {
-        allow read: if hasEnterprise(enterpriseId);
+        allow read: if hasEffectiveAccess(enterpriseId);
         allow write: if hasPermission(enterpriseId, 'eau_minerale:manage_payments');
       }
       
       match /productionPayments/{paymentId} {
-        allow read, write: if hasEnterprise(enterpriseId);
+        allow read, write: if hasEffectiveAccess(enterpriseId);
       }
       
       match /creditPayments/{paymentId} {
-        allow read, write: if hasEnterprise(enterpriseId);
+        allow read, write: if hasEffectiveAccess(enterpriseId);
       }
       
       match /dailyWorkers/{workerId} {
-        allow read, write: if hasEnterprise(enterpriseId);
+        allow read, write: if hasEffectiveAccess(enterpriseId);
       }
       
       match /bobineStocks/{stockId} {
-        allow read, write: if hasEnterprise(enterpriseId);
+        allow read, write: if hasEffectiveAccess(enterpriseId);
       }
       
       match /bobineStockMovements/{movementId} {
-        allow read, write: if hasEnterprise(enterpriseId);
+        allow read, write: if hasEffectiveAccess(enterpriseId);
       }
       
       match /expenseRecords/{expenseId} {
-        allow read, write: if hasEnterprise(enterpriseId);
+        allow read, write: if hasEffectiveAccess(enterpriseId);
       }
       
       match /stockItems/{itemId} {
-        allow read, write: if hasEnterprise(enterpriseId);
+        allow read, write: if hasEffectiveAccess(enterpriseId);
       }
       
       match /stockMovements/{movementId} {
-        allow read, write: if hasEnterprise(enterpriseId);
+        allow read, write: if hasEffectiveAccess(enterpriseId);
       }
       
       match /packagingStocks/{stockId} {
-        allow read, write: if hasEnterprise(enterpriseId);
+        allow read, write: if hasEffectiveAccess(enterpriseId);
       }
       
       match /packagingStockMovements/{movementId} {
-        allow read, write: if hasEnterprise(enterpriseId);
+        allow read, write: if hasEffectiveAccess(enterpriseId);
       }
       
       // Module Orange Money
       match /agents/{agentId} {
-        allow read: if hasEnterprise(enterpriseId);
+        allow read: if hasEffectiveAccess(enterpriseId);
         allow write: if hasPermission(enterpriseId, 'orange_money:manage_agents');
       }
       
       match /transactions/{transactionId} {
-        allow read, write: if hasEnterprise(enterpriseId);
+        allow read, write: if hasEffectiveAccess(enterpriseId);
       }
       
       match /commissions/{commissionId} {
-        allow read: if hasEnterprise(enterpriseId);
+        allow read: if hasEffectiveAccess(enterpriseId);
         allow write: if hasPermission(enterpriseId, 'orange_money:manage_commissions');
       }
       
       match /liquidityCheckpoints/{checkpointId} {
-        allow read, write: if hasEnterprise(enterpriseId);
+        allow read, write: if hasEffectiveAccess(enterpriseId);
       }
       
       match /orangeMoneySettings/{settingsId} {
-        allow read: if hasEnterprise(enterpriseId);
+        allow read: if hasEffectiveAccess(enterpriseId);
         allow write: if hasPermission(enterpriseId, 'orange_money:manage_settings');
       }
       
       // Module Immobilier
       match /properties/{propertyId} {
-        allow read: if hasEnterprise(enterpriseId);
+        allow read: if hasEffectiveAccess(enterpriseId);
         allow write: if hasPermission(enterpriseId, 'immobilier:manage_properties');
       }
       
       match /tenants/{tenantId} {
-        allow read, write: if hasEnterprise(enterpriseId);
+        allow read, write: if hasEffectiveAccess(enterpriseId);
       }
       
       match /contracts/{contractId} {
-        allow read, write: if hasEnterprise(enterpriseId);
+        allow read, write: if hasEffectiveAccess(enterpriseId);
       }
       
       match /payments/{paymentId} {
-        allow read, write: if hasEnterprise(enterpriseId);
+        allow read, write: if hasEffectiveAccess(enterpriseId);
       }
       
       match /propertyExpenses/{expenseId} {
-        allow read, write: if hasEnterprise(enterpriseId);
+        allow read, write: if hasEffectiveAccess(enterpriseId);
       }
       
       // Module Gaz
       match /gasSales/{saleId} {
-        allow read, write: if hasEnterprise(enterpriseId);
+        allow read, write: if hasEffectiveAccess(enterpriseId);
       }
       
       match /cylinders/{cylinderId} {
@@ -239,7 +246,7 @@ service cloud.firestore {
       }
       
       match /cylinderStocks/{stockId} {
-        allow read, write: if hasEnterprise(enterpriseId);
+        allow read, write: if hasEffectiveAccess(enterpriseId);
       }
       
       match /pointsOfSale/{posId} {
@@ -253,15 +260,15 @@ service cloud.firestore {
       }
       
       match /tours/{tourId} {
-        allow read, write: if hasEnterprise(enterpriseId);
+        allow read, write: if hasEffectiveAccess(enterpriseId);
       }
       
       match /gazExpenses/{expenseId} {
-        allow read, write: if hasEnterprise(enterpriseId);
+        allow read, write: if hasEffectiveAccess(enterpriseId);
       }
       
       match /cylinderLeaks/{leakId} {
-        allow read, write: if hasEnterprise(enterpriseId);
+        allow read, write: if hasEffectiveAccess(enterpriseId);
       }
       
       // Paramètres partagés (Lecture autorisée pour tout utilisateur authentifié du module)
@@ -276,38 +283,38 @@ service cloud.firestore {
       }
  
       match /inventoryAudits/{auditId} {
-        allow read: if hasEnterprise(enterpriseId);
+        allow read: if hasEffectiveAccess(enterpriseId);
         allow write: if hasPermission(enterpriseId, 'gaz:manage_stocks');
       }
  
       match /stockTransfers/{transferId} {
-        allow read, write: if hasEnterprise(enterpriseId);
+        allow read, write: if hasEffectiveAccess(enterpriseId);
       }
  
       match /gasCollections/{collectionId} {
-        allow read, write: if hasEnterprise(enterpriseId);
+        allow read, write: if hasEffectiveAccess(enterpriseId);
       }
  
       match /gazSessions/{sessionId} {
-        allow read, write: if hasEnterprise(enterpriseId);
+        allow read, write: if hasEffectiveAccess(enterpriseId);
       }
  
       match /gazTreasuryOperations/{opId} {
-        allow read, write: if hasEnterprise(enterpriseId);
+        allow read, write: if hasEffectiveAccess(enterpriseId);
       }
  
       match /auditTrail/{logId} {
-        allow read: if hasEnterprise(enterpriseId);
+        allow read: if hasEffectiveAccess(enterpriseId);
         allow write: if isAuthenticated(); // Permettre d'écrire des logs d'audit depuis l'app
       }
  
       match /boutiqueSettings/{settingsId} {
-        allow read: if hasEnterprise(enterpriseId);
+        allow read: if hasEffectiveAccess(enterpriseId);
         allow write: if hasPermission(enterpriseId, 'boutique:manage_settings');
       }
  
       match /financialReports/{reportId} {
-        allow read: if hasEnterprise(enterpriseId);
+        allow read: if hasEffectiveAccess(enterpriseId);
         allow write: if hasPermission(enterpriseId, 'gaz:view_reports') || 
                          isEnterpriseAdmin(enterpriseId);
       }
@@ -317,17 +324,17 @@ service cloud.firestore {
       match /{collection}/{document=**} {
         // Par défaut, permettre la lecture/écriture si l'utilisateur appartient à l'entreprise
         // Les règles spécifiques ci-dessus prennent le dessus
-        allow read, write: if hasEnterprise(enterpriseId);
+        allow read, write: if hasEffectiveAccess(enterpriseId);
       }
     }
     
     // Règles pour collection groups (supporte pullEnterprisesFromFirestore via collectionGroup)
     match /{path=**}/pointsOfSale/{posId} {
-      allow read: if isSystemAdmin() || hasEnterprise(posId);
+      allow read: if isSystemAdmin() || hasEffectiveAccess(posId);
     }
     
     match /{path=**}/agences/{agenceId} {
-      allow read: if isSystemAdmin() || hasEnterprise(agenceId);
+      allow read: if isSystemAdmin() || hasEffectiveAccess(agenceId);
     }
     
     // Collection globale des rôles (administration)
@@ -346,7 +353,9 @@ service cloud.firestore {
       allow read: if isAuthenticated() && (
         resource == null || // Allow queries to be evaluated
         resource.data.userId == request.auth.uid || 
-        isSystemAdmin()
+        isSystemAdmin() ||
+        hasEffectiveAccess(resource.data.enterpriseId) ||
+        (resource.data.get('parentEnterpriseId', '') != '' && hasEffectiveAccess(resource.data.parentEnterpriseId))
       );
       
       // Seuls les admins système peuvent créer/modifier/supprimer des assignations

@@ -42,6 +42,7 @@ void main() {
       test('should calculate total price from product correctly', () {
         const product = Product(
           id: '1',
+          enterpriseId: 'test',
           name: 'Eau 500ml',
           unitPrice: 500,
           unit: 'bouteille',
@@ -174,6 +175,7 @@ void main() {
       test('should return unit price from product', () {
         const product = Product(
           id: '1',
+          enterpriseId: 'test',
           name: 'Eau 500ml',
           unitPrice: 500,
           unit: 'bouteille',

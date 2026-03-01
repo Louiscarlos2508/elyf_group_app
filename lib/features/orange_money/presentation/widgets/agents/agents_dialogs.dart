@@ -6,7 +6,8 @@ import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
 import 'package:elyf_groupe_app/features/orange_money/application/providers.dart';
 import 'package:elyf_groupe_app/features/orange_money/domain/entities/agent.dart' as entity;
 import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
-import 'package:elyf_groupe_app/features/orange_money/presentation/widgets/agents/add_agent_modal.dart';
+import 'package:elyf_groupe_app/features/orange_money/presentation/widgets/agents/add_agent_account_modal.dart';
+import 'package:elyf_groupe_app/features/orange_money/presentation/widgets/agents/add_agency_modal.dart';
 import 'package:elyf_groupe_app/features/orange_money/presentation/widgets/agent_recharge_dialog.dart';
 import 'package:elyf_groupe_app/features/orange_money/presentation/widgets/agents/agents_format_helpers.dart';
 
@@ -19,12 +20,13 @@ class AgentsDialogs {
     Enterprise? agent,
     String? enterpriseId,
     String searchQuery,
+    bool isReadOnly,
     void Function() onSuccess,
   ) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => AddAgentModal(agency: agent),
+        builder: (context) => AddAgencyModal(agency: agent, isReadOnly: isReadOnly),
         fullscreenDialog: true,
       ),
     ).then((result) {
@@ -139,12 +141,13 @@ class AgentsDialogs {
     WidgetRef ref,
     entity.Agent? agent,
     String? enterpriseId,
+    bool isReadOnly,
     void Function() onSuccess,
   ) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => AddAgentModal(agentAccount: agent),
+        builder: (context) => AddAgentAccountModal(agentAccount: agent, isReadOnly: isReadOnly),
         fullscreenDialog: true,
       ),
     ).then((result) {

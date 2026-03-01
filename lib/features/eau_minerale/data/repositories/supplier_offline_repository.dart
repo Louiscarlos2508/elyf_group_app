@@ -78,7 +78,7 @@ class SupplierOfflineRepository implements SupplierRepository {
       final entity = supplier.copyWith(id: localId, enterpriseId: enterpriseId);
       final map = entity.toMap()..['localId'] = localId;
 
-      await driftService.records.upsert(
+      await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
         collectionName: collectionName,
         localId: localId,
         enterpriseId: enterpriseId,
@@ -117,7 +117,7 @@ class SupplierOfflineRepository implements SupplierRepository {
         moduleType: 'eau_minerale',
       );
 
-      await driftService.records.upsert(
+      await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
         collectionName: collectionName,
         localId: supplier.id,
         remoteId: record?.remoteId,
@@ -153,7 +153,7 @@ class SupplierOfflineRepository implements SupplierRepository {
 
       final map = supplier.toMap()..['deletedAt'] = DateTime.now().toIso8601String();
       
-      await driftService.records.upsert(
+      await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
         collectionName: collectionName,
         localId: id,
         enterpriseId: enterpriseId,
@@ -209,7 +209,7 @@ class SupplierOfflineRepository implements SupplierRepository {
           settlement.copyWith(id: localId, enterpriseId: enterpriseId);
       final map = entity.toMap()..['localId'] = localId;
 
-      await driftService.records.upsert(
+      await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
         collectionName: 'supplier_settlements',
         localId: localId,
         enterpriseId: enterpriseId,
@@ -268,7 +268,7 @@ class SupplierOfflineRepository implements SupplierRepository {
         AuditRecord(
           id: '',
           enterpriseId: enterpriseId,
-          userId: userId,
+          userId: syncManager.getUserId() ?? '',
           module: 'eau_minerale',
           action: action,
           entityId: entityId,

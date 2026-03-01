@@ -56,11 +56,11 @@ class CommissionOfflineRepository extends OfflineRepository<Commission>
   String? getEnterpriseId(Commission entity) => entity.enterpriseId;
 
   @override
-  Future<void> saveToLocal(Commission entity) async {
+  Future<void> saveToLocal(Commission entity, {String? userId}) async {
     final localId = getLocalId(entity);
     final remoteId = getRemoteId(entity);
     final map = toMap(entity)..['localId'] = localId;
-    await driftService.records.upsert(
+    await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
       collectionName: collectionName,
       localId: localId,
       remoteId: remoteId,
@@ -72,7 +72,7 @@ class CommissionOfflineRepository extends OfflineRepository<Commission>
   }
 
   @override
-  Future<void> deleteFromLocal(Commission entity) async {
+  Future<void> deleteFromLocal(Commission entity, {String? userId}) async {
     final remoteId = getRemoteId(entity);
     if (remoteId != null) {
       await driftService.records.deleteByRemoteId(
@@ -249,7 +249,7 @@ class CommissionOfflineRepository extends OfflineRepository<Commission>
         AuditRecord(
           id: IdGenerator.generate(),
           enterpriseId: enterpriseId,
-          userId: userId,
+          userId: syncManager.getUserId() ?? '',
           module: 'orange_money',
           action: 'create_commission',
           entityId: localId,
@@ -287,7 +287,7 @@ class CommissionOfflineRepository extends OfflineRepository<Commission>
         AuditRecord(
           id: IdGenerator.generate(),
           enterpriseId: enterpriseId,
-          userId: userId,
+          userId: syncManager.getUserId() ?? '',
           module: 'orange_money',
           action: 'update_commission',
           entityId: commission.id,
@@ -330,7 +330,7 @@ class CommissionOfflineRepository extends OfflineRepository<Commission>
           AuditRecord(
             id: IdGenerator.generate(),
             enterpriseId: enterpriseId,
-            userId: userId,
+            userId: syncManager.getUserId() ?? '',
             module: 'orange_money',
             action: 'delete_commission',
             entityId: commissionId,
@@ -383,7 +383,7 @@ class CommissionOfflineRepository extends OfflineRepository<Commission>
         AuditRecord(
           id: IdGenerator.generate(),
           enterpriseId: enterpriseId,
-          userId: userId,
+          userId: syncManager.getUserId() ?? '',
           module: 'orange_money',
           action: 'restore_commission',
           entityId: commissionId,
@@ -540,7 +540,7 @@ class CommissionOfflineRepository extends OfflineRepository<Commission>
         AuditRecord(
           id: IdGenerator.generate(),
           enterpriseId: enterpriseId,
-          userId: userId,
+          userId: syncManager.getUserId() ?? '',
           module: 'orange_money',
           action: 'declare_commission',
           entityId: commissionId,
@@ -595,7 +595,7 @@ class CommissionOfflineRepository extends OfflineRepository<Commission>
         AuditRecord(
           id: IdGenerator.generate(),
           enterpriseId: enterpriseId,
-          userId: userId,
+          userId: syncManager.getUserId() ?? '',
           module: 'orange_money',
           action: 'validate_commission',
           entityId: commissionId,
@@ -649,7 +649,7 @@ class CommissionOfflineRepository extends OfflineRepository<Commission>
         AuditRecord(
           id: LocalIdGenerator.generate(),
           enterpriseId: enterpriseId,
-          userId: userId,
+          userId: syncManager.getUserId() ?? '',
           module: 'orange_money',
           action: 'mark_commission_paid',
           entityId: commissionId,
@@ -700,7 +700,7 @@ class CommissionOfflineRepository extends OfflineRepository<Commission>
         AuditRecord(
           id: LocalIdGenerator.generate(),
           enterpriseId: enterpriseId,
-          userId: userId,
+          userId: syncManager.getUserId() ?? '',
           module: 'orange_money',
           action: 'mark_commission_disputed',
           entityId: commissionId,

@@ -138,7 +138,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             ImmobilierHeader(
               title: 'RAPPORTS',
               subtitle: 'Analyses et exports',
-              additionalActions: [
+              actions: [
                 Semantics(
                   label: 'Actualiser les rapports',
                   button: true,

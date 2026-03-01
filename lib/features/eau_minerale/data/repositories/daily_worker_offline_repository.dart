@@ -46,11 +46,11 @@ class DailyWorkerOfflineRepository extends OfflineRepository<DailyWorker>
   String? getEnterpriseId(DailyWorker entity) => enterpriseId;
 
   @override
-  Future<void> saveToLocal(DailyWorker entity) async {
+  Future<void> saveToLocal(DailyWorker entity, {String? userId}) async {
     final localId = getLocalId(entity);
     final remoteId = getRemoteId(entity);
     final map = toMap(entity)..['localId'] = localId;
-    await driftService.records.upsert(
+    await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
       collectionName: collectionName,
       localId: localId,
       remoteId: remoteId,
@@ -62,13 +62,13 @@ class DailyWorkerOfflineRepository extends OfflineRepository<DailyWorker>
   }
 
   @override
-  Future<void> deleteFromLocal(DailyWorker entity) async {
+  Future<void> deleteFromLocal(DailyWorker entity, {String? userId}) async {
     // Soft-delete
     final deletedWorker = entity.copyWith(
       deletedAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );
-    await saveToLocal(deletedWorker);
+    await saveToLocal(deletedWorker, userId: syncManager.getUserId() ?? '');
     
     AppLogger.info(
       'Soft-deleted worker: ${entity.id}',

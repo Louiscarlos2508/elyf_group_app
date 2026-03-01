@@ -47,13 +47,13 @@ class CylinderStockOfflineRepository extends OfflineRepository<CylinderStock>
   String? getEnterpriseId(CylinderStock entity) => entity.enterpriseId;
 
   @override
-  Future<void> saveToLocal(CylinderStock entity) async {
+  Future<void> saveToLocal(CylinderStock entity, {String? userId}) async {
     // Utiliser la méthode utilitaire pour trouver le localId existant
     final existingLocalId = await findExistingLocalId(entity, moduleType: moduleType);
     final localId = existingLocalId ?? getLocalId(entity);
     final remoteId = getRemoteId(entity);
     final map = toMap(entity)..['localId'] = localId..['id'] = localId;
-    await driftService.records.upsert(
+    await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
       collectionName: collectionName,
       localId: localId,
       remoteId: remoteId,
@@ -65,13 +65,13 @@ class CylinderStockOfflineRepository extends OfflineRepository<CylinderStock>
   }
 
   @override
-  Future<void> deleteFromLocal(CylinderStock entity) async {
+  Future<void> deleteFromLocal(CylinderStock entity, {String? userId}) async {
     // Soft-delete
     final deletedStock = entity.copyWith(
       deletedAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );
-    await saveToLocal(deletedStock);
+    await saveToLocal(deletedStock, userId: syncManager.getUserId() ?? '');
     
     AppLogger.info(
       'Soft-deleted cylinder stock: ${entity.id}',

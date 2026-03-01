@@ -48,10 +48,10 @@ class GazSettingsOfflineRepository extends OfflineRepository<GazSettings>
   String? getEnterpriseId(GazSettings entity) => entity.enterpriseId;
 
   @override
-  Future<void> saveToLocal(GazSettings entity) async {
+  Future<void> saveToLocal(GazSettings entity, {String? userId}) async {
     final localId = getLocalId(entity);
     final map = toMap(entity)..['localId'] = localId;
-    await driftService.records.upsert(
+    await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
       collectionName: collectionName,
       localId: localId,
       remoteId: localId,
@@ -63,13 +63,13 @@ class GazSettingsOfflineRepository extends OfflineRepository<GazSettings>
   }
 
   @override
-  Future<void> deleteFromLocal(GazSettings entity) async {
+  Future<void> deleteFromLocal(GazSettings entity, {String? userId}) async {
     // Soft-delete
     final deletedSettings = entity.copyWith(
       deletedAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );
-    await saveToLocal(deletedSettings);
+    await saveToLocal(deletedSettings, userId: syncManager.getUserId() ?? '');
     
     AppLogger.info(
       'Soft-deleted gaz settings: ${entity.enterpriseId}',

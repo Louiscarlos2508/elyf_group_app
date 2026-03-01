@@ -55,7 +55,7 @@ class SupplierSettlementOfflineRepository extends OfflineRepository<SupplierSett
   String? getEnterpriseId(SupplierSettlement entity) => enterpriseId;
 
   @override
-  Future<void> saveToLocal(SupplierSettlement entity) async {
+  Future<void> saveToLocal(SupplierSettlement entity, {String? userId}) async {
     // 1. Chain hash if not already hashed
     SupplierSettlement toSave = entity;
     if (toSave.hash == null) {
@@ -71,7 +71,7 @@ class SupplierSettlementOfflineRepository extends OfflineRepository<SupplierSett
     final localId = getLocalId(toSave);
     final remoteId = getRemoteId(toSave);
     final map = toMap(toSave)..['localId'] = localId;
-    await driftService.records.upsert(
+    await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
       collectionName: collectionName,
       localId: localId,
       remoteId: remoteId,
@@ -90,7 +90,7 @@ class SupplierSettlementOfflineRepository extends OfflineRepository<SupplierSett
   }
 
   @override
-  Future<void> deleteFromLocal(SupplierSettlement entity) async {
+  Future<void> deleteFromLocal(SupplierSettlement entity, {String? userId}) async {
     final localId = getLocalId(entity);
     await driftService.records.deleteByLocalId(
       collectionName: collectionName,
@@ -280,7 +280,7 @@ class SupplierSettlementOfflineRepository extends OfflineRepository<SupplierSett
         AuditRecord(
           id: '',
           enterpriseId: enterpriseId,
-          userId: userId,
+          userId: syncManager.getUserId() ?? '',
           module: 'boutique',
           action: action,
           entityId: entityId,

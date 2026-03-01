@@ -23,7 +23,7 @@ class CategoryManagementScreen extends ConsumerWidget {
               const Color(0xFF1F2937), // Gray 800
             ],
             shadowColor: const Color(0xFF4B5563),
-            additionalActions: [
+            actions: [
               IconButton(
                 icon: const Icon(Icons.add, color: Colors.white),
                 onPressed: () => _showAddEditDialog(context, ref),

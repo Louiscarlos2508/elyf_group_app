@@ -1,34 +1,285 @@
-Analyzing eau_minerale...                                       
+Analyzing elyf_group_app...                                     
 
-warning • Dead code • lib/features/eau_minerale/application/providers/controller_providers.dart:121:51 • dead_code
-warning • The left operand can't be null, so the right operand is never executed • lib/features/eau_minerale/application/providers/controller_providers.dart:121:54 • dead_null_aware_expression
-warning • Dead code • lib/features/eau_minerale/application/providers/controller_providers.dart:134:53 • dead_code
-warning • The left operand can't be null, so the right operand is never executed • lib/features/eau_minerale/application/providers/controller_providers.dart:134:56 • dead_null_aware_expression
-warning • Dead code • lib/features/eau_minerale/application/providers/controller_providers.dart:174:53 • dead_code
-warning • The left operand can't be null, so the right operand is never executed • lib/features/eau_minerale/application/providers/controller_providers.dart:174:56 • dead_null_aware_expression
+warning • Unused import: '../../errors/error_handler.dart' • lib/core/offline/handlers/firebase_sync_handler.dart:5:8 • unused_import
+warning • Unused import: '../drift/app_database.dart' • lib/core/offline/handlers/firebase_sync_handler.dart:8:8 • unused_import
+warning • The declaration '_convertToJsonCompatible' isn't referenced • lib/core/offline/handlers/firebase_sync_handler.dart:252:11 • unused_element
+warning • Unused import: 'package:cloud_firestore/cloud_firestore.dart' • lib/core/offline/sync_manager.dart:4:8 • unused_import
+warning • The '!' will have no effect because the receiver can't be null • lib/core/offline/sync_manager.dart:246:44 • unnecessary_non_null_assertion
+warning • The '!' will have no effect because the receiver can't be null • lib/core/offline/sync_manager.dart:536:50 • unnecessary_non_null_assertion
+warning • Unused import: 'dart:convert' • lib/core/tenant/tenant_provider.dart:1:8 • unused_import
+warning • Unused import: 'package:rxdart/rxdart.dart' • lib/core/tenant/tenant_provider.dart:2:8 • unused_import
+warning • Unused import: '../logging/app_logger.dart' • lib/core/tenant/tenant_provider.dart:10:8 • unused_import
+warning • The name driftServiceProvider is shown, but isn't used • lib/core/tenant/tenant_provider.dart:11:68 • unused_shown_name
+warning • Unused import: '../offline/drift/app_database.dart' • lib/core/tenant/tenant_provider.dart:12:8 • unused_import
+warning • The name QuerySnapshot is shown, but isn't used • lib/features/administration/data/services/firestore_sync_service.dart:6:29 • unused_shown_name
+warning • The name DocumentChangeType is shown, but isn't used • lib/features/administration/data/services/firestore_sync_service.dart:6:62 • unused_shown_name
+warning • Unused import: 'package:rxdart/rxdart.dart' • lib/features/administration/data/services/firestore_sync_service.dart:8:8 • unused_import
+warning • The declaration '_pullAndSaveEnterpriseModuleUsers' isn't referenced • lib/features/administration/data/services/firestore_sync_service.dart:234:16 • unused_element
+warning • The name FieldPath is shown, but isn't used • lib/features/administration/data/services/realtime_sync_service.dart:6:112 • unused_shown_name
+warning • Unused import: 'package:rxdart/rxdart.dart' • lib/features/administration/data/services/realtime_sync_service.dart:8:8 • unused_import
+warning • The declaration '_handleEnterpriseSnapshot' isn't referenced • lib/features/administration/data/services/realtime_sync_service.dart:766:16 • unused_element
+warning • The stack trace variable 'stackTrace' isn't used and can be removed • lib/features/administration/data/services/realtime_sync_service.dart:1251:19 • unused_catch_stack
+warning • The value of the field '_repository' isn't used • lib/features/administration/domain/services/sub_tenant_cleanup_service.dart:19:30 • unused_field
+warning • The value of the local variable 'isSubTenant' isn't used • lib/features/administration/domain/services/sub_tenant_cleanup_service.dart:43:20 • unused_local_variable
+warning • The value of the local variable 'rolesAsync' isn't used • lib/features/administration/presentation/screens/sections/dialogs/edit_role_dialog.dart:153:11 • unused_local_variable
+warning • The declaration '_parseCategory' isn't referenced • lib/features/boutique/data/repositories/expense_offline_repository.dart:46:19 • unused_element
+warning • The value of the local variable 'reference' isn't used • lib/features/boutique/domain/services/boutique_calculation_service.dart:114:11 • unused_local_variable
+   info • Statements in an if should be enclosed in a block • lib/features/boutique/domain/services/security/ledger_hash_service.dart:62:45 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/features/boutique/domain/services/security/ledger_hash_service.dart:63:33 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/features/boutique/domain/services/security/ledger_hash_service.dart:64:34 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/features/boutique/domain/services/security/ledger_hash_service.dart:65:44 • curly_braces_in_flow_control_structures
+   info • Don't use 'BuildContext's across async gaps • lib/features/boutique/presentation/screens/sections/stock_movement_screen.dart:73:37 • use_build_context_synchronously
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/boutique/presentation/screens/sections/stock_screen.dart:102:104 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/boutique/presentation/screens/sections/stock_screen.dart:207:22 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/boutique/presentation/screens/sections/stock_screen.dart:209:41 • deprecated_member_use
+   info • Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check • lib/features/boutique/presentation/screens/sections/suppliers_screen.dart:322:52 • use_build_context_synchronously
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/boutique/presentation/screens/sections/treasury_screen.dart:168:22 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/boutique/presentation/screens/sections/treasury_screen.dart:170:41 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/boutique/presentation/screens/sections/treasury_screen.dart:233:32 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/boutique/presentation/widgets/boutique_category_filter.dart:73:39 • deprecated_member_use
+warning • The value of the local variable 'digitalNet' isn't used • lib/features/boutique/presentation/widgets/daily_closing_dialog.dart:117:21 • unused_local_variable
+warning • The value of the local variable 'netFlow' isn't used • lib/features/boutique/presentation/widgets/daily_closing_dialog.dart:294:11 • unused_local_variable
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/boutique/presentation/widgets/debts_report_content_v2.dart:42:31 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/boutique/presentation/widgets/debts_report_content_v2.dart:153:30 • deprecated_member_use
+warning • The value of the field '_formKey' isn't used • lib/features/boutique/presentation/widgets/purchase_entry_dialog.dart:20:9 • unused_field
+warning • Dead code • lib/features/eau_minerale/application/providers/controller_providers.dart:123:51 • dead_code
+warning • The left operand can't be null, so the right operand is never executed • lib/features/eau_minerale/application/providers/controller_providers.dart:123:54 • dead_null_aware_expression
+warning • Dead code • lib/features/eau_minerale/application/providers/controller_providers.dart:137:53 • dead_code
+warning • The left operand can't be null, so the right operand is never executed • lib/features/eau_minerale/application/providers/controller_providers.dart:137:56 • dead_null_aware_expression
+warning • Dead code • lib/features/eau_minerale/application/providers/controller_providers.dart:177:53 • dead_code
+warning • The left operand can't be null, so the right operand is never executed • lib/features/eau_minerale/application/providers/controller_providers.dart:177:56 • dead_null_aware_expression
 warning • Dead code • lib/features/eau_minerale/application/providers/repository_providers.dart:355:20 • dead_code
 warning • The left operand can't be null, so the right operand is never executed • lib/features/eau_minerale/application/providers/repository_providers.dart:355:23 • dead_null_aware_expression
 warning • The declaration '_movementToMap' isn't referenced • lib/features/eau_minerale/data/repositories/bobine_stock_quantity_offline_repository.dart:39:24 • unused_element
-warning • The value of the local variable 'now' isn't used • lib/features/eau_minerale/data/repositories/bobine_stock_quantity_offline_repository.dart:322:13 • unused_local_variable
-   info • The 'if' statement could be replaced by a null-aware assignment • lib/features/eau_minerale/data/repositories/bobine_stock_quantity_offline_repository.dart:325:7 • prefer_conditional_assignment
-   info • The 'if' statement could be replaced by a null-aware assignment • lib/features/eau_minerale/data/repositories/packaging_stock_offline_repository.dart:427:7 • prefer_conditional_assignment
-   info • Unnecessary 'this.' qualifier • lib/features/eau_minerale/domain/entities/bobine_usage.dart:54:31 • unnecessary_this
-   info • Unnecessary 'this.' qualifier • lib/features/eau_minerale/domain/entities/bobine_usage.dart:55:35 • unnecessary_this
 warning • The value of the local variable 'theme' isn't used • lib/features/eau_minerale/presentation/screens/sections/catalog_screen.dart:14:11 • unused_local_variable
 warning • The value of the local variable 'theme' isn't used • lib/features/eau_minerale/presentation/screens/sections/purchases_screen.dart:16:11 • unused_local_variable
 warning • The value of the local variable 'theme' isn't used • lib/features/eau_minerale/presentation/screens/sections/suppliers_screen.dart:13:11 • unused_local_variable
-warning • The value of the local variable 'colors' isn't used • lib/features/eau_minerale/presentation/widgets/daily_personnel_form.dart:667:11 • unused_local_variable
-   info • 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre • lib/features/eau_minerale/presentation/widgets/daily_personnel_form.dart:677:15 • deprecated_member_use
 warning • The value of the field '_formKey' isn't used • lib/features/eau_minerale/presentation/widgets/purchase_entry_dialog.dart:21:9 • unused_field
    info • Don't use 'BuildContext's across async gaps • lib/features/eau_minerale/presentation/widgets/purchase_entry_dialog.dart:140:37 • use_build_context_synchronously
 warning • The declaration '_GroupedStock' isn't referenced • lib/features/eau_minerale/presentation/widgets/raw_materials_card.dart:10:7 • unused_element
 warning • A value for optional parameter 'seuilAlerte' isn't ever given • lib/features/eau_minerale/presentation/widgets/raw_materials_card.dart:14:10 • unused_element_parameter
 warning • A value for optional parameter 'unitsPerLot' isn't ever given • lib/features/eau_minerale/presentation/widgets/raw_materials_card.dart:15:10 • unused_element_parameter
-warning • The declaration '_buildUnitToggleSegment' isn't referenced • lib/features/eau_minerale/presentation/widgets/stock_entry_form.dart:490:10 • unused_element
+   info • Don't use 'BuildContext's across async gaps • lib/features/eau_minerale/presentation/widgets/sale_form.dart:295:9 • use_build_context_synchronously
+   info • Don't use 'BuildContext's across async gaps • lib/features/eau_minerale/presentation/widgets/sale_form.dart:303:9 • use_build_context_synchronously
+warning • The value of the local variable 'packStock' isn't used • lib/features/eau_minerale/presentation/widgets/sale_product_selector.dart:21:9 • unused_local_variable
+warning • The declaration '_buildUnitToggleSegment' isn't referenced • lib/features/eau_minerale/presentation/widgets/stock_entry_form.dart:489:10 • unused_element
    info • Don't use 'BuildContext's across async gaps • lib/features/eau_minerale/presentation/widgets/supplier_form_dialog.dart:63:41 • use_build_context_synchronously
    info • Don't use 'BuildContext's across async gaps • lib/features/eau_minerale/presentation/widgets/supplier_form_dialog.dart:65:39 • use_build_context_synchronously
 warning • The value of the local variable 'theme' isn't used • lib/features/eau_minerale/presentation/widgets/supplier_form_dialog.dart:72:11 • unused_local_variable
    info • Don't use 'BuildContext's across async gaps • lib/features/eau_minerale/presentation/widgets/z_report_dialog.dart:62:37 • use_build_context_synchronously
    info • Don't use 'BuildContext's across async gaps • lib/features/eau_minerale/presentation/widgets/z_report_dialog.dart:197:37 • use_build_context_synchronously
+warning • The value of the field '_stockRepository' isn't used • lib/features/gaz/application/controllers/cylinder_leak_controller.dart:11:33 • unused_field
+warning • Unused import: 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart' • lib/features/gaz/application/providers/section_providers.dart:8:8 • unused_import
+   info • 'stock' is deprecated and shouldn't be used. Use CylinderStockRepository to track bi-modal stock instead • lib/features/gaz/domain/entities/cylinder.dart:59:7 • deprecated_member_use_from_same_package
+   info • 'stock' is deprecated and shouldn't be used. Use CylinderStockRepository to track bi-modal stock instead • lib/features/gaz/domain/entities/cylinder.dart:59:28 • deprecated_member_use_from_same_package
+   info • 'stock' is deprecated and shouldn't be used. Use CylinderStockRepository to track bi-modal stock instead • lib/features/gaz/domain/entities/cylinder.dart:83:7 • deprecated_member_use_from_same_package
+   info • 'stock' is deprecated and shouldn't be used. Use CylinderStockRepository to track bi-modal stock instead • lib/features/gaz/domain/entities/cylinder.dart:107:16 • deprecated_member_use_from_same_package
+warning • Unused import: '../entities/expense.dart' • lib/features/gaz/domain/services/gaz_tour_calculation_service.dart:2:8 • unused_import
+warning • The value of the local variable 'settings' isn't used • lib/features/gaz/domain/services/stock_transfer_service.dart:32:11 • unused_local_variable
+warning • The value of the local variable 'settings' isn't used • lib/features/gaz/domain/services/stock_transfer_service.dart:81:11 • unused_local_variable
+warning • The value of the local variable 'isPos' isn't used • lib/features/gaz/domain/services/stock_transfer_service.dart:85:11 • unused_local_variable
+warning • The value of the local variable 'moduleId' isn't used • lib/features/gaz/presentation/screens/sections/dashboard/dashboard_pos_performance_section.dart:36:15 • unused_local_variable
+warning • The declaration '_showNewExpenseDialog' isn't referenced • lib/features/gaz/presentation/screens/sections/finance/expenses_tab.dart:46:8 • unused_element
+warning • Unused import: 'package:elyf_groupe_app/shared.dart' • lib/features/gaz/presentation/screens/sections/finance/treasury_tab.dart:5:8 • unused_import
+   info • Statements in an if should be enclosed in a block • lib/features/gaz/presentation/screens/sections/finance/treasury_tab.dart:18:7 • curly_braces_in_flow_control_structures
+warning • Unused import: 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart' • lib/features/gaz/presentation/screens/sections/inventory/leak_tracking_tab.dart:9:8 • unused_import
+warning • The value of the local variable 'theme' isn't used • lib/features/gaz/presentation/screens/sections/logistics_screen.dart:94:11 • unused_local_variable
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/gaz/presentation/screens/sections/sales/distribution_tab.dart:86:58 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/gaz/presentation/screens/sections/sales/distribution_tab.dart:88:77 • deprecated_member_use
+warning • Unused import: 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart' • lib/features/gaz/presentation/screens/sections/sales_screen.dart:6:8 • unused_import
+warning • The value of the local variable 'theme' isn't used • lib/features/gaz/presentation/screens/sections/sales_screen.dart:78:11 • unused_local_variable
+warning • The value of the local variable 'totalFull' isn't used • lib/features/gaz/presentation/screens/sections/stock/stock_kpi_section.dart:74:15 • unused_local_variable
+warning • The value of the local variable 'totalEmpty' isn't used • lib/features/gaz/presentation/screens/sections/stock/stock_kpi_section.dart:75:15 • unused_local_variable
+warning • The value of the local variable 'totalIssues' isn't used • lib/features/gaz/presentation/screens/sections/stock/stock_kpi_section.dart:76:15 • unused_local_variable
+warning • Unused import: 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart' • lib/features/gaz/presentation/screens/sections/stock/stock_transfer_screen.dart:6:8 • unused_import
+warning • The value of the local variable 'theme' isn't used • lib/features/gaz/presentation/screens/sections/tour_detail_screen.dart:36:11 • unused_local_variable
+warning • The value of the field '_selectedTier' isn't used • lib/features/gaz/presentation/screens/sections/wholesale/wholesale_new_sale_tab.dart:37:10 • unused_field
+   info • Don't use 'BuildContext's across async gaps • lib/features/gaz/presentation/screens/sections/wholesale/wholesale_new_sale_tab.dart:82:7 • use_build_context_synchronously
+warning • The declaration '_calculateTotalBottles' isn't referenced • lib/features/gaz/presentation/screens/sections/wholesale/wholesale_new_sale_tab.dart:130:7 • unused_element
+warning • The declaration '_calculateTotalWeight' isn't referenced • lib/features/gaz/presentation/screens/sections/wholesale/wholesale_new_sale_tab.dart:134:7 • unused_element
+warning • The value of the local variable 'theme' isn't used • lib/features/gaz/presentation/screens/wholesaler_management_screen.dart:16:11 • unused_local_variable
+   info • Don't use 'BuildContext's across async gaps • lib/features/gaz/presentation/widgets/bottle_price_table.dart:79:9 • use_build_context_synchronously
+   info • 'stock' is deprecated and shouldn't be used. Use CylinderStockRepository to track bi-modal stock instead • lib/features/gaz/presentation/widgets/cylinder_form/cylinder_submit_handler.dart:69:11 • deprecated_member_use_from_same_package
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/gaz/presentation/widgets/dashboard/reconciliation_section.dart:233:59 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/gaz/presentation/widgets/dashboard/reconciliation_section.dart:235:40 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/gaz/presentation/widgets/dashboard/reconciliation_section.dart:243:50 • deprecated_member_use
+warning • The value of the local variable 'theme' isn't used • lib/features/gaz/presentation/widgets/dashboard/reconciliation_section.dart:294:11 • unused_local_variable
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/gaz/presentation/widgets/dashboard/reconciliation_section.dart:300:29 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/gaz/presentation/widgets/dashboard/reconciliation_section.dart:302:48 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/gaz/presentation/widgets/dashboard/reconciliation_section.dart:334:22 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/gaz/presentation/widgets/dashboard/reconciliation_section.dart:336:41 • deprecated_member_use
+warning • The value of the local variable 'theme' isn't used • lib/features/gaz/presentation/widgets/deposit_refund_dialog.dart:40:11 • unused_local_variable
+warning • The value of the local variable 'settingsAsync' isn't used • lib/features/gaz/presentation/widgets/deposit_refund_dialog.dart:43:11 • unused_local_variable
+warning • The value of the local variable 'overlay' isn't used • lib/features/gaz/presentation/widgets/gas_print_receipt_button.dart:57:11 • unused_local_variable
+warning • The declaration '_buildPOSSelectionRequiredView' isn't referenced • lib/features/gaz/presentation/widgets/gas_sale_form_dialog.dart:500:10 • unused_element
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/gaz/presentation/widgets/gaz_session_guard.dart:41:59 • deprecated_member_use
+warning • The value of the local variable 'posStocks' isn't used • lib/features/gaz/presentation/widgets/point_of_sale_table/pos_stock_dialog.dart:58:19 • unused_local_variable
+warning • The value of the local variable 'settings' isn't used • lib/features/gaz/presentation/widgets/point_of_sale_table/pos_stock_dialog.dart:63:19 • unused_local_variable
+warning • The value of the local variable 'stocksAsync' isn't used • lib/features/gaz/presentation/widgets/replenishment_dialog.dart:55:11 • unused_local_variable
+warning • The value of the local variable 'isPos' isn't used • lib/features/gaz/presentation/widgets/replenishment_dialog.dart:63:11 • unused_local_variable
+warning • The value of the local variable 'moduleId' isn't used • lib/features/gaz/presentation/widgets/sales_report_content_v2.dart:42:15 • unused_local_variable
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/gaz/presentation/widgets/sessions_report_content.dart:87:61 • deprecated_member_use
+warning • The value of the field '_loadingSettings' isn't used • lib/features/gaz/presentation/widgets/tour_detail/loading_step_content.dart:37:14 • unused_field
+warning • The value of the local variable 'isPos' isn't used • lib/features/gaz/presentation/widgets/tour_detail/loading_step_content.dart:62:11 • unused_local_variable
+warning • The value of the local variable 'loaded' isn't used • lib/features/gaz/presentation/widgets/tour_detail/reception_step_content.dart:71:13 • unused_local_variable
+warning • The declaration '_loadSettings' isn't referenced • lib/features/gaz/presentation/widgets/tour_detail/reception_step_content.dart:98:16 • unused_element
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/gaz/presentation/widgets/tour_detail/reception_step_content.dart:280:59 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/gaz/presentation/widgets/tour_detail/reception_step_content.dart:282:69 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/gaz/presentation/widgets/tour_detail/reception_step_content.dart:300:70 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/gaz/presentation/widgets/tour_detail/reception_step_content.dart:314:70 • deprecated_member_use
+warning • The value of the local variable 'totalWithReception' isn't used • lib/features/gaz/presentation/widgets/tour_detail/reception_step_content.dart:369:21 • unused_local_variable
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/gaz/presentation/widgets/tour_detail/reception_step_content.dart:375:77 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/gaz/presentation/widgets/tour_detail/reception_step_content.dart:379:53 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/gaz/presentation/widgets/tour_detail/reception_step_content.dart:380:63 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/gaz/presentation/widgets/tour_detail/reception_step_content.dart:399:58 • deprecated_member_use
+warning • The value of 'refresh' should be used • lib/features/gaz/presentation/widgets/tour_detail/transport/other_expenses_section.dart:202:11 • unused_result
+warning • The value of 'refresh' should be used • lib/features/gaz/presentation/widgets/tour_detail/transport/other_expenses_section.dart:216:11 • unused_result
+warning • The value of 'refresh' should be used • lib/features/gaz/presentation/widgets/tour_detail/transport/other_expenses_section.dart:249:13 • unused_result
+warning • The value of the field '_tiers' isn't used • lib/features/gaz/presentation/widgets/wholesaler_form_dialog.dart:31:22 • unused_field
+warning • The value of the local variable 'theme' isn't used • lib/features/gaz/presentation/widgets/wholesaler_form_dialog.dart:52:11 • unused_local_variable
+warning • Dead code • lib/features/immobilier/presentation/screens/sections/z_report_screen.dart:244:64 • dead_code
+warning • The left operand can't be null, so the right operand is never executed • lib/features/immobilier/presentation/screens/sections/z_report_screen.dart:244:67 • dead_null_aware_expression
+  error • Undefined name 'isDark' • lib/features/immobilier/presentation/widgets/immobilier_kpi_card.dart:38:21 • undefined_identifier
+warning • The value of the local variable 'theme' isn't used • lib/features/immobilier/presentation/widgets/tenant_detail_dialog.dart:432:11 • unused_local_variable
+   info • Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check • lib/features/immobilier/presentation/widgets/tenant_detail_dialog.dart:732:37 • use_build_context_synchronously
+   info • Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check • lib/features/immobilier/presentation/widgets/tenant_detail_dialog.dart:734:27 • use_build_context_synchronously
+   info • Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check • lib/features/immobilier/presentation/widgets/tenant_detail_dialog.dart:739:27 • use_build_context_synchronously
+warning • Unused import: 'package:elyf_groupe_app/features/administration/domain/repositories/enterprise_repository.dart' • lib/features/orange_money/application/providers.dart:7:8 • unused_import
+warning • Dead code • lib/features/orange_money/application/providers.dart:70:51 • dead_code
+warning • The left operand can't be null, so the right operand is never executed • lib/features/orange_money/application/providers.dart:70:54 • dead_null_aware_expression
+warning • Dead code • lib/features/orange_money/application/providers.dart:159:51 • dead_code
+warning • The left operand can't be null, so the right operand is never executed • lib/features/orange_money/application/providers.dart:159:54 • dead_null_aware_expression
+warning • Dead code • lib/features/orange_money/application/providers.dart:192:51 • dead_code
+warning • The left operand can't be null, so the right operand is never executed • lib/features/orange_money/application/providers.dart:192:54 • dead_null_aware_expression
+warning • Dead code • lib/features/orange_money/application/providers.dart:223:51 • dead_code
+warning • The left operand can't be null, so the right operand is never executed • lib/features/orange_money/application/providers.dart:223:54 • dead_null_aware_expression
+warning • Dead code • lib/features/orange_money/application/providers.dart:300:51 • dead_code
+warning • The left operand can't be null, so the right operand is never executed • lib/features/orange_money/application/providers.dart:300:54 • dead_null_aware_expression
+warning • Unused import: 'package:elyf_groupe_app/app/theme/app_spacing.dart' • lib/features/orange_money/presentation/screens/sections/agents_screen.dart:5:8 • unused_import
+warning • Unused import: 'package:elyf_groupe_app/features/orange_money/presentation/widgets/agents/agents_list_header.dart' • lib/features/orange_money/presentation/screens/sections/agents_screen.dart:12:8 • unused_import
+warning • Unused import: 'package:elyf_groupe_app/features/orange_money/presentation/widgets/agents/agents_low_liquidity_banner.dart' • lib/features/orange_money/presentation/screens/sections/agents_screen.dart:13:8 • unused_import
+warning • Unused import: 'package:elyf_groupe_app/features/orange_money/presentation/widgets/agents/agents_sort_button.dart' • lib/features/orange_money/presentation/screens/sections/agents_screen.dart:14:8 • unused_import
+warning • The declaration '_showAddCommissionDialog' isn't referenced • lib/features/orange_money/presentation/screens/sections/commissions_screen.dart:726:8 • unused_element
+warning • Unused import: 'package:elyf_groupe_app/app/theme/app_spacing.dart' • lib/features/orange_money/presentation/screens/sections/dashboard_screen.dart:5:8 • unused_import
+   info • Don't use 'BuildContext's across async gaps • lib/features/orange_money/presentation/screens/sections/liquidity_screen.dart:421:39 • use_build_context_synchronously
+warning • The value of the local variable 'theme' isn't used • lib/features/orange_money/presentation/screens/sections/reports_screen.dart:81:11 • unused_local_variable
+warning • Unused import: '../../widgets/form_field_with_label.dart' • lib/features/orange_money/presentation/screens/sections/transactions_v2_screen.dart:9:8 • unused_import
+warning • The value of the local variable 'theme' isn't used • lib/features/orange_money/presentation/screens/sections/transactions_v2_screen.dart:137:11 • unused_local_variable
+warning • The declaration '_buildHeader' isn't referenced • lib/features/orange_money/presentation/screens/sections/transactions_v2_screen.dart:293:10 • unused_element
+warning • Unused import: 'package:elyf_groupe_app/shared.dart' • lib/features/orange_money/presentation/screens/sections/treasury_tab.dart:5:8 • unused_import
+warning • Unused import: 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart' • lib/features/orange_money/presentation/screens/sections/treasury_tab.dart:10:8 • unused_import
+warning • Unused import: 'package:elyf_groupe_app/features/orange_money/domain/entities/orange_money_enterprise_extensions.dart' • lib/features/orange_money/presentation/screens/sections/treasury_tab.dart:11:8 • unused_import
+warning • Unused import: 'package:elyf_groupe_app/features/orange_money/domain/entities/agent.dart' • lib/features/orange_money/presentation/screens/sections/treasury_tab.dart:12:8 • unused_import
+   info • Statements in an if should be enclosed in a block • lib/features/orange_money/presentation/screens/sections/treasury_tab.dart:21:7 • curly_braces_in_flow_control_structures
+warning • Unused import: 'package:elyf_groupe_app/features/orange_money/domain/entities/orange_money_enterprise_extensions.dart' • lib/features/orange_money/presentation/widgets/agent_recharge_dialog.dart:6:8 • unused_import
+warning • The value of the local variable 'theme' isn't used • lib/features/orange_money/presentation/widgets/agent_recharge_dialog.dart:81:11 • unused_local_variable
+   info • The import of 'package:elyf_groupe_app/shared/presentation/widgets/elyf_ui/atoms/elyf_field.dart' is unnecessary because all of the used elements are also provided by the import of 'package:elyf_groupe_app/shared.dart' • lib/features/orange_money/presentation/widgets/agents/add_agent_modal.dart:11:8 • unnecessary_import
+   info • The private field _selectedOperatorName could be 'final' • lib/features/orange_money/presentation/widgets/agents/add_agent_modal.dart:40:10 • prefer_final_fields
+warning • The value of the field '_selectedOperatorName' isn't used • lib/features/orange_money/presentation/widgets/agents/add_agent_modal.dart:40:10 • unused_field
+   info • 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre • lib/features/orange_money/presentation/widgets/agents/add_agent_modal.dart:293:11 • deprecated_member_use
+   info • 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre • lib/features/orange_money/presentation/widgets/agents/add_agent_modal.dart:374:13 • deprecated_member_use
+   info • 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre • lib/features/orange_money/presentation/widgets/agents/add_agent_modal.dart:410:17 • deprecated_member_use
+   info • 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre • lib/features/orange_money/presentation/widgets/agents/add_agent_modal.dart:465:11 • deprecated_member_use
+warning • Unused import: 'package:flutter_riverpod/flutter_riverpod.dart' • lib/features/orange_money/presentation/widgets/agents/agent_account_table_row.dart:2:8 • unused_import
+warning • Unused import: '../../../application/providers.dart' • lib/features/orange_money/presentation/widgets/agents/agent_account_table_row.dart:4:8 • unused_import
+warning • Unused import: 'agents_dialogs.dart' • lib/features/orange_money/presentation/widgets/agents/agent_account_table_row.dart:5:8 • unused_import
+warning • The value of the local variable 'statusLabel' isn't used • lib/features/orange_money/presentation/widgets/agents/agent_network_card.dart:40:11 • unused_local_variable
+warning • Unused import: 'package:elyf_groupe_app/shared.dart' • lib/features/orange_money/presentation/widgets/agents/agents_dialogs.dart:4:8 • unused_import
+warning • Unused import: 'package:elyf_groupe_app/shared/utils/notification_service.dart' • lib/features/orange_money/presentation/widgets/agents/agents_dialogs.dart:5:8 • unused_import
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/orange_money/presentation/widgets/commission_alerts_card.dart:99:49 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/orange_money/presentation/widgets/commission_alerts_card.dart:106:36 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/orange_money/presentation/widgets/commission_declaration_dialog.dart:185:58 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/orange_money/presentation/widgets/commission_discrepancy_indicator.dart:54:29 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/features/orange_money/presentation/widgets/commission_status_badge.dart:37:29 • deprecated_member_use
+  error • Classes can only extend other classes • lib/features/orange_money/presentation/widgets/kpi_card.dart:4:23 • extends_non_class
+  error • No associated named super constructor parameter • lib/features/orange_money/presentation/widgets/kpi_card.dart:6:11 • super_formal_parameter_without_associated_named
+  error • Undefined class 'IconData' • lib/features/orange_money/presentation/widgets/kpi_card.dart:18:9 • undefined_class
+  error • Undefined class 'Widget' • lib/features/orange_money/presentation/widgets/kpi_card.dart:19:9 • undefined_class
+  error • Undefined class 'Color' • lib/features/orange_money/presentation/widgets/kpi_card.dart:20:9 • undefined_class
+  error • Undefined class 'Color' • lib/features/orange_money/presentation/widgets/kpi_card.dart:21:9 • undefined_class
+  error • Undefined class 'TextStyle' • lib/features/orange_money/presentation/widgets/kpi_card.dart:22:9 • undefined_class
+  error • Undefined class 'Widget' • lib/features/orange_money/presentation/widgets/kpi_card.dart:25:3 • undefined_class
+warning • The method doesn't override an inherited method • lib/features/orange_money/presentation/widgets/kpi_card.dart:25:10 • override_on_non_overriding_member
+  error • Undefined class 'BuildContext' • lib/features/orange_money/presentation/widgets/kpi_card.dart:25:16 • undefined_class
+  error • Undefined name 'Theme' • lib/features/orange_money/presentation/widgets/kpi_card.dart:26:19 • undefined_identifier
+  error • Undefined name 'MediaQuery' • lib/features/orange_money/presentation/widgets/kpi_card.dart:27:22 • undefined_identifier
+  error • Undefined name 'EdgeInsets' • lib/features/orange_money/presentation/widgets/kpi_card.dart:31:16 • undefined_identifier
+  error • The method 'Column' isn't defined for the type 'KpiCard' • lib/features/orange_money/presentation/widgets/kpi_card.dart:32:14 • undefined_method
+  error • Undefined name 'CrossAxisAlignment' • lib/features/orange_money/presentation/widgets/kpi_card.dart:33:29 • undefined_identifier
+  error • Undefined name 'MainAxisSize' • lib/features/orange_money/presentation/widgets/kpi_card.dart:34:23 • undefined_identifier
+  error • The method 'Padding' isn't defined for the type 'KpiCard' • lib/features/orange_money/presentation/widgets/kpi_card.dart:37:13 • undefined_method
+  error • Undefined name 'EdgeInsets' • lib/features/orange_money/presentation/widgets/kpi_card.dart:38:30 • undefined_identifier
+  error • The method 'Icon' isn't defined for the type 'KpiCard' • lib/features/orange_money/presentation/widgets/kpi_card.dart:41:19 • undefined_method
+  error • The method 'Text' isn't defined for the type 'KpiCard' • lib/features/orange_money/presentation/widgets/kpi_card.dart:47:11 • undefined_method
+  error • Undefined name 'FontWeight' • lib/features/orange_money/presentation/widgets/kpi_card.dart:51:27 • undefined_identifier
+  error • Undefined name 'TextAlign' • lib/features/orange_money/presentation/widgets/kpi_card.dart:54:24 • undefined_identifier
+  error • The name 'SizedBox' isn't a class • lib/features/orange_money/presentation/widgets/kpi_card.dart:56:17 • creation_with_non_type
+  error • The method 'Text' isn't defined for the type 'KpiCard' • lib/features/orange_money/presentation/widgets/kpi_card.dart:57:11 • undefined_method
+  error • Undefined name 'FontWeight' • lib/features/orange_money/presentation/widgets/kpi_card.dart:61:31 • undefined_identifier
+  error • Undefined name 'TextAlign' • lib/features/orange_money/presentation/widgets/kpi_card.dart:66:24 • undefined_identifier
+warning • Unused import: 'new_customer_form/customer_name_fields.dart' • lib/features/orange_money/presentation/widgets/new_customer_form_card.dart:8:8 • unused_import
+   info • Unnecessary use of string interpolation • lib/features/orange_money/presentation/widgets/operator_balance_summary.dart:107:19 • unnecessary_string_interpolations
+   info • 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre • lib/features/orange_money/presentation/widgets/treasury_operation_dialog.dart:258:7 • deprecated_member_use
+warning • The value of the local variable 'theme' isn't used • lib/shared/presentation/widgets/confirm_dialog.dart:23:11 • unused_local_variable
+warning • The name currentUserProfileProvider is shown, but isn't used • lib/shared/presentation/widgets/profile/profile_logout_card.dart:8:9 • unused_shown_name
+warning • The name currentUserProvider is shown, but isn't used • lib/shared/presentation/widgets/profile/profile_logout_card.dart:9:9 • unused_shown_name
+warning • The value of the local variable 'modified' isn't used • script_replace_localid.dart:22:7 • unused_local_variable
+   info • Don't invoke 'print' in production code • script_replace_localid.dart:42:7 • avoid_print
+   info • Don't invoke 'print' in production code • script_replace_localid.dart:45:3 • avoid_print
+  error • Classes and mixins can only implement other classes and mixins • test/features/boutique/data/repositories/report_offline_repository_test.dart:91:47 • implements_non_class
+  error • The name 'Supplier' isn't a type, so it can't be used as a type argument • test/features/boutique/data/repositories/report_offline_repository_test.dart:93:15 • non_type_as_type_argument
+warning • The method doesn't override an inherited method • test/features/boutique/data/repositories/report_offline_repository_test.dart:93:26 • override_on_non_overriding_member
+  error • The name 'Supplier' isn't a type, so it can't be used as a type argument • test/features/boutique/data/repositories/report_offline_repository_test.dart:95:15 • non_type_as_type_argument
+warning • The method doesn't override an inherited method • test/features/boutique/data/repositories/report_offline_repository_test.dart:95:26 • override_on_non_overriding_member
+warning • The method doesn't override an inherited method • test/features/boutique/data/repositories/report_offline_repository_test.dart:97:18 • override_on_non_overriding_member
+  error • Undefined class 'Supplier' • test/features/boutique/data/repositories/report_offline_repository_test.dart:97:33 • undefined_class
+  error • The name 'Supplier' isn't a type, so it can't be used as a type argument • test/features/boutique/data/repositories/report_offline_repository_test.dart:99:10 • non_type_as_type_argument
+warning • The method doesn't override an inherited method • test/features/boutique/data/repositories/report_offline_repository_test.dart:99:21 • override_on_non_overriding_member
+warning • The method doesn't override an inherited method • test/features/boutique/data/repositories/report_offline_repository_test.dart:101:16 • override_on_non_overriding_member
+  error • Undefined class 'Supplier' • test/features/boutique/data/repositories/report_offline_repository_test.dart:101:31 • undefined_class
+warning • The method doesn't override an inherited method • test/features/boutique/data/repositories/report_offline_repository_test.dart:103:16 • override_on_non_overriding_member
+  error • Classes and mixins can only implement other classes and mixins • test/features/boutique/data/repositories/report_offline_repository_test.dart:106:57 • implements_non_class
+  error • The name 'SupplierSettlement' isn't a type, so it can't be used as a type argument • test/features/boutique/data/repositories/report_offline_repository_test.dart:108:15 • non_type_as_type_argument
+warning • The method doesn't override an inherited method • test/features/boutique/data/repositories/report_offline_repository_test.dart:108:36 • override_on_non_overriding_member
+  error • The name 'SupplierSettlement' isn't a type, so it can't be used as a type argument • test/features/boutique/data/repositories/report_offline_repository_test.dart:110:15 • non_type_as_type_argument
+warning • The method doesn't override an inherited method • test/features/boutique/data/repositories/report_offline_repository_test.dart:110:36 • override_on_non_overriding_member
+warning • The method doesn't override an inherited method • test/features/boutique/data/repositories/report_offline_repository_test.dart:112:18 • override_on_non_overriding_member
+  error • Undefined class 'SupplierSettlement' • test/features/boutique/data/repositories/report_offline_repository_test.dart:112:35 • undefined_class
+  error • The name 'SupplierSettlement' isn't a type, so it can't be used as a type argument • test/features/boutique/data/repositories/report_offline_repository_test.dart:114:10 • non_type_as_type_argument
+warning • The method doesn't override an inherited method • test/features/boutique/data/repositories/report_offline_repository_test.dart:114:31 • override_on_non_overriding_member
+  error • The argument type 'ManualMockSupplierRepository' can't be assigned to the parameter type 'SupplierRepository'.  • test/features/boutique/data/repositories/report_offline_repository_test.dart:137:29 • argument_type_not_assignable
+  error • The argument type 'ManualMockSupplierSettlementRepository' can't be assigned to the parameter type 'SupplierSettlementRepository'.  • test/features/boutique/data/repositories/report_offline_repository_test.dart:138:31 • argument_type_not_assignable
+warning • The method doesn't override an inherited method • test/features/eau_minerale/domain/services/credit_service_test.dart:102:16 • override_on_non_overriding_member
+warning • The method doesn't override an inherited method • test/features/eau_minerale/domain/services/credit_service_test.dart:105:22 • override_on_non_overriding_member
+warning • The method doesn't override an inherited method • test/features/eau_minerale/domain/services/credit_service_test.dart:108:22 • override_on_non_overriding_member
+warning • The method doesn't override an inherited method • test/features/eau_minerale/domain/services/credit_service_test.dart:111:22 • override_on_non_overriding_member
+warning • The method doesn't override an inherited method • test/features/eau_minerale/domain/services/credit_service_test.dart:114:15 • override_on_non_overriding_member
+warning • The method doesn't override an inherited method • test/features/eau_minerale/domain/services/credit_service_test.dart:117:16 • override_on_non_overriding_member
+warning • Unused import: 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder_stock.dart' • test/features/gaz/application/controllers/cylinder_leak_controller_test.dart:9:8 • unused_import
+warning • Unused import: 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder.dart' • test/features/gaz/application/controllers/cylinder_leak_controller_test.dart:10:8 • unused_import
+  error • The argument type 'double' can't be assigned to the parameter type 'int'.  • test/features/gaz/application/controllers/cylinder_leak_controller_test.dart:67:11 • argument_type_not_assignable
+   info • 'stock' is deprecated and shouldn't be used. Use CylinderStockRepository to track bi-modal stock instead • test/features/gaz/application/controllers/gas_controller_test.dart:113:9 • deprecated_member_use_from_same_package
+   info • 'stock' is deprecated and shouldn't be used. Use CylinderStockRepository to track bi-modal stock instead • test/features/gaz/application/controllers/gas_controller_test.dart:144:9 • deprecated_member_use_from_same_package
+  error • The named parameter 'cylinderStockRepository' is required, but there's no corresponding argument • test/features/gaz/data/repositories/gas_offline_repository_test.dart:26:26 • missing_required_argument
+   info • 'stock' is deprecated and shouldn't be used. Use CylinderStockRepository to track bi-modal stock instead • test/features/gaz/domain/services/gas_validation_service_test.dart:13:5 • deprecated_member_use_from_same_package
+  error • Undefined class 'MockAuditTrailService' • test/features/immobilier/application/controllers/expense_controller_test.dart:21:8 • undefined_class
+  error • The function 'MockAuditTrailService' isn't defined • test/features/immobilier/application/controllers/expense_controller_test.dart:26:24 • undefined_function
+  error • The named parameter 'paidAmount' is required, but there's no corresponding argument • test/features/immobilier/domain/services/immobilier_calculation_service_test.dart:19:11 • missing_required_argument
+  error • The named parameter 'paidAmount' is required, but there's no corresponding argument • test/features/immobilier/domain/services/immobilier_calculation_service_test.dart:28:11 • missing_required_argument
+  error • The method 'calculateTotalExpenses' isn't defined for the type 'ImmobilierReportCalculationService' • test/features/immobilier/domain/services/immobilier_calculation_service_test.dart:72:32 • undefined_method
+  error • Target of URI doesn't exist: 'orange_money_controller_test.mocks.dart' • test/features/orange_money/application/controllers/orange_money_controller_test.dart:16:8 • uri_does_not_exist
+  error • Undefined name 'GenerateMocks' used as an annotation • test/features/orange_money/application/controllers/orange_money_controller_test.dart:18:1 • undefined_annotation
+  error • Undefined class 'MockTransactionRepository' • test/features/orange_money/application/controllers/orange_money_controller_test.dart:27:8 • undefined_class
+  error • Undefined class 'MockLiquidityRepository' • test/features/orange_money/application/controllers/orange_money_controller_test.dart:28:8 • undefined_class
+  error • Undefined class 'MockSettingsRepository' • test/features/orange_money/application/controllers/orange_money_controller_test.dart:29:8 • undefined_class
+  error • Undefined class 'MockAuditTrailService' • test/features/orange_money/application/controllers/orange_money_controller_test.dart:30:8 • undefined_class
+  error • Undefined class 'MockOrangeMoneyPermissionAdapter' • test/features/orange_money/application/controllers/orange_money_controller_test.dart:31:8 • undefined_class
+  error • The function 'MockTransactionRepository' isn't defined • test/features/orange_money/application/controllers/orange_money_controller_test.dart:37:19 • undefined_function
+  error • The function 'MockLiquidityRepository' isn't defined • test/features/orange_money/application/controllers/orange_money_controller_test.dart:38:25 • undefined_function
+  error • The function 'MockSettingsRepository' isn't defined • test/features/orange_money/application/controllers/orange_money_controller_test.dart:39:24 • undefined_function
+  error • The function 'MockAuditTrailService' isn't defined • test/features/orange_money/application/controllers/orange_money_controller_test.dart:40:24 • undefined_function
+  error • The function 'MockOrangeMoneyPermissionAdapter' isn't defined • test/features/orange_money/application/controllers/orange_money_controller_test.dart:41:29 • undefined_function
+warning • Unused import: 'package:elyf_groupe_app/core/offline/sync_operation_processor.dart' • test/features/orange_money/commission_offline_repository_test.dart:12:8 • unused_import
+   info • 'stock' is deprecated and shouldn't be used. Use CylinderStockRepository to track bi-modal stock instead • test/helpers/test_helpers.dart:68:5 • deprecated_member_use_from_same_package
 
-30 issues found. (ran in 3.9s)
+281 issues found. (ran in 8.5s)

@@ -1,11 +1,10 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
-
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 
-
-class ModuleHomeScaffold extends StatefulWidget {
+class ModuleHomeScaffold extends ConsumerStatefulWidget {
   const ModuleHomeScaffold({
     super.key,
     required this.title,
@@ -18,10 +17,10 @@ class ModuleHomeScaffold extends StatefulWidget {
   final IconData? moduleIcon;
 
   @override
-  State<ModuleHomeScaffold> createState() => _ModuleHomeScaffoldState();
+  ConsumerState<ModuleHomeScaffold> createState() => _ModuleHomeScaffoldState();
 }
 
-class _ModuleHomeScaffoldState extends State<ModuleHomeScaffold> {
+class _ModuleHomeScaffoldState extends ConsumerState<ModuleHomeScaffold> {
   int _selectedIndex = 0;
   bool _isLoading = true;
 
@@ -57,6 +56,7 @@ class _ModuleHomeScaffoldState extends State<ModuleHomeScaffold> {
         message: 'Initialisation du module...',
       );
     }
+    final activeEnterprise = ref.watch(activeEnterpriseProvider).value;
     final colors = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
@@ -64,7 +64,9 @@ class _ModuleHomeScaffoldState extends State<ModuleHomeScaffold> {
       appBar: _selectedIndex == 1
           ? null
           : ElyfAppBar(
-              title: widget.title,
+              title: activeEnterprise?.name ?? widget.title.split(' • ').last,
+              subtitle: widget.title.split(' • ').first.toUpperCase(),
+              module: activeEnterprise?.type.module,
               actions: [
                 EnterpriseSelectorWidget(style: EnterpriseSelectorStyle.appBar),
               ],

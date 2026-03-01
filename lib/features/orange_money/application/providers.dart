@@ -339,11 +339,13 @@ final agentAgenciesProvider = FutureProvider.autoDispose.family<List<Enterprise>
   final parts = key.split('|');
   final parentEnterpriseId = parts[0].isEmpty ? null : parts[0];
   final searchQuery = parts.length > 2 && parts[2].isNotEmpty ? parts[2] : null;
+  final excludeAssigned = parts.length > 3 && parts[3] == 'true';
 
   final controller = ref.watch(agentsControllerProvider);
   return await controller.fetchAgencies(
     parentEnterpriseId: parentEnterpriseId,
     searchQuery: searchQuery,
+    excludeAssigned: excludeAssigned,
   );
 });
 

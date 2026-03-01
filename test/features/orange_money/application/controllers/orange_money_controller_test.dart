@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
+import 'package:mockito/annotations.dart';
 import 'package:elyf_groupe_app/features/orange_money/application/controllers/orange_money_controller.dart';
 import 'package:elyf_groupe_app/features/orange_money/domain/repositories/transaction_repository.dart';
 import 'package:elyf_groupe_app/features/orange_money/domain/repositories/liquidity_repository.dart';
@@ -7,82 +8,52 @@ import 'package:elyf_groupe_app/features/orange_money/domain/entities/transactio
 import 'package:elyf_groupe_app/features/orange_money/domain/entities/liquidity_checkpoint.dart';
 import 'package:elyf_groupe_app/core/errors/app_exceptions.dart';
 import 'package:elyf_groupe_app/features/audit_trail/domain/services/audit_trail_service.dart';
+import 'package:elyf_groupe_app/features/orange_money/domain/repositories/settings_repository.dart';
+import 'package:elyf_groupe_app/features/orange_money/domain/adapters/orange_money_permission_adapter.dart';
+import 'package:elyf_groupe_app/features/administration/domain/repositories/admin_repository.dart';
+import 'package:elyf_groupe_app/features/administration/domain/repositories/enterprise_repository.dart';
+import 'package:elyf_groupe_app/core/permissions/services/permission_service.dart';
 
-class MockTransactionRepository extends Mock implements TransactionRepository {
-  @override
-  Future<String> createTransaction(Transaction? transaction) => super.noSuchMethod(
-        Invocation.method(#createTransaction, [transaction]),
-        returnValue: Future.value('txn_id'),
-      );
+import 'orange_money_controller_test.mocks.dart';
 
-  @override
-  Future<List<Transaction>> fetchTransactions({
-    DateTime? startDate,
-    DateTime? endDate,
-    TransactionType? type,
-    TransactionStatus? status,
-  }) => super.noSuchMethod(
-        Invocation.method(#fetchTransactions, [], {
-          #startDate: startDate,
-          #endDate: endDate,
-          #type: type,
-          #status: status,
-        }),
-        returnValue: Future.value(<Transaction>[]),
-      );
-}
-
-class MockLiquidityRepository extends Mock implements LiquidityRepository {
-  @override
-  Future<LiquidityCheckpoint?> getTodayCheckpoint(String? enterpriseId) =>
-      super.noSuchMethod(
-        Invocation.method(#getTodayCheckpoint, [enterpriseId]),
-        returnValue: Future.value(null),
-      );
-}
-
-class MockAuditTrailService extends Mock implements AuditTrailService {
-  @override
-  Future<String> logAction({
-    required String? enterpriseId,
-    required String? userId,
-    required String? module,
-    required String? action,
-    required String? entityId,
-    required String? entityType,
-    Map<String, dynamic>? metadata,
-  }) =>
-      super.noSuchMethod(
-        Invocation.method(#logAction, [], {
-          #enterpriseId: enterpriseId,
-          #userId: userId,
-          #module: module,
-          #action: action,
-          #entityId: entityId,
-          #entityType: entityType,
-          #metadata: metadata,
-        }),
-        returnValue: Future.value('test-log-id'),
-      );
-}
-
+@GenerateMocks([
+  TransactionRepository,
+  LiquidityRepository,
+  SettingsRepository,
+  AuditTrailService,
+  OrangeMoneyPermissionAdapter,
+])
 void main() {
   late OrangeMoneyController controller;
   late MockTransactionRepository mockTxnRepo;
   late MockLiquidityRepository mockLiquidityRepo;
+  late MockSettingsRepository mockSettingsRepo;
   late MockAuditTrailService mockAuditService;
+  late MockOrangeMoneyPermissionAdapter mockPermissionAdapter;
 
   const enterpriseId = 'ent_1';
+  const userId = 'user_1';
 
   setUp(() {
     mockTxnRepo = MockTransactionRepository();
     mockLiquidityRepo = MockLiquidityRepository();
+    mockSettingsRepo = MockSettingsRepository();
     mockAuditService = MockAuditTrailService();
+    mockPermissionAdapter = MockOrangeMoneyPermissionAdapter();
+    
     controller = OrangeMoneyController(
-      mockTxnRepo, 
+      mockTxnRepo,
       mockLiquidityRepo,
+      mockSettingsRepo,
       mockAuditService,
+      userId,
+      mockPermissionAdapter,
+      enterpriseId,
     );
+
+    // Default setups
+    when(mockPermissionAdapter.getAccessibleEnterpriseIds(any))
+        .thenAnswer((_) async => {enterpriseId});
   });
 
   group('OrangeMoneyController - createTransactionFromInput', () {

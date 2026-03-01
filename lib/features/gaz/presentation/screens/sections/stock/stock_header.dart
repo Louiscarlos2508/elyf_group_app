@@ -23,7 +23,7 @@ class StockHeader extends StatelessWidget {
       title: 'STOCK',
       subtitle: 'Stock des points de vente',
       asSliver: false,
-      additionalActions: [
+      actions: [
         ElyfButton(
           onPressed: () {
             Navigator.of(context).push(

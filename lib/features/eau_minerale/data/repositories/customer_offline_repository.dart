@@ -57,7 +57,7 @@ class CustomerOfflineRepository implements CustomerRepository {
       'updatedAt': DateTime.now().toIso8601String(),
     };
 
-    await driftService.records.upsert(
+    await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
       collectionName: collectionName,
       localId: localId,
       remoteId: remoteId,
@@ -255,7 +255,7 @@ class CustomerOfflineRepository implements CustomerRepository {
         final map = _recordToMap(record.dataJson);
         map['deletedAt'] = DateTime.now().toIso8601String();
         
-        await driftService.records.upsert(
+        await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
           collectionName: collectionName,
           localId: record.localId,
           remoteId: record.remoteId,

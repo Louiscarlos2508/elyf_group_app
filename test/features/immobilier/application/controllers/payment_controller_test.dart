@@ -4,53 +4,60 @@ import 'package:mockito/annotations.dart';
 
 import 'package:elyf_groupe_app/features/immobilier/application/controllers/payment_controller.dart';
 import 'package:elyf_groupe_app/features/immobilier/domain/repositories/payment_repository.dart';
+import 'package:elyf_groupe_app/features/immobilier/domain/repositories/contract_repository.dart';
+import 'package:elyf_groupe_app/features/immobilier/domain/repositories/tenant_repository.dart';
+import 'package:elyf_groupe_app/features/immobilier/domain/repositories/property_repository.dart';
+import 'package:elyf_groupe_app/features/immobilier/application/services/receipt_service.dart';
 import 'package:elyf_groupe_app/features/immobilier/domain/services/immobilier_validation_service.dart';
+import 'package:elyf_groupe_app/features/immobilier/application/controllers/immobilier_treasury_controller.dart';
+import 'package:elyf_groupe_app/features/audit_trail/domain/services/audit_trail_service.dart';
 import 'package:elyf_groupe_app/features/immobilier/domain/entities/payment.dart';
 import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
-import 'package:elyf_groupe_app/features/audit_trail/domain/services/audit_trail_service.dart';
 
 import 'payment_controller_test.mocks.dart';
 
-class MockAuditTrailService extends Mock implements AuditTrailService {
-  @override
-  Future<String> logAction({
-    required String? enterpriseId,
-    required String? userId,
-    required String? module,
-    required String? action,
-    required String? entityId,
-    required String? entityType,
-    Map<String, dynamic>? metadata,
-  }) =>
-      super.noSuchMethod(
-        Invocation.method(#logAction, [], {
-          #enterpriseId: enterpriseId,
-          #userId: userId,
-          #module: module,
-          #action: action,
-          #entityId: entityId,
-          #entityType: entityType,
-          #metadata: metadata,
-        }),
-        returnValue: Future.value('test-log-id'),
-      );
-}
 
-@GenerateMocks([PaymentRepository, ImmobilierValidationService])
+
+@GenerateMocks([
+  PaymentRepository,
+  ContractRepository,
+  TenantRepository,
+  PropertyRepository,
+  ReceiptService,
+  ImmobilierValidationService,
+  AuditTrailService,
+  ImmobilierTreasuryController,
+])
 void main() {
   late PaymentController controller;
   late MockPaymentRepository mockRepository;
+  late MockContractRepository mockContractRepository;
+  late MockTenantRepository mockTenantRepository;
+  late MockPropertyRepository mockPropertyRepository;
+  late MockReceiptService mockReceiptService;
   late MockImmobilierValidationService mockValidationService;
   late MockAuditTrailService mockAuditService;
+  late MockImmobilierTreasuryController mockTreasuryController;
 
   setUp(() {
     mockRepository = MockPaymentRepository();
+    mockContractRepository = MockContractRepository();
+    mockTenantRepository = MockTenantRepository();
+    mockPropertyRepository = MockPropertyRepository();
+    mockReceiptService = MockReceiptService();
     mockValidationService = MockImmobilierValidationService();
     mockAuditService = MockAuditTrailService();
+    mockTreasuryController = MockImmobilierTreasuryController();
+
     controller = PaymentController(
       mockRepository,
+      mockContractRepository,
+      mockTenantRepository,
+      mockPropertyRepository,
+      mockReceiptService,
       mockValidationService,
       mockAuditService,
+      mockTreasuryController,
       'test-enterprise',
       'test-user',
     );
@@ -80,6 +87,7 @@ void main() {
           enterpriseId: 'test-enterprise',
           contractId: 'contract-1',
           amount: 50000,
+          paidAmount: 50000,
           paymentDate: DateTime(2026, 1, 1),
           paymentMethod: PaymentMethod.cash,
           status: PaymentStatus.paid,
@@ -104,6 +112,7 @@ void main() {
           enterpriseId: 'test-enterprise',
           contractId: 'contract-1',
           amount: 50000,
+          paidAmount: 0,
           paymentDate: DateTime(2026, 1, 1),
           paymentMethod: PaymentMethod.cash,
           status: PaymentStatus.paid,

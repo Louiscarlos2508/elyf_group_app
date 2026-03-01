@@ -12,10 +12,8 @@ import 'package:elyf_groupe_app/features/orange_money/presentation/widgets/agent
 import 'package:elyf_groupe_app/features/orange_money/presentation/widgets/agents/agents_list_header.dart';
 import 'package:elyf_groupe_app/features/orange_money/presentation/widgets/agents/agents_low_liquidity_banner.dart';
 import 'package:elyf_groupe_app/features/orange_money/presentation/widgets/agents/agents_sort_button.dart';
-import 'package:elyf_groupe_app/features/orange_money/presentation/widgets/agents/agent_account_table.dart';
-import 'package:elyf_groupe_app/features/orange_money/presentation/widgets/agents/agencies_table.dart';
+import 'package:elyf_groupe_app/features/orange_money/presentation/widgets/agents/agent_network_card.dart';
 import 'package:elyf_groupe_app/features/orange_money/presentation/widgets/orange_money_header.dart';
-import 'package:elyf_groupe_app/core/permissions/modules/orange_money_permissions.dart';
 
 /// Screen for managing affiliated agents (Mobile Money Enterprises).
 class AgentsScreen extends ConsumerStatefulWidget {
@@ -55,35 +53,74 @@ class _AgentsScreenState extends ConsumerState<AgentsScreen> with SingleTickerPr
     final theme = Theme.of(context);
     final statsKey = widget.enterpriseId ?? '';
     final statsAsync = ref.watch(agentsDailyStatisticsProvider(statsKey));
-
-    return Container(
-      color: theme.colorScheme.surfaceContainerHighest,
-      child: CustomScrollView(
-        slivers: [
-          OrangeMoneyHeader(
-            title: 'Réseau d\'Agents',
-            subtitle: 'Gérez vos agents (SIM/Employés) et vos agences physiques.',
-            badgeText: 'GESTION RÉSEAU',
-            badgeIcon: Icons.account_tree_rounded,
-            asSliver: true,
+    return CustomScrollView(
+      slivers: [
+        ElyfModuleHeader(
+          title: "Réseau d'Agents",
+          subtitle: 'Gérez vos comptes agents (SIM) et agences physiques.',
+          module: EnterpriseModule.mobileMoney,
+          bottom: _buildTabsSection(),
+        ),
+        
+        // 1. Statistiques
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+            child: _buildStatisticsSection(statsAsync),
           ),
-          SliverPadding(
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            sliver: SliverToBoxAdapter(
+        ),
+        
+        // 2. Filtres & Recherche
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: ElyfCard(
+              backgroundColor: theme.colorScheme.surface.withValues(alpha: 0.5),
+              padding: const EdgeInsets.all(12),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildStatisticsSection(statsAsync),
-                  const SizedBox(height: AppSpacing.lg),
-                  _buildTabsSection(),
-                  const SizedBox(height: AppSpacing.md),
-                  _buildListSection(ref),
+                   Row(
+                    children: [
+                      Icon(
+                        _tabController.index == 0 ? Icons.person_pin_rounded : Icons.business_rounded,
+                        size: 20,
+                        color: theme.colorScheme.primary,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          _tabController.index == 0 ? 'COMPTES AGENTS (SIM)' : 'AGENCES & POINTS DE VENTE',
+                          style: theme.textTheme.labelLarge?.copyWith(
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 1.1,
+                            fontFamily: 'Outfit',
+                          ),
+                        ),
+                      ),
+                      IconButton.filled(
+                        onPressed: _showAddDialog,
+                        icon: const Icon(Icons.add_rounded),
+                        tooltip: 'Ajouter',
+                        style: IconButton.styleFrom(
+                          minimumSize: const Size(40, 40),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Divider(height: 24),
+                  _buildFilters(),
                 ],
               ),
             ),
           ),
-        ],
-      ),
+        ),
+
+        // 3. Liste Grosse (Grid)
+        _buildListSection(ref),
+        
+        const SliverToBoxAdapter(child: SizedBox(height: 100)),
+      ],
     );
   }
 
@@ -97,148 +134,123 @@ class _AgentsScreenState extends ConsumerState<AgentsScreen> with SingleTickerPr
 
   Widget _buildTabsSection() {
     final theme = Theme.of(context);
-    return Container(
-      decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(
-            color: theme.colorScheme.outline.withValues(alpha: 0.2),
-            width: 1,
+    return TabBar(
+      controller: _tabController,
+      isScrollable: true,
+      tabAlignment: TabAlignment.start,
+      labelColor: Colors.white,
+      unselectedLabelColor: Colors.white.withValues(alpha: 0.7),
+      indicatorColor: Colors.white,
+      indicatorWeight: 3,
+      dividerColor: Colors.transparent,
+      labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+      tabs: const [
+        Tab(
+          child: Row(
+            children: [
+              Icon(Icons.sim_card_outlined, size: 16),
+              SizedBox(width: 8),
+              Text('Agents (Comptes SIM)'),
+            ],
           ),
         ),
-      ),
-      child: TabBar(
-        controller: _tabController,
-        isScrollable: true,
-        tabAlignment: TabAlignment.start,
-        labelColor: theme.colorScheme.primary,
-        unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
-        indicatorColor: theme.colorScheme.primary,
-        indicatorWeight: 3,
-        dividerColor: Colors.transparent,
-        tabs: const [
-          Tab(
-            child: Row(
-              children: [
-                Icon(Icons.person_outline, size: 18),
-                SizedBox(width: 8),
-                Text('Agents (SIM/Employés)'),
-              ],
-            ),
+        Tab(
+          child: Row(
+            children: [
+              Icon(Icons.business_outlined, size: 16),
+              SizedBox(width: 8),
+              Text('Agences (PDV Physique)'),
+            ],
           ),
-          Tab(
-            child: Row(
-              children: [
-                Icon(Icons.business_outlined, size: 18),
-                SizedBox(width: 8),
-                Text('Agences (Points de Vente)'),
-              ],
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
   Widget _buildListSection(WidgetRef ref) {
     final tabIndex = _tabController.index;
     if (tabIndex == 0) {
-          final agentsAsync = ref.watch(
-            agentAccountsProvider('${widget.enterpriseId ?? ''}||$_searchQuery'),
-          );
-          return _buildAgentsList(agentsAsync, ref);
-        } else {
-          final agenciesAsync = ref.watch(
-            agentAgenciesProvider('${widget.enterpriseId ?? ''}||$_searchQuery'),
-          );
-      return _buildAgenciesList(agenciesAsync, ref);
+      final agentsAsync = ref.watch(
+        agentAccountsProvider('${widget.enterpriseId ?? ''}||$_searchQuery'),
+      );
+      return _buildAgentsGrid(agentsAsync, ref);
+    } else {
+      final agenciesAsync = ref.watch(
+        agentAgenciesProvider('${widget.enterpriseId ?? ''}||$_searchQuery'),
+      );
+      return _buildAgenciesGrid(agenciesAsync, ref);
     }
   }
 
-  Widget _buildAgentsList(AsyncValue<List<Agent>> agentsAsync, WidgetRef ref) {
+  Widget _buildAgentsGrid(AsyncValue<List<Agent>> agentsAsync, WidgetRef ref) {
     return agentsAsync.when(
-      data: (agents) => ElyfCard(
+      data: (agents) => SliverPadding(
         padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            AgentsListHeader(
-              agentCount: agents.length,
-              title: 'Liste des Agents (SIM)',
-              onAddAgent: () => _showAddDialog(),
+        sliver: SliverGrid(
+          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+            maxCrossAxisExtent: 400,
+            mainAxisExtent: 230,
+            mainAxisSpacing: 16,
+            crossAxisSpacing: 16,
+          ),
+          delegate: SliverChildBuilderDelegate(
+            (context, index) => AgentNetworkCard(
+              agent: agents[index],
+              onView: () => _onViewAgent(agents[index]),
+              onEdit: () => _onEditAgent(agents[index]),
+              onDelete: () => _onDeleteAgent(agents[index]),
               onRecharge: () => _showRechargeDialog(context),
             ),
-            const SizedBox(height: 16),
-            _buildFilters(),
-            const SizedBox(height: 16),
-            AgentAccountTable(
-              agents: agents,
-              onView: (agent) => _onViewAgent(agent),
-              onRefresh: (agent) => ref.invalidate(agentAccountsProvider),
-              onEdit: (agent) => _onEditAgent(agent),
-              onDelete: (agent) => _onDeleteAgent(agent),
-            ),
-          ],
+            childCount: agents.length,
+          ),
         ),
       ),
-      loading: () => const LoadingIndicator(),
-      error: (e, s) => ErrorDisplayWidget(error: e),
+      loading: () => const SliverToBoxAdapter(child: LoadingIndicator()),
+      error: (e, s) => SliverToBoxAdapter(child: ErrorDisplayWidget(error: e)),
     );
   }
 
-  Widget _buildAgenciesList(AsyncValue<List<Enterprise>> agenciesAsync, WidgetRef ref) {
+  Widget _buildAgenciesGrid(AsyncValue<List<Enterprise>> agenciesAsync, WidgetRef ref) {
     return agenciesAsync.when(
-      data: (agencies) => ElyfCard(
+      data: (agencies) => SliverPadding(
         padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            AgentsListHeader(
-              agentCount: agencies.length,
-              title: 'Liste des Agences (POS)',
-              onAddAgent: () => _showAddDialog(),
+        sliver: SliverGrid(
+          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+            maxCrossAxisExtent: 400,
+            mainAxisExtent: 180, // Augmenté pour éviter l'overflow
+            mainAxisSpacing: 16,
+            crossAxisSpacing: 16,
+          ),
+          delegate: SliverChildBuilderDelegate(
+            (context, index) => AgentNetworkCard(
+              agency: agencies[index],
+              onView: () => _onViewAgency(agencies[index]),
+              onEdit: () => _onEditAgency(agencies[index]),
+              onDelete: () => _onDeleteAgency(agencies[index]),
               onRecharge: () => _showRechargeDialog(context),
             ),
-            const SizedBox(height: 16),
-            _buildFilters(),
-            const SizedBox(height: 16),
-            AgenciesTable(
-              agencies: agencies,
-              onView: (agency) => _onViewAgency(agency),
-              onRefresh: (agency) => ref.invalidate(agentAgenciesProvider),
-              onEdit: (agency) => _onEditAgency(agency),
-              onDelete: (agency) => _onDeleteAgency(agency),
-            ),
-          ],
+            childCount: agencies.length,
+          ),
         ),
       ),
-      loading: () => const LoadingIndicator(),
-      error: (e, s) => ErrorDisplayWidget(error: e),
+      loading: () => const SliverToBoxAdapter(child: LoadingIndicator()),
+      error: (e, s) => SliverToBoxAdapter(child: ErrorDisplayWidget(error: e)),
     );
   }
 
   Widget _buildFilters() {
-    return Column(
-      children: [
-        AgentsFilters(
-          searchQuery: _searchQuery,
-          statusFilter: _statusFilter,
-          sortBy: _sortBy,
-          onSearchChanged: (v) => setState(() => _searchQuery = v),
-          onStatusChanged: (v) => setState(() => _statusFilter = v),
-          onSortChanged: (v) => setState(() => _sortBy = v),
-          onReset: () => setState(() { _searchQuery = ''; _statusFilter = null; _sortBy = null; }),
-        ),
-        const SizedBox(height: 16),
-        AgentsSortButton(
-          onPressed: () {
-            setState(() {
-              if (_sortBy == null) _sortBy = 'name';
-              else if (_sortBy == 'name') _sortBy = 'liquidity';
-              else _sortBy = null;
-            });
-          },
-        ),
-      ],
+    return AgentsFilters(
+      searchQuery: _searchQuery,
+      statusFilter: _statusFilter,
+      sortBy: _sortBy,
+      onSearchChanged: (value) => setState(() => _searchQuery = value),
+      onStatusChanged: (value) => setState(() => _statusFilter = value),
+      onSortChanged: (value) => setState(() => _sortBy = value),
+      onReset: () => setState(() {
+        _searchQuery = '';
+        _statusFilter = null;
+        _sortBy = null;
+      }),
     );
   }
 
@@ -247,41 +259,33 @@ class _AgentsScreenState extends ConsumerState<AgentsScreen> with SingleTickerPr
       AgentsDialogs.showAgentAccountDialog(
         context,
         ref,
-        null, // new agent
+        null,
         widget.enterpriseId,
+        false,
         () => ref.invalidate(agentAccountsProvider),
       );
     } else {
-      _showAgencyDialog(context, null);
+      AgentsDialogs.showAgentDialog(
+        context,
+        ref,
+        null,
+        widget.enterpriseId,
+        _searchQuery,
+        false,
+        () => ref.invalidate(agentAgenciesProvider),
+      );
     }
   }
 
-  void _showAgencyDialog(BuildContext context, Enterprise? agency) {
-    AgentsDialogs.showAgentDialog(
-      context,
-      ref,
-      agency,
-      widget.enterpriseId,
-      _searchQuery,
-      () => ref.invalidate(agentAgenciesProvider),
-    );
-  }
-
-  void _showRechargeDialog(BuildContext context) {
-    AgentsDialogs.showRechargeDialog(
-      context,
-      ref,
-      widget.enterpriseId,
-      _searchQuery,
-      () {
-        ref.invalidate(agentAccountsProvider);
-        ref.invalidate(agentAgenciesProvider);
-      },
-    );
-  }
-
   void _onViewAgent(Agent agent) {
-    NotificationService.showInfo(context, 'Détails de l\'agent SIM ${agent.name}');
+    AgentsDialogs.showAgentAccountDialog(
+      context,
+      ref,
+      agent,
+      widget.enterpriseId,
+      true,
+      () {},
+    );
   }
 
   void _onEditAgent(Agent agent) {
@@ -290,6 +294,7 @@ class _AgentsScreenState extends ConsumerState<AgentsScreen> with SingleTickerPr
       ref,
       agent,
       widget.enterpriseId,
+      false,
       () => ref.invalidate(agentAccountsProvider),
     );
   }
@@ -304,11 +309,23 @@ class _AgentsScreenState extends ConsumerState<AgentsScreen> with SingleTickerPr
   }
 
   void _onViewAgency(Enterprise agency) {
-    NotificationService.showInfo(context, 'Détails de l\'agence ${agency.name}');
+    _showAgencyDialog(context, agency, isReadOnly: true);
   }
 
   void _onEditAgency(Enterprise agency) {
-    _showAgencyDialog(context, agency);
+    _showAgencyDialog(context, agency, isReadOnly: false);
+  }
+
+  void _showAgencyDialog(BuildContext context, Enterprise? agency, {bool isReadOnly = false}) {
+    AgentsDialogs.showAgentDialog(
+      context,
+      ref,
+      agency,
+      widget.enterpriseId,
+      _searchQuery,
+      isReadOnly,
+      () => ref.invalidate(agentAgenciesProvider),
+    );
   }
 
   Future<void> _onDeleteAgency(Enterprise agency) async {
@@ -318,5 +335,18 @@ class _AgentsScreenState extends ConsumerState<AgentsScreen> with SingleTickerPr
       await controller.deleteAgency(agency.id);
       ref.invalidate(agentAgenciesProvider);
     }
+  }
+
+  void _showRechargeDialog(BuildContext context) {
+    AgentsDialogs.showRechargeDialog(
+      context,
+      ref,
+      widget.enterpriseId,
+      _searchQuery,
+      () {
+        ref.invalidate(agentAccountsProvider);
+        ref.invalidate(agentAgenciesProvider);
+      },
+    );
   }
 }

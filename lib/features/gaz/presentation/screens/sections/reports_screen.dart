@@ -249,7 +249,7 @@ class _GazReportsScreenState extends ConsumerState<GazReportsScreen> {
             GazHeader(
               title: 'GAZ',
               subtitle: 'Rapports',
-              additionalActions: [
+              actions: [
                 ElyfIconButton(
                   onPressed: _invalidateProviders,
                   icon: Icons.refresh,

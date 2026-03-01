@@ -2,7 +2,8 @@ import 'dart:convert';
 import 'package:elyf_groupe_app/core/errors/error_handler.dart';
 import 'package:elyf_groupe_app/core/logging/app_logger.dart';
 import 'package:elyf_groupe_app/core/offline/drift_service.dart';
-import '../../../../core/offline/drift/app_database.dart';
+import 'package:elyf_groupe_app/core/offline/drift/app_database.dart';
+import 'package:elyf_groupe_app/core/offline/sync_manager.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/collection.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/repositories/collection_repository.dart';
 
@@ -10,15 +11,17 @@ import 'package:elyf_groupe_app/features/gaz/domain/repositories/collection_repo
 class CollectionOfflineRepository implements CollectionRepository {
   CollectionOfflineRepository({
     required this.driftService,
+    required this.syncManager,
   });
 
   final DriftService driftService;
+  final SyncManager syncManager;
   static const String _collectionName = 'gas_collections';
 
   @override
   Future<void> saveCollection(Collection collection, String enterpriseId) async {
     try {
-      await driftService.records.upsert(
+      await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
         collectionName: _collectionName,
         localId: collection.id,
         enterpriseId: enterpriseId,

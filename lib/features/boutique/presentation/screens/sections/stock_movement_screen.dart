@@ -96,7 +96,7 @@ class _StockMovementScreenState extends ConsumerState<StockMovementScreen> {
             gradientColors: [Colors.blueGrey[700]!, Colors.blueGrey[900]!],
             shadowColor: Colors.blueGrey[700]!,
             showBackButton: true,
-            additionalActions: [
+            actions: [
               IconButton(
                 onPressed: _exportData,
                 icon: const Icon(Icons.download, color: Colors.white),

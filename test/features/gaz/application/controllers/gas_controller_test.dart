@@ -34,16 +34,16 @@ class MockGasRepository extends Mock implements GasRepository {
       );
 
   @override
-  Future<List<GasSale>> getSales({DateTime? from, DateTime? to}) =>
+  Future<List<GasSale>> getSales({DateTime? from, DateTime? to, List<String>? enterpriseIds}) =>
       super.noSuchMethod(
-        Invocation.method(#getSales, [], {#from: from, #to: to}),
+        Invocation.method(#getSales, [], {#from: from, #to: to, #enterpriseIds: enterpriseIds}),
         returnValue: Future.value(<GasSale>[]),
       );
 
   @override
-  Stream<List<GasSale>> watchSales({DateTime? from, DateTime? to}) =>
+  Stream<List<GasSale>> watchSales({DateTime? from, DateTime? to, List<String>? enterpriseIds}) =>
       super.noSuchMethod(
-        Invocation.method(#watchSales, [], {#from: from, #to: to}),
+        Invocation.method(#watchSales, [], {#from: from, #to: to, #enterpriseIds: enterpriseIds}),
         returnValue: const Stream<List<GasSale>>.empty(),
       );
 }
@@ -51,12 +51,12 @@ class MockGasRepository extends Mock implements GasRepository {
 class MockAuditTrailService extends Mock implements AuditTrailService {
   @override
   Future<String> logAction({
-    required String? enterpriseId,
-    required String? userId,
-    required String? module,
-    required String? action,
-    required String? entityId,
-    required String? entityType,
+    required String enterpriseId,
+    required String userId,
+    required String module,
+    required String action,
+    required String entityId,
+    required String entityType,
     Map<String, dynamic>? metadata,
   }) =>
       super.noSuchMethod(

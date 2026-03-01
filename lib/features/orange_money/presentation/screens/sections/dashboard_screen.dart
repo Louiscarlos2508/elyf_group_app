@@ -5,7 +5,7 @@ import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
 import 'package:elyf_groupe_app/features/orange_money/application/providers.dart';
 import 'package:elyf_groupe_app/features/orange_money/application/controllers/orange_money_controller.dart';
-import 'package:elyf_groupe_app/features/orange_money/presentation/widgets/orange_money_header.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -44,15 +44,13 @@ class DashboardScreen extends ConsumerWidget {
     // Agent Cash Balance decreases on CashOut (gives cash)
     final currentCash = startCash + cashInTotal - cashOutTotal;
 
-    return Container(
-      color: theme.colorScheme.surfaceContainerHighest,
-      child: CustomScrollView(
+    return CustomScrollView(
         slivers: [
-          OrangeMoneyHeader(
+          ElyfModuleHeader(
             title: 'Tableau de Bord',
-            subtitle: 'Vue d\'ensemble de votre activité du jour.',
-            asSliver: true,
-            additionalActions: [
+            subtitle: "Vue d'ensemble de votre activité du jour.",
+            module: EnterpriseModule.mobileMoney,
+            actions: [
               if (stats['isNetworkView'] == true)
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -263,8 +261,7 @@ class DashboardScreen extends ConsumerWidget {
           
           const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
-      ),
-    );
+      );
   }
 
   Widget _buildBalanceCard(BuildContext context, String label, int amount, IconData icon, Color color) {
@@ -321,31 +318,39 @@ class DashboardScreen extends ConsumerWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           padding: EdgeInsets.symmetric(
-            vertical: isKeyboardOpen ? 8 : 12, 
+            vertical: isKeyboardOpen ? 8 : 16, 
             horizontal: 16
           ),
           decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(16),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                color,
+                color.withValues(alpha: 0.8),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
                 color: color.withValues(alpha: 0.3),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
+                blurRadius: 12,
+                offset: const Offset(0, 6),
               ),
             ],
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: Colors.white, size: isKeyboardOpen ? 18 : 22),
-              const SizedBox(width: 8),
+              Icon(icon, color: Colors.white, size: isKeyboardOpen ? 18 : 24),
+              const SizedBox(width: 10),
               Text(
-                label,
+                label.toUpperCase(),
                 style: theme.textTheme.titleSmall?.copyWith(
                   color: Colors.white,
                   fontWeight: FontWeight.w900,
-                  fontSize: isKeyboardOpen ? 13 : 15,
+                  fontSize: isKeyboardOpen ? 12 : 14,
+                  letterSpacing: 1.1,
                   fontFamily: 'Outfit',
                 ),
               ),

@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart';
+import 'package:workmanager/workmanager.dart';
 
 import '../errors/error_handler.dart';
 import '../logging/app_logger.dart';
@@ -16,6 +18,7 @@ import 'security/data_sanitizer.dart';
 import 'sync_metrics.dart';
 import 'sync_operation_processor.dart';
 import 'sync_status.dart';
+import 'sync_worker.dart';
 
 /// Configuration for sync behavior.
 class SyncConfig {
@@ -76,6 +79,7 @@ class SyncManager {
   final _syncStatusController = StreamController<SyncProgress>.broadcast();
   Timer? _autoSyncTimer;
   StreamSubscription<ConnectivityStatus>? _connectivitySubscription;
+  StreamSubscription<List<SyncOperation>>? _pendingOperationsSubscription;
   bool _isSyncing = false;
   bool _isInitialized = false;
 
@@ -100,12 +104,28 @@ class SyncManager {
     _rateLimiter.initialize();
     _startAutoSync();
     _startConnectivityListener();
+    _startPendingOperationsListener();
+    _startAuthListener();
     _isInitialized = true;
 
     AppLogger.info(
       'SyncManager initialized with auto-sync every ${config.syncIntervalMinutes} minutes',
       name: 'offline.sync',
     );
+  }
+
+  void _startAuthListener() {
+    FirebaseAuth.instance.authStateChanges().listen((user) {
+      if (_isInitialized) {
+        AppLogger.info('Auth state changed, restarting sync listener', name: 'offline.sync');
+        _startPendingOperationsListener();
+        
+        // Trigger sync if a new user just logged in
+        if (user != null && _connectivityService.isOnline && !_isSyncing) {
+          unawaited(syncPendingOperations());
+        }
+      }
+    });
   }
 
   /// Syncs all pending operations.
@@ -122,35 +142,15 @@ class SyncManager {
     }
 
     // Vérifier si l'utilisateur est toujours authentifié
-    // Utiliser AuthService si disponible, sinon FirebaseAuth directement
-    bool isAuthenticated = true;
-    final authService = _authService;
-    if (authService != null) {
-      isAuthenticated = authService.isAuthenticated;
-    } else {
-      // Fallback: vérifier directement via FirebaseAuth
-      try {
-        isAuthenticated = FirebaseAuth.instance.currentUser != null;
-      } catch (e, stackTrace) {
-        final appException = ErrorHandler.instance.handleError(e, stackTrace);
-        AppLogger.warning(
-          'Error checking authentication status: ${appException.message}. Continuing sync.',
-          name: 'offline.sync',
-          error: e,
-          stackTrace: stackTrace,
-        );
-        // En cas d'erreur, continuer la sync (meilleur que de bloquer)
-      }
-    }
-
-    if (!isAuthenticated) {
+    final userId = getUserId();
+    if (userId == null) {
       AppLogger.info(
-        'User logged out during sync, stopping sync operations',
+        'No user logged in, stopping sync operations',
         name: 'offline.sync',
       );
       return SyncResult(
         success: false,
-        message: 'User logged out',
+        message: 'User not logged in',
         syncedCount: 0,
       );
     }
@@ -181,6 +181,7 @@ class SyncManager {
 
       final allPending = await _driftService.syncOperations.getPending(
         limit: config.batchSize,
+        userId: userId,
       );
 
       // Filter only "ready" operations (fresh ones or those past their backoff)
@@ -241,8 +242,8 @@ class SyncManager {
 
         // Vérifier à nouveau l'authentification avant chaque opération
         bool stillAuthenticated = true;
-        if (authService != null) {
-          stillAuthenticated = authService.isAuthenticated;
+        if (_authService != null) {
+          stillAuthenticated = _authService!.isAuthenticated;
         } else {
           try {
             stillAuthenticated = FirebaseAuth.instance.currentUser != null;
@@ -393,6 +394,7 @@ class SyncManager {
       ..collectionName = collectionName
       ..documentId = localId
       ..enterpriseId = enterpriseId ?? ''
+      ..userId = getUserId()
       ..payload = jsonPayload
       ..retryCount = 0
       ..createdAt = DateTime.now()
@@ -440,6 +442,7 @@ class SyncManager {
       ..collectionName = collectionName
       ..documentId = remoteId.isNotEmpty ? remoteId : localId
       ..enterpriseId = enterpriseId ?? ''
+      ..userId = getUserId()
       ..payload = jsonPayload
       ..retryCount = 0
       ..createdAt = DateTime.now()
@@ -476,6 +479,7 @@ class SyncManager {
       ..collectionName = collectionName
       ..documentId = remoteId.isNotEmpty ? remoteId : localId
       ..enterpriseId = enterpriseId ?? ''
+      ..userId = getUserId()
       ..payload = null
       ..retryCount = 0
       ..createdAt = DateTime.now()
@@ -498,9 +502,43 @@ class SyncManager {
     }
   }
 
+  /// Schedules a one-off background sync task via Workmanager.
+  /// Useful when the app goes to the background to ensure pending items are synced.
+  Future<void> scheduleBackgroundSync() async {
+    if (kIsWeb) return;
+
+    final pendingCount = await getPendingCount();
+    if (pendingCount > 0) {
+      AppLogger.info(
+        'Scheduling one-off background sync for $pendingCount pending operations',
+        name: 'offline.sync',
+      );
+      
+      await Workmanager().registerOneOffTask(
+        "one-off-sync-${DateTime.now().millisecondsSinceEpoch}",
+        syncTaskName,
+        constraints: Constraints(
+          networkType: NetworkType.connected,
+          requiresBatteryNotLow: true,
+        ),
+      );
+    }
+  }
+
   /// Gets the count of pending operations.
   Future<int> getPendingCount() async {
-    return await _driftService.syncOperations.countPending();
+    return await _driftService.syncOperations.countPending(
+      userId: getUserId(),
+    );
+  }
+
+  String? getUserId() {
+    if (_authService != null) return _authService!.currentUser?.id;
+    try {
+      return FirebaseAuth.instance.currentUser?.uid;
+    } catch (e) {
+      return null;
+    }
   }
 
   /// Gets pending operations for a specific collection.
@@ -560,6 +598,25 @@ class SyncManager {
     );
   }
 
+  /// Starts listening to pending operations with a Drift stream.
+  void _startPendingOperationsListener() {
+    _pendingOperationsSubscription?.cancel();
+    final userId = getUserId();
+    _pendingOperationsSubscription = _driftService.syncOperations
+        .watchPending(userId: userId)
+        .listen((operations) {
+      if (operations.isNotEmpty && 
+          !_isSyncing && 
+          _connectivityService.isOnline) {
+        AppLogger.debug(
+          'Reactive trigger: ${operations.length} operations pending, starting sync',
+          name: 'offline.sync',
+        );
+        unawaited(syncPendingOperations());
+      }
+    });
+  }
+
   /// Cleans up old synced operations.
   Future<void> _cleanupOldOperations() async {
     try {
@@ -602,6 +659,8 @@ class SyncManager {
     _autoSyncTimer = null;
     await _connectivitySubscription?.cancel();
     _connectivitySubscription = null;
+    await _pendingOperationsSubscription?.cancel();
+    _pendingOperationsSubscription = null;
     await _syncStatusController.close();
     
     // Log des métriques finales avant de disposer

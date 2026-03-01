@@ -20,7 +20,7 @@ class ApprovisionnementHeader extends StatelessWidget {
       title: 'APPROVISIONNEMENT',
       subtitle: 'Cycles de collecte',
       asSliver: false,
-      additionalActions: [
+      actions: [
         ElyfButton(
           onPressed: onNewTour,
           icon: Icons.add,

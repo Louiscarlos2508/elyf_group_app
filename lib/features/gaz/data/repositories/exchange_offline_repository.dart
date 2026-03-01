@@ -121,7 +121,7 @@ class ExchangeOfflineRepository implements ExchangeRepository {
 
       final map = _toMap(exchange)..['localId'] = localId;
 
-      await driftService.records.upsert(
+      await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
         collectionName: _collectionName,
         localId: localId,
         remoteId: remoteId,

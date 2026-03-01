@@ -70,7 +70,7 @@ class _GazFinanceScreenState extends ConsumerState<GazFinanceScreen>
             title: 'FINANCES',
             subtitle: _getSubtitle(),
             asSliver: true,
-            additionalActions: [
+            actions: [
               if (_tabController.index == 0)
                 IconButton(
                   onPressed: _showNewExpenseDialog,

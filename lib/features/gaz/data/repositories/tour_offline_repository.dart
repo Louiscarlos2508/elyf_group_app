@@ -47,7 +47,7 @@ class TourOfflineRepository extends OfflineRepository<Tour>
   String? getEnterpriseId(Tour entity) => entity.enterpriseId;
 
   @override
-  Future<void> saveToLocal(Tour entity) async {
+  Future<void> saveToLocal(Tour entity, {String? userId}) async {
     // Utiliser la méthode utilitaire pour trouver le localId existant
     final existingLocalId = await findExistingLocalId(entity, moduleType: moduleType);
     final localId = existingLocalId ?? getLocalId(entity);
@@ -55,7 +55,7 @@ class TourOfflineRepository extends OfflineRepository<Tour>
     
     // S'assurer que le JSON contient le localId comme ID principal
     final map = toMap(entity)..['id'] = localId..['localId'] = localId;
-    await driftService.records.upsert(
+    await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
       collectionName: collectionName,
       localId: localId,
       remoteId: remoteId,
@@ -72,13 +72,13 @@ class TourOfflineRepository extends OfflineRepository<Tour>
   }
 
   @override
-  Future<void> deleteFromLocal(Tour entity) async {
+  Future<void> deleteFromLocal(Tour entity, {String? userId}) async {
     // Soft-delete
     final deletedTour = entity.copyWith(
       deletedAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );
-    await saveToLocal(deletedTour);
+    await saveToLocal(deletedTour, userId: syncManager.getUserId() ?? '');
     
     AppLogger.info(
       'Soft-deleted tour: ${entity.id}',

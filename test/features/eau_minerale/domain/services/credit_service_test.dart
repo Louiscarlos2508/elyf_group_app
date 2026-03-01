@@ -6,6 +6,9 @@ import 'package:elyf_groupe_app/features/eau_minerale/domain/repositories/credit
 import 'package:elyf_groupe_app/features/eau_minerale/domain/repositories/sale_repository.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/domain/services/credit_service.dart';
 
+import 'package:elyf_groupe_app/features/eau_minerale/domain/repositories/treasury_repository.dart';
+import 'package:elyf_groupe_app/shared/domain/entities/treasury_operation.dart';
+
 class MockCreditRepository implements CreditRepository {
   String? lastRecordedPaymentSaleId;
   int? lastRecordedPaymentAmount;
@@ -90,7 +93,25 @@ class MockSaleRepository implements SaleRepository {
   Future<String> createSale(Sale sale) async => 'created-id';
 
   @override
+  Future<void> updateSale(Sale sale) async {}
+
+  @override
   Future<void> deleteSale(String saleId) async {}
+}
+
+class MockTreasuryRepository implements TreasuryRepository {
+  @override
+  Future<String> createOperation(TreasuryOperation operation) async => 'op-id';
+  @override
+  Future<List<TreasuryOperation>> fetchOperations({int limit = 50}) async => [];
+  @override
+  Future<TreasuryOperation?> getOperation(String id) async => null;
+  @override
+  Stream<List<TreasuryOperation>> watchOperations({int limit = 50}) => Stream.value([]);
+  @override
+  Future<Map<String, int>> getBalances() async => {};
+  @override
+  Stream<Map<String, int>> watchBalances() => Stream.value({});
 }
 
 void main() {
@@ -98,13 +119,16 @@ void main() {
     late CreditService service;
     late MockCreditRepository mockCreditRepo;
     late MockSaleRepository mockSaleRepo;
+    late MockTreasuryRepository mockTreasuryRepo;
 
     setUp(() {
       mockCreditRepo = MockCreditRepository();
       mockSaleRepo = MockSaleRepository();
+      mockTreasuryRepo = MockTreasuryRepository();
       service = CreditService(
         creditRepository: mockCreditRepo,
         saleRepository: mockSaleRepo,
+        treasuryRepository: mockTreasuryRepo,
       );
     });
 
@@ -113,6 +137,7 @@ void main() {
         mockSaleRepo.saleToReturn = null;
         final payment = CreditPayment(
           id: 'pay-1',
+          enterpriseId: 'test',
           saleId: 'sale-unknown',
           amount: 1000,
           date: DateTime(2026, 1, 15),
@@ -134,7 +159,7 @@ void main() {
           () async {
         mockSaleRepo.saleToReturn = Sale(
           id: 'sale-1',
-          enterpriseId: 'test-enterprise',
+          enterpriseId: 'test',
           productId: 'p1',
           productName: 'Product',
           quantity: 1,
@@ -150,6 +175,7 @@ void main() {
         );
         final payment = CreditPayment(
           id: 'pay-1',
+          enterpriseId: 'test',
           saleId: 'sale-1',
           amount: 4000,
           date: DateTime(2026, 1, 15),
@@ -170,7 +196,7 @@ void main() {
           () async {
         mockSaleRepo.saleToReturn = Sale(
           id: 'sale-1',
-          enterpriseId: 'test-enterprise',
+          enterpriseId: 'test',
           productId: 'p1',
           productName: 'Product',
           quantity: 1,
@@ -186,6 +212,7 @@ void main() {
         );
         final payment = CreditPayment(
           id: 'pay-1',
+          enterpriseId: 'test',
           saleId: 'sale-1',
           amount: 0,
           date: DateTime(2026, 1, 15),
@@ -205,7 +232,7 @@ void main() {
       test('records payment and updates sale amountPaid when valid', () async {
         mockSaleRepo.saleToReturn = Sale(
           id: 'sale-1',
-          enterpriseId: 'test-enterprise',
+          enterpriseId: 'test',
           productId: 'p1',
           productName: 'Product',
           quantity: 1,
@@ -221,6 +248,7 @@ void main() {
         );
         final payment = CreditPayment(
           id: 'pay-1',
+          enterpriseId: 'test',
           saleId: 'sale-1',
           amount: 1500,
           date: DateTime(2026, 1, 15),

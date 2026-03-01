@@ -47,13 +47,13 @@ class GazExpenseOfflineRepository extends OfflineRepository<GazExpense>
   String? getEnterpriseId(GazExpense entity) => entity.enterpriseId;
 
   @override
-  Future<void> saveToLocal(GazExpense entity) async {
+  Future<void> saveToLocal(GazExpense entity, {String? userId}) async {
     // Utiliser la méthode utilitaire pour trouver le localId existant
     final existingLocalId = await findExistingLocalId(entity, moduleType: moduleType);
     final localId = existingLocalId ?? getLocalId(entity);
     final remoteId = getRemoteId(entity);
     final map = toMap(entity)..['localId'] = localId..['id'] = localId;
-    await driftService.records.upsert(
+    await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
       collectionName: collectionName,
       localId: localId,
       remoteId: remoteId,
@@ -65,13 +65,13 @@ class GazExpenseOfflineRepository extends OfflineRepository<GazExpense>
   }
 
   @override
-  Future<void> deleteFromLocal(GazExpense entity) async {
+  Future<void> deleteFromLocal(GazExpense entity, {String? userId}) async {
     // Soft-delete
     final deletedExpense = entity.copyWith(
       deletedAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );
-    await saveToLocal(deletedExpense);
+    await saveToLocal(deletedExpense, userId: syncManager.getUserId() ?? '');
     
     AppLogger.info(
       'Soft-deleted gaz expense: ${entity.id}',

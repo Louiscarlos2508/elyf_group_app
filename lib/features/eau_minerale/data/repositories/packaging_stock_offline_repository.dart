@@ -64,11 +64,11 @@ class PackagingStockOfflineRepository extends OfflineRepository<PackagingStock>
   String? getEnterpriseId(PackagingStock entity) => enterpriseId;
 
   @override
-  Future<void> saveToLocal(PackagingStock entity) async {
+  Future<void> saveToLocal(PackagingStock entity, {String? userId}) async {
     final localId = getLocalId(entity);
     final remoteId = getRemoteId(entity);
     final map = toMap(entity)..['localId'] = localId;
-    await driftService.records.upsert(
+    await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
       collectionName: collectionName,
       localId: localId,
       remoteId: remoteId,
@@ -80,13 +80,13 @@ class PackagingStockOfflineRepository extends OfflineRepository<PackagingStock>
   }
 
   @override
-  Future<void> deleteFromLocal(PackagingStock entity) async {
+  Future<void> deleteFromLocal(PackagingStock entity, {String? userId}) async {
     // Soft-delete
     final deletedPackaging = entity.copyWith(
       deletedAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );
-    await saveToLocal(deletedPackaging);
+    await saveToLocal(deletedPackaging, userId: syncManager.getUserId() ?? '');
     
     AppLogger.info(
       'Soft-deleted packaging stock: ${entity.id}',
@@ -376,7 +376,7 @@ class PackagingStockOfflineRepository extends OfflineRepository<PackagingStock>
       
       final map = movementWithAudit.toMap()..['localId'] = localId;
 
-      await driftService.records.upsert(
+      await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
         collectionName: movementsCollection,
         localId: localId,
         remoteId: remoteId,

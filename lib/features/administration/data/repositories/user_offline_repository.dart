@@ -80,7 +80,7 @@ class UserOfflineRepository extends OfflineRepository<User>
   // ✅ Assignment to enterprises is done via EnterpriseModuleUser
 
   @override
-  Future<void> saveToLocal(User entity) async {
+  Future<void> saveToLocal(User entity, {String? userId}) async {
     try {
       // Utiliser findExistingLocalId pour éviter les duplications
       final existingLocalId = await findExistingLocalId(
@@ -96,7 +96,7 @@ class UserOfflineRepository extends OfflineRepository<User>
         name: 'offline.repository.user',
       );
       
-      await driftService.records.upsert(
+      await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
         collectionName: collectionName,
         localId: localId,
         remoteId: remoteId,
@@ -126,7 +126,7 @@ class UserOfflineRepository extends OfflineRepository<User>
   }
 
   @override
-  Future<void> deleteFromLocal(User entity) async {
+  Future<void> deleteFromLocal(User entity, {String? userId}) async {
     final localId = getLocalId(entity);
     await driftService.records.deleteByLocalId(
       collectionName: collectionName,

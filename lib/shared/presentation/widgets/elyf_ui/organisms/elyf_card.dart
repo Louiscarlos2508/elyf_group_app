@@ -44,14 +44,14 @@ class ElyfCard extends StatelessWidget {
                 (isGlass
                     ? (isDark
                         ? Colors.white.withValues(alpha: 0.08)
-                        : Colors.white.withValues(alpha: 0.85))
+                        : Colors.white.withValues(alpha: 0.3)) // Reduced from 0.85 for real glass look
                     : theme.cardTheme.color ?? theme.colorScheme.surface),
         border: Border.all(
           color: borderColor ??
               (isGlass
                   ? (isDark
                       ? Colors.white.withValues(alpha: 0.12)
-                      : Colors.white.withValues(alpha: 0.5))
+                      : Colors.white.withValues(alpha: 0.2)) // Reduced from 0.5
                   : theme.colorScheme.outline.withValues(alpha: 0.25)),
           width: 1,
         ),

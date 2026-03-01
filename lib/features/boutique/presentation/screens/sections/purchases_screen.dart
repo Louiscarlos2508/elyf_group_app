@@ -33,7 +33,7 @@ class PurchasesScreen extends ConsumerWidget {
                   const Color(0xFF134E4A), // Teal 900
                 ],
                 shadowColor: const Color(0xFF0F766E),
-                additionalActions: [
+                actions: [
                   IconButton(
                     icon: const Icon(Icons.refresh, color: Colors.white),
                     onPressed: () => ref.invalidate(purchasesProvider),

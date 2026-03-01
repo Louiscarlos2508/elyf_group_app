@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
+import '../../../../core/logging/app_logger.dart';
 
 import '../../../../core/auth/providers.dart';
 import '../../application/onboarding_service.dart';
@@ -99,7 +100,17 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   Future<void> _navigateToNextScreen() async {
     try {
       // Le bootstrap est déjà fait dans main.dart, donc l'auth est déjà prête
-      final user = await ref.read(currentUserProvider.future);
+      // Mais on ajoute un timeout de sécurité au cas où l'initialisation traîne
+      final user = await ref.read(currentUserProvider.future).timeout(
+        const Duration(seconds: 5),
+        onTimeout: () {
+          AppLogger.warning(
+            'SplashScreen: Timeout waiting for currentUserProvider',
+            name: 'splash',
+          );
+          return null; // Fallback to guest/login
+        },
+      );
       
       if (!mounted) return;
       

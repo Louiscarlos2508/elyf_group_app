@@ -4,49 +4,31 @@ import 'package:mockito/annotations.dart';
 
 import 'package:elyf_groupe_app/features/immobilier/application/controllers/expense_controller.dart';
 import 'package:elyf_groupe_app/features/immobilier/domain/repositories/expense_repository.dart';
+import 'package:elyf_groupe_app/features/immobilier/application/controllers/immobilier_treasury_controller.dart';
+import 'package:elyf_groupe_app/features/audit_trail/domain/services/audit_trail_service.dart';
 import 'package:elyf_groupe_app/features/immobilier/domain/entities/expense.dart';
 
 import 'expense_controller_test.mocks.dart';
 
 import 'package:elyf_groupe_app/features/audit_trail/domain/services/audit_trail_service.dart';
 
-class MockAuditTrailService extends Mock implements AuditTrailService {
-  @override
-  Future<String> logAction({
-    required String? enterpriseId,
-    required String? userId,
-    required String? module,
-    required String? action,
-    required String? entityId,
-    required String? entityType,
-    Map<String, dynamic>? metadata,
-  }) =>
-      super.noSuchMethod(
-        Invocation.method(#logAction, [], {
-          #enterpriseId: enterpriseId,
-          #userId: userId,
-          #module: module,
-          #action: action,
-          #entityId: entityId,
-          #entityType: entityType,
-          #metadata: metadata,
-        }),
-        returnValue: Future.value('test-log-id'),
-      );
-}
 
-@GenerateMocks([PropertyExpenseRepository])
+
+@GenerateMocks([PropertyExpenseRepository, ImmobilierTreasuryController, AuditTrailService])
 void main() {
   late PropertyExpenseController controller;
   late MockPropertyExpenseRepository mockRepository;
   late MockAuditTrailService mockAuditService;
+  late MockImmobilierTreasuryController mockTreasuryController;
 
   setUp(() {
     mockRepository = MockPropertyExpenseRepository();
     mockAuditService = MockAuditTrailService();
+    mockTreasuryController = MockImmobilierTreasuryController();
     controller = PropertyExpenseController(
       mockRepository,
       mockAuditService,
+      mockTreasuryController,
       'test-enterprise',
       'test-user',
     );

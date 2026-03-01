@@ -36,7 +36,7 @@ class TourCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(24),
         side: BorderSide(
           color: theme.colorScheme.outline.withValues(alpha: 0.1),
         ),

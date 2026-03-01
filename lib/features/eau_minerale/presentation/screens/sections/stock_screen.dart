@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
@@ -197,130 +198,83 @@ class _StockContentWithFiltersState
         return CustomScrollView(
           slivers: [
             // Premium Header for Stock
-            SliverToBoxAdapter(
-              child: Container(
-                margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      theme.colorScheme.primary,
-                      const Color(0xFFF59E0B), // Orange/Amber for Inventory context
-                      const Color(0xFFD97706),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: theme.colorScheme.primary.withValues(alpha: 0.2),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
+            ElyfModuleHeader(
+              title: "Inventaire & Mouvements",
+              subtitle: "Traçabilité complète de vos stocks : bobines, emballages et produits finis.",
+              module: EnterpriseModule.eau,
+              actions: [
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_horiz, color: Colors.white),
+                  onSelected: (value) {
+                    switch (value) {
+                      case 'report':
+                        _showStockReport(context);
+                        break;
+                      case 'integrity':
+                        showDialog(
+                          context: context,
+                          builder: (context) =>
+                              const StockIntegrityCheckDialog(),
+                        );
+                        break;
+                      case 'reconcile':
+                        _reconcilePack(context);
+                        break;
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'report',
+                      child: Row(
+                        children: [
+                          Icon(Icons.analytics_outlined, size: 20),
+                          SizedBox(width: 12),
+                          Text('Générer Rapport'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'integrity',
+                      child: Row(
+                        children: [
+                          Icon(Icons.security_outlined, size: 20),
+                          SizedBox(width: 12),
+                          Text('Vérifier Intégrité'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'reconcile',
+                      child: Row(
+                        children: [
+                          Icon(Icons.sync_outlined, size: 20),
+                          SizedBox(width: 12),
+                          Text('Réconcilier Pack'),
+                        ],
+                      ),
                     ),
                   ],
                 ),
-                child: Column(
+              ],
+              bottom: Padding(
+                padding: const EdgeInsets.only(top: 24),
+                child: Row(
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                "GESTION DES STOCKS",
-                                style: theme.textTheme.labelLarge?.copyWith(
-                                  color: Colors.white.withValues(alpha: 0.9),
-                                  fontWeight: FontWeight.w500,
-                                  letterSpacing: 1.2,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                "Inventaire & Mouvements",
-                                style: theme.textTheme.headlineMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ],
+                    Expanded(
+                      child: FilledButton.icon(
+                        onPressed: widget.onStockAdjustment,
+                        style: FilledButton.styleFrom(
+                          backgroundColor:
+                              Colors.white.withValues(alpha: 0.2),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        PopupMenuButton<String>(
-                          icon: const Icon(Icons.more_horiz, color: Colors.white),
-                          onSelected: (value) {
-                            switch (value) {
-                              case 'report':
-                                _showStockReport(context);
-                                break;
-                              case 'integrity':
-                                showDialog(
-                                  context: context,
-                                  builder: (context) =>
-                                      const StockIntegrityCheckDialog(),
-                                );
-                                break;
-                              case 'reconcile':
-                                _reconcilePack(context);
-                                break;
-                            }
-                          },
-                          itemBuilder: (context) => [
-                            const PopupMenuItem(
-                              value: 'report',
-                              child: Row(
-                                children: [
-                                  Icon(Icons.analytics_outlined, size: 20),
-                                  SizedBox(width: 12),
-                                  Text('Générer Rapport'),
-                                ],
-                              ),
-                            ),
-                            const PopupMenuItem(
-                              value: 'integrity',
-                              child: Row(
-                                children: [
-                                  Icon(Icons.security_outlined, size: 20),
-                                  SizedBox(width: 12),
-                                  Text('Vérifier Intégrité'),
-                                ],
-                              ),
-                            ),
-                            const PopupMenuItem(
-                              value: 'reconcile',
-                              child: Row(
-                                children: [
-                                  Icon(Icons.sync_outlined, size: 20),
-                                  SizedBox(width: 12),
-                                  Text('Réconcilier Pack'),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: FilledButton.icon(
-                            onPressed: widget.onStockAdjustment,
-                            style: FilledButton.styleFrom(
-                              backgroundColor:
-                                  Colors.white.withValues(alpha: 0.2),
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            icon: const Icon(Icons.tune_outlined, size: 20),
-                            label: const Text('Ajustement'),
-                          ),
-                        ),
-                      ],
+                        icon: const Icon(Icons.tune_outlined, size: 20),
+                        label: const Text('Ajustement'),
+                      ),
                     ),
                   ],
                 ),

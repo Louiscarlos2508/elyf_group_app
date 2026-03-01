@@ -67,12 +67,12 @@ class BobineStockQuantityOfflineRepository
   String? getEnterpriseId(BobineStock entity) => enterpriseId;
 
   @override
-  Future<void> saveToLocal(BobineStock entity) async {
+  Future<void> saveToLocal(BobineStock entity, {String? userId}) async {
     final localId = getLocalId(entity);
     final remoteId = getRemoteId(entity);
     final map = toMap(entity)..['localId'] = localId;
     final now = DateTime.now();
-    await driftService.records.upsert(
+    await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
       collectionName: collectionName,
       localId: localId,
       remoteId: remoteId,
@@ -84,13 +84,13 @@ class BobineStockQuantityOfflineRepository
   }
 
   @override
-  Future<void> deleteFromLocal(BobineStock entity) async {
+  Future<void> deleteFromLocal(BobineStock entity, {String? userId}) async {
     // Soft-delete
     final deletedBobine = entity.copyWith(
       deletedAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );
-    await saveToLocal(deletedBobine);
+    await saveToLocal(deletedBobine, userId: syncManager.getUserId() ?? '');
     
     AppLogger.info(
       'Soft-deleted bobine stock: ${entity.id}',
@@ -311,7 +311,7 @@ class BobineStockQuantityOfflineRepository
       
       final map = movementWithAudit.toMap()..['localId'] = localId;
 
-      await driftService.records.upsert(
+      await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
         collectionName: movementsCollectionName,
         localId: localId,
         remoteId: remoteId,

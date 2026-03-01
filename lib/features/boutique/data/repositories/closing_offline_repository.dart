@@ -60,10 +60,10 @@ class ClosingOfflineRepository extends OfflineRepository<Closing>
   String? getEnterpriseId(Closing entity) => enterpriseId;
 
   @override
-  Future<void> saveToLocal(Closing entity) async {
+  Future<void> saveToLocal(Closing entity, {String? userId}) async {
     final localId = getLocalId(entity);
     final map = toMap(entity)..['localId'] = localId;
-    await driftService.records.upsert(
+    await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
       collectionName: collectionName,
       localId: localId,
       remoteId: getRemoteId(entity),
@@ -75,7 +75,7 @@ class ClosingOfflineRepository extends OfflineRepository<Closing>
   }
 
   @override
-  Future<void> deleteFromLocal(Closing entity) async {
+  Future<void> deleteFromLocal(Closing entity, {String? userId}) async {
     final remoteId = getRemoteId(entity);
     final localId = getLocalId(entity);
 
@@ -250,7 +250,7 @@ class ClosingOfflineRepository extends OfflineRepository<Closing>
         AuditRecord(
           id: '',
           enterpriseId: enterpriseId,
-          userId: userId,
+          userId: syncManager.getUserId() ?? '',
           module: 'boutique',
           action: action,
           entityId: entityId,

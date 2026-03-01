@@ -34,10 +34,10 @@ class ImmobilierSettingsOfflineRepository extends OfflineRepository<ImmobilierSe
   String? getEnterpriseId(ImmobilierSettings entity) => entity.enterpriseId;
 
   @override
-  Future<void> saveToLocal(ImmobilierSettings entity) async {
+  Future<void> saveToLocal(ImmobilierSettings entity, {String? userId}) async {
     final localId = getLocalId(entity);
     final map = toMap(entity)..['localId'] = localId;
-    await driftService.records.upsert(
+    await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
       collectionName: collectionName,
       localId: localId,
       remoteId: localId,
@@ -49,7 +49,7 @@ class ImmobilierSettingsOfflineRepository extends OfflineRepository<ImmobilierSe
   }
 
   @override
-  Future<void> deleteFromLocal(ImmobilierSettings entity) async {
+  Future<void> deleteFromLocal(ImmobilierSettings entity, {String? userId}) async {
     await saveToLocal(entity.copyWith(deletedAt: DateTime.now(), updatedAt: DateTime.now()));
   }
 

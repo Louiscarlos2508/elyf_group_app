@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/gaz_session.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder_stock.dart';
-import 'package:elyf_groupe_app/features/gaz/domain/services/gaz_calculation_service.dart';
+import 'package:elyf_groupe_app/features/gaz/domain/services/gaz_session_calculation_service.dart';
 import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
 
 void main() {
@@ -13,7 +13,6 @@ void main() {
       buyPrice: 5000,
       sellPrice: 6000,
       depositPrice: 2000,
-      stock: 0,
       enterpriseId: 'ent1',
       moduleId: 'gaz',
     );
@@ -44,7 +43,7 @@ void main() {
       final date = DateTime.now();
       
       // Calculate
-      final metrics = GazCalculationService.calculateDailyReconciliation(
+      final metrics = GazSessionCalculationService.calculateDailyReconciliation(
         date: date,
         allSales: [],
         allExpenses: [],
@@ -60,9 +59,14 @@ void main() {
     test('GazSession.fromMetrics should calculate discrepancies for both types', () {
       final metrics = ReconciliationMetrics(
         date: DateTime.now(),
-        totalSales: 10000,
+        initialCash: 0,
+        initialMobileMoney: 0,
+        totalCashSales: 10000,
+        totalMobileMoneySales: 0,
         totalExpenses: 0,
         theoreticalCash: 10000,
+        theoreticalMobileMoney: 0,
+        totalSales: 10000,
         salesByPaymentMethod: {PaymentMethod.cash: 10000},
         salesByCylinderWeight: {12: 5},
         theoreticalStock: {12: 10},

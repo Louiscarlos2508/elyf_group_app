@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
@@ -42,10 +43,11 @@ class DashboardScreen extends ConsumerWidget {
       body: CustomScrollView(
         slivers: [
           // Header
-          ImmobilierHeader(
-            title: 'TABLEAU DE BORD',
-            subtitle: "Vue d'ensemble",
-            additionalActions: [
+          ElyfModuleHeader(
+            title: 'Tableau de Bord',
+            subtitle: "Vue d'ensemble de votre parc immobilier, paiements et maintenance.",
+            module: EnterpriseModule.immobilier,
+            actions: [
               Semantics(
                 label: 'Actualiser le tableau de bord',
                 hint: 'Recharge toutes les données affichées',

@@ -27,6 +27,7 @@ class SyncOperationDao {
     final documentId = operation.documentId.value;
     final enterpriseId = operation.enterpriseId.value;
     final status = operation.status.value;
+    final userId = operation.userId.value;
 
     final existing = await findExisting(
       operationType: operationType,
@@ -34,6 +35,7 @@ class SyncOperationDao {
       documentId: documentId,
       enterpriseId: enterpriseId,
       status: status,
+      userId: userId,
     );
 
     if (existing != null) {
@@ -104,6 +106,7 @@ class SyncOperationDao {
     required String documentId,
     required String enterpriseId,
     required String status,
+    String? userId,
   }) async {
     return await (_db.select(_db.syncOperations)
           ..where(
@@ -112,7 +115,8 @@ class SyncOperationDao {
                 t.collectionName.equals(collectionName) &
                 t.documentId.equals(documentId) &
                 t.enterpriseId.equals(enterpriseId) &
-                t.status.equals(status),
+                t.status.equals(status) &
+                (userId != null ? t.userId.equals(userId) : t.userId.isNull()),
           ))
         .getSingleOrNull();
   }
@@ -129,6 +133,7 @@ class SyncOperationDao {
     int? limit,
     String? collectionName,
     String? enterpriseId,
+    String? userId,
   }) async {
     var query = _db.select(_db.syncOperations)
       ..where((t) {
@@ -138,6 +143,11 @@ class SyncOperationDao {
         }
         if (enterpriseId != null) {
           condition = condition & t.enterpriseId.equals(enterpriseId);
+        }
+        if (userId != null) {
+          // Si un userId est spécifié, on ne prend que ses opérations
+          // Les opérations sans userId (legacy) sont traitées séparément ou ignorées selon le besoin
+          condition = condition & t.userId.equals(userId);
         }
         return condition;
       })
@@ -152,6 +162,24 @@ class SyncOperationDao {
     }
 
     return await query.get();
+  }
+
+  /// Watches pending operations for real-time sync triggers.
+  Stream<List<entities.SyncOperation>> watchPending({String? userId}) {
+    return (_db.select(_db.syncOperations)
+          ..where((t) {
+            var condition = t.status.equals('pending');
+            if (userId != null) {
+              condition = condition & t.userId.equals(userId);
+            }
+            return condition;
+          })
+          ..orderBy([
+            (t) => OrderingTerm.asc(t.priority),
+            (t) => OrderingTerm.asc(t.createdAt),
+          ]))
+        .watch()
+        .map((rows) => rows.map(toEntity).toList());
   }
 
   /// Gets pending operations for a specific collection.
@@ -171,11 +199,13 @@ class SyncOperationDao {
   Future<int> countPending({
     String? collectionName,
     String? enterpriseId,
+    String? userId,
   }) async {
     // Use getPending and count in memory as a workaround for selectOnly where clause issues
     final pending = await getPending(
       collectionName: collectionName,
       enterpriseId: enterpriseId,
+      userId: userId,
     );
     return pending.length;
   }
@@ -420,6 +450,7 @@ class SyncOperationDao {
     operation.collectionName = data.collectionName;
     operation.documentId = data.documentId;
     operation.enterpriseId = data.enterpriseId;
+    operation.userId = data.userId;
     operation.payload = data.payload;
     operation.retryCount = data.retryCount;
     operation.lastError = data.lastError;
@@ -442,6 +473,7 @@ class SyncOperationDao {
       collectionName: operation.collectionName,
       documentId: operation.documentId,
       enterpriseId: operation.enterpriseId,
+      userId: Value(operation.userId),
       payload: Value(operation.payload),
       retryCount: Value(operation.retryCount),
       lastError: Value(operation.lastError),

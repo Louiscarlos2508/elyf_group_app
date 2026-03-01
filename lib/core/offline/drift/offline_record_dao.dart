@@ -14,6 +14,7 @@ class OfflineRecordDao {
     required String enterpriseId,
     required String moduleType,
     required String dataJson,
+    String? userId,
     String? remoteId,
     DateTime? localUpdatedAt,
   }) async {
@@ -27,6 +28,7 @@ class OfflineRecordDao {
             enterpriseId: enterpriseId,
             moduleType: Value(moduleType),
             dataJson: dataJson,
+            userId: Value(userId),
             localUpdatedAt: localUpdatedAt ?? now,
             remoteId: Value(remoteId),
           ),

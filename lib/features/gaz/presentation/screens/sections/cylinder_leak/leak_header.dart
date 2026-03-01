@@ -20,7 +20,7 @@ class LeakHeader extends StatelessWidget {
       title: 'FUITES',
       subtitle: 'Gestion des Fuites',
       asSliver: false,
-      additionalActions: [
+      actions: [
         ElyfButton(
           onPressed: onReportLeak,
           icon: Icons.add,

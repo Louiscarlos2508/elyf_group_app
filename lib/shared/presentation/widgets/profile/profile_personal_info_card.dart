@@ -48,7 +48,7 @@ class ProfilePersonalInfoCard extends StatelessWidget {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.blue.withValues(alpha: 0.3),
@@ -133,7 +133,7 @@ class ProfilePersonalInfoCard extends StatelessWidget {
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 side: BorderSide(color: theme.colorScheme.outline.withValues(alpha: 0.3)),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
               ),
               child: const Text('Modifier mes informations'),
             ),

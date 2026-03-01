@@ -46,11 +46,11 @@ class ProductOfflineRepository extends OfflineRepository<Product>
   String? getEnterpriseId(Product entity) => enterpriseId;
 
   @override
-  Future<void> saveToLocal(Product entity) async {
+  Future<void> saveToLocal(Product entity, {String? userId}) async {
     final map = toMap(entity);
     final localId = getLocalId(entity);
     map['localId'] = localId;
-    await driftService.records.upsert(
+    await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
       collectionName: collectionName,
       localId: localId,
       remoteId: getRemoteId(entity),
@@ -62,13 +62,13 @@ class ProductOfflineRepository extends OfflineRepository<Product>
   }
 
   @override
-  Future<void> deleteFromLocal(Product entity) async {
+  Future<void> deleteFromLocal(Product entity, {String? userId}) async {
     // Soft-delete
     final deletedProduct = entity.copyWith(
       deletedAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );
-    await saveToLocal(deletedProduct);
+    await saveToLocal(deletedProduct, userId: syncManager.getUserId() ?? '');
     
     AppLogger.info(
       'Soft-deleted product: ${entity.id}',

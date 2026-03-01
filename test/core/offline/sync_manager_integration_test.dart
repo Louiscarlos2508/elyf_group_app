@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:drift/native.dart';
 
 import 'package:elyf_groupe_app/core/offline/connectivity_service.dart';
 import 'package:elyf_groupe_app/core/offline/drift_service.dart';
@@ -6,15 +7,17 @@ import 'package:elyf_groupe_app/core/offline/handlers/firebase_sync_handler.dart
 import 'package:elyf_groupe_app/core/offline/sync_manager.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('SyncManager Integration Tests', () {
     late DriftService driftService;
     late ConnectivityService connectivityService;
     late SyncManager syncManager;
 
     setUp(() async {
-      // Initialize DriftService
+      // Initialize DriftService with memory database for tests
       driftService = DriftService.instance;
-      await driftService.initialize();
+      await driftService.initialize(connection: NativeDatabase.memory());
 
       // Mock connectivity service (always online for tests)
       connectivityService = MockConnectivityService(isOnline: true);

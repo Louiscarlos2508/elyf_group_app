@@ -94,7 +94,7 @@ class _DashboardContent extends ConsumerWidget {
         GazHeader(
           title: 'GAZ',
           subtitle: "Tableau de Bord",
-          additionalActions: [
+          actions: [
             ElyfIconButton(
               icon: Icons.refresh,
               onPressed: () {

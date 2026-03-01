@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
@@ -102,87 +103,40 @@ class _SalesContent extends ConsumerWidget {
         return CustomScrollView(
           slivers: [
             // Premium Header for Sales
-            SliverToBoxAdapter(
-              child: Container(
-                margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      theme.colorScheme.primary,
-                      const Color(0xFF2563EB), // Premium Blue
-                      const Color(0xFF1E40AF),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: theme.colorScheme.primary.withValues(alpha: 0.2),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
+            ElyfModuleHeader(
+              title: "Commandes & Revenus",
+              subtitle: "Gérez vos ventes d'eau, suivez vos livraisons et validez vos paiements.",
+              module: EnterpriseModule.eau,
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.refresh, color: Colors.white),
+                  onPressed: () => ref.invalidate(salesStateProvider),
+                  tooltip: 'Actualiser',
                 ),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                "GESTION DES VENTES",
-                                style: theme.textTheme.labelLarge?.copyWith(
-                                  color: Colors.white.withValues(alpha: 0.9),
-                                  fontWeight: FontWeight.w500,
-                                  letterSpacing: 1.2,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                "Commandes & Revenus",
-                                style: theme.textTheme.headlineMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.refresh, color: Colors.white),
-                          onPressed: () => ref.invalidate(salesStateProvider),
-                          tooltip: 'Actualiser',
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    EauMineralePermissionGuard(
-                      permission: EauMineralePermissions.createSale,
-                      child: FilledButton.icon(
-                        onPressed: onNewSale,
-                        style: FilledButton.styleFrom(
-                          backgroundColor: Colors.white.withValues(alpha: 0.2),
-                          foregroundColor: Colors.white,
-                          minimumSize: const Size(double.infinity, 54),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                        icon: const Icon(Icons.add_shopping_cart, size: 22),
-                        label: const Text(
-                          'Nouvelle Vente',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+              ],
+              bottom: Padding(
+                padding: const EdgeInsets.only(top: 24),
+                child: EauMineralePermissionGuard(
+                  permission: EauMineralePermissions.createSale,
+                  child: FilledButton.icon(
+                    onPressed: onNewSale,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Colors.white.withValues(alpha: 0.2),
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size(double.infinity, 54),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
                       ),
                     ),
-                  ],
+                    icon: const Icon(Icons.add_shopping_cart, size: 22),
+                    label: const Text(
+                      'Nouvelle Vente',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ),

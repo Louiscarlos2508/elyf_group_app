@@ -98,7 +98,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                   ImmobilierHeader(
                     title: 'DÉPENSES',
                     subtitle: 'Gestion des charges',
-                    additionalActions: [
+                    actions: [
                       Semantics(
                         label: 'Actualiser',
                         button: true,

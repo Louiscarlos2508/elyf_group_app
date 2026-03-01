@@ -35,6 +35,7 @@ class AgentsController {
   Future<List<Enterprise>> fetchAgencies({
     String? parentEnterpriseId,
     String? searchQuery,
+    bool excludeAssigned = false,
   }) async {
     final List<String> targetIds;
 
@@ -61,6 +62,14 @@ class AgentsController {
       agencies = agencies.where((a) {
         return a.name.toLowerCase().contains(query);
       }).toList();
+    }
+
+    if (excludeAssigned) {
+      final allAgents = await _agentRepository.fetchAgents(
+        enterpriseId: _activeEnterpriseId,
+      );
+      final assignedAgencyIds = allAgents.map((a) => a.enterpriseId).toSet();
+      agencies = agencies.where((a) => !assignedAgencyIds.contains(a.id)).toList();
     }
 
     return agencies;
@@ -183,21 +192,24 @@ class AgentsController {
     final allAgents = await fetchAgents(enterpriseId: enterpriseId);
     
     // Low liquidity can be on both Agency (aggregated/cash) and Agent (SIM)
-    int lowLiquidityAlerts = 0;
+    int lowLiquidityAgencies = 0;
+    int lowLiquidityAgents = 0;
     
     for (final a in allAgencies) {
       final threshold = a.metadata['criticalThreshold'] as int? ?? 50000;
-      if ((a.floatBalance ?? 0) <= threshold) lowLiquidityAlerts++;
+      if ((a.floatBalance ?? 0) <= threshold) lowLiquidityAgencies++;
     }
 
     for (final a in allAgents) {
-      if (a.isLowLiquidity(50000)) lowLiquidityAlerts++;
+      if (a.isLowLiquidity(50000)) lowLiquidityAgents++;
     }
 
     return {
       'rechargesToday': rechargesToday,
       'withdrawalsToday': withdrawalsToday,
-      'lowLiquidityAlerts': lowLiquidityAlerts,
+      'lowLiquidityAlerts': lowLiquidityAgencies + lowLiquidityAgents,
+      'lowLiquidityAgencies': lowLiquidityAgencies,
+      'lowLiquidityAgents': lowLiquidityAgents,
       'agentCount': allAgents.length,
       'agencyCount': allAgencies.length,
     };
