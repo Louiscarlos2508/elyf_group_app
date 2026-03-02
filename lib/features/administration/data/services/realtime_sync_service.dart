@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:cloud_firestore/cloud_firestore.dart'
-    show FirebaseFirestore, QuerySnapshot, DocumentSnapshot, DocumentChangeType, Timestamp, FirebaseException, FieldPath, GetOptions, Source;
+    show FirebaseFirestore, QuerySnapshot, DocumentSnapshot, DocumentChangeType, Timestamp, FirebaseException, GetOptions, Source;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:rxdart/rxdart.dart';
 
@@ -80,6 +80,8 @@ class RealtimeSyncService {
     _rolesSubscription?.cancel();
     _enterpriseModuleUsersSubscription?.cancel();
     _specificUserSubscription?.cancel();
+    _pointsOfSaleGroupSubscription?.cancel();
+    _agencesGroupSubscription?.cancel();
     for (final sub in _pointOfSaleSubscriptions.values) {
       sub.cancel();
     }
@@ -296,10 +298,8 @@ class RealtimeSyncService {
             },
             onError: (error, stackTrace) {
               if (error is FirebaseException && error.code == 'permission-denied') {
-                developer.log('Permission denied for reading ALL users. Falling back to specific user query.', name: 'admin.realtime.sync');
-                if (_currentUserId != null) {
-                  _listenToSpecificUser(_currentUserId!);
-                }
+                developer.log('Permission denied for reading ALL users. Falling back to assigned users query.', name: 'admin.realtime.sync');
+                _listenToAssignedUsers();
               } else {
                 final appException = ErrorHandler.instance.handleError(error, stackTrace);
                 AppLogger.error(
@@ -712,6 +712,80 @@ class RealtimeSyncService {
     });
   }
 
+  /// Listen to users assigned to the same enterprises as the current user
+  Future<void> _listenToAssignedUsers() async {
+    if (_currentUserId == null) return;
+    
+    // Always listen to current user profile
+    _listenToSpecificUser(_currentUserId!);
+
+    try {
+      // 1. Get enterprise IDs from local user record
+      final userRecord = await driftService.records.findByRemoteId(
+        collectionName: _usersCollection,
+        remoteId: _currentUserId!,
+        enterpriseId: 'global',
+        moduleType: 'administration',
+      );
+
+      final Set<String> targetEnterpriseIds = {};
+      if (userRecord != null) {
+        try {
+          final userData = jsonDecode(userRecord.dataJson);
+          final ids = (userData['enterpriseIds'] as List?)?.map((e) => e.toString()).toList();
+          if (ids != null) {
+            targetEnterpriseIds.addAll(ids);
+          }
+        } catch (_) {}
+      }
+
+      if (targetEnterpriseIds.isEmpty) return;
+
+      // 2. Setup filtered listeners for users in these enterprises
+      final List<Stream<QuerySnapshot>> streams = [];
+      final idsList = targetEnterpriseIds.toList();
+      
+      // Chunk by 10 for 'array-contains-any'
+      for (var i = 0; i < idsList.length; i += 10) {
+        final chunk = idsList.sublist(i, i + 10 > idsList.length ? idsList.length : i + 10);
+        streams.add(firestore
+            .collection(_usersCollection)
+            .where('enterpriseIds', arrayContainsAny: chunk)
+            .snapshots());
+      }
+
+      _usersSubscription?.cancel();
+      _usersSubscription = Rx.merge(streams).listen((snapshot) async {
+        for (final docChange in snapshot.docChanges) {
+          try {
+            final data = docChange.doc.data();
+            if (data == null) continue;
+            final userData = Map<String, dynamic>.from(data as Map);
+            if (!userData.containsKey('id')) userData['id'] = docChange.doc.id;
+            final user = User.fromMap(userData);
+
+            switch (docChange.type) {
+              case DocumentChangeType.added:
+              case DocumentChangeType.modified:
+                await _saveUserToLocal(user);
+                break;
+              case DocumentChangeType.removed:
+                await _deleteUserFromLocal(user.id);
+                break;
+            }
+            _pulseSync();
+          } catch (e) {
+            AppLogger.warning('Error processing user change in assigned users sync: $e', name: 'admin.realtime.sync');
+          }
+        }
+      }, onError: (error, _) {
+        AppLogger.warning('Assigned users listen failed: $error', name: 'admin.realtime.sync');
+      });
+    } catch (e) {
+      AppLogger.warning('Error setting up assigned users listener: $e', name: 'admin.realtime.sync');
+    }
+  }
+
   Future<void> _listenToAssignedEnterprises() async {
     if (_currentUserId == null) return;
     _enterprisesSubscription?.cancel();
@@ -731,10 +805,28 @@ class RealtimeSyncService {
          }
       }
       
+      // AJOUT : Inclure les entreprises rattachées directement au profil utilisateur
+      final localUser = await driftService.records.findByRemoteId(
+        collectionName: _usersCollection,
+        remoteId: _currentUserId ?? '',
+        enterpriseId: 'global',
+        moduleType: 'administration',
+      );
+      
+      if (localUser != null) {
+        final userData = jsonDecode(localUser.dataJson) as Map<String, dynamic>;
+        final List<dynamic>? directIds = userData['enterpriseIds'] as List<dynamic>?;
+        if (directIds != null) {
+          for (final id in directIds) {
+            enterpriseIds.add(id.toString());
+          }
+        }
+      }
+      
       if (enterpriseIds.isEmpty) return;
 
-      // Filter out what we already have or focus on what's missing
-      // For now, let's just use individual listeners for stability with sub-collections
+      developer.log('Listening to ${enterpriseIds.length} assigned/direct enterprises in realtime...', name: 'admin.realtime.sync');
+
       for (var id in enterpriseIds) {
         final idStr = id.toString();
         
@@ -747,73 +839,92 @@ class RealtimeSyncService {
             await _saveEnterpriseToLocal(Enterprise.fromMap(enterpriseData));
             _pulseSync();
           } else {
-            // If not in root, it might be a sub-tenant
-            // Avoid collectionGroup(subName).where(FieldPath.documentId, isEqualTo: idStr) 
-            // as it causes IllegalArgumentException on some platforms if it's a single segment ID.
-            
-            // Try to deduce parent if it follows our naming convention pos_PARENT_...
-            String? deducedParent;
+            // If not in root, it might be a sub-tenant.
+            // On va chercher dans le store local pour voir si on connaît son parent
+            final localEnt = await driftService.records.findInCollectionByLocalId(
+              collectionName: 'pointOfSale',
+              localId: idStr,
+            ) ?? await driftService.records.findInCollectionByLocalId(
+              collectionName: 'agences',
+              localId: idStr,
+            );
+
+            String? parentId;
             String? subCollName;
-            if (idStr.startsWith('pos_')) {
-              final parts = idStr.split('_');
-              if (parts.length >= 3) {
-                deducedParent = '${parts[1]}_${parts[2]}';
-                subCollName = 'pointsOfSale';
+            String? moduleType;
+            String? collectionKey;
+
+            if (localEnt != null) {
+              final entData = jsonDecode(localEnt.dataJson) as Map<String, dynamic>;
+              parentId = entData['parentEnterpriseId'] as String?;
+              final typeStr = entData['type'] as String? ?? 'gaz_pos';
+              if (typeStr.contains('gaz')) {
+                 subCollName = 'pointsOfSale';
+                 moduleType = 'gaz';
+                 collectionKey = 'pointOfSale';
+              } else {
+                 subCollName = 'agences';
+                 moduleType = 'orange_money';
+                 collectionKey = 'agences';
               }
-            } else if (idStr.startsWith('agence_')) {
-              final parts = idStr.split('_');
-              if (parts.length >= 3) {
-                deducedParent = '${parts[1]}_${parts[2]}';
-                subCollName = 'agences';
+            } else {
+              // Fallback pattern deduction if not in local store yet
+              if (idStr.startsWith('pos_')) {
+                final parts = idStr.split('_');
+                if (parts.length >= 3) {
+                  parentId = '${parts[1]}_${parts[2]}';
+                  subCollName = 'pointsOfSale';
+                  moduleType = 'gaz';
+                  collectionKey = 'pointOfSale';
+                }
+              } else if (idStr.startsWith('agence_') || idStr.startsWith('mm_')) {
+                final parts = idStr.split('_');
+                if (parts.length >= 3) {
+                  parentId = '${parts[1]}_${parts[2]}';
+                  subCollName = 'agences';
+                  moduleType = 'orange_money';
+                  collectionKey = 'agences';
+                }
               }
             }
 
-            if (deducedParent != null && subCollName != null) {
+            if (parentId != null && subCollName != null) {
+              final finalParentId = parentId;
+              final finalModuleType = moduleType!;
+              final finalCollectionKey = collectionKey!;
+
               firestore.collection(_enterprisesCollection)
-                  .doc(deducedParent)
+                  .doc(parentId)
                   .collection(subCollName)
                   .doc(idStr)
                   .snapshots()
-                  .listen((doc) async {
-                if (doc.exists) {
-                  final data = Map<String, dynamic>.from(doc.data()!);
-                  final enterprise = Enterprise.fromMap({
-                    ...data,
-                    'id': doc.id,
-                    'parentEnterpriseId': deducedParent
-                  });
-                  await _saveEnterpriseToLocal(enterprise);
+                  .listen((subDoc) async {
+                if (subDoc.exists) {
+                  final data = subDoc.data()!;
+                  final posData = Map<String, dynamic>.from(data)
+                    ..['id'] = subDoc.id
+                    ..['parentEnterpriseId'] = finalParentId;
+
+                  await driftService.records.upsert(
+                    collectionName: finalCollectionKey,
+                    localId: subDoc.id,
+                    remoteId: subDoc.id,
+                    enterpriseId: finalParentId,
+                    moduleType: finalModuleType,
+                    dataJson: jsonEncode(
+                      posData,
+                      toEncodable: (nonEncodable) {
+                        if (nonEncodable is Timestamp) {
+                          return nonEncodable.toDate().toIso8601String();
+                        }
+                        return nonEncodable;
+                      },
+                    ),
+                    localUpdatedAt: DateTime.now(),
+                  );
                   _pulseSync();
                 }
-              }, onError: (error, _) {
-                AppLogger.warning('Listen failed for $subCollName/$idStr: $error', name: 'admin.realtime.sync');
               });
-            } else {
-              // Final fallback using a standard 'where' if we have 'id' field
-              // instead of FieldPath.documentId to avoid segments error.
-              for (final subName in ['pointsOfSale', 'agences']) {
-                firestore.collectionGroup(subName)
-                  .where('id', isEqualTo: idStr)
-                  .snapshots()
-                  .listen((snapshot) async {
-                    if (snapshot.docs.isNotEmpty) {
-                      final doc = snapshot.docs.first;
-                      final data = Map<String, dynamic>.from(doc.data());
-                      final parentId = doc.reference.parent.parent?.id;
-                      if (parentId != null) {
-                        final enterprise = Enterprise.fromMap({
-                          ...data, 
-                          'id': doc.id, 
-                          'parentEnterpriseId': parentId
-                        });
-                        await _saveEnterpriseToLocal(enterprise);
-                        _pulseSync();
-                      }
-                    }
-                  }, onError: (error, _) {
-                    // This is expected to fail for non-admins on collectionGroup
-                  });
-              }
             }
           }
         }, onError: (error, _) {
@@ -822,27 +933,6 @@ class RealtimeSyncService {
       }
     } catch (e) {
       AppLogger.warning('Error setting up assigned enterprises listener: $e', name: 'admin.realtime.sync');
-    }
-  }
-
-  Future<void> _handleEnterpriseSnapshot(QuerySnapshot snapshot) async {
-    for (final docChange in snapshot.docChanges) {
-      try {
-        final data = docChange.doc.data();
-        if (data == null) continue;
-        final enterpriseData = Map<String, dynamic>.from(data as Map);
-        if (!enterpriseData.containsKey('id')) enterpriseData['id'] = docChange.doc.id;
-        final enterprise = Enterprise.fromMap(enterpriseData);
-        
-        if (docChange.type == DocumentChangeType.removed) {
-          await _deleteEnterpriseFromLocal(enterprise.id);
-        } else {
-          await _saveEnterpriseToLocal(enterprise);
-        }
-        _pulseSync();
-      } catch (e) {
-        AppLogger.warning('Error processing enterprise change: $e', name: 'admin.realtime.sync');
-      }
     }
   }
 
@@ -915,7 +1005,7 @@ class RealtimeSyncService {
       final parentId = enterprise.parentEnterpriseId ?? 'global';
       final moduleType = (!enterprise.type.isMain) 
           ? enterprise.type.module.id 
-          : (enterprise.moduleId ?? 'administration');
+          : 'administration';
 
       final existingRecord = await driftService.records.findByRemoteId(
         collectionName: targetCollection,
@@ -1196,13 +1286,28 @@ class RealtimeSyncService {
   /// Écoute les changements dans les sous-collections (pointsOfSale, agences) de toutes les entreprises.
   Future<void> _listenToSubTenants() async {
     try {
-      // 1. D'abord, vérifier si on est admin (simplifié : si userId est null c'est admin, 
-      // ou on peut faire une vérification plus poussée si besoin)
-      final bool useGlobalGroup = _currentUserId == null; // Désactivation pour les non-admins
+      // 1. D'abord, vérifier si on est admin (via le local database si connecté)
+      bool isAdmin = _currentUserId == null;
+      if (!isAdmin && _currentUserId != null) {
+        try {
+          final localUser = await driftService.records.findByRemoteId(
+            collectionName: _usersCollection,
+            remoteId: _currentUserId!,
+            enterpriseId: 'global',
+            moduleType: 'administration',
+          );
+          if (localUser != null) {
+            final userData = jsonDecode(localUser.dataJson) as Map<String, dynamic>;
+            isAdmin = userData['isAdmin'] == true;
+          }
+        } catch (e) {
+          developer.log('Error checking admin status for sub-tenants sync: $e', name: 'admin.realtime.sync');
+        }
+      }
       
-      if (useGlobalGroup) {
+      if (isAdmin) {
         developer.log(
-          'Setting up GLOBAL collectionGroup listeners for sub-tenants',
+          'Setting up GLOBAL collectionGroup listeners for sub-tenants (Admin)',
           name: 'admin.realtime.sync',
         );
         
@@ -1213,7 +1318,7 @@ class RealtimeSyncService {
               (snapshot) => _handleSubTenantSnapshot(snapshot, 'pointsOfSale'),
               onError: (error, stackTrace) {
                 developer.log('Error in pointsOfSale collectionGroup: $error', name: 'admin.realtime.sync');
-                // Si échec permission, on peut tenter le mode itératif
+                // Si échec permission, on peut tenter le mode itératif en fallback si besoin
               }
             );
             
@@ -1285,7 +1390,7 @@ class RealtimeSyncService {
 
   /// Gère les snapshots provenant de collectionGroup
   Future<void> _handleSubTenantSnapshot(QuerySnapshot snapshot, String subName) async {
-    final moduleType = subName == 'pointsOfSale' ? 'gaz' : 'mobile_money';
+    final moduleType = subName == 'pointsOfSale' ? 'gaz' : 'orange_money';
     final collectionName = subName == 'pointsOfSale' ? 'pointOfSale' : 'agences';
     
     for (final docChange in snapshot.docChanges) {
@@ -1333,7 +1438,7 @@ class RealtimeSyncService {
             break;
         }
         _pulseSync();
-      } catch (e, stackTrace) {
+      } catch (e) {
         AppLogger.warning(
           'Error processing sub-tenant $subName change: $e',
           name: 'admin.realtime.sync',
@@ -1378,8 +1483,32 @@ class RealtimeSyncService {
     
     final List<StreamSubscription> subs = [];
     
+    // Vérifier si l'utilisateur a un accès "Parent" (admin système ou listé dans enterpriseIds)
+    // Sinon, on ne peut pas écouter la collection entière (on écoutera les docs individuels via _listenToAssignedEnterprises)
+    bool hasParentAccess = false;
+    final localUser = await driftService.records.findByRemoteId(
+      collectionName: _usersCollection,
+      remoteId: _currentUserId ?? '',
+      enterpriseId: 'global',
+      moduleType: 'administration',
+    );
+    if (localUser != null) {
+      final userData = jsonDecode(localUser.dataJson) as Map<String, dynamic>;
+      final bool isAdmin = userData['isAdmin'] == true;
+      final List<dynamic>? directIds = userData['enterpriseIds'] as List<dynamic>?;
+      hasParentAccess = isAdmin || (directIds?.contains(enterpriseId) ?? false);
+    }
+
+    if (!hasParentAccess) {
+      developer.log(
+        'User does not have parent access to $enterpriseId. Skipping whole-collection listen for sub-tenants.',
+        name: 'admin.realtime.sync',
+      );
+      return;
+    }
+    
     for (final subName in ['pointsOfSale', 'agences']) {
-      final moduleType = subName == 'pointsOfSale' ? 'gaz' : 'mobile_money';
+      final moduleType = subName == 'pointsOfSale' ? 'gaz' : 'orange_money';
       final collectionName = subName == 'pointsOfSale' ? 'pointOfSale' : 'agences';
 
       try {

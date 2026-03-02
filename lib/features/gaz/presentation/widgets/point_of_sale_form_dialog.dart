@@ -5,16 +5,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/core/logging/app_logger.dart';
 import '../../../../core/tenant/tenant_provider.dart' show activeEnterpriseProvider;
+import '../../../../features/administration/domain/entities/enterprise.dart';
+import '../../../../features/administration/domain/entities/user.dart';
+import '../../../../shared/presentation/widgets/elyf_ui/atoms/elyf_icon_button.dart';
+import '../../../../core/auth/providers.dart' show currentUserIdProvider;
 import '../../../../features/administration/application/providers.dart'
     show
         enterpriseControllerProvider,
         enterprisesProvider,
         enterprisesByTypeProvider,
         enterpriseByIdProvider,
-        adminStatsProvider;
-import '../../../../features/administration/domain/entities/enterprise.dart';
-import '../../../../shared/presentation/widgets/elyf_ui/atoms/elyf_icon_button.dart';
-import '../../../../core/auth/providers.dart' show currentUserIdProvider;
+        adminStatsProvider,
+        enterpriseModuleUsersProvider,
+        usersProvider;
 
 /// Dialogue pour créer ou modifier un point de vente.
 class PointOfSaleFormDialog extends ConsumerStatefulWidget {
@@ -248,36 +251,42 @@ class _PointOfSaleFormDialogState extends ConsumerState<PointOfSaleFormDialog>
                         return null;
                       },
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 32),
                     Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        Flexible(
-                          child: ElyfButton(
-                            onPressed: _isLoading
-                                ? null
-                                : () => Navigator.of(context).pop(),
-                            variant: ElyfButtonVariant.outlined,
-                            child: const Text('Annuler'),
-                          ),
+                        TextButton(
+                          onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
+                          child: const Text('Annuler'),
                         ),
-                        const SizedBox(width: 12),
-                        Flexible(
-                          child: ElyfButton(
-                            onPressed: _isLoading ? null : _savePointOfSale,
-                            child: _isLoading
-                                ? const SizedBox(
-                                    height: 20,
-                                    width: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.white,
-                                    ),
-                                  )
-                                : const Text('Enregistrer'),
+                        const SizedBox(width: 16),
+                        ElevatedButton(
+                          onPressed: _isLoading ? null : _savePointOfSale,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: theme.colorScheme.primary,
+                            foregroundColor: theme.colorScheme.onPrimary,
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                           ),
+                          child: _isLoading
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : Text(widget.enterprise == null ? 'Créer' : 'Enregistrer'),
                         ),
                       ],
                     ),
+                    if (widget.enterprise != null) ...[
+                      const SizedBox(height: 32),
+                      _buildAssignedUsersSection(theme),
+                    ],
                   ],
                 ),
               ),
@@ -285,6 +294,143 @@ class _PointOfSaleFormDialogState extends ConsumerState<PointOfSaleFormDialog>
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildAssignedUsersSection(ThemeData theme) {
+    final assignmentsAsync = ref.watch(enterpriseModuleUsersProvider);
+    final usersAsync = ref.watch(usersProvider);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              width: 4,
+              height: 18,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primary,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'UTILISATEURS ASSIGNÉS',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.1,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        assignmentsAsync.when(
+          data: (assignments) {
+            final posId = widget.enterprise!.id;
+            final parentId = widget.enterprise!.parentEnterpriseId;
+            
+            final posAssignments = assignments.where((a) {
+              final isDirect = a.enterpriseId == posId;
+              final isInherited = parentId != null && 
+                                 (a.enterpriseId == parentId || widget.enterprise!.ancestorIds.contains(a.enterpriseId)) && 
+                                 a.includesChildren;
+              
+              return (isDirect || isInherited) && a.isActive;
+            }).toList();
+
+            if (posAssignments.isEmpty) {
+              return Text(
+                'Aucun utilisateur assigné',
+                style: theme.textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic),
+              );
+            }
+
+            return usersAsync.when(
+              data: (users) {
+                return ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: posAssignments.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  itemBuilder: (context, index) {
+                    final assignment = posAssignments[index];
+                    final user = users.firstWhere(
+                      (u) => u.id == assignment.userId,
+                      orElse: () => User(
+                        id: assignment.userId,
+                        firstName: 'Utilisateur',
+                        lastName: 'Inconnu',
+                        username: 'inconnu',
+                        email: '',
+                        enterpriseIds: [],
+                      ),
+                    );
+
+                    final isDirect = assignment.enterpriseId == posId;
+
+                    return ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: CircleAvatar(
+                        backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
+                        child: Text(
+                          user.firstName.isNotEmpty ? user.firstName[0].toUpperCase() : '?',
+                          style: TextStyle(
+                            color: theme.colorScheme.primary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      title: Text(
+                        user.fullName,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                      ),
+                      subtitle: Wrap(
+                        spacing: 4,
+                        runSpacing: 4,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: (isDirect ? Colors.blue : Colors.orange).withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              isDirect ? 'Direct' : 'Hérité',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: isDirect ? Colors.blue : Colors.orange,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          ...assignment.roleIds.map((r) => Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.surfaceContainerHighest,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              r.replaceAll('_', ' ').toUpperCase(),
+                              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w500),
+                            ),
+                          )),
+                        ],
+                      ),
+                    );
+                  },
+                );
+              },
+              loading: () => const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+              error: (e, __) => Text('Erreur users: $e', style: const TextStyle(fontSize: 10)),
+            );
+          },
+          loading: () => const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+          error: (e, __) => Text('Erreur: $e', style: const TextStyle(fontSize: 10)),
+        ),
+      ],
     );
   }
 }

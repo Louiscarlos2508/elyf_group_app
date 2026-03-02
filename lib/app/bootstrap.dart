@@ -39,9 +39,6 @@ Future<ProviderContainer> bootstrap() async {
       return null;
     }),
     
-    // Initialize Firebase
-    Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform),
-    
     // Initialize date formatting
     initializeDateFormatting('fr', null),
     
@@ -49,7 +46,27 @@ Future<ProviderContainer> bootstrap() async {
     SharedPreferences.getInstance(),
   ]);
 
-  final prefs = results[3] as SharedPreferences;
+  // Initialize Firebase sequentially to avoid ConcurrentModificationException
+  // Default App
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  
+  // Secondary Management App
+  try {
+    await Firebase.initializeApp(
+      name: 'ManagementApp',
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } catch (e) {
+    developer.log('Failed to initialize ManagementApp: $e', name: 'bootstrap');
+    // If it fails, managementFirebaseAuthProvider should fallback to default or we can try to retrieve existing
+    try {
+      Firebase.app('ManagementApp');
+    } catch (_) {
+      // Really failed or already handled by provider fallback
+    }
+  }
+
+  final prefs = results[2] as SharedPreferences;
   developer.log('Base services initialized (Firebase, Prefs, Env, Dates)', name: 'bootstrap');
 
   // Initialize permissions registry

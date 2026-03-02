@@ -168,10 +168,6 @@ class _BreadcrumbItem extends ConsumerWidget {
       case EnterpriseType.mobileMoneySubAgent:
         iconData = Icons.account_balance_wallet;
         break;
-      case EnterpriseType.mobileMoneyDistributor:
-      case EnterpriseType.mobileMoneyKiosk:
-        iconData = Icons.point_of_sale;
-        break;
     }
 
     return Icon(

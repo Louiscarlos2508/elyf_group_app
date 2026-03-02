@@ -151,45 +151,6 @@ class OrangeMoneyEnterpriseHelper {
     );
   }
 
-  /// Créer un kiosque (sous-agence)
-  static Enterprise createKiosk({
-    required String id,
-    required String name,
-    required String parentEnterpriseId,
-    required int hierarchyLevel,
-    required List<String> ancestorIds,
-    String? manager,
-    String? openingHours,
-    int floatBalance = 0,
-    int criticalThreshold = 50000,
-    String? phone,
-    String? address,
-    double? latitude,
-    double? longitude,
-  }) {
-    return Enterprise(
-      id: id,
-      name: name,
-      type: EnterpriseType.mobileMoneyKiosk,
-      parentEnterpriseId: parentEnterpriseId,
-      hierarchyLevel: hierarchyLevel,
-      ancestorIds: ancestorIds,
-      moduleId: 'orange_money',
-      phone: phone,
-      address: address,
-      latitude: latitude,
-      longitude: longitude,
-      metadata: {
-        'floatBalance': floatBalance,
-        'criticalThreshold': criticalThreshold,
-        if (manager != null) 'manager': manager,
-        if (openingHours != null) 'openingHours': openingHours,
-      },
-      isActive: true,
-      createdAt: DateTime.now(),
-    );
-  }
-
   /// Créer un sous-agent
   static Enterprise createSubAgent({
     required String id,
@@ -229,39 +190,6 @@ class OrangeMoneyEnterpriseHelper {
         'floatBalance': floatBalance,
         'criticalThreshold': criticalThreshold,
         if (zone != null) 'zone': zone,
-      },
-      isActive: true,
-      createdAt: DateTime.now(),
-    );
-  }
-
-  /// Créer un distributeur
-  static Enterprise createDistributor({
-    required String id,
-    required String name,
-    required String parentEnterpriseId,
-    required int hierarchyLevel,
-    required List<String> ancestorIds,
-    int floatBalance = 0,
-    String? phone,
-    String? address,
-    double? latitude,
-    double? longitude,
-  }) {
-    return Enterprise(
-      id: id,
-      name: name,
-      type: EnterpriseType.mobileMoneyDistributor,
-      parentEnterpriseId: parentEnterpriseId,
-      hierarchyLevel: hierarchyLevel,
-      ancestorIds: ancestorIds,
-      moduleId: 'orange_money',
-      phone: phone,
-      address: address,
-      latitude: latitude,
-      longitude: longitude,
-      metadata: {
-        'floatBalance': floatBalance,
       },
       isActive: true,
       createdAt: DateTime.now(),

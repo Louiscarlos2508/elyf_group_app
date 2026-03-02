@@ -35,10 +35,12 @@ class AuthUserService {
     required String email,
     required String password,
     String? displayName,
+    FirebaseAuth? firebaseAuth,
   }) async {
     try {
+      final auth = firebaseAuth ?? _firebaseAuth;
       // Créer le compte dans Firebase Auth
-      final userCredential = await _firebaseAuth.createUserWithEmailAndPassword(
+      final userCredential = await auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );

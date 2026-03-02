@@ -196,8 +196,9 @@ class _AddAgentAccountModalState extends ConsumerState<AddAgentAccountModal> {
   }
 
   Widget _buildFormFields(ThemeData theme, bool isKeyboardOpen) {
-    // Key format: "parentId|type|searchQuery|excludeAssigned"
-    final agenciesAsync = ref.watch(agentAgenciesProvider('|||true'));
+    // Key format: "parentId|type|searchQuery|excludeAssigned|includeId"
+    final includeId = widget.agentAccount?.enterpriseId ?? '';
+    final agenciesAsync = ref.watch(agentAgenciesProvider('|||true|$includeId'));
 
     return Column(
       children: [
@@ -219,8 +220,20 @@ class _AddAgentAccountModalState extends ConsumerState<AddAgentAccountModal> {
             // Map the selection: if it's the active enterprise, treat it as null (Independent)
             final effectiveValue = (_linkedAgencyId == activeId) ? null : _linkedAgencyId;
             
+            // If editing, ensure the current agency is in the list even if it was filtered out
+            final List<Enterprise> displayAgencies = List.from(agencies);
+            if (widget.agentAccount != null && effectiveValue != null) {
+              final currentAgencyId = widget.agentAccount!.enterpriseId;
+              if (currentAgencyId != activeId && !displayAgencies.any((a) => a.id == currentAgencyId)) {
+                // We need to fetch the full agency info to show its name, but for now we can't easily wait.
+                // However, the provider should ideally include it if we pass the current ID to exclude logic.
+                // For now, let's assume if it's not there, we keep the ID as is and hope the name is cached or handled.
+                // Actually, a better way is to modify the provider to take the "exceptId".
+              }
+            }
+
             // Safety: Ensure the value exists in the list (or is null)
-            final exists = effectiveValue == null || agencies.any((a) => a.id == effectiveValue);
+            final exists = effectiveValue == null || displayAgencies.any((a) => a.id == effectiveValue);
             final dropdownValue = exists ? effectiveValue : null;
             
             return DropdownButtonFormField<String>(
@@ -235,7 +248,7 @@ class _AddAgentAccountModalState extends ConsumerState<AddAgentAccountModal> {
               ),
               items: [
                 const DropdownMenuItem(value: null, child: Text('Aucune agence (Indépendant)')),
-                ...agencies.map((a) => DropdownMenuItem(value: a.id, child: Text(a.name))),
+                ...displayAgencies.map((a) => DropdownMenuItem(value: a.id, child: Text(a.name))),
               ],
               onChanged: widget.isReadOnly ? null : (v) => setState(() => _linkedAgencyId = v),
             );

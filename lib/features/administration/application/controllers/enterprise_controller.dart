@@ -15,6 +15,7 @@ import '../../domain/services/audit/audit_service.dart';
 import '../../domain/entities/audit_log.dart';
 import '../../data/services/firestore_sync_service.dart';
 import '../../domain/services/validation/permission_validator_service.dart';
+import '../services/tenant_context_service.dart';
 
 /// Controller pour gérer les entreprises.
 ///
@@ -27,6 +28,7 @@ class EnterpriseController {
     this.permissionValidator,
     this.userRepository,
     this.adminRepository,
+    this.tenantContextService,
   });
 
   final EnterpriseRepository _repository;
@@ -35,6 +37,7 @@ class EnterpriseController {
   final PermissionValidatorService? permissionValidator;
   final UserRepository? userRepository;
   final AdminRepository? adminRepository;
+  final TenantContextService? tenantContextService;
 
   /// Récupère toutes les entreprises.
   ///
@@ -98,7 +101,31 @@ class EnterpriseController {
         );
       }
     }
-    await _repository.createEnterprise(enterprise);
+
+    Enterprise enterpriseToCreate = enterprise;
+
+    // Calculer la hiérarchie pour assurer l'héritage des permissions
+    if (tenantContextService != null && enterprise.parentEnterpriseId != null) {
+      try {
+        final hierarchyInfo = await tenantContextService!.calculateHierarchyInfo(
+          enterpriseId: enterprise.id,
+          parentEnterpriseId: enterprise.parentEnterpriseId,
+        );
+
+        enterpriseToCreate = enterprise.copyWith(
+          hierarchyLevel: hierarchyInfo.level,
+          hierarchyPath: hierarchyInfo.path,
+          ancestorIds: hierarchyInfo.ancestorIds,
+        );
+      } catch (e) {
+        AppLogger.warning(
+          'Failed to calculate hierarchy for enterprise ${enterprise.id}: $e',
+          name: 'enterprise.controller',
+        );
+      }
+    }
+
+    await _repository.createEnterprise(enterpriseToCreate);
 
     // Note: La synchronisation vers Firestore est gérée automatiquement par le repository
     // via la queue de sync (SyncManager). Pas besoin d'appel manuel ici.

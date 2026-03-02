@@ -369,7 +369,6 @@ class PredefinedRoles {
     moduleId: 'orange_money',
     allowedEnterpriseTypes: {
       EnterpriseType.mobileMoneySubAgent,
-      EnterpriseType.mobileMoneyKiosk,
     },
     permissions: {
       'view_dashboard',

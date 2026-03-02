@@ -38,65 +38,12 @@ class EnterpriseOfflineRepository extends OfflineRepository<Enterprise>
 
   @override
   Enterprise fromMap(Map<String, dynamic> map) {
-    // Prioriser localId si disponible (pour cohérence avec saveToLocal)
-    // Sinon utiliser id, puis localId comme fallback
-    final id = map['localId'] as String? ?? 
-                map['id'] as String? ?? 
-                (throw ValidationException(
-                  'Enterprise must have an id or localId',
-                  'ENTERPRISE_ID_MISSING',
-                ));
-    
-    return Enterprise(
-      id: id,
-      name: map['name'] as String,
-      type: EnterpriseType.fromId(map['type'] as String),
-      parentEnterpriseId: map['parentEnterpriseId'] as String?,
-      hierarchyLevel: map['hierarchyLevel'] as int? ?? 0,
-      hierarchyPath: map['hierarchyPath'] as String? ?? '',
-      ancestorIds: (map['ancestorIds'] as List<dynamic>?)
-          ?.map((e) => e as String)
-          .toList() ?? const [],
-      moduleId: map['moduleId'] as String?,
-      metadata: (map['metadata'] as Map<String, dynamic>?) ?? const {},
-      latitude: (map['latitude'] as num?)?.toDouble(),
-      longitude: (map['longitude'] as num?)?.toDouble(),
-      description: map['description'] as String?,
-      address: map['address'] as String?,
-      phone: map['phone'] as String?,
-      email: map['email'] as String?,
-      isActive: map['isActive'] as bool? ?? true,
-      createdAt: map['createdAt'] != null
-          ? DateTime.parse(map['createdAt'] as String)
-          : null,
-      updatedAt: map['updatedAt'] != null
-          ? DateTime.parse(map['updatedAt'] as String)
-          : null,
-    );
+    return Enterprise.fromMap(map);
   }
 
   @override
   Map<String, dynamic> toMap(Enterprise entity) {
-    return {
-      'id': entity.id,
-      'name': entity.name,
-      'type': entity.type.id,
-      'parentEnterpriseId': entity.parentEnterpriseId,
-      'hierarchyLevel': entity.hierarchyLevel,
-      'hierarchyPath': entity.hierarchyPath,
-      'ancestorIds': entity.ancestorIds,
-      'moduleId': entity.moduleId,
-      'metadata': entity.metadata,
-      'latitude': entity.latitude,
-      'longitude': entity.longitude,
-      'description': entity.description,
-      'address': entity.address,
-      'phone': entity.phone,
-      'email': entity.email,
-      'isActive': entity.isActive,
-      'createdAt': entity.createdAt?.toIso8601String(),
-      'updatedAt': entity.updatedAt?.toIso8601String(),
-    };
+    return entity.toMap();
   }
 
   @override
@@ -121,10 +68,12 @@ class EnterpriseOfflineRepository extends OfflineRepository<Enterprise>
     final syncEnterpriseId = getEnterpriseId(entity) ?? 'global';
     
     // Determine the module type for storage
-    // If it's a sub-tenant, use its module, otherwise use 'administration'
+    // RULE: All root enterprises (main) MUST be saved under 'administration' module type
+    // to ensure they are visible in the global enterprise list and synced as root entities.
+    // Only sub-tenants (POS/Agences) use their specific module types.
     final moduleType = (!entity.type.isMain) 
         ? entity.type.module.id 
-        : (entity.moduleId ?? 'administration');
+        : 'administration';
 
     // Utiliser findExistingLocalId pour éviter les duplications
     final existingLocalId = await findExistingLocalId(entity, moduleType: moduleType);
@@ -154,7 +103,7 @@ class EnterpriseOfflineRepository extends OfflineRepository<Enterprise>
     final syncEnterpriseId = getEnterpriseId(entity) ?? 'global';
     final moduleType = (!entity.type.isMain) 
         ? entity.type.module.id 
-        : (entity.moduleId ?? 'administration');
+        : 'administration';
     
     final localId = getLocalId(entity);
     await driftService.records.deleteByLocalId(
@@ -224,7 +173,7 @@ class EnterpriseOfflineRepository extends OfflineRepository<Enterprise>
       
       final allRecords = [...enterpriseRecords, ...posRecords];
       
-      return allRecords.map((record) {
+      final enterprises = allRecords.map((record) {
         try {
           final map = jsonDecode(record.dataJson) as Map<String, dynamic>;
           map['localId'] = record.localId;
@@ -233,6 +182,13 @@ class EnterpriseOfflineRepository extends OfflineRepository<Enterprise>
           return null;
         }
       }).whereType<Enterprise>().toList();
+
+      // Déduplication par ID pour éviter les doublons si une entreprise est présente dans plusieurs collections
+      final unique = <String, Enterprise>{};
+      for (final ent in enterprises) {
+        unique[ent.id] = ent;
+      }
+      return unique.values.toList();
     } catch (e) {
       return [];
     }

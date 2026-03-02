@@ -3,9 +3,8 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:cloud_firestore/cloud_firestore.dart'
-    show FirebaseFirestore, QuerySnapshot, DocumentSnapshot, DocumentChangeType, Timestamp, FirebaseException, FieldPath, SetOptions, FieldValue, Query;
+    show FirebaseFirestore, DocumentSnapshot, Timestamp, FirebaseException, FieldPath, SetOptions, Query, FieldValue;
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:rxdart/rxdart.dart';
 
 import '../../../../core/errors/app_exceptions.dart';
 import '../../../../core/errors/error_handler.dart';
@@ -89,11 +88,18 @@ class FirestoreSyncService {
         ...?allowedEnterpriseIds,
         ...?currentUser?.enterpriseIds,
       };
-      final bool isAdmin = (currentUser != null && currentUser.username == 'admin');
+      final bool isAdmin = (currentUser != null && currentUser.isAdmin);
 
-      // 2. Découvrir tous les sous-tenants (POS/Agences) pour les enterprises autorisées
-      // Cela est crucial car les assignments peuvent être faits sur des sous-entités
-      // qui ne sont pas explicitement dans currentUser.enterpriseIds
+      // 2. Récupérer les assignations de l'utilisateur pour découvrir d'autres entreprises
+      if (userId != null && !isAdmin) {
+        developer.log('Fetching personal assignments for $userId...', name: 'admin.firestore.sync');
+        final personalAssignments = await pullEnterpriseModuleUsersFromFirestore(userId: userId);
+        for (final assignment in personalAssignments) {
+          effectiveAllowedEnterpriseIds.add(assignment.enterpriseId);
+        }
+      }
+
+      // 3. Découvrir tous les sous-tenants (POS/Agences) pour les enterprises autorisées
       if (effectiveAllowedEnterpriseIds.isNotEmpty) {
         developer.log('Discovering sub-tenants for ${effectiveAllowedEnterpriseIds.length} enterprises...', name: 'admin.firestore.sync');
         for (final parentId in effectiveAllowedEnterpriseIds.toList()) {
@@ -146,7 +152,7 @@ class FirestoreSyncService {
                 .get();
             
             emus.addAll(snapshot.docs.map((doc) => 
-              EnterpriseModuleUser.fromMap(doc.data() as Map<String, dynamic>)));
+              EnterpriseModuleUser.fromMap(doc.data())));
           } catch (e) {
             AppLogger.warning('Error pulling emus for chunk: $e');
           }
@@ -169,7 +175,13 @@ class FirestoreSyncService {
 
       // 4. Parallel fetch for other collections using filters
       await Future.wait([
-        if (isAdmin || userId == null) _pullAndSaveUsers() else Future.value(),
+        if (isAdmin) 
+          _pullAndSaveUsers() 
+        else if (effectiveAllowedEnterpriseIds.isNotEmpty)
+          _pullAndSaveUsers(enterpriseIds: effectiveAllowedEnterpriseIds.toList())
+        else 
+          Future.value(),
+        
         _pullAndSaveEnterprises(allowedEnterpriseIds: isAdmin ? null : effectiveAllowedEnterpriseIds.toList()),
         _pullAndSaveRoles(),
       ]);
@@ -191,14 +203,14 @@ class FirestoreSyncService {
     }
   }
 
-  Future<void> _pullAndSaveUsers() async {
+  Future<void> _pullAndSaveUsers({List<String>? enterpriseIds}) async {
     try {
-      final users = await pullUsersFromFirestore();
+      final users = await pullUsersFromFirestore(enterpriseIds: enterpriseIds);
       for (final user in users) {
         await _saveUserToDrift(user);
       }
     } catch (e) {
-      AppLogger.warning('Failed to pull all users (likely permission denied)', name: 'admin.firestore.sync');
+      AppLogger.warning('Failed to pull users: $e', name: 'admin.firestore.sync');
     }
   }
 
@@ -268,7 +280,7 @@ class FirestoreSyncService {
     // Déterminer le module propriétaire
     final moduleType = (!enterprise.type.isMain) 
         ? enterprise.type.module.id 
-        : (enterprise.moduleId ?? 'administration');
+        : 'administration';
 
     // On utilise l'ID remote comme local ID pour la synchronisation
     final recordId = enterprise.id;
@@ -358,12 +370,7 @@ class FirestoreSyncService {
     );
   }
 
-  Future<void> _pullAndSaveEnterpriseModuleUsers({String? userId}) async {
-    final emus = await pullEnterpriseModuleUsersFromFirestore(userId: userId);
-    for (final emu in emus) {
-      await _saveEnterpriseModuleUserToDrift(emu);
-    }
-  }
+
 
   /// Sync a user to Firestore
   Future<void> syncUserToFirestore(User user, {bool isUpdate = false}) async {
@@ -448,7 +455,7 @@ class FirestoreSyncService {
       for (final subName in ['pointsOfSale', 'agences']) {
         final groupSnapshot = await firestore
             .collectionGroup(subName)
-            .where(FieldPath.documentId, isEqualTo: enterpriseId)
+            .where('uid', isEqualTo: enterpriseId)
             .get();
 
         if (groupSnapshot.docs.isNotEmpty) {
@@ -637,42 +644,39 @@ class FirestoreSyncService {
   }
 
   /// Pull users from Firestore
-  Future<List<User>> pullUsersFromFirestore() async {
+  Future<List<User>> pullUsersFromFirestore({List<String>? enterpriseIds}) async {
     try {
-      final snapshot = await firestore.collection(_usersCollection).get();
-      return snapshot.docs.map((doc) {
-        final data = doc.data();
-        // Convertir les Timestamps Firestore en DateTime
-        final createdAt = data['createdAt'];
-        final updatedAt = data['updatedAt'];
+      Query snapshotQuery = firestore.collection(_usersCollection);
+      
+      if (enterpriseIds != null && enterpriseIds.isNotEmpty) {
+        // split into chunks of 10 for 'array-contains-any'
+        final List<User> allUsers = [];
+        final Set<String> foundUserIds = {};
+        
+        for (var i = 0; i < enterpriseIds.length; i += 10) {
+          final chunk = enterpriseIds.sublist(
+            i, 
+            i + 10 > enterpriseIds.length ? enterpriseIds.length : i + 10,
+          );
+          
+          final snapshot = await firestore
+              .collection(_usersCollection)
+              .where('enterpriseIds', arrayContainsAny: chunk)
+              .get();
+              
+          for (final doc in snapshot.docs) {
+            if (!foundUserIds.contains(doc.id)) {
+              final user = _mapFirestoreDocToUser(doc);
+              allUsers.add(user);
+              foundUserIds.add(doc.id);
+            }
+          }
+        }
+        return allUsers;
+      }
 
-        return User(
-          id: data['id'] as String? ?? doc.id,
-          firstName: data['firstName'] as String? ?? '',
-          lastName: data['lastName'] as String? ?? '',
-          username:
-              data['username'] as String? ??
-              data['email']?.split('@').first ??
-              '',
-          email: data['email'] as String?,
-          phone: data['phone'] as String?,
-          isActive: data['isActive'] as bool? ?? true,
-          enterpriseIds: (data['enterpriseIds'] as List<dynamic>?)
-                  ?.map((e) => e.toString())
-                  .toList() ??
-              const [],
-          createdAt: createdAt != null
-              ? (createdAt is Timestamp
-                    ? createdAt.toDate()
-                    : DateTime.tryParse(createdAt.toString()))
-              : null,
-          updatedAt: updatedAt != null
-              ? (updatedAt is Timestamp
-                    ? updatedAt.toDate()
-                    : DateTime.tryParse(updatedAt.toString()))
-              : null,
-        );
-      }).toList();
+      final snapshot = await snapshotQuery.get();
+      return snapshot.docs.map((doc) => _mapFirestoreDocToUser(doc)).toList();
     } on FirebaseException catch (e, stackTrace) {
       final appException = ErrorHandler.instance.handleError(e, stackTrace);
       AppLogger.warning(
@@ -692,6 +696,40 @@ class FirestoreSyncService {
       );
       return [];
     }
+  }
+
+  /// Map a Firestore document to a User entity
+  User _mapFirestoreDocToUser(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    final createdAt = data['createdAt'];
+    final updatedAt = data['updatedAt'];
+
+    return User(
+      id: data['id'] as String? ?? doc.id,
+      firstName: data['firstName'] as String? ?? '',
+      lastName: data['lastName'] as String? ?? '',
+      username: data['username'] as String? ??
+          data['email']?.split('@').first ??
+          '',
+      email: data['email'] as String?,
+      phone: data['phone'] as String?,
+      isActive: data['isActive'] as bool? ?? true,
+      isAdmin: data['isAdmin'] as bool? ?? false,
+      enterpriseIds: (data['enterpriseIds'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const [],
+      createdAt: createdAt != null
+          ? (createdAt is Timestamp
+              ? createdAt.toDate()
+              : DateTime.tryParse(createdAt.toString()))
+          : null,
+      updatedAt: updatedAt != null
+          ? (updatedAt is Timestamp
+              ? updatedAt.toDate()
+              : DateTime.tryParse(updatedAt.toString()))
+          : null,
+    );
   }
 
   /// Pull enterprises from Firestore
@@ -761,57 +799,43 @@ class FirestoreSyncService {
       final missingIds = allowedEnterpriseIds.where((id) => !foundIds.contains(id)).toList();
       
       if (missingIds.isNotEmpty) {
-        for (final id in missingIds) {
-          try {
-            DocumentSnapshot<Map<String, dynamic>>? doc;
-            
-            if (id.startsWith('pos_')) {
-              // Pattern: pos_{parentId}_{timestamp}
-              final parts = id.split('_');
-              if (parts.length >= 3) {
-                final parentId = '${parts[1]}_${parts[2]}';
-                doc = await firestore
-                    .collection(_enterprisesCollection)
-                    .doc(parentId)
-                    .collection('pointsOfSale')
-                    .doc(id)
-                    .get();
-              }
-            } else if (id.startsWith('agence_')) {
-              // Pattern: agence_{parentId}_{timestamp} ou agence_orange_money_{timestamp}
-              final parts = id.split('_');
-              if (parts.length >= 4 && parts[1] == 'orange' && parts[2] == 'money') {
-                final parentId = '${parts[1]}_${parts[2]}_${parts[3]}';
-                doc = await firestore
-                    .collection(_enterprisesCollection)
-                    .doc(parentId)
-                    .collection('agences')
-                    .doc(id)
-                    .get();
-              } else if (parts.length >= 3) {
-                final parentId = '${parts[1]}_${parts[2]}';
-                 doc = await firestore
-                    .collection(_enterprisesCollection)
-                    .doc(parentId)
-                    .collection('agences')
-                    .doc(id)
-                    .get();
-              }
-            }
+        developer.log('Searching for ${missingIds.length} missing enterprises using collectionGroups...', name: 'admin.firestore.sync');
+        
+        for (final subCollection in ['pointsOfSale', 'agences']) {
+          if (missingIds.every((id) => foundIds.contains(id))) break;
+          
+          final idsToSearch = missingIds.where((id) => !foundIds.contains(id)).toList();
+          
+          // Firestore 'whereIn' est limité à 10 ou 30
+          for (var i = 0; i < idsToSearch.length; i += 10) {
+            final chunk = idsToSearch.sublist(
+              i, 
+              i + 10 > idsToSearch.length ? idsToSearch.length : i + 10,
+            );
 
-            if (doc != null && doc.exists) {
-              final data = Map<String, dynamic>.from(doc.data()!);
-              final parentId = doc.reference.parent.parent?.id;
-              
-              result.add(Enterprise.fromMap({
-                ...data,
-                'id': doc.id,
-                'parentEnterpriseId': parentId,
-              }));
-              foundIds.add(doc.id);
+            try {
+              final groupSnapshot = await firestore
+                  .collectionGroup(subCollection)
+                  .where('uid', whereIn: chunk)
+                  .get();
+
+              for (final doc in groupSnapshot.docs) {
+                if (foundIds.contains(doc.id)) continue;
+                
+                final data = Map<String, dynamic>.from(doc.data());
+                final parentId = doc.reference.parent.parent?.id;
+                
+                result.add(Enterprise.fromMap({
+                  ...data,
+                  'id': doc.id,
+                  'parentEnterpriseId': parentId,
+                }));
+                foundIds.add(doc.id);
+                developer.log('Found enterprise ${doc.id} in collectionGroup $subCollection', name: 'admin.firestore.sync');
+              }
+            } catch (e) {
+              AppLogger.warning('Error searching collectionGroup $subCollection for missing IDs: $e', name: 'admin.firestore.sync');
             }
-          } catch (e) {
-             AppLogger.warning('Error pulling specific enterprise $id: $e', name: 'admin.firestore.sync');
           }
         }
       }

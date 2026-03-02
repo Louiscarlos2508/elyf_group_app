@@ -178,6 +178,7 @@ final agentsControllerProvider = Provider<AgentsController>(
     ref.watch(currentUserIdProvider) ?? 'system',
     ref.watch(orangeMoneyPermissionAdapterProvider),
     ref.watch(activeEnterpriseProvider).value?.id ?? 'default',
+    ref.watch(tenantContextServiceProvider),
   ),
 );
 
@@ -340,12 +341,14 @@ final agentAgenciesProvider = FutureProvider.autoDispose.family<List<Enterprise>
   final parentEnterpriseId = parts[0].isEmpty ? null : parts[0];
   final searchQuery = parts.length > 2 && parts[2].isNotEmpty ? parts[2] : null;
   final excludeAssigned = parts.length > 3 && parts[3] == 'true';
+  final includeAgencyId = parts.length > 4 && parts[4].isNotEmpty ? parts[4] : null;
 
   final controller = ref.watch(agentsControllerProvider);
   return await controller.fetchAgencies(
     parentEnterpriseId: parentEnterpriseId,
     searchQuery: searchQuery,
     excludeAssigned: excludeAssigned,
+    includeAgencyId: includeAgencyId,
   );
 });
 

@@ -25,42 +25,18 @@ class UserOfflineRepository extends OfflineRepository<User>
 
   @override
   User fromMap(Map<String, dynamic> map) {
-    return User(
-      id: map['id'] as String? ?? map['localId'] as String,
-      firstName: map['firstName'] as String,
-      lastName: map['lastName'] as String,
-      username: map['username'] as String,
-      email: map['email'] as String?,
-      phone: map['phone'] as String?,
-      isActive: map['isActive'] as bool? ?? true,
-      createdAt: map['createdAt'] != null
-          ? DateTime.parse(map['createdAt'] as String)
-          : null,
-      updatedAt: map['updatedAt'] != null
-          ? DateTime.parse(map['updatedAt'] as String)
-          : null,
-    );
+    return User.fromMap(map);
   }
 
   @override
   Map<String, dynamic> toMap(User entity) {
-    return {
-      'id': entity.id,
-      'firstName': entity.firstName,
-      'lastName': entity.lastName,
-      'username': entity.username,
-      'email': entity.email,
-      'phone': entity.phone,
-      'isActive': entity.isActive,
-      'enterpriseIds': entity.enterpriseIds,
-      'createdAt': entity.createdAt?.toIso8601String(),
-      'updatedAt': entity.updatedAt?.toIso8601String(),
-    };
+    return entity.toMap();
   }
 
   @override
   String getLocalId(User entity) {
-    if (entity.id.startsWith('local_')) {
+    // Si l'entité a déjà un ID valide (Auth UID ou local_), on le garde
+    if (entity.id.isNotEmpty) {
       return entity.id;
     }
     return LocalIdGenerator.generate();

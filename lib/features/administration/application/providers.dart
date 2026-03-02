@@ -3,10 +3,12 @@ import 'dart:developer' as developer;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rxdart/rxdart.dart';
 
 import '../../../core/offline/providers.dart';
+import 'package:elyf_groupe_app/core/firebase/providers.dart' as fb_providers;
 import '../../../core/permissions/services/permission_service.dart'
     show PermissionService;
 import '../../../core/permissions/services/permission_registry.dart';
@@ -28,17 +30,20 @@ import '../domain/services/audit/audit_service.dart';
 import '../domain/services/validation/permission_validator_service.dart';
 import '../data/services/audit/audit_offline_service.dart';
 import '../data/services/firebase_auth_integration_service.dart';
-import '../data/services/firestore_sync_service.dart';
-import '../data/services/realtime_sync_service.dart';
+
 import 'controllers/admin_controller.dart';
 import 'controllers/user_controller.dart';
 import 'controllers/enterprise_controller.dart';
 import 'controllers/audit_controller.dart';
 import 'controllers/user_assignment_controller.dart';
 import '../../../core/auth/services/auth_service.dart';
-import '../../../core/firebase/providers.dart' show firestoreProvider;
 import '../data/repositories/admin_firestore_repository.dart';
 import '../data/repositories/user_firestore_repository.dart';
+export 'services/tenant_context_service.dart';
+import 'services/tenant_context_service.dart';
+import '../../../core/auth/services/firestore_permission_service.dart';
+
+import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 
 /// Provider for admin repository (platform-aware)
 /// - Web: Utilise Firestore directement (online-only)
@@ -47,7 +52,7 @@ final adminRepositoryProvider = Provider<AdminRepository>(
   (ref) {
     if (kIsWeb) {
       return AdminFirestoreRepository(
-        firestore: ref.watch(firestoreProvider),
+        firestore: ref.watch(fb_providers.firestoreProvider),
         ref: ref,
       );
     } else {
@@ -68,7 +73,7 @@ final userRepositoryProvider = Provider<UserRepository>(
   (ref) {
     if (kIsWeb) {
       return UserFirestoreRepository(
-        firestore: ref.watch(firestoreProvider),
+        firestore: ref.watch(fb_providers.firestoreProvider),
       );
     } else {
       return UserOfflineRepository(
@@ -100,7 +105,7 @@ final enterpriseRepositoryProvider = Provider<EnterpriseRepository>(
     if (kIsWeb) {
       // Sur web: utiliser Firestore directement
       return EnterpriseFirestoreRepository(
-        firestore: FirebaseFirestore.instance,
+        firestore: ref.watch(fb_providers.firestoreProvider),
         authService: ref.watch(authServiceProvider),
       );
     } else {
@@ -150,25 +155,26 @@ final firebaseAuthIntegrationServiceProvider =
     Provider<FirebaseAuthIntegrationService>(
       (ref) => FirebaseAuthIntegrationService(
         authService: ref.watch(authServiceProvider),
+        managementAuth: ref.watch(fb_providers.managementFirebaseAuthProvider),
       ),
     );
 
-/// Provider for Firestore sync service
-final firestoreSyncServiceProvider = Provider<FirestoreSyncService>(
-  (ref) => FirestoreSyncService(
-    driftService: ref.watch(driftServiceProvider),
-    firestore: FirebaseFirestore.instance,
-  ),
-);
+/// Provider unifié pour le service de permissions.
+final unifiedPermissionServiceProvider = Provider<PermissionService>((ref) {
+  final adminRepository = ref.watch(adminRepositoryProvider);
+  
+  return FirestorePermissionService(
+    adminRepository: adminRepository,
+    getActiveEnterpriseId: () {
+      // Use ref.read to avoid circular dependency if possible, or watch if safe
+      final activeEnterpriseId = ref.read(activeEnterpriseIdProvider).value;
+      return activeEnterpriseId;
+    },
+  );
+});
 
-/// Provider for realtime sync service
-final realtimeSyncServiceProvider = Provider<RealtimeSyncService>(
-  (ref) => RealtimeSyncService(
-    driftService: ref.watch(driftServiceProvider),
-    firestore: FirebaseFirestore.instance,
-    firestoreSync: ref.watch(firestoreSyncServiceProvider),
-  ),
-);
+/// Admin Sync providers (inherited from core/offline/providers.dart)
+// firestoreSyncServiceProvider and realtimeSyncServiceProvider are already defined in core/offline/providers.dart
 
 /// Provider pour surveiller si une synchronisation administrative est en cours.
 final isAdminSyncingProvider = StreamProvider.autoDispose<bool>(
@@ -213,6 +219,7 @@ final enterpriseControllerProvider = Provider<EnterpriseController>(
     permissionValidator: ref.watch(permissionValidatorServiceProvider),
     userRepository: ref.watch(userRepositoryProvider),
     adminRepository: ref.watch(adminRepositoryProvider),
+    tenantContextService: ref.watch(tenantContextServiceProvider),
   ),
 );
 

@@ -5,8 +5,7 @@ import '../../../domain/entities/orange_money_enterprise_extensions.dart';
 import '../../../../administration/domain/entities/enterprise.dart';
 import '../../../../administration/domain/entities/user.dart';
 import '../../../application/providers.dart';
-import 'package:elyf_groupe_app/shared/presentation/widgets/elyf_ui/atoms/elyf_field.dart';
-import 'package:elyf_groupe_app/features/orange_money/application/controllers/agents_controller.dart';
+
 import 'package:elyf_groupe_app/features/administration/application/providers.dart';
 import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 
@@ -259,7 +258,8 @@ class _AddAgencyModalState extends ConsumerState<AddAgencyModal> {
               // Some systems use different prefixes (e.g. agence_orange_money_xxx vs xxx)
               final isFuzzyMatch = a.enterpriseId.contains(widget.agency!.id) || 
                                  widget.agency!.id.contains(a.enterpriseId);
-              final isInherited = widget.agency!.ancestorIds.contains(a.enterpriseId) && a.includesChildren;
+              final isInherited = (widget.agency!.ancestorIds.contains(a.enterpriseId) || 
+                                   widget.agency!.parentEnterpriseId == a.enterpriseId) && a.includesChildren;
               
               // We keep it broad to see what's happening
               return (isDirect || isFuzzyMatch || isInherited) && a.isActive;
@@ -283,6 +283,8 @@ class _AddAgencyModalState extends ConsumerState<AddAgencyModal> {
                     final user = users.firstWhere((u) => u.id == assignment.userId, 
                                                orElse: () => User(id: assignment.userId, firstName: 'Utilisateur', lastName: 'Inconnu', username: 'inconnu', email: '', enterpriseIds: []));
                     
+                    final isDirect = assignment.enterpriseId == widget.agency!.id;
+
                     return ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: CircleAvatar(
@@ -298,11 +300,32 @@ class _AddAgencyModalState extends ConsumerState<AddAgencyModal> {
                             assignment.roleIds.map((r) => r.replaceAll('_', ' ').split(' ').map((s) => s[0].toUpperCase() + s.substring(1)).join(' ')).join(', '),
                             style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant),
                           ),
-                          if (assignment.moduleId != 'orange_money')
-                            Text(
-                              'Module: ${assignment.moduleId}',
-                              style: const TextStyle(fontSize: 10, color: Colors.orange, fontWeight: FontWeight.bold),
-                            ),
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: (isDirect ? Colors.blue : Colors.orange).withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  isDirect ? 'Direct' : 'Hérité',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: isDirect ? Colors.blue : Colors.orange,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              if (assignment.moduleId != 'orange_money') ...[
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Module: ${assignment.moduleId}',
+                                  style: const TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.bold),
+                                ),
+                              ],
+                            ],
+                          ),
                         ],
                       ),
                       trailing: Container(

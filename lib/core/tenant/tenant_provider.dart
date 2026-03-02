@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:rxdart/rxdart.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,10 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../auth/providers.dart';
 import '../auth/entities/enterprise_module_user.dart';
 import '../../features/administration/domain/entities/enterprise.dart';
+import '../../features/administration/domain/entities/user.dart';
 import '../../features/administration/application/providers.dart';
 import '../logging/app_logger.dart';
-import '../offline/providers.dart' show sharedPreferencesProvider, driftServiceProvider;
-import '../offline/drift/app_database.dart';
+import '../offline/providers.dart' show sharedPreferencesProvider;
 
 const String _activeEnterpriseIdKey = 'active_enterprise_id';
 
@@ -91,46 +90,75 @@ final allEnterprisesStreamProvider = StreamProvider<List<Enterprise>>((ref) {
   return enterpriseRepo.watchAllEnterprises();
 });
 
+/// Provider pour surveiller l'utilisateur actuel dans la base locale (Drift)
+final currentUserStreamProvider = StreamProvider<User?>((ref) {
+  final userId = ref.watch(currentUserIdProvider);
+  if (userId == null) return Stream.value(null);
+
+  final userRepository = ref.watch(userRepositoryProvider);
+  return userRepository.watchAllUsers().map((users) {
+    return users.where((u) => u.id == userId).firstOrNull;
+  });
+});
+
 /// Provider pour récupérer les entreprises accessibles à l'utilisateur actuel
 ///
-/// Récupère toutes les entreprises où l'utilisateur a un accès actif.
-/// Désormais réactif aux changements d'affectation et d'entreprise.
+/// Récupère toutes les entreprises où l'utilisateur a un accès actif (via assignments ou enterpriseIds).
 final userAccessibleEnterprisesProvider = StreamProvider<List<Enterprise>>((ref) {
   final assignmentsAsync = ref.watch(userAssignmentsProvider);
   final enterprisesAsync = ref.watch(allEnterprisesStreamProvider);
+  final currentUserAsync = ref.watch(currentUserStreamProvider);
+  final isAdmin = ref.watch(isAdminProvider);
 
   return assignmentsAsync.when(
     data: (assignments) {
       return enterprisesAsync.when(
         data: (enterprises) {
-          final activeAssignments = assignments.where((a) => a.isActive).toList();
-          
-          final accessible = enterprises.where((e) {
-            if (!e.isActive) return false;
+          return currentUserAsync.when(
+            data: (currentUser) {
+              if (isAdmin) {
+                return Stream.value(enterprises.where((e) => e.isActive).toList());
+              }
 
-            // 1. Accès direct
-            final hasDirectAccess = activeAssignments.any((a) => a.enterpriseId == e.id);
-            if (hasDirectAccess) return true;
-
-            // 2. Accès via parent (hiérarchique) avec héritage (includesChildren)
-            String? currentParentId = e.parentEnterpriseId;
-            while (currentParentId != null) {
-              // Vérifier si l'utilisateur a un accès à ce parent avec héritage activé
-              final hasParentAccessWithInheritance = activeAssignments.any(
-                (a) => a.enterpriseId == currentParentId && a.includesChildren,
-              );
+              final activeAssignments = assignments.where((a) => a.isActive).toList();
+              final profileEnterpriseIds = currentUser?.enterpriseIds ?? [];
               
-              if (hasParentAccessWithInheritance) return true;
-              
-              // Continuer à remonter la hiérarchie
-              final parentDoc = enterprises.where((ent) => ent.id == currentParentId).firstOrNull;
-              currentParentId = parentDoc?.parentEnterpriseId;
-            }
+              final accessible = enterprises.where((e) {
+                if (!e.isActive) return false;
 
-            return false;
-          }).toList();
-          
-          return Stream.value(accessible);
+                // 1. Accès via profile (Enterprise Admin)
+                if (profileEnterpriseIds.contains(e.id)) return true;
+
+                // 2. Accès direct via assignments
+                final hasDirectAccess = activeAssignments.any((a) => a.enterpriseId == e.id);
+                if (hasDirectAccess) return true;
+
+                // 3. Accès via parent (hiérarchique) avec héritage (includesChildren)
+                String? currentParentId = e.parentEnterpriseId;
+                while (currentParentId != null) {
+                  // Vérifier si l'utilisateur a un accès au parent dans son profil
+                  if (profileEnterpriseIds.contains(currentParentId)) return true;
+
+                  // Vérifier si l'utilisateur a un accès à ce parent avec héritage activé
+                  final hasParentAccessWithInheritance = activeAssignments.any(
+                    (a) => a.enterpriseId == currentParentId && a.includesChildren,
+                  );
+                  
+                  if (hasParentAccessWithInheritance) return true;
+                  
+                  // Continuer à remonter la hiérarchie
+                  final parentDoc = enterprises.where((ent) => ent.id == currentParentId).firstOrNull;
+                  currentParentId = parentDoc?.parentEnterpriseId;
+                }
+
+                return false;
+              }).toList();
+              
+              return Stream.value(accessible);
+            },
+            loading: () => const Stream.empty(),
+            error: (e, s) => Stream.error(e, s),
+          );
         },
         loading: () => const Stream.empty(),
         error: (e, s) => Stream.error(e, s),
@@ -147,31 +175,58 @@ final userAccessibleEnterprisesProvider = StreamProvider<List<Enterprise>>((ref)
 final userAccessibleModulesForActiveEnterpriseProvider = StreamProvider<List<String>>((
   ref,
 ) {
-  // Récupérer l'entreprise active
+  // Récupérer l'ID de l'entreprise active
   final activeEnterpriseIdAsync = ref.watch(activeEnterpriseIdProvider);
   final activeEnterpriseId = activeEnterpriseIdAsync.value;
 
   if (activeEnterpriseId == null) return Stream.value([]);
 
-  // Surveiller les accès via userAssignmentsProvider
+  // Récupérer les données nécessaires
   final assignmentsAsync = ref.watch(userAssignmentsProvider);
+  final currentUserAsync = ref.watch(currentUserStreamProvider);
+  final activeEnterpriseAsync = ref.watch(activeEnterpriseProvider);
+  final isAdmin = ref.watch(isAdminProvider);
 
   return assignmentsAsync.when(
     data: (userAccesses) {
-      // Filtrer les accès actifs pour l'entreprise active
-      final activeAccesses = userAccesses
-          .where(
-            (access) =>
-                access.enterpriseId == activeEnterpriseId && access.isActive,
-          )
-          .toList();
+      return currentUserAsync.when(
+        data: (currentUser) {
+          final moduleIds = <String>{};
 
-      final moduleIds = activeAccesses
-          .map((access) => access.moduleId)
-          .toSet()
-          .toList();
+          // 1. Gestion des Admins Systèmes (Accès à tout)
+          if (isAdmin) {
+             return Stream.value(EnterpriseModule.values.map((m) => m.id).toList());
+          }
 
-      return Stream.value(moduleIds);
+          // 2. Accès via "enterpriseIds" du profil (Enterprise Admin)
+          // Si l'entreprise active est dans son profil, on lui donne accès au module principal de cette entreprise
+          if (currentUser != null && currentUser.enterpriseIds.contains(activeEnterpriseId)) {
+            activeEnterpriseAsync.whenData((enterprise) {
+              if (enterprise != null) {
+                moduleIds.add(enterprise.type.module.id);
+                // Si c'est une entreprise "group", on donne accès à l'administration
+                if (enterprise.type == EnterpriseType.group) {
+                  moduleIds.add(EnterpriseModule.group.id);
+                }
+              }
+            });
+          }
+
+          // 3. Accès via les assignations explicites (EnterpriseModuleUser)
+          final activeAccesses = userAccesses
+              .where(
+                (access) =>
+                    access.enterpriseId == activeEnterpriseId && access.isActive,
+              )
+              .toList();
+
+          moduleIds.addAll(activeAccesses.map((access) => access.moduleId));
+
+          return Stream.value(moduleIds.toList());
+        },
+        loading: () => const Stream.empty(),
+        error: (e, s) => Stream.error(e, s),
+      );
     },
     loading: () => const Stream.empty(),
     error: (e, s) => Stream.error(e, s),

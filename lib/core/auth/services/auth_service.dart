@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/offline/providers.dart' show sharedPreferencesProvider;
@@ -10,7 +11,6 @@ import 'auth_user_service.dart';
 import 'auth_storage_service.dart';
 import '../../permissions/services/permission_service.dart';
 import '../../tenant/tenant_provider.dart';
-import '../../../features/administration/application/providers.dart';
 import 'firestore_permission_service.dart';
 
 /// Service d'authentification avec Firebase Auth et Firestore.
@@ -76,11 +76,13 @@ class AuthService {
     required String email,
     required String password,
     String? displayName,
+    FirebaseAuth? firebaseAuth,
   }) async {
     return await _userService.createUserAccount(
       email: email,
       password: password,
       displayName: displayName,
+      firebaseAuth: firebaseAuth,
     );
   }
 
@@ -219,25 +221,6 @@ final isAdminProvider = Provider<bool>((ref) {
   return currentUserAsync.maybeWhen(
     data: (user) => user?.isAdmin ?? false,
     orElse: () => false,
-  );
-});
-
-/// Provider unifié pour le service de permissions.
-///
-/// Implémenté par FirestorePermissionService qui utilise AdminController.
-final unifiedPermissionServiceProvider = Provider<PermissionService>((ref) {
-  final adminRepository = ref.watch(adminRepositoryProvider);
-  
-  return FirestorePermissionService(
-    adminRepository: adminRepository,
-    getActiveEnterpriseId: () {
-      final activeEnterpriseAsync = ref.read(activeEnterpriseIdProvider);
-      return activeEnterpriseAsync.when(
-        data: (id) => id,
-        loading: () => null,
-        error: (_, __) => null,
-      );
-    },
   );
 });
 

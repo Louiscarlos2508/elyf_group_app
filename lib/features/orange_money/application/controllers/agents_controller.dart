@@ -6,8 +6,9 @@ import 'package:elyf_groupe_app/features/orange_money/domain/entities/orange_mon
 import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import 'package:elyf_groupe_app/features/administration/domain/repositories/enterprise_repository.dart';
 import '../../../audit_trail/domain/services/audit_trail_service.dart';
-import '../../../../core/logging/app_logger.dart';
 import '../../domain/adapters/orange_money_permission_adapter.dart';
+import '../../../administration/application/services/tenant_context_service.dart';
+import '../../../../core/logging/app_logger.dart';
 
 /// Controller for managing mobile money agents (represented as enterprises).
 class AgentsController {
@@ -19,6 +20,7 @@ class AgentsController {
     this.userId,
     this._permissionAdapter,
     this._activeEnterpriseId,
+    this._tenantContextService,
   );
 
   final EnterpriseRepository _enterpriseRepository;
@@ -28,6 +30,7 @@ class AgentsController {
   final String userId;
   final OrangeMoneyPermissionAdapter _permissionAdapter;
   final String _activeEnterpriseId;
+  final TenantContextService _tenantContextService;
 
   // --- Agency (Enterprise) Management ---
 
@@ -36,6 +39,7 @@ class AgentsController {
     String? parentEnterpriseId,
     String? searchQuery,
     bool excludeAssigned = false,
+    String? includeAgencyId,
   }) async {
     final List<String> targetIds;
 
@@ -69,6 +73,9 @@ class AgentsController {
         enterpriseId: _activeEnterpriseId,
       );
       final assignedAgencyIds = allAgents.map((a) => a.enterpriseId).toSet();
+      if (includeAgencyId != null) {
+        assignedAgencyIds.remove(includeAgencyId);
+      }
       agencies = agencies.where((a) => !assignedAgencyIds.contains(a.id)).toList();
     }
 
@@ -80,7 +87,19 @@ class AgentsController {
   }
 
   Future<void> createAgency(Enterprise agency) async {
-    await _enterpriseRepository.createEnterprise(agency);
+    // Calculer les informations de hiérarchie pour assurer l'héritage des permissions
+    final hierarchyInfo = await _tenantContextService.calculateHierarchyInfo(
+      enterpriseId: agency.id,
+      parentEnterpriseId: agency.parentEnterpriseId,
+    );
+
+    final agencyWithHierarchy = agency.copyWith(
+      hierarchyLevel: hierarchyInfo.level,
+      hierarchyPath: hierarchyInfo.path,
+      ancestorIds: hierarchyInfo.ancestorIds,
+    );
+
+    await _enterpriseRepository.createEnterprise(agencyWithHierarchy);
     _logAgentEvent(agency.id, 'CREATE_AGENCY', 'Agency: ${agency.name}', 'agency');
   }
 

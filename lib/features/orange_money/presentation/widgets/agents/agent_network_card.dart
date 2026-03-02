@@ -179,39 +179,41 @@ class AgentNetworkCard extends StatelessWidget {
               child: IntrinsicHeight(
                 child: Row(
                   children: [
-                    Expanded(
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          onTap: onRecharge,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.add_circle_outline_rounded, 
-                                     size: 16, color: theme.colorScheme.primary),
-                                const SizedBox(width: 6),
-                                Text(
-                                  'Recharger',
-                                  style: theme.textTheme.labelMedium?.copyWith(
-                                    color: theme.colorScheme.primary,
-                                    fontWeight: FontWeight.w800,
+                    if (isAgent) ...[
+                      Expanded(
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: onRecharge,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.add_circle_outline_rounded, 
+                                       size: 16, color: theme.colorScheme.primary),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Recharger',
+                                    style: theme.textTheme.labelMedium?.copyWith(
+                                      color: theme.colorScheme.primary,
+                                      fontWeight: FontWeight.w800,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                    VerticalDivider(
-                      width: 1,
-                      thickness: 1,
-                      indent: 10,
-                      endIndent: 10,
-                      color: theme.colorScheme.outline.withValues(alpha: 0.1),
-                    ),
+                      VerticalDivider(
+                        width: 1,
+                        thickness: 1,
+                        indent: 10,
+                        endIndent: 10,
+                        color: theme.colorScheme.outline.withValues(alpha: 0.1),
+                      ),
+                    ],
                     Expanded(
                       child: Material(
                         color: Colors.transparent,

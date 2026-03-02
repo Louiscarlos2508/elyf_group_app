@@ -161,8 +161,13 @@ class FirebaseSyncHandler implements SyncOperationHandler {
         // Pour les entreprises, le remoteId est déjà l'ID, donc pas besoin de mise à jour
         // Mais on peut quand même logger pour vérifier
         if (operation.collectionName == 'enterprises') {
-          AppLogger.debug(
-            '✅ Enterprise créée dans Firestore: id=$remoteId, name=${sanitizedData['name']}, type=${sanitizedData['type']}',
+          AppLogger.info(
+            '✅ Enterprise créée/mise à jour dans Firestore: id=$remoteId, name=${sanitizedData['name']}, type=${sanitizedData['type']}, path=${docRef.path}',
+            name: 'offline.firebase',
+          );
+        } else if (operation.collectionName == 'users') {
+          AppLogger.info(
+            '✅ Utilisateur créé/mis à jour dans Firestore: id=$remoteId, email=${sanitizedData['email']}, username=${sanitizedData['username']}, path=${docRef.path}',
             name: 'offline.firebase',
           );
         }

@@ -48,8 +48,6 @@ enum EnterpriseType {
   // Mobile Money
   mobileMoneyAgent('mm_agent', 'Agence Mobile Money', 'Agence principale', EnterpriseModule.mobileMoney, isMain: true),
   mobileMoneySubAgent('mm_sub_agent', 'Sous-Agence', 'Sous-agence Mobile Money', EnterpriseModule.mobileMoney),
-  mobileMoneyDistributor('mm_distributor', 'Distributeur', 'Distributeur Mobile Money', EnterpriseModule.mobileMoney),
-  mobileMoneyKiosk('mm_kiosk', 'Kiosque', 'Kiosque Mobile Money', EnterpriseModule.mobileMoney),
   
   // Générique
   pointOfSale('pos', 'Point de vente', 'Point de vente générique', EnterpriseModule.gaz);
@@ -122,7 +120,6 @@ enum EnterpriseType {
     pointOfSale,
     mobileMoneyAgent,
     mobileMoneySubAgent,
-    mobileMoneyKiosk,
   ].contains(this);
 
   /// Obtenir une icône représentative du type d'entité
@@ -130,7 +127,6 @@ enum EnterpriseType {
     if (this == group) return Icons.account_balance;
     if (isMain) return Icons.business;
     if (isPointOfSale) return Icons.store_mall_directory;
-    if (this == mobileMoneyKiosk) return Icons.door_front_door;
     if (this == gasWarehouse || this == waterWarehouse) return Icons.warehouse;
     return Icons.location_on;
   }
@@ -280,6 +276,7 @@ class Enterprise extends Equatable {
   Map<String, dynamic> toMap() {
     return {
       'id': id,
+      'uid': id,
       'name': name,
       'type': type.id,
       'parentEnterpriseId': parentEnterpriseId,
@@ -305,7 +302,7 @@ class Enterprise extends Equatable {
     return Enterprise(
       id: (map['localId'] as String?)?.trim().isNotEmpty == true 
           ? map['localId'] as String 
-          : (map['id'] as String? ?? ''),
+          : (map['uid'] as String? ?? map['id'] as String? ?? ''),
       name: map['name'] as String? ?? 'Sans nom',
       type: EnterpriseType.fromId(map['type'] as String? ?? 'gas_company'),
       parentEnterpriseId: map['parentEnterpriseId'] as String?,

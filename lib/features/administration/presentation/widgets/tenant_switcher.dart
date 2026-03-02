@@ -149,11 +149,6 @@ class TenantSwitcher extends ConsumerWidget {
         iconData = Icons.account_balance_wallet;
         color = Colors.orange;
         break;
-      case EnterpriseType.mobileMoneyDistributor:
-      case EnterpriseType.mobileMoneyKiosk:
-        iconData = Icons.point_of_sale;
-        color = Colors.orange.shade700;
-        break;
     }
 
     return Icon(iconData, size: 18, color: color);

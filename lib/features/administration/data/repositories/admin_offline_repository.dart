@@ -37,43 +37,16 @@ class AdminOfflineRepository implements AdminRepository {
   }
 
   Map<String, dynamic> _enterpriseModuleUserToMap(EnterpriseModuleUser entity) {
-    return {
-      'userId': entity.userId,
-      'enterpriseId': entity.enterpriseId,
-      'moduleId': entity.moduleId,
-      'roleIds': entity.roleIds,
-      'customPermissions': entity.customPermissions.toList(),
-      'isActive': entity.isActive,
-      'createdAt': entity.createdAt?.toIso8601String(),
-      'updatedAt': entity.updatedAt?.toIso8601String(),
-    };
+    return entity.toMap();
   }
 
   // UserRole methods
   UserRole _userRoleFromMap(Map<String, dynamic> map) {
-    return UserRole(
-      id: map['id'] as String? ?? map['localId'] as String,
-      name: map['name'] as String,
-      description: map['description'] as String,
-      permissions:
-          (map['permissions'] as List<dynamic>?)
-              ?.map((e) => e as String)
-              .toSet() ??
-          {},
-      moduleId: map['moduleId'] as String? ?? 'administration',
-      isSystemRole: map['isSystemRole'] as bool? ?? false,
-    );
+    return UserRole.fromMap(map);
   }
 
   Map<String, dynamic> _userRoleToMap(UserRole entity) {
-    return {
-      'id': entity.id,
-      'name': entity.name,
-      'description': entity.description,
-      'permissions': entity.permissions.toList(),
-      'moduleId': entity.moduleId,
-      'isSystemRole': entity.isSystemRole,
-    };
+    return entity.toMap();
   }
 
   String _getLocalId(String id) {

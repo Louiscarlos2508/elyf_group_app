@@ -11,9 +11,13 @@ import '../../../../core/auth/services/auth_service.dart';
 ///
 /// Creates Firebase Auth users when creating admin users.
 class FirebaseAuthIntegrationService {
-  FirebaseAuthIntegrationService({required this.authService});
+  FirebaseAuthIntegrationService({
+    required this.authService,
+    this.managementAuth,
+  });
 
   final AuthService authService;
+  final FirebaseAuth? managementAuth;
 
   /// Create a Firebase Auth user with email and password.
   ///
@@ -30,6 +34,7 @@ class FirebaseAuthIntegrationService {
         email: email,
         password: password,
         displayName: displayName,
+        firebaseAuth: managementAuth,
       );
 
       developer.log(

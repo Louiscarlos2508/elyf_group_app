@@ -17,23 +17,35 @@ class SingleEnterpriseSelection extends StatelessWidget {
   final ValueChanged<String?> onChanged;
   final String moduleId;
 
-  /// Obtient le type d'entreprise correspondant au module.
-  EnterpriseType? _getEnterpriseTypeForModule(String moduleId) {
-    if (moduleId == 'eau_minerale') return EnterpriseType.waterEntity;
-    if (moduleId == 'gaz') return EnterpriseType.gasCompany;
-    if (moduleId == 'orange_money') return EnterpriseType.mobileMoneyAgent;
-    if (moduleId == 'immobilier') return EnterpriseType.realEstateAgency;
-    if (moduleId == 'boutique') return EnterpriseType.shop;
-    return null;
+  /// Obtient les types d'entreprises correspondants au module.
+  List<EnterpriseType> _getAllowedEnterpriseTypes(String moduleId) {
+    if (moduleId == 'eau_minerale') return [EnterpriseType.waterEntity];
+    if (moduleId == 'gaz') {
+      return [
+        EnterpriseType.gasCompany,
+        EnterpriseType.pointOfSale,
+        EnterpriseType.gasPointOfSale,
+        EnterpriseType.gasWarehouse,
+      ];
+    }
+    if (moduleId == 'orange_money') {
+      return [
+        EnterpriseType.mobileMoneyAgent,
+        EnterpriseType.mobileMoneySubAgent,
+      ];
+    }
+    if (moduleId == 'immobilier') return [EnterpriseType.realEstateAgency];
+    if (moduleId == 'boutique') return [EnterpriseType.shop];
+    return [];
   }
 
   @override
   Widget build(BuildContext context) {
-    final enterpriseType = _getEnterpriseTypeForModule(moduleId);
+    final allowedTypes = _getAllowedEnterpriseTypes(moduleId);
 
-    // Filtrer les entreprises actives du même type que le module
+    // Filtrer les entreprises actives compatibles avec le module
     final availableEnterprises = enterprises
-        .where((e) => e.isActive && e.type == enterpriseType)
+        .where((e) => e.isActive && allowedTypes.contains(e.type))
         .toList();
 
     if (availableEnterprises.isEmpty) {
@@ -75,22 +87,34 @@ class MultipleEnterpriseSelection extends StatelessWidget {
   final ValueChanged<Set<String>> onChanged;
   final String moduleId;
 
-  EnterpriseType? _getEnterpriseTypeForModule(String moduleId) {
-    if (moduleId == 'eau_minerale') return EnterpriseType.waterEntity;
-    if (moduleId == 'gaz') return EnterpriseType.gasCompany;
-    if (moduleId == 'orange_money') return EnterpriseType.mobileMoneyAgent;
-    if (moduleId == 'immobilier') return EnterpriseType.realEstateAgency;
-    if (moduleId == 'boutique') return EnterpriseType.shop;
-    return null;
+  List<EnterpriseType> _getAllowedEnterpriseTypes(String moduleId) {
+    if (moduleId == 'eau_minerale') return [EnterpriseType.waterEntity];
+    if (moduleId == 'gaz') {
+      return [
+        EnterpriseType.gasCompany,
+        EnterpriseType.pointOfSale,
+        EnterpriseType.gasPointOfSale,
+        EnterpriseType.gasWarehouse,
+      ];
+    }
+    if (moduleId == 'orange_money') {
+      return [
+        EnterpriseType.mobileMoneyAgent,
+        EnterpriseType.mobileMoneySubAgent,
+      ];
+    }
+    if (moduleId == 'immobilier') return [EnterpriseType.realEstateAgency];
+    if (moduleId == 'boutique') return [EnterpriseType.shop];
+    return [];
   }
 
   @override
   Widget build(BuildContext context) {
-    final enterpriseType = _getEnterpriseTypeForModule(moduleId);
+    final allowedTypes = _getAllowedEnterpriseTypes(moduleId);
 
-    // Filtrer les entreprises actives du même type que le module
+    // Filtrer les entreprises actives compatibles avec le module
     final availableEnterprises = enterprises
-        .where((e) => e.isActive && e.type == enterpriseType)
+        .where((e) => e.isActive && allowedTypes.contains(e.type))
         .toList();
 
     if (availableEnterprises.isEmpty) {

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import '../core/navigation/navigation_service.dart';
+import '../core/session/providers.dart';
 import '../shared/providers/app_boot_status_provider.dart';
 import 'router/app_router.dart';
 import 'theme/app_theme.dart';
@@ -29,6 +30,10 @@ class _ElyfAppState extends ConsumerState<ElyfApp> {
   Widget build(BuildContext context) {
     final router = ref.watch(appRouterProvider);
     final bootStatus = ref.watch(appBootStatusProvider);
+    
+    // Initialiser le contrôleur de cycle de vie de l'application
+    // Il gère les transitions de session et les effets secondaires (Sync, etc.)
+    ref.watch(appLifecycleControllerProvider);
 
     // Initialiser le NavigationService avec le router
     NavigationService.instance.initialize(() => router);
