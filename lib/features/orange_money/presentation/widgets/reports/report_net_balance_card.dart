@@ -31,7 +31,7 @@ class ReportNetBalanceCard extends StatelessWidget {
                 fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: AppSpacing.sm),
+            SizedBox(height: AppSpacing.sm),
             Text(
               '${netBalance >= 0 ? '+' : ''}${CurrencyFormatter.formatFCFA(netBalance)}',
               style: theme.textTheme.headlineLarge?.copyWith(
@@ -40,7 +40,7 @@ class ReportNetBalanceCard extends StatelessWidget {
                 fontFamily: 'Outfit',
               ),
             ),
-            const SizedBox(height: AppSpacing.sm),
+            SizedBox(height: AppSpacing.sm),
             Text(
               'Dépôts - Retraits = ${CurrencyFormatter.formatFCFA(cashInTotal)} - ${CurrencyFormatter.formatFCFA(cashOutTotal)}',
               style: theme.textTheme.bodyMedium?.copyWith(

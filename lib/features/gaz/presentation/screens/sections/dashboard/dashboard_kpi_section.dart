@@ -9,7 +9,6 @@ import '../../../../domain/entities/gas_sale.dart';
 import '../../../../domain/entities/gaz_settings.dart';
 import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
-import '../../../../domain/entities/stock_transfer.dart';
 import '../../../../application/providers.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/services/gaz_financial_calculation_service.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/services/gaz_stock_calculation_service.dart';

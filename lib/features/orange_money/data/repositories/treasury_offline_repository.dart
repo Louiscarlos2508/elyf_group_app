@@ -14,7 +14,14 @@ class OrangeMoneyTreasuryOfflineRepository implements OrangeMoneyTreasuryReposit
   static const String _collectionName = 'orange_money_treasury_operations';
 
   @override
-  Future<List<TreasuryOperation>> getOperations(String enterpriseId, {DateTime? from, DateTime? to, List<String>? enterpriseIds}) async {
+  Future<List<TreasuryOperation>> getOperations(
+    String enterpriseId, {
+    DateTime? from,
+    DateTime? to,
+    List<String>? enterpriseIds,
+    String? referenceEntityId,
+    String? referenceEntityType,
+  }) async {
     final query = _db.select(_db.offlineRecords)
       ..where((t) => t.collectionName.equals(_collectionName));
 
@@ -30,13 +37,22 @@ class OrangeMoneyTreasuryOfflineRepository implements OrangeMoneyTreasuryReposit
         .where((op) {
       if (from != null && op.date.isBefore(from)) return false;
       if (to != null && op.date.isAfter(to)) return false;
+      if (referenceEntityId != null && op.referenceEntityId != referenceEntityId) return false;
+      if (referenceEntityType != null && op.referenceEntityType != referenceEntityType) return false;
       return true;
     }).toList()
       ..sort((a, b) => b.date.compareTo(a.date));
   }
 
   @override
-  Stream<List<TreasuryOperation>> watchOperations(String enterpriseId, {DateTime? from, DateTime? to, List<String>? enterpriseIds}) {
+  Stream<List<TreasuryOperation>> watchOperations(
+    String enterpriseId, {
+    DateTime? from,
+    DateTime? to,
+    List<String>? enterpriseIds,
+    String? referenceEntityId,
+    String? referenceEntityType,
+  }) {
     final query = _db.select(_db.offlineRecords)
       ..where((t) => t.collectionName.equals(_collectionName));
 
@@ -53,6 +69,8 @@ class OrangeMoneyTreasuryOfflineRepository implements OrangeMoneyTreasuryReposit
           .where((op) {
         if (from != null && op.date.isBefore(from)) return false;
         if (to != null && op.date.isAfter(to)) return false;
+        if (referenceEntityId != null && op.referenceEntityId != referenceEntityId) return false;
+        if (referenceEntityType != null && op.referenceEntityType != referenceEntityType) return false;
         return true;
       }).toList()
         ..sort((a, b) => b.date.compareTo(a.date));

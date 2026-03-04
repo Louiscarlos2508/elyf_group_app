@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/core/logging/app_logger.dart';
-
 import '../../widgets/gaz_header.dart';
 import '../../widgets/expense_form_dialog.dart';
 import 'finance/finance_tab_bar.dart';
 import 'finance/expenses_tab.dart';
 import 'finance/treasury_tab.dart';
+import 'finance/payroll_tab.dart';
 
 /// Unified Finance screen for the Gaz module.
 /// Consolidates Expenses and Treasury management.
@@ -26,7 +25,7 @@ class _GazFinanceScreenState extends ConsumerState<GazFinanceScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     _tabController.addListener(_onTabChanged);
   }
 
@@ -86,6 +85,7 @@ class _GazFinanceScreenState extends ConsumerState<GazFinanceScreen>
           children: [
             const ExpensesTab(),
             const TreasuryTab(),
+            const PayrollTab(),
           ],
         ),
       ),
@@ -98,6 +98,8 @@ class _GazFinanceScreenState extends ConsumerState<GazFinanceScreen>
         return 'Gestion des Dépenses';
       case 1:
         return 'Trésorerie & Caisses';
+      case 2:
+        return 'Gestion de la Paie';
       default:
         return 'Suivi Financier';
     }

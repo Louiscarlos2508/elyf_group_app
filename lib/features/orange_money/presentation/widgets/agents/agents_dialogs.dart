@@ -10,9 +10,20 @@ import 'package:elyf_groupe_app/features/orange_money/presentation/widgets/agent
 import 'package:elyf_groupe_app/features/orange_money/presentation/widgets/agents/add_agency_modal.dart';
 import 'package:elyf_groupe_app/features/orange_money/presentation/widgets/agent_recharge_dialog.dart';
 import 'package:elyf_groupe_app/features/orange_money/presentation/widgets/agents/agents_format_helpers.dart';
+import 'package:elyf_groupe_app/features/orange_money/presentation/widgets/agents/agent_detail_modal.dart';
 
 /// Dialogs pour la gestion des agents (Entreprises Mobile Money).
 class AgentsDialogs {
+  /// Affiche le détail d'un agent avec ses stats et son historique.
+  static void showAgentDetailDialog(BuildContext context, entity.Agent agent) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => AgentDetailModal(agent: agent),
+    );
+  }
+
   /// Affiche le dialog de formulaire d'agent.
   static void showAgentDialog(
     BuildContext context,
@@ -49,46 +60,32 @@ class AgentsDialogs {
   ) {
     final scopeId = enterpriseId ?? '';
     final agentsAsync = ref.read(agentAccountsProvider('$scopeId||'));
-    final agenciesAsync = ref.read(agentAgenciesProvider('$scopeId||'));
 
     showDialog(
       context: context,
       builder: (dialogContext) => AgentRechargeDialog(
         agents: agentsAsync.value ?? [],
-        agencies: agenciesAsync.value ?? [],
         onConfirm: (target, type, amount, notes) async {
           final controller = ref.read(agentsControllerProvider);
-          final name = target is Enterprise ? target.name : (target as entity.Agent).name;
+          final agent = target as entity.Agent;
           
-          if (target is Enterprise) {
-            await controller.updateAgencyLiquidity(
-              agency: target,
-              amount: amount,
-              isRecharge: type == AgentTransactionType.recharge,
-            );
-          } else if (target is entity.Agent) {
-            await controller.updateAgentLiquidity(
-              agent: target,
-              amount: amount,
-              isRecharge: type == AgentTransactionType.recharge,
-            );
-          }
+          await controller.updateAgentLiquidity(
+            agent: agent,
+            amount: amount,
+            isRecharge: type == AgentTransactionType.recharge,
+          );
 
           if (context.mounted) {
             ref.invalidate(agentAccountsProvider);
-            ref.invalidate(agentAgenciesProvider);
             ref.invalidate(agentsDailyStatisticsProvider(scopeId));
             onSuccess();
 
             if (dialogContext.mounted) {
-              ScaffoldMessenger.of(dialogContext).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    type == AgentTransactionType.recharge
-                        ? 'Recharge de ${AgentsFormatHelpers.formatCurrency(amount)} effectuée pour $name'
-                        : 'Retrait de ${AgentsFormatHelpers.formatCurrency(amount)} effectué pour $name',
-                  ),
-                ),
+              NotificationService.showSuccess(
+                dialogContext,
+                type == AgentTransactionType.recharge
+                    ? 'Recharge de ${AgentsFormatHelpers.formatCurrency(amount)} effectuée pour ${agent.name}'
+                    : 'Retrait de ${AgentsFormatHelpers.formatCurrency(amount)} effectué pour ${agent.name}',
               );
             }
           }

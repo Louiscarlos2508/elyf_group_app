@@ -72,14 +72,14 @@ class StockStatusTab extends ConsumerWidget {
                         child: const Text('Collecte (POS)'),
                       ),
                     if (isPOS) ...[
-                      // 1. Entrée Pleins (Approvisionnement)
+                      // 1. Entrée (Pleins + Vides retour non-rechargés fusionnés)
                       ElyfButton(
                         onPressed: () {
                           showDialog(
                             context: context,
                             builder: (context) => PosStockMovementDialog(
                               enterpriseId: enterpriseId,
-                              movementType: PosMovementType.fullEntry,
+                              movementType: PosMovementType.entry,
                             ),
                           );
                         },
@@ -87,26 +87,9 @@ class StockStatusTab extends ConsumerWidget {
                         variant: ElyfButtonVariant.filled,
                         size: ElyfButtonSize.small,
                         backgroundColor: AppColors.success,
-                        child: const Text('Approvisionnement'),
+                        child: const Text('Entrée'),
                       ),
-                      // 2. Entrée Vides (Retour Client Hors Vente)
-                      ElyfButton(
-                        onPressed: () {
-                          showDialog(
-                            context: context,
-                            builder: (context) => PosStockMovementDialog(
-                              enterpriseId: enterpriseId,
-                              movementType: PosMovementType.emptyEntry,
-                            ),
-                          );
-                        },
-                        icon: Icons.assignment_return_rounded,
-                        variant: ElyfButtonVariant.filled,
-                        size: ElyfButtonSize.small,
-                        backgroundColor: theme.colorScheme.tertiary,
-                        child: const Text('Retour Vides'),
-                      ),
-                      // 3. Sortie Vides (Envoi Rechargement)
+                      // 2. Sortie Vides (Envoi Rechargement)
                       ElyfButton(
                         onPressed: () {
                           showDialog(

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:elyf_groupe_app/shared.dart';
-import 'package:elyf_groupe_app/app/theme/app_spacing.dart' as tokens;
+import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
 import 'package:elyf_groupe_app/app/theme/design_tokens.dart' show AppRadius;
 
 /// Period selector card for reports screen.
@@ -28,7 +28,7 @@ class ReportPeriodSelector extends StatelessWidget {
     final theme = Theme.of(context);
 
     return ElyfCard(
-      padding: const EdgeInsets.all(tokens.AppSpacing.lg),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -39,7 +39,7 @@ class ReportPeriodSelector extends StatelessWidget {
                 size: 20,
                 color: theme.colorScheme.onSurface,
               ),
-              const SizedBox(width: tokens.AppSpacing.sm),
+              const SizedBox(width: AppSpacing.sm),
               Text(
                 'Période de rapport',
                 style: theme.textTheme.titleMedium?.copyWith(
@@ -49,7 +49,7 @@ class ReportPeriodSelector extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: tokens.AppSpacing.xl),
+          const SizedBox(height: AppSpacing.xl),
           Row(
             children: [
               Expanded(
@@ -59,7 +59,7 @@ class ReportPeriodSelector extends StatelessWidget {
                   onTap: onStartDateSelected,
                 ),
               ),
-              const SizedBox(width: AppSpacing.md),
+              SizedBox(width: AppSpacing.md),
               Expanded(
                 child: _ReportDateField(
                   label: 'Date de fin',
@@ -67,7 +67,7 @@ class ReportPeriodSelector extends StatelessWidget {
                   onTap: onEndDateSelected,
                 ),
               ),
-              const SizedBox(width: AppSpacing.md),
+              SizedBox(width: AppSpacing.md),
               Expanded(
                 child: _ReportQuickActions(
                   onTodaySelected: onTodaySelected,
@@ -108,13 +108,13 @@ class _ReportDateField extends StatelessWidget {
             color: theme.colorScheme.onSurface,
           ),
         ),
-        const SizedBox(height: AppSpacing.sm),
+        SizedBox(height: AppSpacing.sm),
         InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(AppRadius.medium),
           child: Container(
             height: 36,
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 4),
+            padding: EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 4),
             decoration: BoxDecoration(
               color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(AppRadius.medium),
@@ -168,14 +168,14 @@ class _ReportQuickActions extends StatelessWidget {
             color: theme.colorScheme.onSurface,
           ),
         ),
-        const SizedBox(height: AppSpacing.sm),
+        SizedBox(height: AppSpacing.sm),
         Row(
           children: [
             Expanded(
               child: OutlinedButton(
                 onPressed: onTodaySelected,
                 style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
+                  padding: EdgeInsets.symmetric(
                     horizontal: AppSpacing.sm,
                     vertical: AppSpacing.xs,
                   ),
@@ -187,12 +187,12 @@ class _ReportQuickActions extends StatelessWidget {
                 child: const Text('Aujourd\'hui'),
               ),
             ),
-            const SizedBox(width: AppSpacing.sm),
+            SizedBox(width: AppSpacing.sm),
             Expanded(
               child: OutlinedButton(
                 onPressed: onSevenDaysSelected,
                 style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
+                  padding: EdgeInsets.symmetric(
                     horizontal: AppSpacing.sm,
                     vertical: AppSpacing.xs,
                   ),

@@ -1,9 +1,11 @@
 import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
 import 'package:flutter/material.dart';
 
-import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import 'package:elyf_groupe_app/features/orange_money/domain/entities/agent.dart' as entity;
-import 'package:elyf_groupe_app/features/orange_money/domain/entities/orange_money_enterprise_extensions.dart';
+import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
+import 'package:elyf_groupe_app/app/theme/app_radius.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/app/theme/app_colors.dart';
 
 /// Type de transaction pour la recharge/retrait d'un agent.
 enum AgentTransactionType { recharge, retrait }
@@ -13,12 +15,10 @@ class AgentRechargeDialog extends StatefulWidget {
   const AgentRechargeDialog({
     super.key,
     required this.agents,
-    required this.agencies,
     required this.onConfirm,
   });
 
   final List<entity.Agent> agents;
-  final List<Enterprise> agencies;
   final Function(
     dynamic entity,
     AgentTransactionType type,
@@ -36,8 +36,7 @@ class _AgentRechargeDialogState extends State<AgentRechargeDialog> {
   final _notesController = TextEditingController();
 
   AgentTransactionType _selectedType = AgentTransactionType.recharge;
-  bool _isAgencyRecharge = false; // False = Agent (SIM), True = Agence (Cash)
-  dynamic _selectedEntity;
+  entity.Agent? _selectedAgent;
 
   @override
   void dispose() {
@@ -51,10 +50,10 @@ class _AgentRechargeDialogState extends State<AgentRechargeDialog> {
       return;
     }
 
-    if (_selectedEntity == null) {
+    if (_selectedAgent == null) {
       NotificationService.showWarning(
         context,
-        'Veuillez sélectionner une entité',
+        'Veuillez sélectionner un compte agent',
       );
       return;
     }
@@ -66,7 +65,7 @@ class _AgentRechargeDialogState extends State<AgentRechargeDialog> {
     }
 
     widget.onConfirm(
-      _selectedEntity!,
+      _selectedAgent!,
       _selectedType,
       amount,
       _notesController.text.trim().isEmpty
@@ -83,13 +82,13 @@ class _AgentRechargeDialogState extends State<AgentRechargeDialog> {
 
     return Dialog(
       backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      insetPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.lg),
       child: Container(
         constraints: const BoxConstraints(maxWidth: 450),
-        padding: EdgeInsets.all(isKeyboardOpen ? 16 : 24),
+        padding: EdgeInsets.all(isKeyboardOpen ? AppSpacing.md : AppSpacing.lg),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.1),
@@ -105,127 +104,112 @@ class _AgentRechargeDialogState extends State<AgentRechargeDialog> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Header with close button
-                Stack(
+                // Header
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           _selectedType == AgentTransactionType.recharge 
-                            ? '💵 Recharge entité'
-                            : '💸 Retrait entité',
-                          style: TextStyle(
-                            fontSize: isKeyboardOpen ? 16 : 18,
+                            ? '💵 Recharge Agent'
+                            : '💸 Retrait Agent',
+                          style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
-                            color: const Color(0xFF0A0A0A),
+                            fontFamily: 'Outfit',
                           ),
                         ),
                         if (!isKeyboardOpen) ...[
-                          const SizedBox(height: 8),
+                          const SizedBox(height: AppSpacing.xs),
                           Text(
                             _selectedType == AgentTransactionType.recharge
-                              ? 'Attribution de liquidité Mobile Money au point de vente'
-                              : 'Récupération de liquidité Mobile Money depuis le point de vente',
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.normal,
-                              color: Color(0xFF717182),
+                              ? 'Attribution de liquidité SIM'
+                              : 'Récupération de liquidité SIM',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
                             ),
                           ),
                         ],
                       ],
                     ),
-                    Positioned(
-                      right: 0,
-                      top: 0,
-                      child: IconButton(
-                        icon: const Icon(Icons.close, size: 16),
-                        onPressed: () => Navigator.of(context).pop(),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                      ),
+                    IconButton(
+                      icon: const Icon(Icons.close, size: 20),
+                      onPressed: () => Navigator.of(context).pop(),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
                     ),
                   ],
                 ),
-                SizedBox(height: isKeyboardOpen ? 12 : 24),
-                // Entity Type Selector
-                SegmentedButton<bool>(
-                  segments: const [
-                    ButtonSegment(value: false, label: Text('Agent (SIM)'), icon: Icon(Icons.person_outline)),
-                    ButtonSegment(value: true, label: Text('Agence (Cash)'), icon: Icon(Icons.business_outlined)),
-                  ],
-                  selected: {_isAgencyRecharge},
-                  onSelectionChanged: (val) => setState(() {
-                    _isAgencyRecharge = val.first;
-                    _selectedEntity = null;
-                  }),
-                  showSelectedIcon: false,
-                  style: SegmentedButton.styleFrom(
-                    visualDensity: isKeyboardOpen ? VisualDensity.compact : VisualDensity.standard,
-                  ),
-                ),
-                SizedBox(height: isKeyboardOpen ? 12 : 16),
-                // Entity selector
+                SizedBox(height: isKeyboardOpen ? AppSpacing.md : AppSpacing.lg),
+                
+                // Agent selector
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      _isAgencyRecharge ? 'Sélectionner l\'Agence *' : 'Sélectionner le Compte Agent *',
-                      style: TextStyle(fontSize: isKeyboardOpen ? 13 : 14, color: const Color(0xFF0A0A0A)),
+                      'Compte Agent (SIM) *',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: AppSpacing.xs),
                     Container(
-                      height: isKeyboardOpen ? 40 : 48,
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      height: 52,
+                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF3F3F5),
-                        borderRadius: BorderRadius.circular(8),
+                        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                        border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.1)),
                       ),
                       child: DropdownButtonHideUnderline(
-                        child: DropdownButton<dynamic>(
-                          value: _selectedEntity,
+                        child: DropdownButton<entity.Agent>(
+                          value: _selectedAgent,
                           isExpanded: true,
-                          icon: const Icon(Icons.keyboard_arrow_down, size: 16),
-                          items: _isAgencyRecharge 
-                            ? widget.agencies.map((e) => DropdownMenuItem(value: e, child: Text(e.name))).toList()
-                            : widget.agents.map((a) => DropdownMenuItem(value: a, child: Text(a.name))).toList(),
-                          onChanged: (value) => setState(() => _selectedEntity = value),
+                          hint: Text('Sélectionner un agent', style: theme.textTheme.bodyMedium),
+                          icon: const Icon(Icons.keyboard_arrow_down, size: 20),
+                          items: widget.agents.map((a) => DropdownMenuItem(
+                            value: a, 
+                            child: Text(
+                              '${a.name} (${a.simNumber})',
+                              style: theme.textTheme.bodyMedium,
+                            ),
+                          )).toList(),
+                          onChanged: (value) => setState(() => _selectedAgent = value),
                         ),
                       ),
                     ),
                   ],
                 ),
-                SizedBox(height: isKeyboardOpen ? 12 : 16),
+                const SizedBox(height: AppSpacing.md),
+                
                 // Transaction type selector
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                      Text(
                       'Type de mouvement',
-                      style: TextStyle(
-                        fontSize: isKeyboardOpen ? 13 : 14,
-                        fontWeight: FontWeight.normal,
-                        color: const Color(0xFF0A0A0A),
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: AppSpacing.xs),
                     Row(
                       children: [
                         Expanded(
                           child: _buildTypeButton(
                             AgentTransactionType.recharge,
                             'Recharge',
-                            Icons.arrow_downward,
+                            Icons.arrow_downward_rounded,
                             isKeyboardOpen,
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: AppSpacing.sm),
                         Expanded(
                           child: _buildTypeButton(
                             AgentTransactionType.retrait,
                             'Retrait',
-                            Icons.arrow_upward,
+                            Icons.arrow_upward_rounded,
                             isKeyboardOpen,
                           ),
                         ),
@@ -233,43 +217,42 @@ class _AgentRechargeDialogState extends State<AgentRechargeDialog> {
                     ),
                   ],
                 ),
-                SizedBox(height: isKeyboardOpen ? 12 : 16),
+                const SizedBox(height: AppSpacing.md),
+                
                 // Amount field
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'Montant (FCFA) *',
-                      style: TextStyle(
-                        fontSize: isKeyboardOpen ? 13 : 14,
-                        fontWeight: FontWeight.normal,
-                        color: const Color(0xFF0A0A0A),
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: AppSpacing.xs),
                     TextFormField(
                       controller: _amountController,
                       keyboardType: TextInputType.number,
                       decoration: InputDecoration(
-                        hintText: 'Ex: 50000',
-                        hintStyle: const TextStyle(
-                          fontSize: 14,
-                          color: Color(0xFF717182),
-                        ),
+                        hintText: 'Ex: 50 000',
                         filled: true,
-                        fillColor: const Color(0xFFF3F3F5),
+                        fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide.none,
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                          borderSide: BorderSide(color: theme.colorScheme.outline.withValues(alpha: 0.1)),
                         ),
-                        contentPadding: EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: isKeyboardOpen ? 8 : 10,
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                          borderSide: BorderSide(color: theme.colorScheme.outline.withValues(alpha: 0.1)),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.md,
+                          vertical: AppSpacing.md,
                         ),
                       ),
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: Color(0xFF0A0A0A),
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Outfit',
                       ),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
@@ -284,45 +267,41 @@ class _AgentRechargeDialogState extends State<AgentRechargeDialog> {
                     ),
                   ],
                 ),
-                SizedBox(height: isKeyboardOpen ? 12 : 16),
+                const SizedBox(height: AppSpacing.md),
+                
                 // Notes field
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Notes (optionnel)',
-                      style: TextStyle(
-                        fontSize: isKeyboardOpen ? 13 : 14,
-                        fontWeight: FontWeight.normal,
-                        color: const Color(0xFF0A0A0A),
+                      'Notes optionnelles',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: AppSpacing.xs),
                     TextField(
                       controller: _notesController,
                       maxLines: isKeyboardOpen ? 1 : 2,
                       decoration: InputDecoration(
-                        hintText: 'Informations complémentaires...',
-                        hintStyle: const TextStyle(
-                          fontSize: 14,
-                          color: Color(0xFF717182),
-                        ),
+                        hintText: 'Détails de la transaction...',
                         filled: true,
-                        fillColor: const Color(0xFFF3F3F5),
+                        fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide.none,
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                          borderSide: BorderSide(color: theme.colorScheme.outline.withValues(alpha: 0.1)),
                         ),
-                        contentPadding: const EdgeInsets.all(12),
-                      ),
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: Color(0xFF0A0A0A),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                          borderSide: BorderSide(color: theme.colorScheme.outline.withValues(alpha: 0.1)),
+                        ),
+                        contentPadding: const EdgeInsets.all(AppSpacing.md),
                       ),
                     ),
                   ],
                 ),
-                SizedBox(height: isKeyboardOpen ? 16 : 24),
+                SizedBox(height: isKeyboardOpen ? AppSpacing.md : AppSpacing.xl),
+                
                 // Action buttons
                 Row(
                   children: [
@@ -330,49 +309,28 @@ class _AgentRechargeDialogState extends State<AgentRechargeDialog> {
                       child: OutlinedButton(
                         onPressed: () => Navigator.of(context).pop(),
                         style: OutlinedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          side: BorderSide(
-                            color: Colors.black.withValues(alpha: 0.1),
-                            width: 1.219,
-                          ),
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 17,
-                            vertical: isKeyboardOpen ? 8 : 12,
-                          ),
-                          minimumSize: const Size(0, 36),
+                          padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(AppRadius.md),
                           ),
                         ),
-                        child: Text(
-                          'Annuler',
-                          style: TextStyle(
-                            fontSize: isKeyboardOpen ? 13 : 14,
-                            color: const Color(0xFF0A0A0A),
-                          ),
-                        ),
+                        child: const Text('Annuler'),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: AppSpacing.md),
                     Expanded(
                       child: ElevatedButton(
                         onPressed: _handleConfirm,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF00A63E),
+                          backgroundColor: AppColors.success,
                           foregroundColor: Colors.white,
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: isKeyboardOpen ? 8 : 12,
-                          ),
-                          minimumSize: const Size(0, 36),
+                          padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(AppRadius.md),
                           ),
+                          elevation: 0,
                         ),
-                        child: Text(
-                          'Valider',
-                          style: TextStyle(fontSize: isKeyboardOpen ? 13 : 14),
-                        ),
+                        child: const Text('Valider'),
                       ),
                     ),
                   ],
@@ -391,12 +349,13 @@ class _AgentRechargeDialogState extends State<AgentRechargeDialog> {
     IconData icon,
     bool isKeyboardOpen,
   ) {
+    final theme = Theme.of(context);
     final isSelected = _selectedType == type;
-    final backgroundColor = isSelected ? const Color(0xFF030213) : Colors.white;
-    final textColor = isSelected ? Colors.white : const Color(0xFF0A0A0A);
+    final backgroundColor = isSelected ? theme.colorScheme.primary : theme.colorScheme.surface;
+    final textColor = isSelected ? Colors.white : theme.colorScheme.onSurface;
     final borderColor = isSelected
-        ? Colors.transparent
-        : Colors.black.withValues(alpha: 0.1);
+        ? theme.colorScheme.primary
+        : theme.colorScheme.outline.withValues(alpha: 0.2);
 
     return InkWell(
       onTap: () {
@@ -404,25 +363,24 @@ class _AgentRechargeDialogState extends State<AgentRechargeDialog> {
           _selectedType = type;
         });
       },
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(AppRadius.md),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        height: isKeyboardOpen ? 32 : 36,
+        height: 48,
         decoration: BoxDecoration(
           color: backgroundColor,
-          border: Border.all(color: borderColor, width: 1.219),
-          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: borderColor),
+          borderRadius: BorderRadius.circular(AppRadius.md),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: isKeyboardOpen ? 14 : 16, color: textColor),
-            const SizedBox(width: 8),
+            Icon(icon, size: 18, color: textColor),
+            const SizedBox(width: AppSpacing.sm),
             Text(
               label,
-              style: TextStyle(
-                fontSize: isKeyboardOpen ? 12 : 14,
-                fontWeight: FontWeight.normal,
+              style: theme.textTheme.labelLarge?.copyWith(
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 color: textColor,
               ),
             ),

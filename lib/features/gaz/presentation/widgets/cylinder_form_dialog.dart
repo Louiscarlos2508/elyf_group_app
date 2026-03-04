@@ -13,11 +13,13 @@ class CylinderFormDialog extends ConsumerStatefulWidget {
     this.cylinder,
     required this.enterpriseId,
     required this.moduleId,
+    this.isPOS = false,
   });
 
   final Cylinder? cylinder;
   final String enterpriseId;
   final String moduleId;
+  final bool isPOS;
 
   @override
   ConsumerState<CylinderFormDialog> createState() => _CylinderFormDialogState();
@@ -305,103 +307,104 @@ class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Prix d'achat
-                  TextFormField(
-                    controller: _buyPriceController,
-                    decoration: InputDecoration(
-                      labelText: "Prix d'achat (Fournisseur)",
-                      hintText: 'Utilisé pour les Appro/Tours',
-                      suffixText: 'FCFA',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      prefixIcon: const Icon(Icons.shopping_cart_outlined),
-                      filled: true,
-                      fillColor: Colors.grey.withAlpha(10),
-                    ),
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    validator: (value) {
-                      if (value != null && value.isNotEmpty) {
-                        final price = double.tryParse(value);
-                        if (price == null || price < 0) return 'Invalide';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  
-                  const SizedBox(height: 16),
-                  
-                  const Divider(),
-                  const SizedBox(height: 16),
-                  Text(
-                    widget.cylinder == null ? 'Stock Initial (Plein/Vide)' : 'Stock Actuel (Plein/Vide)',
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextFormField(
-                            controller: _initialFullStockController,
-                            decoration: InputDecoration(
-                              labelText: 'Stock Plein',
-                              hintText: '0',
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              prefixIcon: const Icon(Icons.inventory_2_outlined),
-                              filled: true,
-                              fillColor: Colors.grey.withAlpha(10),
-                            ),
-                            keyboardType: TextInputType.number,
-                            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                          ),
+                  // Prix d'achat — Masqué pour POS (configurable uniquement par l'entreprise parente)
+                  if (!widget.isPOS) ...[
+                    TextFormField(
+                      controller: _buyPriceController,
+                      decoration: InputDecoration(
+                        labelText: "Prix d'achat (Fournisseur)",
+                        hintText: 'Utilisé pour les tournées',
+                        suffixText: 'FCFA',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: TextFormField(
-                            controller: _initialEmptyStockController,
-                            decoration: InputDecoration(
-                              labelText: 'Stock Vide',
-                              hintText: '0',
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              prefixIcon: const Icon(Icons.inventory_outlined),
-                              filled: true,
-                              fillColor: Colors.grey.withAlpha(10),
-                            ),
-                            keyboardType: TextInputType.number,
-                            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                          ),
-                        ),
-                      ],
-                    ),
-                  const SizedBox(height: 16),
-
-                  // Parc total de bouteilles
-                  TextFormField(
-                    controller: _registeredTotalController,
-                    decoration: InputDecoration(
-                      labelText: 'Parc Total (Toutes bouteilles)',
-                      hintText: 'Ex: 50 (plein + vide + en circulation)',
-                      helperText: 'Sert à détecter les pertes. Vide = non suivi.',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
+                        prefixIcon: const Icon(Icons.shopping_cart_outlined),
+                        filled: true,
+                        fillColor: Colors.grey.withAlpha(10),
                       ),
-                      prefixIcon: const Icon(Icons.analytics_outlined),
-                      filled: true,
-                      fillColor: Theme.of(context).colorScheme.primaryContainer.withAlpha(40),
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      validator: (value) {
+                        if (value != null && value.isNotEmpty) {
+                          final price = double.tryParse(value);
+                          if (price == null || price < 0) return 'Invalide';
+                        }
+                        return null;
+                      },
                     ),
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  ),
-                  const SizedBox(height: 32),
+                    const SizedBox(height: 16),
+                  ],
+                  
+                  // Stock initial et Parc — Masqués pour POS
+                  if (!widget.isPOS) ...[
+                    const Divider(),
+                    const SizedBox(height: 16),
+                    Text(
+                      widget.cylinder == null ? 'Stock Initial (Plein/Vide)' : 'Stock Actuel (Plein/Vide)',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: _initialFullStockController,
+                              decoration: InputDecoration(
+                                labelText: 'Stock Plein',
+                                hintText: '0',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                prefixIcon: const Icon(Icons.inventory_2_outlined),
+                                filled: true,
+                                fillColor: Colors.grey.withAlpha(10),
+                              ),
+                              keyboardType: TextInputType.number,
+                              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: TextFormField(
+                              controller: _initialEmptyStockController,
+                              decoration: InputDecoration(
+                                labelText: 'Stock Vide',
+                                hintText: '0',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                prefixIcon: const Icon(Icons.inventory_outlined),
+                                filled: true,
+                                fillColor: Colors.grey.withAlpha(10),
+                              ),
+                              keyboardType: TextInputType.number,
+                              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                            ),
+                          ),
+                        ],
+                      ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _registeredTotalController,
+                      decoration: InputDecoration(
+                        labelText: 'Parc Total (Toutes bouteilles)',
+                        hintText: 'Ex: 50 (plein + vide + en circulation)',
+                        helperText: 'Sert à détecter les pertes. Vide = non suivi.',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        prefixIcon: const Icon(Icons.analytics_outlined),
+                        filled: true,
+                        fillColor: Theme.of(context).colorScheme.primaryContainer.withAlpha(40),
+                      ),
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    ),
+                    const SizedBox(height: 32),
+                  ],
                   
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,

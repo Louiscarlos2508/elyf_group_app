@@ -1,19 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
+import 'package:intl/intl.dart';
 import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/shared/domain/entities/treasury_operation.dart';
+import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
 import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
+import 'package:elyf_groupe_app/app/theme/app_radius.dart';
 import 'package:elyf_groupe_app/features/orange_money/application/providers.dart';
 import 'package:elyf_groupe_app/features/orange_money/domain/entities/agent.dart' show Agent, AgentStatus;
 import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import 'package:elyf_groupe_app/features/orange_money/presentation/widgets/agents/agents_dialogs.dart';
 import 'package:elyf_groupe_app/features/orange_money/presentation/widgets/agents/agents_filters.dart';
 import 'package:elyf_groupe_app/features/orange_money/presentation/widgets/agents/agents_kpi_cards.dart';
-import 'package:elyf_groupe_app/features/orange_money/presentation/widgets/agents/agents_list_header.dart';
-import 'package:elyf_groupe_app/features/orange_money/presentation/widgets/agents/agents_low_liquidity_banner.dart';
-import 'package:elyf_groupe_app/features/orange_money/presentation/widgets/agents/agents_sort_button.dart';
 import 'package:elyf_groupe_app/features/orange_money/presentation/widgets/agents/agent_network_card.dart';
-import 'package:elyf_groupe_app/features/orange_money/presentation/widgets/orange_money_header.dart';
 
 /// Screen for managing affiliated agents (Mobile Money Enterprises).
 class AgentsScreen extends ConsumerStatefulWidget {
@@ -34,7 +33,7 @@ class _AgentsScreenState extends ConsumerState<AgentsScreen> with SingleTickerPr
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     _tabController.addListener(() {
       if (!_tabController.indexIsChanging) {
         setState(() {});
@@ -51,7 +50,10 @@ class _AgentsScreenState extends ConsumerState<AgentsScreen> with SingleTickerPr
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final statsKey = widget.enterpriseId ?? '';
+    // Use activeEnterpriseProvider to get the real enterprise ID — ensures
+    // it matches what is stored in TreasuryOperation records created by the controller.
+    final activeEnterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? '';
+    final statsKey = widget.enterpriseId ?? activeEnterpriseId;
     final statsAsync = ref.watch(agentsDailyStatisticsProvider(statsKey));
     return CustomScrollView(
       slivers: [
@@ -65,7 +67,7 @@ class _AgentsScreenState extends ConsumerState<AgentsScreen> with SingleTickerPr
         // 1. Statistiques
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+            padding: EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.xs),
             child: _buildStatisticsSection(statsAsync),
           ),
         ),
@@ -73,43 +75,55 @@ class _AgentsScreenState extends ConsumerState<AgentsScreen> with SingleTickerPr
         // 2. Filtres & Recherche
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+            padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             child: ElyfCard(
               backgroundColor: theme.colorScheme.surface.withValues(alpha: 0.5),
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(AppSpacing.sm),
               child: Column(
                 children: [
                    Row(
                     children: [
                       Icon(
-                        _tabController.index == 0 ? Icons.person_pin_rounded : Icons.business_rounded,
+                        _tabController.index == 0 
+                            ? Icons.person_pin_rounded 
+                            : _tabController.index == 1 
+                                ? Icons.business_rounded 
+                                : Icons.history_rounded,
                         size: 20,
                         color: theme.colorScheme.primary,
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: AppSpacing.md),
                       Expanded(
                         child: Text(
-                          _tabController.index == 0 ? 'COMPTES AGENTS (SIM)' : 'AGENCES & POINTS DE VENTE',
+                          _tabController.index == 0 
+                              ? 'COMPTES AGENTS (SIM)' 
+                              : _tabController.index == 1 
+                                  ? 'AGENCES'
+                                  : 'HISTORIQUE DES RECHARGES',
                           style: theme.textTheme.labelLarge?.copyWith(
                             fontWeight: FontWeight.w900,
                             letterSpacing: 1.1,
                             fontFamily: 'Outfit',
+                            color: theme.colorScheme.onSurface,
                           ),
                         ),
                       ),
+                    if (_tabController.index != 2)
                       IconButton.filled(
                         onPressed: _showAddDialog,
                         icon: const Icon(Icons.add_rounded),
                         tooltip: 'Ajouter',
                         style: IconButton.styleFrom(
                           minimumSize: const Size(40, 40),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
                         ),
                       ),
                     ],
                   ),
-                  const Divider(height: 24),
-                  _buildFilters(),
+                  if (_tabController.index != 2) ...[
+                    Divider(height: AppSpacing.lg),
+                    _buildFilters(),
+                  ],
                 ],
               ),
             ),
@@ -119,7 +133,7 @@ class _AgentsScreenState extends ConsumerState<AgentsScreen> with SingleTickerPr
         // 3. Liste Grosse (Grid)
         _buildListSection(ref),
         
-        const SliverToBoxAdapter(child: SizedBox(height: 100)),
+        SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xxl)),
       ],
     );
   }
@@ -127,7 +141,7 @@ class _AgentsScreenState extends ConsumerState<AgentsScreen> with SingleTickerPr
   Widget _buildStatisticsSection(AsyncValue<Map<String, dynamic>> statsAsync) {
     return statsAsync.when(
       data: (stats) => AgentsKpiCards(stats: stats),
-      loading: () => const LoadingIndicator(height: 120),
+      loading: () => LoadingIndicator(height: 100),
       error: (e, s) => ErrorDisplayWidget(error: e),
     );
   }
@@ -139,27 +153,47 @@ class _AgentsScreenState extends ConsumerState<AgentsScreen> with SingleTickerPr
       isScrollable: true,
       tabAlignment: TabAlignment.start,
       labelColor: Colors.white,
-      unselectedLabelColor: Colors.white.withValues(alpha: 0.7),
+      unselectedLabelColor: Colors.white.withValues(alpha: 0.6),
       indicatorColor: Colors.white,
       indicatorWeight: 3,
+      indicatorSize: TabBarIndicatorSize.label,
       dividerColor: Colors.transparent,
-      labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-      tabs: const [
+      labelStyle: theme.textTheme.labelLarge?.copyWith(
+        fontWeight: FontWeight.bold,
+        fontFamily: 'Outfit',
+      ),
+      unselectedLabelStyle: theme.textTheme.labelLarge?.copyWith(
+        fontWeight: FontWeight.normal,
+        fontFamily: 'Outfit',
+      ),
+      tabs: [
         Tab(
           child: Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
               Icon(Icons.sim_card_outlined, size: 16),
-              SizedBox(width: 8),
-              Text('Agents (Comptes SIM)'),
+              SizedBox(width: AppSpacing.xs),
+              Text('Agents'),
             ],
           ),
         ),
         Tab(
           child: Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
               Icon(Icons.business_outlined, size: 16),
-              SizedBox(width: 8),
-              Text('Agences (PDV Physique)'),
+              SizedBox(width: AppSpacing.xs),
+              Text('Agences'),
+            ],
+          ),
+        ),
+        Tab(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.history_rounded, size: 16),
+              SizedBox(width: AppSpacing.xs),
+              Text('Historique'),
             ],
           ),
         ),
@@ -174,12 +208,40 @@ class _AgentsScreenState extends ConsumerState<AgentsScreen> with SingleTickerPr
         agentAccountsProvider('${widget.enterpriseId ?? ''}||$_searchQuery'),
       );
       return _buildAgentsGrid(agentsAsync, ref);
-    } else {
+    } else if (tabIndex == 1) {
       final agenciesAsync = ref.watch(
         agentAgenciesProvider('${widget.enterpriseId ?? ''}||$_searchQuery'),
       );
       return _buildAgenciesGrid(agenciesAsync, ref);
+    } else {
+      // Use activeEnterpriseId so we always match the ID stored in TreasuryOperation records.
+      final activeEnterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? '';
+      final historyAsync = ref.watch(
+        allAgentRechargesProvider(widget.enterpriseId ?? activeEnterpriseId),
+      );
+      return _buildHistoryList(historyAsync);
     }
+  }
+
+  Widget _buildHistoryList(AsyncValue<List<TreasuryOperation>> historyAsync) {
+    return historyAsync.when(
+      data: (ops) => ops.isEmpty
+          ? const SliverFillRemaining(
+              hasScrollBody: false,
+              child: Center(child: Text('Aucun historique de recharge trouvé')),
+            )
+          : SliverPadding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) => _HistoryTile(operation: ops[index]),
+                  childCount: ops.length,
+                ),
+              ),
+            ),
+      loading: () => const SliverToBoxAdapter(child: LoadingIndicator()),
+      error: (e, s) => SliverToBoxAdapter(child: ErrorDisplayWidget(error: e)),
+    );
   }
 
   Widget _buildAgentsGrid(AsyncValue<List<Agent>> agentsAsync, WidgetRef ref) {
@@ -346,7 +408,60 @@ class _AgentsScreenState extends ConsumerState<AgentsScreen> with SingleTickerPr
       () {
         ref.invalidate(agentAccountsProvider);
         ref.invalidate(agentAgenciesProvider);
+        ref.invalidate(allAgentRechargesProvider);
       },
+    );
+  }
+}
+
+class _HistoryTile extends StatelessWidget {
+  final TreasuryOperation operation;
+
+  const _HistoryTile({required this.operation});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final fmt = NumberFormat('#,###');
+    final isRecharge = operation.fromAccount == PaymentMethod.cash;
+
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.xs),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
+      ),
+      child: ListTile(
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: (isRecharge ? Colors.blue : Colors.orange).withValues(alpha: 0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            isRecharge ? Icons.add_rounded : Icons.remove_rounded,
+            color: isRecharge ? Colors.blue : Colors.orange,
+            size: 20,
+          ),
+        ),
+        title: Text(
+          isRecharge ? 'Recharge Agent' : 'Retrait Agent',
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        subtitle: Text(
+          DateFormat('dd/MM/yyyy HH:mm', 'fr_FR').format(operation.date),
+          style: theme.textTheme.labelSmall,
+        ),
+        trailing: Text(
+          '${isRecharge ? "+" : "-"}${fmt.format(operation.amount)}',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontFamily: 'Outfit',
+            color: isRecharge ? Colors.blue : Colors.orange,
+          ),
+        ),
+      ),
     );
   }
 }

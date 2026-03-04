@@ -73,6 +73,7 @@ class GazSettingsScreen extends ConsumerWidget {
                         enterpriseId: effectiveEnterpriseId,
                         moduleId: effectiveModuleId,
                         isMobile: isMobile,
+                        isPOS: isPOS,
                       ),
                     ),
                   ),
@@ -136,6 +137,7 @@ class GazSettingsScreen extends ConsumerWidget {
     required String enterpriseId,
     required String moduleId,
     required bool isMobile,
+    required bool isPOS,
   }) {
     return Card(
       elevation: 0,
@@ -200,6 +202,7 @@ class GazSettingsScreen extends ConsumerWidget {
                       builder: (context) => CylinderFormDialog(
                         enterpriseId: enterpriseId,
                         moduleId: moduleId,
+                        isPOS: isPOS,
                       ),
                     );
                   },
@@ -214,6 +217,7 @@ class GazSettingsScreen extends ConsumerWidget {
                             builder: (context) => CylinderFormDialog(
                               enterpriseId: enterpriseId,
                               moduleId: moduleId,
+                              isPOS: isPOS,
                             ),
                           );
                         },

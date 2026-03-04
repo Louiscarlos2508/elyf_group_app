@@ -107,14 +107,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                     onTodaySelected: _setToday,
                     onSevenDaysSelected: _setSevenDays,
                   ),
-                  const SizedBox(height: AppSpacing.lg),
+                  const SizedBox(height: tokens.AppSpacing.lg),
                   statsAsync.when(
                     data: (stats) => Column(
                       children: [
                         ReportKpiCards(stats: stats),
-                        const SizedBox(height: AppSpacing.md),
+                        const SizedBox(height: tokens.AppSpacing.md),
                         ReportNetBalanceCard(stats: stats),
-                        const SizedBox(height: AppSpacing.md),
+                        const SizedBox(height: tokens.AppSpacing.md),
                         ReportDailyDetailCard(
                           onExportPdf: () {
                             NotificationService.showInfo(

@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:elyf_groupe_app/core/logging/app_logger.dart';
 
 export 'providers/permission_providers.dart';
 export 'providers/section_providers.dart';
@@ -9,6 +10,8 @@ import 'package:elyf_groupe_app/features/administration/domain/repositories/ente
 import '../data/repositories/treasury_offline_repository.dart';
 import '../domain/repositories/treasury_repository.dart';
 import 'package:elyf_groupe_app/shared/domain/entities/treasury_operation.dart';
+import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
+import 'package:elyf_groupe_app/shared.dart';
 
 import '../application/controllers/agents_controller.dart';
 import '../application/controllers/commissions_controller.dart';
@@ -175,6 +178,7 @@ final agentsControllerProvider = Provider<AgentsController>(
     ref.watch(enterpriseRepositoryProvider),
     ref.watch(agentRepositoryProvider),
     ref.watch(transactionRepositoryProvider),
+    ref.watch(orangeMoneyTreasuryRepositoryProvider),
     ref.watch(auditTrailServiceProvider),
     ref.watch(currentUserIdProvider) ?? 'system',
     ref.watch(orangeMoneyPermissionAdapterProvider),
@@ -428,6 +432,23 @@ final agencyCommissionsStatisticsProvider = FutureProvider.autoDispose
       return await controller.getNetworkStatistics(period: period.isEmpty ? null : period);
     });
 
+/// Provider for mapping network enterprise IDs to their names.
+final networkEnterprisesProvider = FutureProvider.autoDispose<Map<String, String>>((ref) async {
+  try {
+    // Import enterprisesProvider from administration
+    // Note: We need to import it or use a proxy. 
+    // Since providers.dart for orange_money already imports administration entities, 
+    // we should be able to watch enterprisesProvider if it's exported or visible.
+    // Based on earlier inspection, it's in lib/features/administration/application/providers.dart
+    
+    final enterprises = await ref.watch(enterprisesProvider.future);
+    return {for (var e in enterprises) e.id: e.name};
+  } catch (e) {
+    AppLogger.error('Error in networkEnterprisesProvider', error: e);
+    return {};
+  }
+});
+
 /// Provider for reports statistics with date range.
 final reportsStatisticsProvider = FutureProvider.autoDispose
     .family<Map<String, dynamic>, String>((ref, key) async {
@@ -454,6 +475,85 @@ final todayLiquidityCheckpointProvider = FutureProvider.autoDispose
       final controller = ref.watch(liquidityControllerProvider);
       return await controller.getTodayCheckpoint(key);
     });
+
+/// Provider for all agent-related treasury operations (recharges/withdrawals).
+final allAgentRechargesProvider = StreamProvider.autoDispose.family<List<TreasuryOperation>, String>((ref, enterpriseId) {
+  final repo = ref.watch(orangeMoneyTreasuryRepositoryProvider);
+  return repo.watchOperations(
+    enterpriseId,
+    referenceEntityType: 'agent_account',
+  );
+});
+
+/// Provider for transactions of a specific agent.
+final agentTransactionsProvider = StreamProvider.autoDispose.family<List<Transaction>, String>((ref, agentId) {
+  final repository = ref.watch(transactionRepositoryProvider);
+  return repository.watchTransactionsByAgent(agentId);
+});
+
+/// Provider for treasury history (recharges/withdrawals) of a specific agent.
+final agentTreasuryHistoryProvider = StreamProvider.autoDispose.family<List<TreasuryOperation>, String>((ref, agentId) {
+  final repo = ref.watch(orangeMoneyTreasuryRepositoryProvider);
+  final activeEnterprise = ref.watch(activeEnterpriseProvider).value;
+  return repo.watchOperations(
+    activeEnterprise?.id ?? 'default',
+    referenceEntityId: agentId,
+    referenceEntityType: 'agent_account',
+  );
+});
+
+/// Provider for aggregated statistics of a specific agent.
+final agentStatisticsProvider = Provider.autoDispose.family<AsyncValue<Map<String, dynamic>>, String>((ref, agentId) {
+  final transactionsAsync = ref.watch(agentTransactionsProvider(agentId));
+  final treasuryAsync = ref.watch(agentTreasuryHistoryProvider(agentId));
+
+  return transactionsAsync.when(
+    data: (transactions) {
+      return treasuryAsync.when(
+        data: (treasuryOps) {
+          int totalRecharged = 0;
+          int totalWithdrawn = 0;
+          int totalCommission = 0;
+          int totalCashIn = 0;
+          int totalCashOut = 0;
+
+          // Process Treasury Ops (Recharges/Withdrawals)
+          for (final op in treasuryOps) {
+            if (op.fromAccount == PaymentMethod.cash) {
+              totalRecharged += op.amount;
+            } else if (op.toAccount == PaymentMethod.cash) {
+              totalWithdrawn += op.amount;
+            }
+          }
+
+          // Process Transactions
+          for (final t in transactions) {
+            if (t.status != TransactionStatus.completed) continue;
+            totalCommission += t.commission ?? 0;
+            if (t.type == TransactionType.cashIn) {
+              totalCashIn += t.amount;
+            } else if (t.type == TransactionType.cashOut) {
+              totalCashOut += t.amount;
+            }
+          }
+
+          return AsyncValue.data({
+            'totalRecharged': totalRecharged,
+            'totalWithdrawn': totalWithdrawn,
+            'totalCommission': totalCommission,
+            'totalCashIn': totalCashIn,
+            'totalCashOut': totalCashOut,
+            'transactionCount': transactions.where((t) => t.isCompleted).length,
+          });
+        },
+        loading: () => const AsyncValue.loading(),
+        error: (e, st) => AsyncValue.error(e, st),
+      );
+    },
+    loading: () => const AsyncValue.loading(),
+    error: (e, st) => AsyncValue.error(e, st),
+  );
+});
 
 /// Provider for liquidity checkpoints list.
 final liquidityCheckpointsProvider = FutureProvider.autoDispose
@@ -552,21 +652,3 @@ final dailyTransactionStatsProvider = StreamProvider.autoDispose
       );
     });
 
-/// Provider for accessible enterprises map (id -> name).
-final networkEnterprisesProvider = FutureProvider.autoDispose<Map<String, String>>((ref) async {
-    final adapter = ref.watch(orangeMoneyPermissionAdapterProvider);
-    final enterpriseRepo = ref.watch(enterpriseRepositoryProvider); // Assuming this provider exists, let's check
-    final activeId = ref.watch(activeEnterpriseProvider).value?.id ?? '';
-    
-    final accessibleIds = await adapter.getAccessibleEnterpriseIds(activeId);
-    
-    // Optimization: If only 1, no need to fetch all names if we don't want to
-    if (accessibleIds.length <= 1) {
-      return {};
-    }
-
-    final allEnterprises = await enterpriseRepo.getAllEnterprises();
-    final accessibleEnterprises = allEnterprises.where((e) => accessibleIds.contains(e.id));
-    
-    return {for (var e in accessibleEnterprises) e.id: e.name};
-});

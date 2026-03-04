@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:elyf_groupe_app/shared.dart';
-import '../../../domain/entities/agent.dart';
 import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
+import 'package:elyf_groupe_app/features/orange_money/domain/entities/agent.dart' as entity;
+import 'package:elyf_groupe_app/app/theme/app_colors.dart';
+import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
+import 'package:elyf_groupe_app/app/theme/app_radius.dart';
+import 'package:elyf_groupe_app/app/theme/app_colors.dart';
+import 'package:elyf_groupe_app/features/orange_money/presentation/widgets/agents/agents_dialogs.dart';
 
 /// A premium, modern card for representing agents or agencies in the network.
 class AgentNetworkCard extends StatelessWidget {
@@ -15,7 +20,7 @@ class AgentNetworkCard extends StatelessWidget {
     this.onRecharge,
   });
 
-  final Agent? agent;
+  final entity.Agent? agent;
   final Enterprise? agency;
   final VoidCallback? onView;
   final VoidCallback? onEdit;
@@ -36,25 +41,25 @@ class AgentNetworkCard extends StatelessWidget {
     
     // Status
     final isActive = isAgent ? agent!.isActive : true;
-    final statusColor = isActive ? const Color(0xFF00C897) : theme.colorScheme.error;
-    final statusLabel = isAgent ? agent!.status.label : 'Actif';
+    final statusColor = isActive ? AppColors.success : theme.colorScheme.error;
 
     return ElyfCard(
       padding: EdgeInsets.zero,
       child: InkWell(
         onTap: onView,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Header with Avatar & Menu
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(AppSpacing.md),
               child: Row(
                 children: [
                   // Avatar
                   Container(
-                    width: 44,
-                    height: 44,
+                    width: 48,
+                    height: 48,
                     decoration: BoxDecoration(
                       color: theme.colorScheme.primary.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
@@ -70,7 +75,7 @@ class AgentNetworkCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: AppSpacing.md),
                   
                   // Info
                   Expanded(
@@ -91,8 +96,8 @@ class AgentNetworkCard extends StatelessWidget {
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            const SizedBox(width: 6),
-                            _buildStatusDot(statusColor),
+                            const SizedBox(width: AppSpacing.xs),
+                            _buildStatusDot(statusColor, theme),
                           ],
                         ),
                         Text(
@@ -116,7 +121,7 @@ class AgentNetworkCard extends StatelessWidget {
             if (isAgent) ...[
               const Divider(height: 1),
               Padding(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(AppSpacing.md),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -140,7 +145,7 @@ class AgentNetworkCard extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 10),
+                    SizedBox(height: AppSpacing.sm),
                     _buildLiquidityProgress(agent!.liquidity, theme),
                   ],
                 ),
@@ -148,11 +153,11 @@ class AgentNetworkCard extends StatelessWidget {
             ] else ...[
               const Divider(height: 1),
               Padding(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(AppSpacing.md),
                 child: Row(
                   children: [
                     Icon(Icons.location_on_outlined, size: 14, color: theme.colorScheme.primary),
-                    const SizedBox(width: 6),
+                    SizedBox(width: AppSpacing.xs),
                     Expanded(
                       child: Text(
                         agency!.address ?? 'Aucune adresse',
@@ -186,13 +191,13 @@ class AgentNetworkCard extends StatelessWidget {
                           child: InkWell(
                             onTap: onRecharge,
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Icon(Icons.add_circle_outline_rounded, 
                                        size: 16, color: theme.colorScheme.primary),
-                                  const SizedBox(width: 6),
+                                  SizedBox(width: AppSpacing.xs),
                                   Text(
                                     'Recharger',
                                     style: theme.textTheme.labelMedium?.copyWith(
@@ -220,13 +225,13 @@ class AgentNetworkCard extends StatelessWidget {
                         child: InkWell(
                           onTap: onView,
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Icon(Icons.arrow_forward_rounded, 
                                      size: 16, color: theme.colorScheme.onSurfaceVariant),
-                                const SizedBox(width: 6),
+                                SizedBox(width: AppSpacing.xs),
                                 Text(
                                   'Détails',
                                   style: theme.textTheme.labelMedium?.copyWith(
@@ -250,7 +255,7 @@ class AgentNetworkCard extends StatelessWidget {
     );
   }
 
-  Widget _buildStatusDot(Color color) {
+  Widget _buildStatusDot(Color color, ThemeData theme) {
     return Container(
       width: 8,
       height: 8,
@@ -259,7 +264,7 @@ class AgentNetworkCard extends StatelessWidget {
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color: color.withValues(alpha: 0.4),
+            color: color.withValues(alpha: 0.3),
             blurRadius: 4,
             spreadRadius: 1,
           ),
@@ -276,23 +281,23 @@ class AgentNetworkCard extends StatelessWidget {
 
     final progress = (current / targetMax).clamp(0.0, 1.0);
     final color = current < lowThreshold 
-        ? Colors.red 
-        : (current < warningThreshold ? Colors.orange : const Color(0xFF00C897));
+        ? AppColors.danger 
+        : (current < warningThreshold ? AppColors.warning : AppColors.success);
     
     return Row(
       children: [
         Expanded(
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
             child: LinearProgressIndicator(
               value: progress,
-              backgroundColor: theme.colorScheme.outline.withValues(alpha: 0.1),
+              backgroundColor: theme.colorScheme.outline.withValues(alpha: 0.05),
               valueColor: AlwaysStoppedAnimation<Color>(color),
               minHeight: 6,
             ),
           ),
         ),
-        const SizedBox(width: 10),
+        SizedBox(width: AppSpacing.sm),
         Text(
           '${(progress * 100).toInt()}%',
           style: theme.textTheme.labelSmall?.copyWith(
@@ -308,7 +313,8 @@ class AgentNetworkCard extends StatelessWidget {
     final theme = Theme.of(context);
     return PopupMenuButton<String>(
       icon: Icon(Icons.more_vert_rounded, size: 20, color: theme.colorScheme.onSurfaceVariant),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+      elevation: 4,
       onSelected: (value) {
         if (value == 'edit') {
           onEdit?.call();
@@ -322,7 +328,7 @@ class AgentNetworkCard extends StatelessWidget {
           child: Row(
             children: [
               Icon(Icons.edit_outlined, size: 18, color: theme.colorScheme.primary),
-              const SizedBox(width: 12),
+              SizedBox(width: AppSpacing.sm),
               const Text('Modifier'),
             ],
           ),
@@ -331,9 +337,9 @@ class AgentNetworkCard extends StatelessWidget {
           value: 'delete',
           child: Row(
             children: [
-              const Icon(Icons.delete_outline_rounded, size: 18, color: Colors.red),
-              const SizedBox(width: 12),
-              const Text('Supprimer', style: TextStyle(color: Colors.red)),
+              Icon(Icons.delete_outline_rounded, size: 18, color: AppColors.danger),
+              SizedBox(width: AppSpacing.sm),
+              Text('Supprimer', style: TextStyle(color: AppColors.danger)),
             ],
           ),
         ),

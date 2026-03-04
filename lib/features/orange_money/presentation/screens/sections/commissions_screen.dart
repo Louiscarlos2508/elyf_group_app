@@ -4,6 +4,7 @@ import 'package:elyf_groupe_app/features/administration/domain/entities/enterpri
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/orange_money/application/providers.dart';
+import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 import '../../../domain/entities/commission.dart';
 import '../../widgets/commission_alerts_card.dart';
 import '../../widgets/commission_declaration_dialog.dart';
@@ -23,6 +24,7 @@ class CommissionsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final activeEnterpriseAsync = ref.watch(activeEnterpriseProvider);
     final enterpriseKey = enterpriseId ?? '';
     final theme = Theme.of(context);
 
@@ -32,85 +34,164 @@ class CommissionsScreen extends ConsumerWidget {
       currentMonthCommissionProvider((enterpriseKey)),
     );
 
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: CustomScrollView(
-        slivers: [
-          ElyfModuleHeader(
-            title: 'Gestion des Commissions',
-            subtitle: 'Consultez vos estimations, déclarez vos SMS et validez vos gains mensuels.',
-            module: EnterpriseModule.mobileMoney,
-          ),
-          SliverPadding(
-            padding: EdgeInsets.all(AppSpacing.lg),
-            sliver: SliverToBoxAdapter(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  statsAsync.when(
-                    data: (stats) => Column(
-                      children: [
-                        const CommissionAlertsCard(),
-                        SizedBox(height: AppSpacing.lg),
-                        _buildKpiCards(stats, theme),
-                      ],
-                    ),
-                    loading: () => const SizedBox(
-                      height: 140,
-                      child: Center(child: LoadingIndicator()),
-                    ),
-                    error: (_, __) => const SizedBox(),
-                  ),
-                  SizedBox(height: AppSpacing.xl),
-                  Text(
-                    'Période Actuelle',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      fontFamily: 'Outfit',
-                    ),
-                  ),
-                  SizedBox(height: AppSpacing.md),
-                  currentMonthAsync.when(
-                    data: (commission) =>
-                        _buildCurrentMonthCard(context, commission),
-                    loading: () =>
-                        const Center(child: LoadingIndicator()),
-                    error: (_, __) => const SizedBox(),
-                  ),
-                  SizedBox(height: AppSpacing.xl),
-                  Text(
-                    'Historique',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      fontFamily: 'Outfit',
-                    ),
-                  ),
-                  SizedBox(height: AppSpacing.md),
-                  commissionsAsync.when(
-                    data: (commissions) => _buildCommissionsHistory(
+    return activeEnterpriseAsync.when(
+      data: (activeEnterprise) {
+        final isParent = activeEnterprise?.type.canHaveChildren ?? false;
+
+        if (!isParent) {
+          return Scaffold(
+            backgroundColor: Colors.transparent,
+            body: CustomScrollView(
+              slivers: [
+                ElyfModuleHeader(
+                  title: 'Gestion des Commissions',
+                  subtitle:
+                      'Consultez vos estimations, déclarez vos SMS et validez vos gains mensuels.',
+                  module: EnterpriseModule.mobileMoney,
+                ),
+                SliverPadding(
+                  padding: EdgeInsets.all(AppSpacing.lg),
+                  sliver: SliverToBoxAdapter(
+                    child: _buildMainContent(
                       context,
                       ref,
+                      statsAsync,
+                      commissionsAsync,
+                      currentMonthAsync,
                       enterpriseKey,
-                      commissions,
                     ),
-                    loading: () => const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(24),
-                        child: LoadingIndicator(),
-                      ),
-                    ),
-                    error: (error, stack) =>
-                        Center(child: Text('Erreur: $error')),
                   ),
-                  SizedBox(height: AppSpacing.xl),
-                  _buildInfoCard(context),
-                  SizedBox(height: AppSpacing.xl),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return DefaultTabController(
+          length: 2,
+          child: Scaffold(
+            backgroundColor: Colors.transparent,
+            body: NestedScrollView(
+              headerSliverBuilder: (context, innerBoxIsScrolled) => [
+                ElyfModuleHeader(
+                  title: 'Gestion des Commissions',
+                  subtitle:
+                      'Basculez entre vos commissions personnelles et le suivi des agences.',
+                  module: EnterpriseModule.mobileMoney,
+                ),
+                SliverPersistentHeader(
+                  pinned: true,
+                  delegate: _SliverAppBarDelegate(
+                    TabBar(
+                      labelColor: theme.colorScheme.primary,
+                      unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
+                      indicatorColor: theme.colorScheme.primary,
+                      indicatorSize: TabBarIndicatorSize.tab,
+                      labelStyle: theme.textTheme.labelLarge?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        fontFamily: 'Outfit',
+                      ),
+                      tabs: const [
+                        Tab(text: 'Mes Commissions'),
+                        Tab(text: 'Suivi Agences'),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+              body: TabBarView(
+                children: [
+                  SingleChildScrollView(
+                    padding: EdgeInsets.all(AppSpacing.lg),
+                    child: _buildMainContent(
+                      context,
+                      ref,
+                      statsAsync,
+                      commissionsAsync,
+                      currentMonthAsync,
+                      enterpriseKey,
+                    ),
+                  ),
+                  _AgenciesCommissionsTab(enterpriseId: enterpriseKey),
                 ],
               ),
             ),
           ),
-        ],
-      ),
+        );
+      },
+      loading: () => const Center(child: LoadingIndicator()),
+      error: (e, __) => Center(child: Text('Erreur: $e')),
+    );
+  }
+
+  Widget _buildMainContent(
+    BuildContext context,
+    WidgetRef ref,
+    AsyncValue<Map<String, dynamic>> statsAsync,
+    AsyncValue<List<Commission>> commissionsAsync,
+    AsyncValue<Commission?> currentMonthAsync,
+    String enterpriseKey,
+  ) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        statsAsync.when(
+          data: (stats) => Column(
+            children: [
+              const CommissionAlertsCard(),
+              SizedBox(height: AppSpacing.lg),
+              _buildKpiCards(stats, theme),
+            ],
+          ),
+          loading: () => const SizedBox(
+            height: 140,
+            child: Center(child: LoadingIndicator()),
+          ),
+          error: (_, __) => const SizedBox(),
+        ),
+        SizedBox(height: AppSpacing.xl),
+        Text(
+          'Période Actuelle',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w800,
+            fontFamily: 'Outfit',
+          ),
+        ),
+        SizedBox(height: AppSpacing.md),
+        currentMonthAsync.when(
+          data: (commission) => _buildCurrentMonthCard(context, commission),
+          loading: () => const Center(child: LoadingIndicator()),
+          error: (_, __) => const SizedBox(),
+        ),
+        SizedBox(height: AppSpacing.xl),
+        Text(
+          'Historique',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w800,
+            fontFamily: 'Outfit',
+          ),
+        ),
+        SizedBox(height: AppSpacing.md),
+        commissionsAsync.when(
+          data: (commissions) => _buildCommissionsHistory(
+            context,
+            ref,
+            enterpriseKey,
+            commissions,
+          ),
+          loading: () => const Center(
+            child: Padding(
+              padding: EdgeInsets.all(24),
+              child: LoadingIndicator(),
+            ),
+          ),
+          error: (error, stack) => Center(child: Text('Erreur: $error')),
+        ),
+        SizedBox(height: AppSpacing.xl),
+        _buildInfoCard(context),
+        SizedBox(height: AppSpacing.xl),
+      ],
     );
   }
 
@@ -769,5 +850,249 @@ class CommissionsScreen extends ConsumerWidget {
         },
       ),
     );
+  }
+}
+
+class _AgenciesCommissionsTab extends ConsumerStatefulWidget {
+  const _AgenciesCommissionsTab({required this.enterpriseId});
+  final String enterpriseId;
+
+  @override
+  ConsumerState<_AgenciesCommissionsTab> createState() =>
+      _AgenciesCommissionsTabState();
+}
+
+class _AgenciesCommissionsTabState extends ConsumerState<_AgenciesCommissionsTab> {
+  String _selectedPeriod = '';
+
+  @override
+  void initState() {
+    super.initState();
+    final now = DateTime.now();
+    _selectedPeriod = '${now.year}-${now.month.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final statsAsync = ref.watch(agencyCommissionsStatisticsProvider(_selectedPeriod));
+    final commissionsAsync = ref.watch(agencyCommissionsProvider('$_selectedPeriod|'));
+    final networkEnterprisesAsync = ref.watch(networkEnterprisesProvider);
+
+    return SingleChildScrollView(
+      padding: EdgeInsets.all(AppSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildPeriodFilter(theme),
+          SizedBox(height: AppSpacing.lg),
+          statsAsync.when(
+            data: (stats) => _buildNetworkStats(stats, theme),
+            loading: () => const Center(child: LoadingIndicator()),
+            error: (e, __) => Center(child: Text('Erreur stats: $e')),
+          ),
+          SizedBox(height: AppSpacing.xl),
+          Text(
+            'Déclarations du réseau',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w800,
+              fontFamily: 'Outfit',
+            ),
+          ),
+          SizedBox(height: AppSpacing.md),
+          commissionsAsync.when(
+            data: (commissions) {
+                if (commissions.isEmpty) {
+                    return Center(
+                        child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 40),
+                            child: Column(
+                                children: [
+                                    Icon(Icons.no_accounts_rounded, size: 48, color: theme.colorScheme.outline),
+                                    const SizedBox(height: 12),
+                                    Text('Aucune déclaration pour cette période', style: theme.textTheme.bodyMedium),
+                                ],
+                            ),
+                        ),
+                    );
+                }
+                return networkEnterprisesAsync.when(
+                    data: (enterpriseNames) => Column(
+                        children: commissions.map((c) => _buildAgencyCommissionItem(context, c, enterpriseNames[c.enterpriseId] ?? 'Agence Inconnue')).toList(),
+                    ),
+                    loading: () => const Center(child: LoadingIndicator()),
+                    error: (e, __) => Center(child: Text('Erreur agences: $e')),
+                );
+            },
+            loading: () => const Center(child: LoadingIndicator()),
+            error: (e, __) => Center(child: Text('Erreur: $e')),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPeriodFilter(ThemeData theme) {
+      return ElyfCard(
+          padding: EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xs),
+          child: Row(
+              children: [
+                  Icon(Icons.filter_list_rounded, color: theme.colorScheme.primary, size: 20),
+                  const SizedBox(width: 12),
+                  Text('Période:', style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w700)),
+                  const SizedBox(width: 8),
+                  // Simple period picker (could be improved)
+                  DropdownButton<String>(
+                      value: _selectedPeriod,
+                      underline: const SizedBox(),
+                      onChanged: (value) {
+                          if (value != null) setState(() => _selectedPeriod = value);
+                      },
+                      items: _generatePeriods().map((p) => DropdownMenuItem(
+                          value: p,
+                          child: Text(p, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w800)),
+                      )).toList(),
+                  ),
+              ],
+          ),
+      );
+  }
+
+  List<String> _generatePeriods() {
+      final now = DateTime.now();
+      return List.generate(6, (i) {
+          final d = DateTime(now.year, now.month - i, 1);
+          return '${d.year}-${d.month.toString().padLeft(2, '0')}';
+      });
+  }
+
+  Widget _buildNetworkStats(Map<String, dynamic> stats, ThemeData theme) {
+      return Row(
+          children: [
+              Expanded(
+                  child: ElyfStatsCard(
+                      label: 'Total Déclaré',
+                      value: CurrencyFormatter.formatFCFA(stats['totalDeclared'] as int? ?? 0),
+                      icon: Icons.account_balance_wallet_rounded,
+                      color: theme.colorScheme.primary,
+                      isGlass: true,
+                  ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                  child: ElyfStatsCard(
+                      label: 'Validé',
+                      value: CurrencyFormatter.formatFCFA(stats['totalValidated'] as int? ?? 0),
+                      icon: Icons.check_circle_rounded,
+                      color: AppColors.success,
+                      isGlass: true,
+                  ),
+              ),
+          ],
+      );
+  }
+
+  Widget _buildAgencyCommissionItem(BuildContext context, Commission commission, String agencyName) {
+      final theme = Theme.of(context);
+      return ElyfCard(
+          margin: EdgeInsets.only(bottom: AppSpacing.md),
+          child: Padding(
+              padding: EdgeInsets.all(AppSpacing.md),
+              child: Row(
+                  children: [
+                      Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                              color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(Icons.storefront_rounded, color: theme.colorScheme.primary),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                          child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                  Text(agencyName, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800)),
+                                  Text('Période: ${commission.period}', style: theme.textTheme.labelSmall),
+                              ],
+                          ),
+                      ),
+                      Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                              Text(CurrencyFormatter.formatFCFA(commission.finalAmount), style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900, color: theme.colorScheme.primary)),
+                              CommissionStatusBadge(status: commission.status),
+                          ],
+                      ),
+                      if (commission.smsProofUrl != null) ...[
+                          const SizedBox(width: 12),
+                          IconButton(
+                              onPressed: () => _showProofPhoto(context, commission.smsProofUrl!),
+                              icon: Icon(Icons.image_rounded, color: theme.colorScheme.secondary),
+                              tooltip: 'Voir preuve',
+                          ),
+                      ],
+                  ],
+              ),
+          ),
+      );
+  }
+
+  void _showProofPhoto(BuildContext context, String url) {
+      showDialog(
+          context: context,
+          builder: (context) => Dialog(
+              backgroundColor: Colors.transparent,
+              child: Stack(
+                  alignment: Alignment.topRight,
+                  children: [
+                      ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: InteractiveViewer(
+                              child: Image.network(url, fit: BoxFit.contain),
+                          ),
+                      ),
+                      Positioned(
+                          top: 10,
+                          right: 10,
+                          child: CircleAvatar(
+                              backgroundColor: Colors.black54,
+                              child: IconButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  icon: const Icon(Icons.close, color: Colors.white),
+                              ),
+                          ),
+                      ),
+                  ],
+              ),
+          ),
+      );
+  }
+}
+
+class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
+  _SliverAppBarDelegate(this._tabBar);
+
+  final TabBar _tabBar;
+
+  @override
+  double get minExtent => _tabBar.preferredSize.height;
+  @override
+  double get maxExtent => _tabBar.preferredSize.height;
+
+  @override
+  Widget build(
+      BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return Container(
+      color: Theme.of(context).colorScheme.surface,
+      child: _tabBar,
+    );
+  }
+
+  @override
+  bool shouldRebuild(_SliverAppBarDelegate oldDelegate) {
+    return false;
   }
 }

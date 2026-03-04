@@ -18,6 +18,8 @@ export 'controllers/gaz_settings_controller.dart';
 export 'controllers/gaz_session_controller.dart';
 export 'controllers/tour_controller.dart';
 export 'controllers/wholesaler_controller.dart';
+export 'controllers/gaz_employee_controller.dart';
+export 'controllers/gaz_salary_payment_controller.dart';
 export 'controllers/leak_report_controller.dart';
 
 import 'controllers/cylinder_controller.dart';
@@ -30,6 +32,8 @@ import 'controllers/gaz_settings_controller.dart';
 import 'controllers/gaz_session_controller.dart';
 import 'controllers/tour_controller.dart';
 import 'controllers/wholesaler_controller.dart';
+import 'controllers/gaz_employee_controller.dart';
+import 'controllers/gaz_salary_payment_controller.dart';
 import 'controllers/leak_report_controller.dart';
 import '../data/repositories/cylinder_leak_offline_repository.dart';
 import '../data/repositories/cylinder_stock_offline_repository.dart';
@@ -44,6 +48,8 @@ import '../data/repositories/session_offline_repository.dart';
 import '../data/repositories/tour_offline_repository.dart';
 import '../data/repositories/wholesaler_offline_repository.dart';
 import '../data/repositories/treasury_offline_repository.dart';
+import '../data/repositories/gaz_employee_offline_repository.dart';
+import '../data/repositories/gaz_salary_payment_offline_repository.dart';
 import '../data/repositories/collection_offline_repository.dart';
 import '../domain/repositories/inventory_audit_repository.dart';
 import '../data/repositories/inventory_audit_offline_repository.dart';
@@ -61,6 +67,8 @@ import '../domain/entities/report_data.dart';
 import '../domain/entities/tour.dart';
 import '../domain/entities/wholesaler.dart';
 import '../domain/entities/gaz_session.dart';
+import '../domain/entities/gaz_employee.dart';
+import '../domain/entities/gaz_salary_payment.dart';
 import '../domain/entities/collection.dart';
 import 'package:elyf_groupe_app/shared/domain/entities/treasury_operation.dart';
 import '../domain/services/leak_report_service.dart';
@@ -77,6 +85,8 @@ import '../domain/repositories/session_repository.dart';
 import '../domain/repositories/tour_repository.dart';
 import '../domain/repositories/wholesaler_repository.dart';
 import '../domain/repositories/treasury_repository.dart';
+import '../domain/repositories/gaz_employee_repository.dart';
+import '../domain/repositories/gaz_salary_payment_repository.dart';
 import '../domain/repositories/collection_repository.dart';
 import '../domain/services/data_consistency_service.dart';
 import '../domain/services/financial_calculation_service.dart';
@@ -1293,6 +1303,51 @@ final gazSettingsProvider =
         moduleId: params.moduleId,
       );
     });
+
+// Payroll Repositories
+final gazEmployeeRepositoryProvider = Provider<GazEmployeeRepository>((ref) {
+  final driftService = DriftService.instance;
+  final syncManager = ref.watch(syncManagerProvider);
+  return GazEmployeeOfflineRepository(
+    driftService: driftService,
+    syncManager: syncManager,
+  );
+});
+
+final gazSalaryPaymentRepositoryProvider = Provider<GazSalaryPaymentRepository>((ref) {
+  final driftService = DriftService.instance;
+  final syncManager = ref.watch(syncManagerProvider);
+  return GazSalaryPaymentOfflineRepository(
+    driftService: driftService,
+    syncManager: syncManager,
+  );
+});
+
+// Payroll Controllers
+final gazEmployeeControllerProvider = Provider<GazEmployeeController>((ref) {
+  final repository = ref.watch(gazEmployeeRepositoryProvider);
+  return GazEmployeeController(repository: repository);
+});
+
+final gazSalaryPaymentControllerProvider = Provider<GazSalaryPaymentController>((ref) {
+  final repository = ref.watch(gazSalaryPaymentRepositoryProvider);
+  final treasuryRepository = ref.watch(gazTreasuryRepositoryProvider);
+  return GazSalaryPaymentController(
+    repository: repository,
+    treasuryRepository: treasuryRepository,
+  );
+});
+
+// Payroll Streams
+final gazEmployeesProvider = StreamProvider.family<List<GazEmployee>, String>((ref, enterpriseId) {
+  final controller = ref.watch(gazEmployeeControllerProvider);
+  return controller.watchEmployees(enterpriseId);
+});
+
+final gazSalaryPaymentsProvider = StreamProvider.family<List<GazSalaryPayment>, String>((ref, enterpriseId) {
+  final controller = ref.watch(gazSalaryPaymentControllerProvider);
+  return controller.watchPayments(enterpriseId);
+});
 
 // Stock Alerts
 final lowStockAlertsProvider = FutureProvider.family<List<StockAlert>, String>((

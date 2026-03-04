@@ -56,7 +56,7 @@ class ReportDailyDetailCard extends StatelessWidget {
                     size: 48,
                     color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
                   ),
-                  const SizedBox(height: AppSpacing.md),
+                  SizedBox(height: AppSpacing.md),
                   Text(
                     'Aucune transaction dans cette période',
                     style: theme.textTheme.bodyMedium?.copyWith(

@@ -5,6 +5,9 @@ import '../../domain/repositories/agent_repository.dart';
 import 'package:elyf_groupe_app/features/orange_money/domain/entities/orange_money_enterprise_extensions.dart';
 import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import 'package:elyf_groupe_app/features/administration/domain/repositories/enterprise_repository.dart';
+import '../../domain/repositories/treasury_repository.dart';
+import 'package:elyf_groupe_app/shared/domain/entities/treasury_operation.dart';
+import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
 import '../../../audit_trail/domain/services/audit_trail_service.dart';
 import '../../domain/adapters/orange_money_permission_adapter.dart';
 import 'package:elyf_groupe_app/core/tenant/services/tenant_context_service.dart';
@@ -16,6 +19,7 @@ class AgentsController {
     this._enterpriseRepository,
     this._agentRepository,
     this._transactionRepository,
+    this._treasuryRepository,
     this._auditTrailService,
     this.userId,
     this._permissionAdapter,
@@ -26,6 +30,7 @@ class AgentsController {
   final EnterpriseRepository _enterpriseRepository;
   final AgentRepository _agentRepository;
   final TransactionRepository _transactionRepository;
+  final OrangeMoneyTreasuryRepository _treasuryRepository;
   final AuditTrailService _auditTrailService;
   final String userId;
   final OrangeMoneyPermissionAdapter _permissionAdapter;
@@ -180,30 +185,32 @@ class AgentsController {
     final startOfDay = DateTime(targetDate.year, targetDate.month, targetDate.day);
     final endOfDay = startOfDay.add(const Duration(days: 1)).subtract(const Duration(milliseconds: 1));
 
-    // 1. Récupérer les transactions du jour pour les entités accessibles
-    final targetIds = enterpriseId != null 
-        ? [enterpriseId] 
-        : await _permissionAdapter.getAccessibleEnterpriseIds(_activeEnterpriseId);
-    
-    // Pour simplifier, on récupère toutes les transactions et on filtre
-    // (Dans une vraie prod, on utiliserait une requête filtrée par IDs)
-    final transactions = await _transactionRepository.fetchTransactions(
-      startDate: startOfDay,
-      endDate: endOfDay,
-    );
+    final resolvedEnterpriseId = enterpriseId ?? _activeEnterpriseId;
 
+    // 1. Compter les recharges SIM agents via TreasuryOperations (source de vérité)
+    // Les recharges agents créent: fromAccount=cash, toAccount=mobileMoney, referenceEntityType=agent_account
+    // Les retraits agents créent: fromAccount=mobileMoney, toAccount=cash, referenceEntityType=agent_account
     int rechargesToday = 0;
     int withdrawalsToday = 0;
-    
-    for (final t in transactions) {
-      if (!targetIds.contains(t.enterpriseId)) continue;
-      if (t.status != TransactionStatus.completed) continue;
-
-      if (t.type == TransactionType.cashIn) {
-        rechargesToday += t.amount;
-      } else if (t.type == TransactionType.cashOut) {
-        withdrawalsToday += t.amount;
+    try {
+      final treasuryOps = await _treasuryRepository.getOperations(
+        resolvedEnterpriseId,
+        from: startOfDay,
+        to: endOfDay,
+        referenceEntityType: 'agent_account',
+      );
+      for (final op in treasuryOps) {
+        // Recharge: cash → mobileMoney
+        if (op.fromAccount == PaymentMethod.cash && op.toAccount == PaymentMethod.mobileMoney) {
+          rechargesToday += op.amount;
+        }
+        // Retrait: mobileMoney → cash
+        else if (op.fromAccount == PaymentMethod.mobileMoney && op.toAccount == PaymentMethod.cash) {
+          withdrawalsToday += op.amount;
+        }
       }
+    } catch (e) {
+      AppLogger.error('getDailyStatistics: error fetching treasury ops', error: e);
     }
 
     // 2. Compter les alertes de liquidité
@@ -233,6 +240,7 @@ class AgentsController {
       'agencyCount': allAgencies.length,
     };
   }
+
 
   /// Met à jour la liquidité d'une agence (recharge ou retrait interne).
   Future<Enterprise> updateAgencyLiquidity({
@@ -281,6 +289,28 @@ class AgentsController {
     );
 
     await _agentRepository.updateAgent(updatedAgent);
+
+    // Automated Treasury Integration
+    try {
+      final operationId = 'OM_AGENT_${DateTime.now().millisecondsSinceEpoch}';
+      await _treasuryRepository.saveOperation(TreasuryOperation(
+        id: operationId,
+        enterpriseId: _activeEnterpriseId,
+        userId: userId,
+        amount: amount,
+        type: TreasuryOperationType.transfer,
+        fromAccount: isRecharge ? PaymentMethod.cash : PaymentMethod.mobileMoney,
+        toAccount: isRecharge ? PaymentMethod.mobileMoney : PaymentMethod.cash,
+        date: DateTime.now(),
+        reason: isRecharge 
+            ? 'Recharge SIM Agent: ${agent.name} (${agent.phoneNumber})'
+            : 'Retrait SIM Agent: ${agent.name} (${agent.phoneNumber})',
+        referenceEntityId: agent.id,
+        referenceEntityType: 'agent_account',
+      ));
+    } catch (e) {
+      AppLogger.error('Failed to create treasury operation for agent update', error: e);
+    }
     
     _logAgentEvent(
       agent.id,
