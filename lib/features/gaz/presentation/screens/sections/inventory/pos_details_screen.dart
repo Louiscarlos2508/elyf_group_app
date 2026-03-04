@@ -116,6 +116,7 @@ class _PosMovementsTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
     final auditRepo = ref.watch(auditTrailRepositoryProvider);
     
     return FutureBuilder<List<AuditRecord>>(
@@ -139,40 +140,129 @@ class _PosMovementsTab extends ConsumerWidget {
         movementRecords.sort((a, b) => b.timestamp.compareTo(a.timestamp));
 
         if (movementRecords.isEmpty) {
-          return const Center(child: Text('Aucun mouvement enregistré'));
+          return Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.swap_vert_circle_outlined, size: 56, color: theme.colorScheme.outline),
+                const SizedBox(height: 12),
+                Text('Aucun mouvement enregistré', style: theme.textTheme.bodyLarge),
+              ],
+            ),
+          );
         }
 
         return ListView.separated(
           padding: const EdgeInsets.all(AppSpacing.lg),
           itemCount: movementRecords.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 12),
+          separatorBuilder: (_, __) => const SizedBox(height: 8),
           itemBuilder: (context, index) {
             final record = movementRecords[index];
             final isEntry = record.action == 'POS_STOCK_ENTRY';
-            final quantities = record.metadata?['quantities'] as Map<String, dynamic>? ?? {};
+            final meta = record.metadata ?? {};
+            
+            // Decode full & empty bottle quantities from metadata
+            final fullQties = _decodeQtyMap(meta['fullQuantities']);
+            final emptyQties = _decodeQtyMap(meta['emptyQuantities']);
+            final allQties = _decodeQtyMap(meta['quantities']); // legacy
+
+            final Color cardColor = isEntry
+                ? AppColors.success.withValues(alpha: 0.05)
+                : AppColors.warning.withValues(alpha: 0.05);
+            final Color iconColor = isEntry ? AppColors.success : AppColors.warning;
+            final String label = isEntry ? 'Entrée de Stock' : 'Sortie — Rechargement';
+            final IconData icon = isEntry ? Icons.download_rounded : Icons.upload_rounded;
 
             return Card(
-              child: ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: isEntry ? AppColors.success.withValues(alpha: 0.1) : AppColors.warning.withValues(alpha: 0.1),
-                  child: Icon(
-                    isEntry ? Icons.download_rounded : Icons.upload_rounded,
-                    color: isEntry ? AppColors.success : AppColors.warning,
-                  ),
-                ),
-                title: Text(isEntry ? 'Approvisionnement' : 'Retour de Vides'),
-                subtitle: Column(
+              color: cardColor,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(color: iconColor.withValues(alpha: 0.2)),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(DateFormat('dd/MM/yyyy HH:mm').format(record.timestamp)),
-                    const SizedBox(height: 4),
-                    Wrap(
-                      spacing: 8,
-                      children: quantities.entries.map((e) => Chip(
-                        label: Text('${e.key}kg: ${e.value}'),
-                        visualDensity: VisualDensity.compact,
-                      )).toList(),
+                    // Header row
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 18,
+                          backgroundColor: iconColor.withValues(alpha: 0.15),
+                          child: Icon(icon, color: iconColor, size: 18),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(label, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold, color: iconColor)),
+                              Text(
+                                DateFormat('dd/MM/yyyy – HH:mm').format(record.timestamp),
+                                style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
+                    if (isEntry && (fullQties.isNotEmpty || emptyQties.isNotEmpty)) ...[
+                      const SizedBox(height: 10),
+                      const Divider(height: 1),
+                      const SizedBox(height: 8),
+                      // Full bottles received
+                      if (fullQties.isNotEmpty) ...[
+                        _QuantityRow(
+                          label: 'Pleins reçus',
+                          icon: Icons.inventory_2_rounded,
+                          color: AppColors.success,
+                          quantities: fullQties,
+                          theme: theme,
+                        ),
+                      ],
+                      // Empty bottles returned (non-reloaded)
+                      if (emptyQties.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        _QuantityRow(
+                          label: 'Vides retournés',
+                          icon: Icons.assignment_return_rounded,
+                          color: theme.colorScheme.tertiary,
+                          quantities: emptyQties,
+                          theme: theme,
+                        ),
+                      ],
+                    ] else if (!isEntry && (allQties.isNotEmpty || emptyQties.isNotEmpty)) ...[
+                      const SizedBox(height: 10),
+                      const Divider(height: 1),
+                      const SizedBox(height: 8),
+                      _QuantityRow(
+                        label: 'Vides envoyés',
+                        icon: Icons.upload_rounded,
+                        color: AppColors.warning,
+                        quantities: emptyQties.isNotEmpty ? emptyQties : allQties,
+                        theme: theme,
+                      ),
+                    ] else if (allQties.isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      const Divider(height: 1),
+                      const SizedBox(height: 8),
+                      _QuantityRow(
+                        label: 'Bouteilles',
+                        icon: Icons.local_gas_station_outlined,
+                        color: iconColor,
+                        quantities: allQties,
+                        theme: theme,
+                      ),
+                    ],
+                    if (record.metadata?['notes'] != null && (record.metadata!['notes'] as String).isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        '💬 ${record.metadata!['notes']}',
+                        style: theme.textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic, color: theme.colorScheme.onSurfaceVariant),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -180,6 +270,64 @@ class _PosMovementsTab extends ConsumerWidget {
           },
         );
       },
+    );
+  }
+
+  Map<int, int> _decodeQtyMap(dynamic raw) {
+    if (raw is! Map) return {};
+    final result = <int, int>{};
+    for (final e in raw.entries) {
+      final key = int.tryParse(e.key.toString());
+      final val = int.tryParse(e.value.toString());
+      if (key != null && val != null && val > 0) result[key] = val;
+    }
+    return result;
+  }
+}
+
+class _QuantityRow extends StatelessWidget {
+  const _QuantityRow({
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.quantities,
+    required this.theme,
+  });
+
+  final String label;
+  final IconData icon;
+  final Color color;
+  final Map<int, int> quantities;
+  final ThemeData theme;
+
+  @override
+  Widget build(BuildContext context) {
+    final sorted = quantities.entries.toList()..sort((a, b) => a.key.compareTo(b.key));
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, color: color, size: 14),
+        const SizedBox(width: 6),
+        Text('$label : ', style: theme.textTheme.bodySmall?.copyWith(color: color, fontWeight: FontWeight.w600)),
+        Expanded(
+          child: Wrap(
+            spacing: 6,
+            runSpacing: 2,
+            children: sorted.map((e) => Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: color.withValues(alpha: 0.3)),
+              ),
+              child: Text(
+                '${e.key}kg × ${e.value}',
+                style: theme.textTheme.labelSmall?.copyWith(color: color, fontWeight: FontWeight.w600),
+              ),
+            )).toList(),
+          ),
+        ),
+      ],
     );
   }
 }
