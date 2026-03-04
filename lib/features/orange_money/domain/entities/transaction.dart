@@ -9,6 +9,10 @@ class Transaction {
     required this.date,
     required this.status,
     this.customerName,
+    this.idType,
+    this.idNumber,
+    this.idIssueDate,
+    this.town,
     this.commission,
     this.fees,
     this.reference,
@@ -28,6 +32,10 @@ class Transaction {
   final DateTime date;
   final TransactionStatus status;
   final String? customerName;
+  final String? idType;
+  final String? idNumber;
+  final DateTime? idIssueDate;
+  final String? town;
   final int? commission; // Commission earned in FCFA
   final int? fees; // Fees paid in FCFA
   final String? reference; // Transaction reference from Orange Money
@@ -49,6 +57,10 @@ class Transaction {
     DateTime? date,
     TransactionStatus? status,
     String? customerName,
+    String? idType,
+    String? idNumber,
+    DateTime? idIssueDate,
+    String? town,
     int? commission,
     int? fees,
     String? reference,
@@ -68,6 +80,10 @@ class Transaction {
       date: date ?? this.date,
       status: status ?? this.status,
       customerName: customerName ?? this.customerName,
+      idType: idType ?? this.idType,
+      idNumber: idNumber ?? this.idNumber,
+      idIssueDate: idIssueDate ?? this.idIssueDate,
+      town: town ?? this.town,
       commission: commission ?? this.commission,
       fees: fees ?? this.fees,
       reference: reference ?? this.reference,
@@ -95,6 +111,12 @@ class Transaction {
       date: DateTime.parse(map['date'] as String),
       status: TransactionStatus.values.byName(map['status'] as String),
       customerName: map['customerName'] as String?,
+      idType: map['idType'] as String?,
+      idNumber: map['idNumber'] as String?,
+      idIssueDate: map['idIssueDate'] != null
+          ? DateTime.parse(map['idIssueDate'] as String)
+          : null,
+      town: map['town'] as String?,
       commission: (map['commission'] as num?)?.toInt(),
       fees: (map['fees'] as num?)?.toInt(),
       reference: map['reference'] as String?,
@@ -123,6 +145,10 @@ class Transaction {
       'date': date.toIso8601String(),
       'status': status.name,
       'customerName': customerName,
+      'idType': idType,
+      'idNumber': idNumber,
+      'idIssueDate': idIssueDate?.toIso8601String(),
+      'town': town,
       'commission': commission,
       'fees': fees,
       'reference': reference,
@@ -150,9 +176,9 @@ extension TransactionTypeExtension on TransactionType {
   String get label {
     switch (this) {
       case TransactionType.cashIn:
-        return 'Cash-In';
+        return 'Dépôt';
       case TransactionType.cashOut:
-        return 'Cash-Out';
+        return 'Retrait';
     }
   }
 }

@@ -47,9 +47,14 @@ class _WholesaleNewSaleTabState extends ConsumerState<WholesaleNewSaleTab> {
   }
 
   Future<void> _submitSale(Cylinder cylinder, int quantity) async {
-    final enterpriseId = ref.read(activeEnterpriseIdProvider).value;
+    final activeEnterprise = ref.read(activeEnterpriseProvider).value;
+    final enterpriseId = activeEnterprise?.isPointOfSale == true 
+        ? activeEnterprise?.parentEnterpriseId ?? activeEnterprise?.id 
+        : activeEnterprise?.id;
+    final siteId = activeEnterprise?.isPointOfSale == true ? activeEnterprise?.id : null;
+        
     if (enterpriseId == null) return;
-
+    
     // Récupérer le prix unitaire
     final unitPrice = await PriceStockManager.updateUnitPrice(
       ref: ref,
@@ -85,6 +90,7 @@ class _WholesaleNewSaleTabState extends ConsumerState<WholesaleNewSaleTab> {
       quantity: quantity,
       availableStock: availableStock,
       enterpriseId: enterpriseId,
+      siteId: siteId,
       saleType: SaleType.wholesale,
       customerName: _selectedWholesalerName,
       customerPhone: null, // Ideally retrieved from wholesaler

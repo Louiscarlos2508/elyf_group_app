@@ -6,7 +6,7 @@ import 'package:elyf_groupe_app/features/immobilier/application/providers.dart';
 import 'package:elyf_groupe_app/features/immobilier/presentation/widgets/immobilier_header.dart';
 import 'package:elyf_groupe_app/features/immobilier/domain/entities/immobilier_settings.dart';
 import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
-import 'package:elyf_groupe_app/core/printing/printer_provider.dart';
+
 
 class ImmobilierSettingsScreen extends ConsumerStatefulWidget {
   const ImmobilierSettingsScreen({super.key});
@@ -16,9 +16,7 @@ class ImmobilierSettingsScreen extends ConsumerStatefulWidget {
 }
  
 class _ImmobilierSettingsScreenState extends ConsumerState<ImmobilierSettingsScreen> {
-  String _selectedType = 'system'; // sunmi, bluetooth, system
   bool _isLoading = true;
-  bool _isTesting = false;
   
   bool _autoBillingEnabled = true;
   final _gracePeriodController = TextEditingController();
@@ -46,14 +44,6 @@ class _ImmobilierSettingsScreenState extends ConsumerState<ImmobilierSettingsScr
 
 
 
-
-  Future<void> _savePrinterType(String type) async {
-    setState(() => _selectedType = type);
-    await ref.read(immobilierSettingsServiceProvider).setPrinterType(type);
-    if (mounted) {
-      NotificationService.showSuccess(context, 'Type d\'imprimante mis à jour');
-    }
-  }
 
   Future<void> _saveReceiptConfig() async {
     if (_enterpriseId == null) {
@@ -83,23 +73,6 @@ class _ImmobilierSettingsScreenState extends ConsumerState<ImmobilierSettingsScr
   }
 
 
-
-  Future<void> _testPrint() async {
-    setState(() => _isTesting = true);
-    try {
-      final printer = ref.read(activePrinterProvider);
-      final success = await printer.printReceipt('TEST D\'IMPRESSION IMMOBILIER\n\nConfiguration OK\n\n\n');
-      if (success) {
-        if (mounted) NotificationService.showSuccess(context, 'Test envoyé à l\'imprimante');
-      } else {
-        if (mounted) NotificationService.showError(context, 'L\'imprimante n\'est pas prête');
-      }
-    } catch (e) {
-      if (mounted) NotificationService.showError(context, 'Erreur: $e');
-    } finally {
-      if (mounted) setState(() => _isTesting = false);
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -164,7 +137,6 @@ class _ImmobilierSettingsScreenState extends ConsumerState<ImmobilierSettingsScr
 
   void _loadLocalAndRepoSettings(ImmobilierSettings? settings) {
     final localSettings = ref.read(immobilierSettingsServiceProvider);
-    _selectedType = localSettings.printerType;
     _headerController.text = localSettings.receiptHeader;
     _footerController.text = localSettings.receiptFooter;
 
@@ -191,30 +163,6 @@ class _ImmobilierSettingsScreenState extends ConsumerState<ImmobilierSettingsScr
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text("Type d'imprimante :", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                  const SizedBox(height: 16),
-                  
-                  _buildOptionCard(
-                    id: 'sunmi',
-                    title: 'Terminal Sunmi V2/V3',
-                    description: 'Imprimante intégrée au terminal Android.',
-                    icon: Icons.android,
-                    color: Colors.orange,
-                  ),
-                  
-                  
-                  
-                  _buildOptionCard(
-                    id: 'system',
-                    title: 'Impression Système',
-                    description: 'Service d\'impression standard (PDF).',
-                    icon: Icons.print,
-                    color: Colors.grey,
-                  ),
-
-                  const SizedBox(height: 32),
-                  const Divider(),
-                  const SizedBox(height: 24),
                   const Text("Automatisation :", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                   const SizedBox(height: 16),
                   
@@ -310,19 +258,6 @@ class _ImmobilierSettingsScreenState extends ConsumerState<ImmobilierSettingsScr
                   ),
 
                   const SizedBox(height: 48),
-                  Center(
-                    child: _isTesting 
-                      ? const CircularProgressIndicator()
-                      : FilledButton.icon(
-                          onPressed: _testPrint,
-                          icon: const Icon(Icons.print_outlined),
-                          label: const Text("Impression de test"),
-                          style: FilledButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                          ),
-                        ),
-                  ),
-                  const SizedBox(height: 48),
                 ],
               ),
             ),
@@ -332,46 +267,4 @@ class _ImmobilierSettingsScreenState extends ConsumerState<ImmobilierSettingsScr
     );
   }
 
-
-
-  Widget _buildOptionCard({
-    required String id,
-    required String title,
-    required String description,
-    required IconData icon,
-    required Color color,
-  }) {
-    final isSelected = _selectedType == id;
-    return GestureDetector(
-      onTap: () => _savePrinterType(id),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isSelected ? color.withValues(alpha: 0.1) : Colors.white,
-          border: Border.all(
-            color: isSelected ? color : Colors.grey.shade300,
-            width: isSelected ? 2 : 1,
-          ),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: color, size: 28),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-                  Text(description, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
-                ],
-              ),
-            ),
-            if (isSelected) Icon(Icons.check_circle, color: color),
-          ],
-        ),
-      ),
-    );
-  }
 }

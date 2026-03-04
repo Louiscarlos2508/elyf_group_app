@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+
+import '../../../domain/entities/customer.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/orange_money/application/providers.dart';
 import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import '../../../domain/entities/transaction.dart';
 import '../../../domain/services/transaction_service.dart';
 import '../../widgets/form_field_with_label.dart';
-import '../../widgets/new_customer_form_card.dart';
-import '../../widgets/transaction_type_selector.dart';
-import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import '../../widgets/operator_balance_summary.dart';
+import '../../widgets/transaction_type_selector.dart';
+import '../../widgets/transaction_confirmation_bottom_sheet.dart';
 import 'transactions_history_screen.dart';
 
 /// New transactions screen with tabs for new transaction and history.
@@ -31,13 +34,40 @@ class _TransactionsV2ScreenState extends ConsumerState<TransactionsV2Screen>
   final _formKey = GlobalKey<FormState>();
 
   // État pour le formulaire d'enregistrement
-  bool _showCustomerForm = false;
-  String? _existingCustomerName;
+  Customer? _foundCustomer;
+  bool _isSearching = false;
+  bool _isClientDetailsExpanded = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _phoneController.addListener(_onPhoneChanged);
+  }
+
+  void _onPhoneChanged() {
+    final phone = _phoneController.text.trim();
+    if (phone.length >= 8) {
+      _lookupCustomer(phone);
+    } else if (_foundCustomer != null) {
+      setState(() {
+        _foundCustomer = null;
+      });
+    }
+  }
+
+  Future<void> _lookupCustomer(String phoneNumber) async {
+    if (_isSearching) return;
+    
+    // Simple debouncing/filtering to avoid multiple calls
+    final controller = ref.read(orangeMoneyControllerProvider);
+    final customer = await controller.findCustomerByPhoneNumber(phoneNumber);
+    
+    if (mounted && customer != _foundCustomer) {
+      setState(() {
+        _foundCustomer = customer;
+      });
+    }
   }
 
   @override
@@ -54,17 +84,48 @@ class _TransactionsV2ScreenState extends ConsumerState<TransactionsV2Screen>
     }
 
     final phoneNumber = _phoneController.text.trim();
+    final amount = int.parse(_amountController.text.trim());
 
-    // Rechercher si le client existe déjà (logique dans le controller)
-    final controller = ref.read(orangeMoneyControllerProvider);
-    final existingCustomerName = await controller.findCustomerByPhoneNumber(
-      phoneNumber,
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => TransactionConfirmationBottomSheet(
+        phoneNumber: phoneNumber,
+        amount: amount,
+        type: _selectedType,
+        existingCustomer: _foundCustomer,
+        onConfirm: _handleConfirmTransaction,
+      ),
     );
+  }
 
-    setState(() {
-      _existingCustomerName = existingCustomerName;
-      _showCustomerForm = true;
-    });
+  Future<void> _handleConfirmTransaction({
+    required String firstName,
+    required String lastName,
+    required String idType,
+    required String idNumber,
+    DateTime? idIssueDate,
+    String? town,
+    String? reference,
+  }) async {
+    final phoneNumber = _phoneController.text.trim();
+    final amountStr = _amountController.text.trim();
+    final customerName = '$firstName $lastName';
+    
+    await _handleSaveCustomer(
+      firstName: firstName,
+      lastName: lastName,
+      idType: idType,
+      idNumber: idNumber,
+      idIssueDate: idIssueDate,
+      town: town,
+      reference: reference,
+    );
+    
+    if (mounted) {
+      Navigator.pop(context); // Ferme le BottomSheet
+    }
   }
 
   Future<void> _handleSaveCustomer({
@@ -73,7 +134,8 @@ class _TransactionsV2ScreenState extends ConsumerState<TransactionsV2Screen>
     required String idType,
     required String idNumber,
     DateTime? idIssueDate,
-    DateTime? idExpiryDate,
+    String? town,
+    String? reference,
   }) async {
     final phoneNumber = _phoneController.text.trim();
     final amountStr = _amountController.text.trim();
@@ -88,6 +150,11 @@ class _TransactionsV2ScreenState extends ConsumerState<TransactionsV2Screen>
         phoneNumber: phoneNumber,
         amountStr: amountStr,
         customerName: customerName,
+        town: town,
+        idType: idType,
+        idNumber: idNumber,
+        idIssueDate: idIssueDate,
+        reference: reference,
       );
 
       if (mounted) {
@@ -101,12 +168,11 @@ class _TransactionsV2ScreenState extends ConsumerState<TransactionsV2Screen>
         _phoneController.clear();
         _amountController.clear();
         setState(() {
-          _showCustomerForm = false;
-          _existingCustomerName = null;
+          _foundCustomer = null;
         });
 
-        // Invalider le provider des transactions pour rafraîchir la liste
-        ref.invalidate(filteredTransactionsProvider);
+        // Le StreamProvider se rafraîchira automatiquement grâce à watchTransactions
+        // ref.invalidate(filteredTransactionsProvider);
       }
     } on ArgumentError catch (e) {
       if (mounted) {
@@ -125,12 +191,6 @@ class _TransactionsV2ScreenState extends ConsumerState<TransactionsV2Screen>
     }
   }
 
-  void _handleCancelCustomerForm() {
-    setState(() {
-      _showCustomerForm = false;
-      _existingCustomerName = null;
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -279,10 +339,7 @@ class _TransactionsV2ScreenState extends ConsumerState<TransactionsV2Screen>
             },
           ),
           SizedBox(height: isKeyboardOpen ? 12 : 24),
-          if (!_showCustomerForm)
-            _buildSearchClientCard(theme)
-          else
-            _buildCustomerFormCard(),
+          _buildSearchClientCard(theme)
         ],
       ),
     );
@@ -354,6 +411,67 @@ class _TransactionsV2ScreenState extends ConsumerState<TransactionsV2Screen>
               suffixText: 'CFA',
               validator: TransactionService.validateAmount,
             ),
+            if (_foundCustomer != null) ...[
+              const SizedBox(height: 16),
+              Container(
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primaryContainer.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.1)),
+                ),
+                child: Column(
+                  children: [
+                    ListTile(
+                      dense: true,
+                      leading: Icon(Icons.person_outline, color: theme.colorScheme.primary),
+                      title: Text(
+                        'Client déjà en base',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      subtitle: Text(
+                        _foundCustomer!.name,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      trailing: IconButton(
+                        icon: Icon(
+                          _isClientDetailsExpanded ? Icons.expand_less : Icons.expand_more,
+                          color: theme.colorScheme.primary,
+                        ),
+                        onPressed: () => setState(() => _isClientDetailsExpanded = !_isClientDetailsExpanded),
+                      ),
+                    ),
+                    if (_isClientDetailsExpanded) ...[
+                      const Divider(height: 1, indent: 16, endIndent: 16),
+                      Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          children: [
+                            _buildClientDetailRow('Pièce ID', _foundCustomer!.idNumber ?? 'Non renseigné'),
+                            const SizedBox(height: 8),
+                            _buildClientDetailRow(
+                              'Délivré le', 
+                              _foundCustomer!.idIssueDate != null 
+                                  ? DateFormat('dd/MM/yyyy').format(_foundCustomer!.idIssueDate!) 
+                                  : 'Non renseignée'
+                            ),
+                            const SizedBox(height: 8),
+                            _buildClientDetailRow(
+                              'Ville/Village', 
+                              _foundCustomer!.town ?? 'Non renseigné',
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
             const SizedBox(height: 32),
             SizedBox(
               width: double.infinity,
@@ -391,16 +509,13 @@ class _TransactionsV2ScreenState extends ConsumerState<TransactionsV2Screen>
     );
   }
 
-  Widget _buildCustomerFormCard() {
-    final amount = int.tryParse(_amountController.text.trim()) ?? 0;
-
-    return NewCustomerFormCard(
-      phoneNumber: _phoneController.text.trim(),
-      amount: amount,
-      type: _selectedType,
-      existingCustomerName: _existingCustomerName,
-      onCancel: _handleCancelCustomerForm,
-      onSave: _handleSaveCustomer,
+  Widget _buildClientDetailRow(String label, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+        Text(value, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+      ],
     );
   }
 }

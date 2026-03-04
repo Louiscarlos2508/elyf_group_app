@@ -33,7 +33,6 @@ class PosStockDialog extends ConsumerWidget {
       enterpriseId: enterprise.id,
       moduleId: 'gaz',
     )));
-    final transfersAsync = ref.watch(stockTransfersProvider(enterprise.id));
 
     return Dialog(
       backgroundColor: Colors.transparent,
@@ -66,7 +65,6 @@ class PosStockDialog extends ConsumerWidget {
               enterpriseId: enterprise.id,
               siteId: null,
               allStocks: allStocks,
-              transfers: transfersAsync.value,
               cylinders: cylinders,
             );
 

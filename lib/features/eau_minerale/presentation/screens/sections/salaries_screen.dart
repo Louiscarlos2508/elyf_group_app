@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../widgets/fixed_employee_form.dart';
 import '../../widgets/fixed_employees_content.dart';
@@ -66,82 +67,35 @@ class _SalariesScreenState extends ConsumerState<SalariesScreen> {
     return CustomScrollView(
         slivers: [
           // Premium Header
-          SliverToBoxAdapter(
-            child: Container(
-              margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    theme.colorScheme.primary,
-                    const Color(0xFF00C2FF), // Cyan for Water Module
-                    const Color(0xFF0369A1), // Deep Blue
-                  ],
+          ElyfModuleHeader(
+            title: "Salaires",
+            subtitle: "Employés & Paiements",
+            module: EnterpriseModule.eau,
+            actions: [
+              IconButton(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const PaymentReconciliationScreen(),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.account_balance_wallet_rounded,
+                    color: Colors.white),
+                tooltip: 'Réconciliation',
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.white.withValues(alpha: 0.2),
+                  foregroundColor: Colors.white,
                 ),
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                    color: theme.colorScheme.primary.withValues(alpha: 0.3),
-                    blurRadius: 12,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
               ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "GESTION SALAIRES",
-                          style: theme.textTheme.labelLarge?.copyWith(
-                            color: Colors.white.withValues(alpha: 0.9),
-                            fontWeight: FontWeight.w500,
-                            letterSpacing: 1.2,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          "Employés & Paiements",
-                          style: theme.textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const PaymentReconciliationScreen(),
-                        ),
-                      );
-                    },
-                    icon: const Icon(Icons.account_balance_wallet_rounded, color: Colors.white),
-                    tooltip: 'Réconciliation',
-                    style: IconButton.styleFrom(
-                      backgroundColor: Colors.white.withValues(alpha: 0.2),
-                      foregroundColor: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  IconButton(
-                    onPressed: () => ref.invalidate(salaryStateProvider),
-                    icon: const Icon(Icons.refresh_rounded, color: Colors.white),
-                    tooltip: 'Actualiser',
-                    style: IconButton.styleFrom(
-                      backgroundColor: Colors.white.withValues(alpha: 0.2),
-                      foregroundColor: Colors.white,
-                    ),
-                  ),
-                ],
+              const SizedBox(width: 8),
+              RefreshButton(
+                onRefresh: () async {
+                  ref.invalidate(salaryStateProvider);
+                },
+                tooltip: 'Actualiser',
               ),
-            ),
+            ],
           ),
           SliverToBoxAdapter(
             child: Padding(

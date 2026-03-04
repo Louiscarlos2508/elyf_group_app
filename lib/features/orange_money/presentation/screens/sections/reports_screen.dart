@@ -8,6 +8,8 @@ import '../../widgets/reports/report_kpi_cards.dart';
 import '../../widgets/reports/report_net_balance_card.dart';
 import '../../widgets/reports/report_period_selector.dart';
 import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/app/theme/app_spacing.dart' as tokens;
+import 'package:elyf_groupe_app/app/theme/design_tokens.dart' show AppRadius;
 import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
 import '../../widgets/orange_money_header.dart';
 
@@ -83,7 +85,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     final statsAsync = ref.watch(reportsStatisticsProvider(statsKey));
 
     return Container(
-      color: const Color(0xFFF9FAFB),
+      color: theme.scaffoldBackgroundColor,
       child: CustomScrollView(
         slivers: [
           ElyfModuleHeader(
@@ -92,7 +94,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             module: EnterpriseModule.mobileMoney,
           ),
           SliverPadding(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.symmetric(horizontal: tokens.AppSpacing.md),
             sliver: SliverToBoxAdapter(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -105,14 +107,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                     onTodaySelected: _setToday,
                     onSevenDaysSelected: _setSevenDays,
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: AppSpacing.lg),
                   statsAsync.when(
                     data: (stats) => Column(
                       children: [
                         ReportKpiCards(stats: stats),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: AppSpacing.md),
                         ReportNetBalanceCard(stats: stats),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: AppSpacing.md),
                         ReportDailyDetailCard(
                           onExportPdf: () {
                             NotificationService.showInfo(
@@ -125,7 +127,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                     ),
                     loading: () => const Center(
                       child: Padding(
-                        padding: EdgeInsets.all(24),
+                        padding: const EdgeInsets.all(tokens.AppSpacing.md),
                         child: CircularProgressIndicator(),
                       ),
                     ),

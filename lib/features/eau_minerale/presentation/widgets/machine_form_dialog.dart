@@ -112,7 +112,7 @@ class _MachineFormDialogState extends ConsumerState<MachineFormDialog>
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 600),
         child: ElyfCard(
-          isGlass: true,
+          isGlass: false,
           padding: EdgeInsets.zero,
           child: Form(
             key: _formKey,

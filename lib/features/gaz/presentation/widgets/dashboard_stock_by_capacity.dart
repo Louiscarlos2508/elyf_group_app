@@ -61,7 +61,6 @@ class DashboardStockByCapacity extends ConsumerWidget {
                   stocks: data.stocks,
                   pointsOfSale: data.pointsOfSale,
                   cylinders: data.cylinders,
-                  transfers: data.transfers,
                   settings: activeEnterprise?.isPointOfSale == true ? null : settings,
                   targetEnterpriseId: enterpriseId,
                   isPOS: activeEnterprise?.isPointOfSale == true,

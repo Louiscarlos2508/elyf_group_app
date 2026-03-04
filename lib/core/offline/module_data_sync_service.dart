@@ -33,6 +33,8 @@ class ModuleDataSyncService {
       'cylinders',
       'gaz_settings',
       'pointOfSale',
+      'cylinder_stocks',
+      'wholesalers',
     ],
     'orange_money': [
       'agences',
@@ -88,6 +90,8 @@ class ModuleDataSyncService {
       'gas_collections',
       'gaz_sessions',
       'gaz_treasury_operations',
+      'wholesalers',
+      'inventory_audits',
     ],
     'orange_money': [
       'transactions',

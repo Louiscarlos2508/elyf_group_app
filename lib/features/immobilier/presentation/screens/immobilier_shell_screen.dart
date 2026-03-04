@@ -8,7 +8,8 @@ import 'package:elyf_groupe_app/shared.dart'
         NavigationSection,
         ModuleLoadingAnimation;
 import 'package:elyf_groupe_app/features/immobilier/application/providers.dart';
-import '../../../../core/printing/printer_provider.dart';
+
+
 
 class ImmobilierShellScreen extends BaseModuleShellScreen {
   const ImmobilierShellScreen({
@@ -56,13 +57,6 @@ class _ImmobilierShellScreenState
 
   @override
   Widget build(BuildContext context) {
-    return ProviderScope(
-      overrides: [
-        printerConfigProvider.overrideWith(
-          (ref) => ref.watch(immobilierPrinterConfigProvider),
-        ),
-      ],
-      child: super.build(context),
-    );
+    return super.build(context);
   }
 }

@@ -140,9 +140,7 @@ class _AssignEnterpriseDialogState
     final availableHeight = screenHeight - keyboardHeight - 100;
     final maxWidth = (screenWidth * 0.9).clamp(320.0, 700.0);
 
-    return BackdropFilter(
-      filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-      child: Dialog(
+    return Dialog(
         backgroundColor: Colors.transparent,
         insetPadding: const EdgeInsets.all(24),
         child: Container(
@@ -151,8 +149,7 @@ class _AssignEnterpriseDialogState
             maxHeight: availableHeight.clamp(400.0, screenHeight * 0.9),
           ),
           decoration: BoxDecoration(
-            color: (isDark ? Colors.grey[900] : Colors.white)!
-                .withValues(alpha: 0.95),
+            color: isDark ? Colors.grey[900] : Colors.white,
             borderRadius: BorderRadius.circular(28),
             border: Border.all(
               color: theme.colorScheme.outline.withValues(alpha: 0.1),
@@ -425,9 +422,8 @@ class _AssignEnterpriseDialogState
             ),
           ),
         ),
-      ),
-    );
-  }
+      );
+    }
 
   /// En-tête de la section rôles
   Widget _buildRoleSelectionHeader(ThemeData theme) {

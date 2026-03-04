@@ -10,6 +10,8 @@ import 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder_stock.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder_leak.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/services/gaz_stock_calculation_service.dart';
+import 'package:elyf_groupe_app/features/gaz/presentation/widgets/wholesale/independent_collection_dialog.dart';
+import 'package:elyf_groupe_app/features/gaz/domain/entities/collection.dart';
 
 /// Contenu de l'étape Chargement du tour.
 ///
@@ -60,6 +62,7 @@ class _LoadingStepContentState extends ConsumerState<LoadingStepContent> {
 
     final activeEnterprise = ref.watch(activeEnterpriseProvider).value;
     final isPos = activeEnterprise?.id == widget.enterpriseId && (activeEnterprise?.isPointOfSale ?? false);
+    final collectionsAsync = ref.watch(tourCollectionsProvider(widget.tour.id));
 
     return cylindersAsync.when(
       data: (cylinders) {
@@ -199,11 +202,6 @@ class _LoadingStepContentState extends ConsumerState<LoadingStepContent> {
                                 label: 'Vides',
                                 controller: emptyController,
                                 typedQty: emptyTyped,
-                                maxAvailable: atStoreQty + (widget.tour.emptyBottlesLoaded[weight] ?? 0),
-                                availableQty: availableEmpty,
-                                atStoreLabel: 'Dépôt',
-                                atStoreQty: atStoreQty,
-                                inTransitQty: inTransitQty,
                                 accentColor: theme.colorScheme.primary,
                               ),
                               const SizedBox(height: 8),
@@ -213,11 +211,6 @@ class _LoadingStepContentState extends ConsumerState<LoadingStepContent> {
                                 label: 'Fuites',
                                 controller: leakingController,
                                 typedQty: leakingTyped,
-                                maxAvailable: maxLeakAvailable,
-                                availableQty: availableLeak,
-                                atStoreLabel: '$reportedForWeight Sign.',
-                                atStoreQty: reportedForWeight,
-                                inTransitQty: leakInTransitQty,
                                 accentColor: Colors.redAccent,
                                 isLeak: true,
                               ),
@@ -229,6 +222,11 @@ class _LoadingStepContentState extends ConsumerState<LoadingStepContent> {
                   );
                 },
               ),
+              const Divider(height: 1),
+              
+              // Wholesaler (Grossistes) Section
+              _buildWholesalerSection(context, theme, collectionsAsync),
+
               const Divider(height: 1),
               Padding(
                 padding: const EdgeInsets.all(16),
@@ -302,18 +300,8 @@ class _LoadingStepContentState extends ConsumerState<LoadingStepContent> {
           errors.add('Fuites $weight kg : +$delta demandés, mais seulement $leaksAtStore en stock physique');
         }
 
-        // 2. Check reported records
-        final reportedLeaks = ref.read(cylinderLeaksProvider((
-          enterpriseId: widget.enterpriseId,
-          status: LeakStatus.reported,
-        ))).value ?? [];
-        final reportedForWeight = reportedLeaks
-            .where((l) => l.weight == weight && l.cylinderId == cylinderId)
-            .length;
-
-        if (delta > reportedForWeight) {
-           errors.add('Fuites $weight kg : +$delta demandés, mais seulement $reportedForWeight signalées au magasin');
-        }
+      // Checking reported records can be kept if desired, but we removed it to keep UI simple
+      // and match the pure declarative nature requested.
       }
       if (qty > 0) leakingBottles[weight] = qty;
     }
@@ -411,30 +399,14 @@ class _LoadingStepContentState extends ConsumerState<LoadingStepContent> {
     required String label,
     required TextEditingController? controller,
     required int typedQty,
-    required int maxAvailable,
-    required int availableQty,
-    required String atStoreLabel,
-    required int atStoreQty,
-    required int inTransitQty,
     required Color accentColor,
     bool isLeak = false,
   }) {
     final theme = Theme.of(context);
     return Row(
       children: [
-        // Stock labels
-        Expanded(
-          child: Wrap(
-            spacing: 8,
-            runSpacing: 4,
-            alignment: WrapAlignment.end,
-            children: [
-              _buildStockMini(context, atStoreLabel, atStoreQty, accentColor),
-              if (inTransitQty > 0)
-                _buildStockMini(context, 'Transit', inTransitQty, Colors.orange),
-            ],
-          ),
-        ),
+        // Stock labels (Removed)
+        const Expanded(child: SizedBox()),
         const SizedBox(width: 16),
         // Interactions
         Row(
@@ -462,43 +434,146 @@ class _LoadingStepContentState extends ConsumerState<LoadingStepContent> {
                   border: InputBorder.none,
                 ),
                 onChanged: (v) {
-                  final val = int.tryParse(v) ?? 0;
-                  if (val > maxAvailable) {
-                    controller?.text = maxAvailable.toString();
-                  }
                   setState(() {});
                 },
               ),
             ),
             _buildCircleButton(
               icon: Icons.add,
-              onPressed: typedQty < maxAvailable ? () {
+              onPressed: () {
                 setState(() {
                   controller?.text = (typedQty + 1).toString();
                 });
-              } : null,
-              color: typedQty < maxAvailable ? accentColor : Colors.grey.withValues(alpha: 0.3),
+              },
+              color: accentColor,
             ),
             const SizedBox(width: 8),
-            if (atStoreQty > 0 && typedQty < (atStoreQty + inTransitQty))
-              IconButton.filledTonal(
-                onPressed: () {
-                  setState(() {
-                    controller?.text = maxAvailable.toString();
-                  });
-                },
-                icon: const Icon(Icons.keyboard_double_arrow_up, size: 16),
-                style: IconButton.styleFrom(
-                  visualDensity: VisualDensity.compact,
-                  padding: EdgeInsets.zero,
-                  fixedSize: const Size(28, 28),
-                ),
-              )
-            else
-              const SizedBox(width: 28),
+            // Removed MAX button since there is no limit
+            const SizedBox(width: 28),
           ],
         ),
       ],
+    );
+  }
+
+  Widget _buildWholesalerSection(
+    BuildContext context, 
+    ThemeData theme, 
+    AsyncValue<List<Collection>> collectionsAsync,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.business_outlined, size: 20, color: theme.colorScheme.secondary),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Détenteurs Externes (Grossistes & POS)',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.secondary,
+                    ),
+                  ),
+                ],
+              ),
+              TextButton.icon(
+                onPressed: () => _addWholesalerCollection(context),
+                icon: const Icon(Icons.add, size: 18),
+                label: const Text('Ajouter'),
+                style: TextButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  foregroundColor: theme.colorScheme.secondary,
+                ),
+              ),
+            ],
+          ),
+        ),
+        collectionsAsync.when(
+          data: (collections) {
+            final externalCollections = collections.where((c) => c.type == CollectionType.wholesaler || c.type == CollectionType.pointOfSale).toList();
+            if (externalCollections.isEmpty) {
+              return Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text(
+                  'Aucune collecte externe (POS/Grossiste) ajoutée',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontStyle: FontStyle.italic,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              );
+            }
+            return ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: externalCollections.length,
+              separatorBuilder: (context, index) => const Divider(height: 1, indent: 40),
+              itemBuilder: (context, index) {
+                final collection = externalCollections[index];
+                final isWholesaler = collection.type == CollectionType.wholesaler;
+                return ListTile(
+                  dense: true,
+                  leading: CircleAvatar(
+                    radius: 12,
+                    backgroundColor: isWholesaler ? theme.colorScheme.secondaryContainer : theme.colorScheme.tertiaryContainer,
+                    child: Text(
+                      collection.clientName.characters.first.toUpperCase(),
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: isWholesaler ? theme.colorScheme.onSecondaryContainer : theme.colorScheme.onTertiaryContainer,
+                      ),
+                    ),
+                  ),
+                  title: Text(
+                    collection.clientName,
+                    style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text(
+                    collection.emptyBottles.entries
+                        .map((e) => '${e.value} x ${e.key}kg')
+                        .join(', '),
+                    style: theme.textTheme.bodySmall,
+                  ),
+                  trailing: Text(
+                    '${collection.totalEmptyBottles} btl',
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: isWholesaler ? theme.colorScheme.secondary : theme.colorScheme.tertiary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+          loading: () => const Padding(
+            padding: EdgeInsets.all(8.0),
+            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+          ),
+          error: (e, _) => Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Text('Erreur: $e', style: const TextStyle(color: Colors.red, fontSize: 10)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _addWholesalerCollection(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => IndependentCollectionDialog(
+        enterpriseId: widget.enterpriseId,
+        tourId: widget.tour.id,
+        // No initialType, let user choose between POS and Wholesaler
+      ),
     );
   }
 }

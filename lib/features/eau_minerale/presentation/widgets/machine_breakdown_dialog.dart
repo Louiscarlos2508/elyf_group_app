@@ -115,7 +115,18 @@ class _MachineBreakdownDialogState
       final controller = ref.read(productionSessionControllerProvider);
       await controller.updateSession(sessionMiseAJour);
     }
-    // Si pas de session, on enregistre juste l'événement de panne (signalement standalone)
+    // 3. Mettre à jour le statut de la machine elle-même (Persistance du statut en panne)
+    final machineMiseAJour = widget.machine.copyWith(
+      isActive: false,
+      updatedAt: DateTime.now(),
+    );
+    
+    final machineController = ref.read(machineControllerProvider);
+    await machineController.updateMachine(machineMiseAJour);
+
+    // 4. Invalider les providers pour rafraîchir les listes (UI)
+    ref.invalidate(allMachinesProvider);
+    // ref.invalidate(machinesProvider); // Optionnel si utilisé ailleurs
 
     if (!mounted) return;
     widget.onPanneSignaled(event);
@@ -140,7 +151,7 @@ class _MachineBreakdownDialogState
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 500),
         child: ElyfCard(
-          isGlass: true,
+          isGlass: false,
           padding: EdgeInsets.zero,
           child: Form(
             key: _formKey,

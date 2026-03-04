@@ -215,56 +215,6 @@ class SettingsOfflineRepository extends OfflineRepository<OrangeMoneySettings>
     }
   }
 
-  @override
-  Future<void> updateThresholds(
-    String enterpriseId, {
-    int? criticalLiquidityThreshold,
-    double? checkpointDiscrepancyThreshold,
-    int? commissionReminderDays,
-    int? largeTransactionThreshold,
-  }) async {
-    try {
-      final current = await getSettings(enterpriseId);
-      if (current != null) {
-        final now = DateTime.now();
-        final updated = current.copyWith(
-          criticalLiquidityThreshold: criticalLiquidityThreshold ?? current.criticalLiquidityThreshold,
-          checkpointDiscrepancyThreshold: checkpointDiscrepancyThreshold ?? current.checkpointDiscrepancyThreshold,
-          commissionReminderDays: commissionReminderDays ?? current.commissionReminderDays,
-          largeTransactionThreshold: largeTransactionThreshold ?? current.largeTransactionThreshold,
-          updatedAt: now,
-        );
-        await save(updated);
-
-        // Audit Log
-        await auditTrailRepository.log(
-          AuditRecord(
-            id: IdGenerator.generate(),
-            enterpriseId: enterpriseId,
-            userId: syncManager.getUserId() ?? '',
-            module: 'orange_money',
-            action: 'update_thresholds',
-            entityId: _getSettingsId(enterpriseId),
-            entityType: 'settings',
-            metadata: {
-              'criticalLiquidityThreshold': criticalLiquidityThreshold,
-              'checkpointDiscrepancyThreshold': checkpointDiscrepancyThreshold,
-            },
-            timestamp: now,
-          ),
-        );
-      }
-    } catch (error, stackTrace) {
-      final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      AppLogger.error(
-        'Error updating thresholds',
-        name: 'SettingsOfflineRepository',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      throw appException;
-    }
-  }
 
   @override
   Future<OrangeMoneySettings> createDefaultSettings(String enterpriseId) async {
@@ -385,44 +335,6 @@ class SettingsOfflineRepository extends OfflineRepository<OrangeMoneySettings>
     }
   }
 
-  @override
-  Future<void> updateSimNumber(String enterpriseId, String simNumber) async {
-    try {
-      final current = await getSettings(enterpriseId);
-      if (current != null) {
-        final now = DateTime.now();
-        final updated = current.copyWith(
-          simNumber: simNumber,
-          updatedAt: now,
-        );
-        await save(updated);
-
-        // Audit Log
-        await auditTrailRepository.log(
-          AuditRecord(
-            id: IdGenerator.generate(),
-            enterpriseId: enterpriseId,
-            userId: syncManager.getUserId() ?? '',
-            module: 'orange_money',
-            action: 'update_sim_number',
-            entityId: _getSettingsId(enterpriseId),
-            entityType: 'settings',
-            metadata: {'simNumber': simNumber},
-            timestamp: now,
-          ),
-        );
-      }
-    } catch (error, stackTrace) {
-      final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      AppLogger.error(
-        'Error updating SIM number',
-        name: 'SettingsOfflineRepository',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      throw appException;
-    }
-  }
 
   @override
   Stream<OrangeMoneySettings?> watchSettings(String enterpriseId) {

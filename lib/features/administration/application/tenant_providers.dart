@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../domain/entities/enterprise.dart';
 import 'providers.dart';
-import 'services/tenant_context_service.dart';
+import 'providers.dart';
 
 /// Notifier for the current tenant ID
 class CurrentTenantIdNotifier extends Notifier<String?> {

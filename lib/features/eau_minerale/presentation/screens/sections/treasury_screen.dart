@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import 'package:intl/intl.dart';
 import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
@@ -16,63 +18,56 @@ class TreasuryScreen extends ConsumerWidget {
     final dailySummaryAsync = ref.watch(dailyDashboardSummaryProvider);
     final historyAsync = ref.watch(treasuryHistoryProvider);
     final sessionAsync = ref.watch(currentClosingSessionProvider);
+    final balancesAsync = ref.watch(absoluteTreasuryBalanceProvider);
 
     return CustomScrollView(
       slivers: [
-        // App Bar / Header could be here or handled by shell.
-        // But since other modules have headers, let's keep it consistent.
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'TRÉSORERIE',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-                Text(
-                  'Suivi des flux de caisse et OM',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey,
-                  ),
-                ),
-              ],
-            ),
-          ),
+        // Premium Header
+        ElyfModuleHeader(
+          title: "Trésorerie",
+          subtitle: "Suivi des flux de caisse et OM",
+          module: EnterpriseModule.eau,
         ),
 
         // Balance Cards
         SliverToBoxAdapter(
-          child: dailySummaryAsync.maybeWhen(
-            data: (metrics) => Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _BalanceCard(
-                      label: 'Caisse (Espèces)',
-                      amount: metrics.cashCollections - metrics.cashExpenses,
-                      icon: Icons.payments_outlined,
-                      color: Colors.green,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _BalanceCard(
+                    label: 'Solde Espèces',
+                    amount: balancesAsync.maybeWhen(
+                      data: (b) => b['cash'] ?? 0,
+                      orElse: () => 0,
                     ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _BalanceCard(
-                      label: 'Mobile Money',
-                      amount: metrics.mobileMoneyCollections - metrics.mobileMoneyExpenses,
-                      icon: Icons.smartphone_outlined,
-                      color: Colors.blue,
+                    todayDelta: dailySummaryAsync.maybeWhen(
+                      data: (m) => m.cashCollections - m.cashExpenses,
+                      orElse: () => 0,
                     ),
+                    icon: Icons.payments_outlined,
+                    color: Colors.green,
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _BalanceCard(
+                    label: 'Solde Mobile Money',
+                    amount: balancesAsync.maybeWhen(
+                      data: (b) => b['mobileMoney'] ?? 0,
+                      orElse: () => 0,
+                    ),
+                    todayDelta: dailySummaryAsync.maybeWhen(
+                      data: (m) => m.mobileMoneyCollections - m.mobileMoneyExpenses,
+                      orElse: () => 0,
+                    ),
+                    icon: Icons.smartphone_outlined,
+                    color: Colors.blue,
+                  ),
+                ),
+              ],
             ),
-            orElse: () => const SizedBox.shrink(),
           ),
         ),
 
@@ -177,12 +172,14 @@ class _BalanceCard extends StatelessWidget {
   const _BalanceCard({
     required this.label,
     required this.amount,
+    required this.todayDelta,
     required this.icon,
     required this.color,
   });
 
   final String label;
   final int amount;
+  final int todayDelta;
   final IconData icon;
   final Color color;
 
@@ -198,7 +195,28 @@ class _BalanceCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: color, size: 28),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Icon(icon, color: color, size: 28),
+              if (todayDelta != 0)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: (todayDelta > 0 ? Colors.green : Colors.red).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '${todayDelta > 0 ? "+" : ""}${NumberFormat('#,###').format(todayDelta)}',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: todayDelta > 0 ? Colors.green : Colors.red,
+                    ),
+                  ),
+                ),
+            ],
+          ),
           const SizedBox(height: 12),
           Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
           const SizedBox(height: 4),

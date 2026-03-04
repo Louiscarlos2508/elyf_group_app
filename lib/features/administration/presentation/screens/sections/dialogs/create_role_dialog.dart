@@ -92,7 +92,7 @@ class _CreateRoleDialogState extends ConsumerState<CreateRoleDialog>
           name: _nameController.text.trim(),
           description: _descriptionController.text.trim(),
           permissions: _selectedPermissions,
-          moduleId: _selectedModuleId ?? 'administration',
+          moduleId: _selectedModuleId ?? widget.moduleId ?? '',
           isSystemRole: false,
           allowedEnterpriseTypes: _selectedEnterpriseTypes,
         );
@@ -233,7 +233,9 @@ class _CreateRoleDialogState extends ConsumerState<CreateRoleDialog>
                               'Sélectionnez le module du rôle', 
                               Icons.category_outlined
                             ),
-                            items: PermissionRegistry.instance.registeredModules.map((id) {
+                            items: PermissionRegistry.instance.registeredModules
+                .where((id) => id != 'administration' && id != 'group')
+                .map((id) {
                               return DropdownMenuItem(
                                 value: id,
                                 child: Text(_getModuleName(id)),

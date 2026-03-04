@@ -302,6 +302,106 @@ class ProductionSession {
     );
   }
 
+  /// Merges this session with another one (usually from server/sync).
+  ///
+  /// Priority rules:
+  /// 1. Status: completed > inProgress > started > draft
+  /// 2. Lists (days, bobines, events): merged by key/identity
+  /// 3. Fields: newer (updatedAt) wins
+  ProductionSession mergeWith(ProductionSession other) {
+    // If other is null or different ID, return this
+    if (other.id != id) return this;
+
+    final thisUpdated = updatedAt ?? createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+    final otherUpdated =
+        other.updatedAt ?? other.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+
+    // 1. Status priority
+    final statusOrder = {
+      ProductionSessionStatus.cancelled: -1,
+      ProductionSessionStatus.draft: 0,
+      ProductionSessionStatus.started: 1,
+      ProductionSessionStatus.suspended: 2,
+      ProductionSessionStatus.inProgress: 2,
+      ProductionSessionStatus.completed: 4,
+    };
+
+    final thisStatusScore = statusOrder[status] ?? 0;
+    final otherStatusScore = statusOrder[other.status] ?? 0;
+
+    final mergedStatus =
+        thisStatusScore >= otherStatusScore ? status : other.status;
+
+    // 2. Merge Lists
+    // Production Days (by date)
+    final Map<String, ProductionDay> mergedDays = {};
+    for (final day in productionDays) {
+      mergedDays[day.date.toIso8601String().split('T').first] = day;
+    }
+    for (final day in other.productionDays) {
+      final key = day.date.toIso8601String().split('T').first;
+      if (mergedDays.containsKey(key)) {
+        // Simple merge for day: favor newer one for now
+        final existing = mergedDays[key]!;
+        if (day.updatedAt != null &&
+            existing.updatedAt != null &&
+            day.updatedAt!.isAfter(existing.updatedAt!)) {
+          mergedDays[key] = day;
+        }
+      } else {
+        mergedDays[key] = day;
+      }
+    }
+
+    // Bobines (by machineId)
+    final Map<String, BobineUsage> mergedBobines = {};
+    for (final b in bobinesUtilisees) {
+      mergedBobines[b.machineId] = b;
+    }
+    for (final b in other.bobinesUtilisees) {
+      if (mergedBobines.containsKey(b.machineId)) {
+        final existing = mergedBobines[b.machineId]!;
+        // If server bobine is finished and local isn't, prefer finished
+        if (b.estFinie && !existing.estFinie) {
+          mergedBobines[b.machineId] = b;
+        } else if (!b.estFinie && existing.estFinie) {
+          // Keep existing finished one
+        } else if (b.dateInstallation.isAfter(existing.dateInstallation)) {
+          // Sinon prendre la plus récente par date d'installation si même statut
+          mergedBobines[b.machineId] = b;
+        }
+      } else {
+        mergedBobines[b.machineId] = b;
+      }
+    }
+
+    // Events (by ID)
+    final Map<String, ProductionEvent> mergedEvents = {};
+    for (final e in events) {
+      mergedEvents[e.id] = e;
+    }
+    for (final e in other.events) {
+      mergedEvents[e.id] = e;
+    }
+
+    // 3. Field Merging (Newer wins)
+    final useOther = otherUpdated.isAfter(thisUpdated);
+
+    return copyWith(
+      status: mergedStatus,
+      productionDays: mergedDays.values.toList(),
+      bobinesUtilisees: mergedBobines.values.toList(),
+      events: mergedEvents.values.toList(),
+      // Simple fields
+      heureFin: (status == ProductionSessionStatus.completed)
+          ? heureFin ?? other.heureFin
+          : (other.status == ProductionSessionStatus.completed ? other.heureFin : null),
+      quantiteProduite: useOther ? other.quantiteProduite : quantiteProduite,
+      consommationCourant: useOther ? other.consommationCourant : consommationCourant,
+      updatedAt: thisUpdated.isAfter(otherUpdated) ? thisUpdated : otherUpdated,
+    );
+  }
+
   factory ProductionSession.fromMap(
     Map<String, dynamic> map,
     String defaultEnterpriseId,

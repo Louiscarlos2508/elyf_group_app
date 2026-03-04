@@ -22,6 +22,9 @@ import 'permission_providers.dart';
 final accessibleGazSectionsProvider = FutureProvider<List<NavigationSection>>((
   ref,
 ) async {
+  // Garantir un temps de chargement minimum pour une expérience fluide
+  final loadingStart = DateTime.now();
+
   final adapter = ref.watch(gazPermissionAdapterProvider);
 
   // Attendre que l'entreprise active soit chargée
@@ -118,7 +121,10 @@ final accessibleGazSectionsProvider = FutureProvider<List<NavigationSection>>((
             enterpriseId: enterpriseId,
             moduleId: moduleId,
           ),
-          requiredPermissions: {GazPermissions.viewSettings.id},
+          requiredPermissions: {
+            GazPermissions.viewSettings.id,
+            GazPermissions.editSettings.id,
+          },
         ),
         (
           section: NavigationSection(
@@ -159,6 +165,13 @@ final accessibleGazSectionsProvider = FutureProvider<List<NavigationSection>>((
         name: 'gaz.sections',
       );
     }
+  }
+
+  // Respecter le temps de chargement minimum (1.2s)
+  final elapsed = DateTime.now().difference(loadingStart);
+  const minimumDuration = Duration(milliseconds: 1200);
+  if (elapsed < minimumDuration) {
+    await Future.delayed(minimumDuration - elapsed);
   }
 
   AppLogger.debug(

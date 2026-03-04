@@ -19,27 +19,32 @@ class BobineDialogs {
     WidgetRef ref,
     ProductionSession session,
     BobineUsage bobine,
-  ) {
-    final enterpriseId = ref.read(activeEnterpriseProvider).value?.id ?? 'default';
-    final machine = Machine(
-      id: bobine.machineId,
-      name: bobine.machineName,
-      enterpriseId: enterpriseId,
-      reference: bobine.machineId,
-    );
+  ) async {
+    // 1. Récupérer l'objet machine complet pour éviter la perte d'attributs lors de l'update
+    final machineController = ref.read(machineControllerProvider);
+    final machine = await machineController.fetchMachineById(bobine.machineId);
 
-    showDialog(
-      context: context,
-      builder: (dialogContext) => MachineBreakdownDialog(
-        machine: machine,
-        session: session,
-        bobine: bobine,
-        onPanneSignaled: (event) {
-          ref.invalidate(productionSessionDetailProvider((session.id)));
-          NotificationService.showInfo(context, 'Panne signalée avec succès');
-        },
-      ),
-    );
+    if (machine == null) {
+      if (context.mounted) {
+        NotificationService.showError(context, 'Impossible de trouver les détails de la machine ${bobine.machineId}.');
+      }
+      return;
+    }
+
+    if (context.mounted) {
+      showDialog(
+        context: context,
+        builder: (dialogContext) => MachineBreakdownDialog(
+          machine: machine,
+          session: session,
+          bobine: bobine,
+          onPanneSignaled: (event) {
+            ref.invalidate(productionSessionDetailProvider((session.id)));
+            // Optionnel: NotificationService.showInfo est dejà géré par le dialog
+          },
+        ),
+      );
+    }
   }
 
   /// Affiche le dialog pour marquer une bobine comme finie.

@@ -33,17 +33,6 @@ final accessibleBoutiqueSectionsProvider =
           <({NavigationSection section, Set<String> requiredPermissions})>[
             (
               section: NavigationSection(
-                label: 'Tableau',
-                icon: Icons.dashboard_outlined,
-                builder: () => const DashboardScreen(),
-                isPrimary: true,
-                enterpriseId: enterpriseId,
-                moduleId: moduleId,
-              ),
-              requiredPermissions: {BoutiquePermissions.viewDashboard.id},
-            ),
-            (
-              section: NavigationSection(
                 label: 'Caisse',
                 icon: Icons.point_of_sale,
                 builder: () => const PosScreen(),
@@ -55,6 +44,28 @@ final accessibleBoutiqueSectionsProvider =
                 BoutiquePermissions.usePos.id,
                 BoutiquePermissions.viewSales.id,
               },
+            ),
+            (
+              section: NavigationSection(
+                label: 'Tableau',
+                icon: Icons.dashboard_outlined,
+                builder: () => const DashboardScreen(),
+                isPrimary: true,
+                enterpriseId: enterpriseId,
+                moduleId: moduleId,
+              ),
+              requiredPermissions: {BoutiquePermissions.viewDashboard.id},
+            ),
+            (
+              section: NavigationSection(
+                label: 'Journal',
+                icon: Icons.history_outlined,
+                builder: () => const SalesScreen(),
+                isPrimary: false,
+                enterpriseId: enterpriseId,
+                moduleId: moduleId,
+              ),
+              requiredPermissions: {BoutiquePermissions.viewSales.id},
             ),
             (
               section: NavigationSection(
@@ -90,16 +101,6 @@ final accessibleBoutiqueSectionsProvider =
             ),
             (
               section: NavigationSection(
-                label: 'Dépenses',
-                icon: Icons.receipt_long_outlined,
-                builder: () => const ExpensesScreen(),
-                enterpriseId: enterpriseId,
-                moduleId: moduleId,
-              ),
-              requiredPermissions: {BoutiquePermissions.viewExpenses.id},
-            ),
-            (
-              section: NavigationSection(
                 label: 'Trésorerie',
                 icon: Icons.account_balance_wallet_outlined,
                 builder: () => const TreasuryScreen(),
@@ -107,6 +108,16 @@ final accessibleBoutiqueSectionsProvider =
                 moduleId: moduleId,
               ),
               requiredPermissions: {BoutiquePermissions.viewTreasury.id},
+            ),
+            (
+              section: NavigationSection(
+                label: 'Dépenses',
+                icon: Icons.receipt_long_outlined,
+                builder: () => const ExpensesScreen(),
+                enterpriseId: enterpriseId,
+                moduleId: moduleId,
+              ),
+              requiredPermissions: {BoutiquePermissions.viewExpenses.id},
             ),
             (
               section: NavigationSection(
@@ -127,16 +138,6 @@ final accessibleBoutiqueSectionsProvider =
                 moduleId: moduleId,
               ),
               requiredPermissions: {BoutiquePermissions.viewReports.id},
-            ),
-            (
-              section: NavigationSection(
-                label: 'Journal',
-                icon: Icons.history_outlined,
-                builder: () => const SalesScreen(),
-                enterpriseId: enterpriseId,
-                moduleId: moduleId,
-              ),
-              requiredPermissions: {BoutiquePermissions.viewSales.id},
             ),
             (
               section: NavigationSection(

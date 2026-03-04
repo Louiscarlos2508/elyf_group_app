@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../../domain/entities/production_session.dart';
 import '../../../domain/entities/production_session_status.dart';
@@ -76,62 +78,18 @@ class ProductionSessionsScreen extends ConsumerWidget {
                   physics: const BouncingScrollPhysics(),
                   slivers: [
                     // Premium Header
-                    SliverToBoxAdapter(
-                      child: Container(
-                        margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              Color(0xFF0284C7), // Sky 600
-                              Color(0xFF00C2FF), // Custom Cyan
-                              Color(0xFF0369A1), // Sky 700
-                            ],
-                          ),
-                          borderRadius: BorderRadius.circular(24),
-                          boxShadow: [
-                            BoxShadow(
-                              color: theme.colorScheme.primary.withValues(alpha: 0.2),
-                              blurRadius: 12,
-                              offset: const Offset(0, 6),
-                            ),
-                          ],
+                    ElyfModuleHeader(
+                      title: "Production",
+                      subtitle: "Suivi des sessions de production d'eau",
+                      module: EnterpriseModule.eau,
+                      actions: [
+                        RefreshButton(
+                          onRefresh: () async {
+                            ref.invalidate(productionSessionsStateProvider);
+                          },
+                          tooltip: 'Actualiser',
                         ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    "EAU MINÉRALE",
-                                    style: theme.textTheme.labelLarge?.copyWith(
-                                      color: Colors.white.withValues(alpha: 0.9),
-                                      fontWeight: FontWeight.w500,
-                                      letterSpacing: 1.2,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    "Production",
-                                    style: theme.textTheme.headlineMedium?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.refresh, color: Colors.white),
-                              onPressed: () => ref.invalidate(productionSessionsStateProvider),
-                              tooltip: 'Actualiser',
-                            ),
-                          ],
-                        ),
-                      ),
+                      ],
                     ),
                     
                     // Statistiques (Dashboard Styled)
@@ -224,33 +182,11 @@ class ProductionSessionsScreen extends ConsumerWidget {
   Widget _buildEmptyState(BuildContext context, ThemeData theme) {
     return CustomScrollView(
       slivers: [
-        SliverToBoxAdapter(
-          child: Container(
-            margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF0284C7), Color(0xFF0369A1)],
-              ),
-              borderRadius: BorderRadius.circular(24),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "EAU MINÉRALE",
-                  style: theme.textTheme.labelLarge?.copyWith(color: Colors.white70),
-                ),
-                Text(
-                  "Production",
-                  style: theme.textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-              ],
-            ),
-          ),
+        ElyfModuleHeader(
+          title: "Production",
+          subtitle: "Commencez par créer une nouvelle session de production",
+          module: EnterpriseModule.eau,
+          asSliver: true,
         ),
         SliverFillRemaining(
           child: SectionPlaceholder(

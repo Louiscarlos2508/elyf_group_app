@@ -16,18 +16,12 @@ class OrangeMoneySettings {
     this.commissionDiscrepancyMinor = 5.0,
     this.commissionDiscrepancySignificant = 10.0,
     this.autoValidateConformeCommissions = true,
-    this.simNumber = '',
-    this.operators = const ['Orange Money'],
-    this.maxAllowedDebt = 500000,
     this.createdAt,
     this.updatedAt,
   });
 
   final String id; // enterpriseId
   final String enterpriseId;
-  final String simNumber; // Numéro SIM Orange Money
-  final List<String> operators; // Liste des opérateurs actifs (Orange, Moov, etc.)
-  final int maxAllowedDebt; // Dette maximum autorisée pour les agents (FCFA)
 
   // NOTIFICATIONS
   final bool enableLiquidityAlerts; // Alertes de liquidité faible
@@ -70,17 +64,12 @@ class OrangeMoneySettings {
     double? commissionDiscrepancyMinor,
     double? commissionDiscrepancySignificant,
     bool? autoValidateConformeCommissions,
-    List<String>? operators,
-    int? maxAllowedDebt,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
     return OrangeMoneySettings(
       id: id ?? this.id,
       enterpriseId: enterpriseId ?? this.enterpriseId,
-      simNumber: simNumber ?? this.simNumber,
-      operators: operators ?? this.operators,
-      maxAllowedDebt: maxAllowedDebt ?? this.maxAllowedDebt,
       enableLiquidityAlerts:
           enableLiquidityAlerts ?? this.enableLiquidityAlerts,
       enableCommissionReminders:
@@ -117,10 +106,6 @@ class OrangeMoneySettings {
     return OrangeMoneySettings(
       id: map['id'] as String? ?? defaultEnterpriseId,
       enterpriseId: map['enterpriseId'] as String? ?? defaultEnterpriseId,
-      simNumber: map['simNumber'] as String? ?? '',
-      operators: (map['operators'] as List<dynamic>?)?.map((e) => e as String).toList() ??
-          ['Orange Money'],
-      maxAllowedDebt: (map['maxAllowedDebt'] as num?)?.toInt() ?? 500000,
       enableLiquidityAlerts: map['enableLiquidityAlerts'] as bool? ?? true,
       enableCommissionReminders:
           map['enableCommissionReminders'] as bool? ?? true,
@@ -162,9 +147,6 @@ class OrangeMoneySettings {
     return {
       'id': id,
       'enterpriseId': enterpriseId,
-      'simNumber': simNumber,
-      'operators': operators,
-      'maxAllowedDebt': maxAllowedDebt,
       'enableLiquidityAlerts': enableLiquidityAlerts,
       'enableCommissionReminders': enableCommissionReminders,
       'enableCheckpointReminders': enableCheckpointReminders,

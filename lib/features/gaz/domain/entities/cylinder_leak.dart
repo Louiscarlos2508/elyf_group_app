@@ -2,7 +2,8 @@
 enum LeakStatus {
   reported('Signalée'),
   sentForExchange('Envoyée pour échange'),
-  exchanged('Échangée');
+  exchanged('Échangée'),
+  convertedToEmpty('Convertie en Vide');
 
   const LeakStatus(this.label);
   final String label;

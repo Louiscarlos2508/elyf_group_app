@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers/state_providers.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/supplier.dart';
 import '../../widgets/supplier_form_dialog.dart';
@@ -37,64 +38,20 @@ class _SuppliersContent extends ConsumerWidget {
     return CustomScrollView(
       slivers: [
         // Premium Header
-        SliverToBoxAdapter(
-          child: Container(
-            margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  theme.colorScheme.primary,
-                  const Color(0xFF00C2FF),
-                  const Color(0xFF0369A1),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                BoxShadow(
-                  color: theme.colorScheme.primary.withValues(alpha: 0.3),
-                  blurRadius: 12,
-                  offset: const Offset(0, 6),
-                ),
-              ],
+        ElyfModuleHeader(
+          title: "Fournisseurs",
+          subtitle: "Gestion des partenaires",
+          module: EnterpriseModule.eau,
+          actions: [
+            FloatingActionButton.extended(
+              onPressed: () => _showAddSupplierDialog(context),
+              label: const Text("NOUVEAU"),
+              icon: const Icon(Icons.add, size: 18),
+              backgroundColor: Colors.white.withValues(alpha: 0.9),
+              foregroundColor: theme.colorScheme.primary,
+              elevation: 0,
             ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "FOURNISSEURS",
-                        style: theme.textTheme.labelLarge?.copyWith(
-                          color: Colors.white.withValues(alpha: 0.9),
-                          fontWeight: FontWeight.w500,
-                          letterSpacing: 1.2,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        "Gestion des Partenaires",
-                        style: theme.textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                FloatingActionButton.extended(
-                  onPressed: () => _showAddSupplierDialog(context),
-                  label: const Text("NOUVEAU"),
-                  icon: const Icon(Icons.add),
-                  backgroundColor: Colors.white,
-                  foregroundColor: theme.colorScheme.primary,
-                ),
-              ],
-            ),
-          ),
+          ],
         ),
 
         // Search Bar

@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../features/administration/application/providers.dart' show userRepositoryProvider;
+import 'package:elyf_groupe_app/core/repositories/repository_providers.dart' show userRepositoryProvider;
 import '../providers.dart' show currentUserIdProvider;
 
 /// Provider pour récupérer les données complètes du profil utilisateur.

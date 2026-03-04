@@ -107,17 +107,17 @@ class GazStockCalculationService {
   }
 
   static int calculateTotalFullCylinders(List<CylinderStock> stocks) {
-    return filterFullStocks(stocks).fold<int>(0, (sum, s) => sum + s.quantity);
+    return filterFullStocks(stocks).fold<int>(0, (sum, s) => sum + s.quantity.toInt());
   }
 
   static int calculateTotalEmptyCylinders(List<CylinderStock> stocks) {
-    return filterEmptyStocks(stocks).fold<int>(0, (sum, s) => sum + s.quantity);
+    return filterEmptyStocks(stocks).fold<int>(0, (sum, s) => sum + s.quantity.toInt());
   }
 
   static Map<int, int> groupStocksByWeight(List<CylinderStock> stocks) {
     final byWeight = <int, int>{};
     for (final stock in stocks) {
-      byWeight[stock.weight] = (byWeight[stock.weight] ?? 0) + stock.quantity;
+      byWeight[stock.weight] = (byWeight[stock.weight] ?? 0) + stock.quantity.toInt();
     }
     return byWeight;
   }
@@ -126,7 +126,6 @@ class GazStockCalculationService {
     required List<CylinderStock> stocks,
     required List<Enterprise> pointsOfSale,
     required List<Cylinder> cylinders,
-    List<StockTransfer>? transfers,
     GazSettings? settings,
     String? targetEnterpriseId,
     bool isPOS = false,
@@ -142,13 +141,7 @@ class GazStockCalculationService {
               .toList()
         : validStocks;
 
-    // 1. Collect all inter-site shipped items
-    final shippedTransfers = (transfers ?? []).where((t) => t.status == StockTransferStatus.shipped);
-    final interSiteItems = isPOS && targetEnterpriseId != null
-        ? shippedTransfers.where((t) => t.toEnterpriseId == targetEnterpriseId).expand((t) => t.items).toList()
-        : shippedTransfers.expand((t) => t.items).toList();
-
-    // 2. Base weight-based Maps (Exhaustive)
+    // 1. Base weight-based Maps (Exhaustive)
     final fullByWeight = <int, int>{};
     final emptyByWeight = <int, int>{};
     final issueByWeight = <int, int>{};
@@ -159,28 +152,23 @@ class GazStockCalculationService {
       final w = cylinder.weight;
       final cId = cylinder.id;
       
-      // Full = physical full + inter-site full
-      // PIVOT: Filtrer par cylinderId pour la résilience pour les stocks physiques
-      final sFull = relevantStocks.where((s) => s.cylinderId == cId && s.status == CylinderStatus.full).fold<int>(0, (sum, s) => sum + s.quantity);
-      // NOTE: Les transferts n'ont pas de cylinderId, on utilise le poids
-      final tFull = interSiteItems.where((i) => i.weight == w && i.status == CylinderStatus.full).fold<int>(0, (sum, i) => sum + i.quantity);
-      fullByWeight[w] = (fullByWeight[w] ?? 0) + sFull + tFull;
+      final sFull = relevantStocks.where((s) => s.cylinderId == cId && s.status == CylinderStatus.full).fold<int>(0, (sum, s) => sum + s.quantity.toInt());
+      fullByWeight[w] = (fullByWeight[w] ?? 0) + sFull;
 
-      // Empty = physical empty (store + tour) + inter-site empty
-      final sEmpty = relevantStocks.where((s) => s.cylinderId == cId && (s.status == CylinderStatus.emptyAtStore || s.status == CylinderStatus.emptyInTransit)).fold<int>(0, (sum, s) => sum + s.quantity);
-      final tEmpty = interSiteItems.where((i) => i.weight == w && (i.status == CylinderStatus.emptyAtStore || i.status == CylinderStatus.emptyInTransit)).fold<int>(0, (sum, i) => sum + i.quantity);
-      emptyByWeight[w] = (emptyByWeight[w] ?? 0) + sEmpty + tEmpty;
+      // Empty = physical empty (store + tour)
+      final sEmpty = relevantStocks.where((s) => s.cylinderId == cId && (s.status == CylinderStatus.emptyAtStore || s.status == CylinderStatus.emptyInTransit)).fold<int>(0, (sum, s) => sum + s.quantity.toInt());
+      emptyByWeight[w] = (emptyByWeight[w] ?? 0) + sEmpty;
 
-      // Issues = physical issues (leak + tour_leak + defective) + inter-site issues
-      final sIssues = relevantStocks.where((s) => s.cylinderId == cId && (s.status == CylinderStatus.leak || s.status == CylinderStatus.leakInTransit || s.status == CylinderStatus.defective)).fold<int>(0, (sum, s) => sum + s.quantity);
-      final tIssues = interSiteItems.where((i) => i.weight == w && (i.status == CylinderStatus.leak || i.status == CylinderStatus.leakInTransit || i.status == CylinderStatus.defective)).fold<int>(0, (sum, i) => sum + i.quantity);
-      issueByWeight[w] = (issueByWeight[w] ?? 0) + sIssues + tIssues;
+      // Issues = physical issues (leak + tour_leak + defective)
+      final sIssues = relevantStocks.where((s) => s.cylinderId == cId && (s.status == CylinderStatus.leak || s.status == CylinderStatus.leakInTransit || s.status == CylinderStatus.defective)).fold<int>(0, (sum, s) => sum + s.quantity.toInt());
+      issueByWeight[w] = (issueByWeight[w] ?? 0) + sIssues;
 
-      // Transit = Tours + Inter-site
-      final sTransit = relevantStocks.where((s) => s.cylinderId == cId && (s.status == CylinderStatus.emptyInTransit || s.status == CylinderStatus.leakInTransit)).fold<int>(0, (sum, s) => sum + s.quantity);
-      final tTransit = interSiteItems.where((i) => i.weight == w).fold<int>(0, (sum, i) => sum + i.quantity);
-      if (sTransit + tTransit > 0) {
-        centralizedByWeight[w] = (centralizedByWeight[w] ?? 0) + sTransit + tTransit;
+      // Transit = Tours
+      final sTransit = relevantStocks
+          .where((s) => s.cylinderId == cId && (s.status == CylinderStatus.emptyInTransit || s.status == CylinderStatus.leakInTransit))
+          .fold<int>(0, (sum, s) => sum + s.quantity.toInt());
+      if (sTransit > 0) {
+        centralizedByWeight[w] = (centralizedByWeight[w] ?? 0) + sTransit;
       }
     }
 
@@ -189,14 +177,9 @@ class GazStockCalculationService {
     for (final s in localTransitStocks) {
       final name = pointsOfSale.where((p) => p.id == s.enterpriseId).firstOrNull?.name ?? 
                   (s.enterpriseId == targetEnterpriseId ? 'Local (Tournées)' : 'Chargement');
-      transitBreakdown[name] = (transitBreakdown[name] ?? 0) + s.quantity;
+      transitBreakdown[name] = (transitBreakdown[name] ?? 0) + s.quantity.toInt();
     }
-    for (final t in shippedTransfers) {
-      if (isPOS && targetEnterpriseId != null && t.toEnterpriseId != targetEnterpriseId) continue;
-      final qty = t.items.fold<int>(0, (sum, i) => sum + i.quantity);
-      final label = 'Transfert #${t.id.substring(0, min(8, t.id.length))}';
-      transitBreakdown[label] = (transitBreakdown[label] ?? 0) + qty;
-    }
+    // Points of Sale breakdown
 
     final weightsToShow = cylinders.map((c) => c.weight).toSet().toList()..sort();
     final stockByCapacity = <int, ({int full, int empty, int inTransit, int defective, int leak})>{};
@@ -205,10 +188,8 @@ class GazStockCalculationService {
         full: fullByWeight[weight] ?? 0,
         empty: emptyByWeight[weight] ?? 0,
         inTransit: centralizedByWeight[weight] ?? 0,
-        defective: relevantStocks.where((s) => s.weight == weight && s.status == CylinderStatus.defective).fold<int>(0, (sum, s) => sum + s.quantity) +
-                  interSiteItems.where((i) => i.weight == weight && i.status == CylinderStatus.defective).fold<int>(0, (sum, i) => sum + i.quantity),
-        leak: relevantStocks.where((s) => s.weight == weight && (s.status == CylinderStatus.leak || s.status == CylinderStatus.leakInTransit)).fold<int>(0, (sum, s) => sum + s.quantity) +
-              interSiteItems.where((i) => i.weight == weight && (i.status == CylinderStatus.leak || i.status == CylinderStatus.leakInTransit)).fold<int>(0, (sum, i) => sum + i.quantity),
+        defective: relevantStocks.where((s) => s.weight == weight && s.status == CylinderStatus.defective).fold<int>(0, (sum, s) => sum + s.quantity.toInt()),
+        leak: relevantStocks.where((s) => s.weight == weight && (s.status == CylinderStatus.leak || s.status == CylinderStatus.leakInTransit)).fold<int>(0, (sum, s) => sum + s.quantity.toInt()),
       );
     }
 
@@ -231,7 +212,6 @@ class GazStockCalculationService {
     required String enterpriseId,
     String? siteId,
     required List<CylinderStock> allStocks,
-    List<StockTransfer>? transfers,
     List<Cylinder>? cylinders,
   }) {
     final List<CylinderStock> validStocks;
@@ -285,21 +265,6 @@ class GazStockCalculationService {
     final Map<int, int> realInTransitByWeight = Map.from(
       emptyInTransitByWeight,
     );
-    if (transfers != null) {
-      final incomingShipped = transfers
-          .where(
-            (t) =>
-                t.toEnterpriseId == enterpriseId &&
-                t.status == StockTransferStatus.shipped,
-          )
-          .toList();
-      for (final transfer in incomingShipped) {
-        for (final item in transfer.items) {
-          realInTransitByWeight[item.weight] =
-              (realInTransitByWeight[item.weight] ?? 0) + item.quantity;
-        }
-      }
-    }
 
     final totalInTransit = realInTransitByWeight.values.fold<int>(
       0,
@@ -326,7 +291,7 @@ class GazStockCalculationService {
           .where(
             (s) => s.weight == weight && s.status == CylinderStatus.defective,
           )
-          .fold<int>(0, (sum, s) => sum + s.quantity);
+          .fold<int>(0, (sum, s) => sum + s.quantity.toInt());
       final leaks = posStocks
           .where(
             (s) =>
@@ -334,7 +299,7 @@ class GazStockCalculationService {
                 (s.status == CylinderStatus.leak ||
                     s.status == CylinderStatus.leakInTransit),
           )
-          .fold<int>(0, (sum, s) => sum + s.quantity);
+          .fold<int>(0, (sum, s) => sum + s.quantity.toInt());
 
       stockByCapacity[weight] = (
         full: full,
@@ -371,11 +336,9 @@ class GazStockCalculationService {
   ///
   /// [cylinders]   : types de cylindres avec leur registeredTotal
   /// [allStocks]   : tous les CylinderStock (dépôt + POS) de l'entreprise et ses enfants
-  /// [transfers]   : transferts inter-sites expédiés (shipped)
   static BottleConservationResult calculateConservation({
     required List<Cylinder> cylinders,
     required List<CylinderStock> allStocks,
-    required List<StockTransfer> transfers,
   }) {
     final items = <BottleConservationItem>[];
 
@@ -385,44 +348,26 @@ class GazStockCalculationService {
 
       final cId = cylinder.id;
 
-      // Tous les items en transit inter-site pour ce poids
-      // NOTE: Les transferts n'ont pas de cylinderId, on reste sur le poids
-      final shippedItems = transfers
-          .where((t) => t.status == StockTransferStatus.shipped)
-          .expand((t) => t.items)
-          .where((i) => i.weight == w);
-      
       // PIVOT: Filtrer par cylinderId pour la précision absolue
       final relatedStocks = allStocks.where((s) => s.cylinderId == cId);
 
       // 1. Pleines (Magasin/POS + Transit inter-site)
       final totalFull = relatedStocks
           .where((s) => s.status == CylinderStatus.full)
-          .fold<int>(0, (sum, s) => sum + s.quantity) +
-          shippedItems.where((i) => i.status == CylinderStatus.full)
-          .fold<int>(0, (sum, i) => sum + i.quantity);
+          .fold<int>(0, (sum, s) => sum + s.quantity.toInt());
           
       // 2. Vides (Magasin/POS + Tournées + Transit inter-site)
       final totalEmpty = relatedStocks
           .where((s) => s.status == CylinderStatus.emptyAtStore || s.status == CylinderStatus.emptyInTransit)
-          .fold<int>(0, (sum, s) => sum + s.quantity) +
-          shippedItems.where((i) => i.status == CylinderStatus.emptyAtStore || i.status == CylinderStatus.emptyInTransit)
-          .fold<int>(0, (sum, i) => sum + i.quantity);
+          .fold<int>(0, (sum, s) => sum + s.quantity.toInt());
 
-      // 3. Problèmes / Fuites (Magasin/POS + Tournées + Transit inter-site)
       final totalIssues = relatedStocks
           .where((s) => 
             s.status == CylinderStatus.leak || 
             s.status == CylinderStatus.leakInTransit || 
             s.status == CylinderStatus.defective
           )
-          .fold<int>(0, (sum, s) => sum + s.quantity) +
-          shippedItems.where((i) => 
-            i.status == CylinderStatus.leak || 
-            i.status == CylinderStatus.leakInTransit || 
-            i.status == CylinderStatus.defective
-          )
-          .fold<int>(0, (sum, i) => sum + i.quantity);
+          .fold<int>(0, (sum, s) => sum + s.quantity.toInt());
 
       final totalAccounted = totalFull + totalEmpty + totalIssues;
       final discrepancy = registered > 0 ? registered - totalAccounted : 0;

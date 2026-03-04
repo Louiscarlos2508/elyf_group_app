@@ -72,7 +72,7 @@ class PredefinedRoles {
     id: 'gaz_retail_seller',
     name: 'Vendeur Gaz',
     description:
-        'Exécution terrain : ventes rapides, consultation stock local, impression reçus',
+        'Exécution terrain : ventes rapides, consultation stock local, rapports et paramètres',
     moduleId: 'gaz',
     allowedEnterpriseTypes: {EnterpriseType.gasPointOfSale},
     permissions: {
@@ -80,6 +80,10 @@ class PredefinedRoles {
       'create_sale',
       'view_sales',
       'view_stock',
+      'view_reports',
+      'download_reports',
+      'view_settings',
+      'edit_settings',
       'view_deliveries',
       'report_leak',
       'view_leaks',

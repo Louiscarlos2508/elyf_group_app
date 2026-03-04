@@ -45,7 +45,7 @@ class ExpenseDetailDialog extends StatelessWidget {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 500),
         child: ElyfCard(
-          isGlass: true,
+          isGlass: false,
           padding: EdgeInsets.zero,
           child: SingleChildScrollView(
             child: Column(

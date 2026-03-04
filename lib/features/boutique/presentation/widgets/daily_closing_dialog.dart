@@ -188,7 +188,7 @@ class _DailyClosingDialogState extends ConsumerState<DailyClosingDialog> {
               Text(
                 '${activeSession.number ?? "Session"} • Espèces + Mobile Money',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.grey[600],
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
               ),
             ],
@@ -294,8 +294,8 @@ class _DailyClosingDialogState extends ConsumerState<DailyClosingDialog> {
     final netFlow = metrics.revenue - expenses;
     return Column(
       children: [
-        _buildStatItem('Fonds de caisse (Espèces)', session.openingCashAmount, Colors.grey),
-        _buildStatItem('Fonds initiaux (MM)', session.openingMobileMoneyAmount, Colors.grey),
+        _buildStatItem('Fonds de caisse (Espèces)', session.openingCashAmount, Theme.of(context).colorScheme.onSurfaceVariant),
+        _buildStatItem('Fonds initiaux (MM)', session.openingMobileMoneyAmount, Theme.of(context).colorScheme.onSurfaceVariant),
         const Divider(),
         _buildStatItem('Ventes Espèces (Session)', metrics.cashRevenue, Colors.green),
         _buildStatItem('Ventes MM (Session)', metrics.mobileMoneyRevenue, Colors.blue),
@@ -352,7 +352,7 @@ class _DailyClosingDialogState extends ConsumerState<DailyClosingDialog> {
             prefixIcon: Icon(icon),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             filled: true,
-            fillColor: Colors.grey[50],
+            fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
           ),
         ),
         const SizedBox(height: 24),

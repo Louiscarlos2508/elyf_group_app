@@ -22,6 +22,7 @@ class GasSaleSubmitHandler {
     required int quantity,
     required int availableStock,
     required String enterpriseId,
+    String? siteId,
     required SaleType saleType,
     required String? customerName,
     required String? customerPhone,
@@ -83,6 +84,7 @@ class GasSaleSubmitHandler {
         sale: sale,
         weight: selectedCylinder.weight,
         enterpriseId: enterpriseId,
+        siteId: siteId,
       );
 
       // Afficher l'alerte de stock si nécessaire (Story 1.4)

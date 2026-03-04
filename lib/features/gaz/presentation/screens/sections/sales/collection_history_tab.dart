@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../../domain/entities/collection.dart';
 import '../../../../application/providers.dart';
+import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 
 class CollectionHistoryTab extends ConsumerWidget {
   const CollectionHistoryTab({super.key});
@@ -11,6 +12,8 @@ class CollectionHistoryTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final collectionsAsync = ref.watch(gazCollectionsProvider);
+    final activeEnterprise = ref.watch(activeEnterpriseProvider).value;
+    final isPos = activeEnterprise?.isPointOfSale ?? false;
     
     return collectionsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -34,7 +37,10 @@ class CollectionHistoryTab extends ConsumerWidget {
           itemCount: collections.length,
           itemBuilder: (context, index) {
             final collection = collections[index];
-            return _CollectionCard(collection: collection);
+            return _CollectionCard(
+              collection: collection,
+              isPosView: isPos,
+            );
           },
         );
       },
@@ -42,16 +48,21 @@ class CollectionHistoryTab extends ConsumerWidget {
   }
 }
 
-class _CollectionCard extends StatelessWidget {
-  const _CollectionCard({required this.collection});
+class _CollectionCard extends ConsumerWidget {
+  const _CollectionCard({
+    required this.collection,
+    this.isPosView = false,
+  });
 
   final Collection collection;
+  final bool isPosView;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final dateFormat = DateFormat('dd/MM/yyyy à HH:mm');
-    final date = collection.paymentDate ?? DateTime.now();
+    final date = collection.paymentDate ?? collection.receptionDate ?? DateTime.now();
+    final isPendingReception = false; // Désactivé (Logistique purement administrative)
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -125,11 +136,28 @@ class _CollectionCard extends StatelessWidget {
                   ),
               ],
             ),
+            if (collection.receptionDate != null) ...[
+              const Divider(height: 24),
+              Row(
+                children: [
+                  const Icon(Icons.check_circle, size: 16, color: Colors.green),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Reçu le ${dateFormat.format(collection.receptionDate!)}',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: Colors.green,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ],
         ),
       ),
     );
   }
+
 }
 
 class _MetricItem extends StatelessWidget {

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
+import 'package:elyf_groupe_app/features/gaz/domain/entities/collection.dart';
 import '../../../domain/entities/tour.dart';
 import 'closure_expense_item.dart';
 
@@ -136,19 +138,129 @@ class _ClosureDetailsCardState extends ConsumerState<ClosureDetailsCard> {
             totalExpenses: widget.totalExpenses,
             theme: theme,
           ),
+          
           const SizedBox(height: 24),
-          // Bouton de retour uniquement
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton(
-              style: GazButtonStyles.outlined(context),
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Fermer'),
-            ),
+          Divider(color: theme.colorScheme.outline.withValues(alpha: 0.1)),
+          const SizedBox(height: 24),
+          
+          // Section Recettes Grossistes
+          ref.watch(tourCollectionsProvider(widget.tour.id)).when(
+                data: (collections) {
+                  final wholesalers = collections.where((c) => c.type == CollectionType.wholesaler).toList();
+                  if (wholesalers.isEmpty) return const SizedBox.shrink();
+                  
+                  final totalWholesaleRevenue = wholesalers.fold<double>(0, (sum, c) => sum + c.amountDue);
+                  
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Recettes Grossistes',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      ...wholesalers.map((col) => Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(child: Text(col.clientName)),
+                            Text(
+                              CurrencyFormatter.formatDouble(col.amountDue),
+                              style: const TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                      )),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('TOTAL RÉCOLTE GROSSISTES', style: TextStyle(fontWeight: FontWeight.bold)),
+                          Text(
+                            CurrencyFormatter.formatDouble(totalWholesaleRevenue),
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: theme.colorScheme.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                      Divider(color: theme.colorScheme.outline.withValues(alpha: 0.1)),
+                      const SizedBox(height: 24),
+                    ],
+                  );
+                },
+                loading: () => const CircularProgressIndicator(),
+                error: (e, _) => Text('Erreur: $e'),
+              ),
+          const SizedBox(height: 24),
+          // Boutons
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  style: OutlinedButton.styleFrom(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Fermer'),
+                ),
+              ),
+              if (widget.tour.status == TourStatus.open && widget.tour.receptionCompletedDate != null) ...[
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 2,
+                  child: FilledButton.icon(
+                    onPressed: () => _handleCloseTour(context, ref),
+                    style: FilledButton.styleFrom(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    icon: const Icon(Icons.check_circle_outline),
+                    label: const Text('Encaisser et Clôturer'),
+                  ),
+                ),
+              ],
+            ],
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _handleCloseTour(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Confirmer la clôture'),
+        content: const Text(
+          'Cette action va enregistrer les ventes grossistes, '
+          'encaisser les montants dus en trésorerie et clôturer le tour définitivement.'
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Annuler')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Confirmer')),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      try {
+        final controller = ref.read(tourControllerProvider);
+        final userId = ref.read(currentUserIdProvider);
+        await controller.closeTour(widget.tour.id, userId);
+        if (mounted) {
+          NotificationService.showSuccess(context, 'Tour clôturé avec succès');
+          Navigator.of(context).pop();
+        }
+      } catch (e) {
+        if (mounted) NotificationService.showError(context, 'Erreur lors de la clôture: $e');
+      }
+    }
   }
 }
 

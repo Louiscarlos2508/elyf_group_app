@@ -92,7 +92,7 @@ class _OpeningSessionDialogState extends ConsumerState<OpeningSessionDialog> {
                       Text(
                         'Enregistrez vos fonds de départ',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Colors.grey[600],
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
                             ),
                       ),
                     ],
@@ -125,7 +125,7 @@ class _OpeningSessionDialogState extends ConsumerState<OpeningSessionDialog> {
                         prefixIcon: const Icon(Icons.money),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                         filled: true,
-                        fillColor: Colors.grey[50],
+                        fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -142,7 +142,7 @@ class _OpeningSessionDialogState extends ConsumerState<OpeningSessionDialog> {
                         prefixIcon: const Icon(Icons.phone_android),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                         filled: true,
-                        fillColor: Colors.grey[50],
+                        fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
                       ),
                     ),
                     const SizedBox(height: 20),

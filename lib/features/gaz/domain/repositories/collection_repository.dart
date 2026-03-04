@@ -21,4 +21,7 @@ abstract class CollectionRepository {
 
   /// Récupère une collecte par son ID.
   Future<Collection?> getCollectionById(String id);
+
+  /// Récupère les collectes liées à un tour spécifique.
+  Future<List<Collection>> getCollectionsByTourId(String tourId, String enterpriseId);
 }

@@ -207,7 +207,6 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
                       final product = filteredProducts[index];
                       return ProductTile(
                         product: product,
-                        showRestockButton: true,
                         onTap: () {
                           // Vérifier la permission d'édition
                           final adapter = ref.read(
@@ -226,50 +225,6 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
                                   NotificationService.showError(
                                     context,
                                     'Vous n\'avez pas la permission de modifier les produits.',
-                                  );
-                                }
-                              });
-                        },
-                        onRestock: () {
-                          // Vérifier la permission d'édition du stock
-                          final adapter = ref.read(
-                            boutiquePermissionAdapterProvider,
-                          );
-                          adapter
-                              .hasPermission(BoutiquePermissions.editStock.id)
-                              .then((hasPermission) {
-                                if (hasPermission && context.mounted) {
-                                  showDialog(
-                                    context: context,
-                                    builder: (_) =>
-                                        PurchaseEntryDialog(initialProduct: product),
-                                  );
-                                } else if (context.mounted) {
-                                  NotificationService.showError(
-                                    context,
-                                    'Vous n\'avez pas la permission de modifier le stock.',
-                                  );
-                                }
-                              });
-                        },
-                        onAdjust: () {
-                          // Vérifier la permission d'édition du stock
-                          final adapter = ref.read(
-                            boutiquePermissionAdapterProvider,
-                          );
-                          adapter
-                              .hasPermission(BoutiquePermissions.editStock.id)
-                              .then((hasPermission) {
-                                if (hasPermission && context.mounted) {
-                                  showDialog(
-                                    context: context,
-                                    builder: (_) =>
-                                        StockAdjustmentDialog(product: product),
-                                  );
-                                } else if (context.mounted) {
-                                  NotificationService.showError(
-                                    context,
-                                    'Vous n\'avez pas la permission de modifier le stock.',
                                   );
                                 }
                               });

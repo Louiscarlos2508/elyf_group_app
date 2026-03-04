@@ -190,9 +190,10 @@ class StockEntryFormState extends ConsumerState<StockEntryForm> {
 
     return Form(
       key: _formKey,
-      child: SingleChildScrollView(
+      child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 20),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             ElyfCard(

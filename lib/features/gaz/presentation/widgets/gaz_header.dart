@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../shared.dart';
 import '../../../administration/domain/entities/enterprise.dart';
+import 'gaz_view_type_toggle.dart';
 
 class GazHeader extends StatelessWidget {
   final String title;
@@ -11,6 +12,7 @@ class GazHeader extends StatelessWidget {
   final List<Widget>? actions;
   final Widget? bottom;
   final bool asSliver;
+  final bool showViewToggle;
 
   const GazHeader({
     super.key,
@@ -22,6 +24,7 @@ class GazHeader extends StatelessWidget {
     this.actions,
     this.bottom,
     this.asSliver = true,
+    this.showViewToggle = false,
   });
 
   @override
@@ -30,7 +33,10 @@ class GazHeader extends StatelessWidget {
       title: title,
       subtitle: subtitle,
       module: EnterpriseModule.gaz,
-      actions: actions ?? additionalActions,
+      actions: [
+        if (showViewToggle) const GazViewTypeToggle(),
+        ...?actions ?? additionalActions,
+      ],
       bottom: bottom,
       asSliver: asSliver,
     );

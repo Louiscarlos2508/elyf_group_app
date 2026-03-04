@@ -4,6 +4,7 @@ export 'providers/permission_providers.dart';
 export 'providers/section_providers.dart';
 import '../../audit_trail/application/providers.dart';
 import 'package:elyf_groupe_app/features/administration/application/providers.dart';
+import 'package:elyf_groupe_app/core/repositories/repository_providers.dart';
 import 'package:elyf_groupe_app/features/administration/domain/repositories/enterprise_repository.dart';
 import '../data/repositories/treasury_offline_repository.dart';
 import '../domain/repositories/treasury_repository.dart';
@@ -85,6 +86,7 @@ final orangeMoneyControllerProvider = Provider<OrangeMoneyController>(
     ref.watch(transactionRepositoryProvider),
     ref.watch(liquidityRepositoryProvider),
     ref.watch(settingsRepositoryProvider),
+    ref.watch(orangeMoneyTreasuryRepositoryProvider),
     ref.watch(auditTrailServiceProvider),
     ref.watch(currentUserIdProvider) ?? 'system',
     ref.watch(orangeMoneyPermissionAdapterProvider),
@@ -103,8 +105,8 @@ final orangeMoneyStateProvider = FutureProvider.autoDispose<OrangeMoneyState>(
 /// - type: TransactionType name or empty
 /// - startDate: milliseconds since epoch or empty
 /// - endDate: milliseconds since epoch or empty
-final filteredTransactionsProvider = FutureProvider.autoDispose
-    .family<List<Transaction>, String>((ref, key) async {
+final filteredTransactionsProvider = StreamProvider.autoDispose
+    .family<List<Transaction>, String>((ref, key) {
       final parts = key.split('|');
       final searchQuery = parts.isNotEmpty && parts[0].isNotEmpty
           ? parts[0]
@@ -125,27 +127,26 @@ final filteredTransactionsProvider = FutureProvider.autoDispose
 
       final repository = ref.watch(transactionRepositoryProvider);
 
-      // Récupérer les transactions avec filtres de base
-      var transactions = await repository.fetchTransactions(
+      // Récupérer les transactions avec filtres de base via un stream
+      return repository.watchTransactions(
         startDate: startDate,
         endDate: endDate,
         type: type,
-      );
-
-      // Filtrer par recherche textuelle si fournie
-      if (searchQuery != null && searchQuery.isNotEmpty) {
-        final query = searchQuery.toLowerCase();
-        transactions = transactions.where((t) {
-          final nameMatch =
-              t.customerName?.toLowerCase().contains(query) ?? false;
-          final phoneMatch = t.phoneNumber.toLowerCase().contains(query);
-          final referenceMatch =
-              t.reference?.toLowerCase().contains(query) ?? false;
-          return nameMatch || phoneMatch || referenceMatch;
-        }).toList();
-      }
-
-      return transactions;
+      ).map((transactions) {
+        // Filtrer par recherche textuelle si fournie
+        if (searchQuery != null && searchQuery.isNotEmpty) {
+          final query = searchQuery.toLowerCase();
+          return transactions.where((t) {
+            final nameMatch =
+                t.customerName?.toLowerCase().contains(query) ?? false;
+            final phoneMatch = t.phoneNumber.toLowerCase().contains(query);
+            final referenceMatch =
+                t.reference?.toLowerCase().contains(query) ?? false;
+            return nameMatch || phoneMatch || referenceMatch;
+          }).toList();
+        }
+        return transactions;
+      });
     });
 
 /// Provider for agent repository.
@@ -207,6 +208,7 @@ final commissionRepositoryProvider = Provider<CommissionRepository>((ref) {
 final commissionsControllerProvider = Provider<CommissionsController>(
   (ref) => CommissionsController(
     ref.watch(commissionRepositoryProvider),
+    ref.watch(orangeMoneyTreasuryRepositoryProvider),
     ref.watch(currentUserIdProvider) ?? 'system',
     ref.watch(orangeMoneyPermissionAdapterProvider),
     ref.watch(activeEnterpriseProvider).value?.id ?? 'default',
@@ -278,9 +280,9 @@ final orangeMoneyTreasuryRepositoryProvider = Provider<OrangeMoneyTreasuryReposi
 
 /// Provider for Orange Money Treasury Balances.
 final orangeMoneyTreasuryBalanceProvider =
-    FutureProvider.family<Map<String, int>, String>((ref, enterpriseId) {
+    StreamProvider.family<Map<String, int>, String>((ref, enterpriseId) {
       final repo = ref.watch(orangeMoneyTreasuryRepositoryProvider);
-      return repo.getBalances(enterpriseId);
+      return repo.watchBalances(enterpriseId);
     });
 
 /// Provider for Orange Money Treasury Operations Stream.
@@ -405,6 +407,27 @@ final currentMonthCommissionProvider = FutureProvider.autoDispose
       return await controller.getCurrentMonthCommission(key);
     });
 
+/// Provider for agency commissions (network-wide).
+/// Key format: "period|status"
+final agencyCommissionsProvider = FutureProvider.autoDispose
+    .family<List<Commission>, String>((ref, key) async {
+      final parts = key.split('|');
+      final period = parts.isNotEmpty && parts[0].isNotEmpty ? parts[0] : null;
+      final statusStr = parts.length > 1 && parts[1].isNotEmpty ? parts[1] : null;
+      final status = statusStr != null ? CommissionStatus.values.byName(statusStr) : null;
+      
+      final controller = ref.watch(commissionsControllerProvider);
+      return await controller.fetchNetworkCommissions(period: period, status: status);
+    });
+
+/// Provider for agency commission statistics (network-wide).
+/// Key: period string (YYYY-MM)
+final agencyCommissionsStatisticsProvider = FutureProvider.autoDispose
+    .family<Map<String, dynamic>, String>((ref, period) async {
+      final controller = ref.watch(commissionsControllerProvider);
+      return await controller.getNetworkStatistics(period: period.isEmpty ? null : period);
+    });
+
 /// Provider for reports statistics with date range.
 final reportsStatisticsProvider = FutureProvider.autoDispose
     .family<Map<String, dynamic>, String>((ref, key) async {
@@ -459,9 +482,9 @@ final liquidityCheckpointsProvider = FutureProvider.autoDispose
 /// Key format: "enterpriseId|date" where date is in milliseconds since epoch
 /// Provider pour les statistiques quotidiennes de transactions/dépôts-retraits.
 /// Détecte automatiquement si l'utilisateur utilise le module Agents ou Transactions.
-/// Algorithme robuste: essaie d'abord Agents, puis Transactions si Agents n'est pas disponible.
-final dailyTransactionStatsProvider = FutureProvider.autoDispose
-    .family<Map<String, dynamic>, String>((ref, key) async {
+/// Algorithme robuste: utilise watchTransactions pour la réactivité en temps réel.
+final dailyTransactionStatsProvider = StreamProvider.autoDispose
+    .family<Map<String, dynamic>, String>((ref, key) {
       final parts = key.split('|');
       final enterpriseId = parts.isNotEmpty && parts[0].isNotEmpty
           ? parts[0]
@@ -476,78 +499,57 @@ final dailyTransactionStatsProvider = FutureProvider.autoDispose
           .add(const Duration(days: 1))
           .subtract(const Duration(milliseconds: 1));
 
-      // Stratégie robuste: Essayer d'abord le module Agents Affiliés
-      // Vérifier si des agents existent pour cette entreprise
-      try {
-        final agentsController = ref.watch(agentsControllerProvider);
-        final agents = await agentsController.fetchAgents(
-          enterpriseId: enterpriseId,
-        );
+      // Stratégie réactive: On regarde si on est en vue réseau (Hierarchy)
+      final scopedIdsAsync = ref.watch(orangeMoneyScopedEnterpriseIdsProvider);
+      final repository = ref.watch(transactionRepositoryProvider);
 
-        // Si des agents existent, utiliser les stats des agents
-        if (agents.isNotEmpty) {
-          final agentsStats = await agentsController.getDailyStatistics(
-            enterpriseId: enterpriseId,
-            date: normalizedDate,
-          );
+      return scopedIdsAsync.when(
+        data: (ids) {
+          final stream = (ids.length > 1)
+              ? repository.watchTransactionsByEnterprises(
+                  ids,
+                  startDate: startOfDay,
+                  endDate: endOfDay,
+                )
+              : repository.watchTransactions(
+                  startDate: startOfDay,
+                  endDate: endOfDay,
+                );
 
-          // Extraire recharges et retraits (compatibilité avec différentes clés possibles)
-          final deposits =
-              agentsStats['recharges'] as int? ??
-              agentsStats['rechargesToday'] as int? ??
-              0;
-          final withdrawals =
-              agentsStats['retraits'] as int? ??
-              agentsStats['withdrawalsToday'] as int? ??
-              0;
-          final transactionCount = agentsStats['transactionCount'] as int? ?? 0;
+          return stream.map((transactions) {
+            int deposits = 0;
+            int withdrawals = 0;
+            for (final t in transactions) {
+              if (t.status != TransactionStatus.completed) continue;
+              
+              if (t.type == TransactionType.cashIn) {
+                deposits += t.amount;
+              } else if (t.type == TransactionType.cashOut) {
+                withdrawals += t.amount;
+              }
+            }
 
-          return {
-            'deposits': deposits,
-            'withdrawals': withdrawals,
-            'transactionCount': transactionCount,
-            'source': 'agents',
-          };
-        }
-      } catch (e) {
-        // Si erreur avec agents, continuer avec transactions (silencieux, normal si module non disponible)
-      }
-
-      // Fallback: Utiliser le module Transactions
-      try {
-        final repository = ref.watch(transactionRepositoryProvider);
-        final transactions = await repository.fetchTransactions(
-          startDate: startOfDay,
-          endDate: endOfDay,
-        );
-
-        int deposits = 0;
-        int withdrawals = 0;
-        for (final transaction in transactions) {
-          if (transaction.type == TransactionType.cashIn &&
-              transaction.isCompleted) {
-            deposits += transaction.amount;
-          } else if (transaction.type == TransactionType.cashOut &&
-              transaction.isCompleted) {
-            withdrawals += transaction.amount;
-          }
-        }
-
-        return {
-          'deposits': deposits,
-          'withdrawals': withdrawals,
-          'transactionCount': transactions.length,
-          'source': 'transactions',
-        };
-      } catch (e) {
-        // Si erreur avec transactions aussi, retourner des valeurs par défaut
-        return {
+            return {
+              'deposits': deposits,
+              'withdrawals': withdrawals,
+              'transactionCount': transactions.length,
+              'source': ids.length > 1 ? 'network' : 'single',
+            };
+          });
+        },
+        loading: () => Stream.value({
           'deposits': 0,
           'withdrawals': 0,
           'transactionCount': 0,
-          'source': 'none',
-        };
-      }
+          'source': 'loading',
+        }),
+        error: (e, __) => Stream.value({
+          'deposits': 0,
+          'withdrawals': 0,
+          'transactionCount': 0,
+          'source': 'error',
+        }),
+      );
     });
 
 /// Provider for accessible enterprises map (id -> name).

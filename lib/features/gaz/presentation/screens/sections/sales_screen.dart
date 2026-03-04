@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
-import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import 'package:elyf_groupe_app/core/logging/app_logger.dart';
+import 'package:elyf_groupe_app/core/permissions/modules/gaz_permissions.dart';
 
 import '../../../domain/entities/cylinder.dart';
 import '../../../domain/entities/gas_sale.dart';
@@ -27,29 +27,7 @@ class GazSalesScreen extends ConsumerStatefulWidget {
   ConsumerState<GazSalesScreen> createState() => _GazSalesScreenState();
 }
 
-class _GazSalesScreenState extends ConsumerState<GazSalesScreen>
-    with SingleTickerProviderStateMixin {
-  TabController? _tabController;
-  bool _isManager = false;
-
-  @override
-  void initState() {
-    super.initState();
-    // Initialisation différée après le premier build pour obtenir le rôle
-  }
-
-
-  @override
-  void dispose() {
-    _tabController?.removeListener(_onTabChanged);
-    _tabController?.dispose();
-    super.dispose();
-  }
-
-  void _onTabChanged() {
-    if (!mounted) return;
-    setState(() {});
-  }
+class _GazSalesScreenState extends ConsumerState<GazSalesScreen> {
 
   void _showSaleDialog(Cylinder cylinder, [SaleType saleType = SaleType.retail]) {
     try {
@@ -75,7 +53,6 @@ class _GazSalesScreenState extends ConsumerState<GazSalesScreen>
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final isManagerAsync = ref.watch(isGazManagerProvider);
     final enterpriseAsync = ref.watch(activeEnterpriseProvider);
 
@@ -84,40 +61,42 @@ class _GazSalesScreenState extends ConsumerState<GazSalesScreen>
         final enterprise = enterpriseAsync.value;
         final isPOS = enterprise?.isPointOfSale ?? false;
         
-        // Wholesale (Gros) is restricted for POS unless manager.
-        final showWholesale = !isPOS || isManager;
+        // Wholesale (Gros) is restricted for POS unless manager OR has specific permission.
+        final hasWholesalePermission = ref.watch(userHasGazPermissionProvider(GazPermissions.viewWholesale.id)).value ?? false;
+        final showWholesale = !isPOS || isManager || hasWholesalePermission;
 
         final List<String> tabs = ['Détail'];
         if (showWholesale) tabs.add('Gros');
         tabs.add('Historique');
 
-        _initTabController(tabs.length, isManager);
-        
-        return GazSessionGuard(
-          child: NestedScrollView(
-            headerSliverBuilder: (context, innerBoxIsScrolled) => [
-              GazHeader(
-                title: 'VENTES',
-                subtitle: _getSubtitle(tabs),
-                asSliver: true,
-                bottom: SalesTabBar(
-                  tabController: _tabController!,
-                  tabs: tabs,
-                ),
-              ),
-            ],
-            body: TabBarView(
-              controller: _tabController,
-              children: [
-                RetailNewSaleTab(
-                  onCylinderTap: (c) => _showSaleDialog(c, SaleType.retail),
-                ),
-                if (showWholesale)
-                  WholesaleNewSaleTab(
-                    onCylinderTap: (c) => _showSaleDialog(c, SaleType.wholesale),
+        return DefaultTabController(
+          key: ValueKey(tabs.length),
+          length: tabs.length,
+          child: GazSessionGuard(
+            child: NestedScrollView(
+              headerSliverBuilder: (context, innerBoxIsScrolled) => [
+                GazHeader(
+                  title: 'VENTES',
+                  subtitle: 'Gestion des Ventes',
+                  asSliver: true,
+                  showViewToggle: false, // User requested to only show network view for main depot
+                  bottom: SalesTabBar(
+                    tabs: tabs,
                   ),
-                 const SalesHistoryTab(),
+                ),
               ],
+              body: TabBarView(
+                children: [
+                   RetailNewSaleTab(
+                    onCylinderTap: (c) => _showSaleDialog(c, SaleType.retail),
+                  ),
+                  if (showWholesale)
+                    WholesaleNewSaleTab(
+                      onCylinderTap: (c) => _showSaleDialog(c, SaleType.wholesale),
+                    ),
+                  const SalesHistoryTab(),
+                ],
+              ),
             ),
           ),
         );
@@ -125,38 +104,6 @@ class _GazSalesScreenState extends ConsumerState<GazSalesScreen>
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(child: Text('Erreur: $e')),
     );
-  }
-
-  void _initTabController(int length, bool isManager) {
-    if (_tabController != null && _tabController!.length == length && _isManager == isManager) return;
-    
-    _isManager = isManager;
-    _tabController?.removeListener(_onTabChanged);
-    _tabController?.dispose();
-    
-    _tabController = TabController(
-      length: length, 
-      vsync: this,
-    );
-    _tabController!.addListener(_onTabChanged);
-  }
-
-  String _getSubtitle(List<String> tabs) {
-    if (_tabController == null || _tabController!.index >= tabs.length) return 'Gestion des Ventes';
-    
-    final currentTab = tabs[_tabController!.index];
-    switch (currentTab) {
-      case 'Détail':
-        return 'Vente au Détail';
-      case 'Gros':
-        return 'Vente en Gros';
-      case 'Historique':
-        return 'Historique & Stats';
-      case 'Distribution':
-        return 'Distribution Stock';
-      default:
-        return 'Gestion des Ventes';
-    }
   }
 }
 

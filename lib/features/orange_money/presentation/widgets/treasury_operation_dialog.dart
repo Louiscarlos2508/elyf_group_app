@@ -7,6 +7,7 @@ import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 import 'package:elyf_groupe_app/core/auth/providers.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
+import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
 
 class OrangeMoneyTreasuryOperationDialog extends ConsumerStatefulWidget {
   final TreasuryOperationType type;
@@ -102,44 +103,37 @@ class _OrangeMoneyTreasuryOperationDialogState extends ConsumerState<OrangeMoney
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final color = _getOperationColor();
     final title = _getOperationTitle();
-    final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
 
     return Dialog(
       backgroundColor: Colors.transparent,
+      insetPadding: EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.xl),
       child: Container(
         constraints: const BoxConstraints(maxWidth: 500),
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-        padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(28),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.2),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
+            ),
+          ],
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Row(
-              children: [
-                Icon(_getOperationIcon(), color: color, size: 20),
-                const SizedBox(width: 12),
-                Text(
-                  title,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const Spacer(),
-                IconButton(
-                  icon: const Icon(Icons.close, size: 18),
-                  onPressed: () => Navigator.of(context).pop(),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                ),
-              ],
+            FormDialogHeader(
+              title: title,
+              icon: _getOperationIcon(),
             ),
-            SizedBox(height: isKeyboardOpen ? 12 : 24),
             Flexible(
               child: SingleChildScrollView(
+                padding: EdgeInsets.all(AppSpacing.lg),
                 child: Form(
                   key: _formKey,
                   child: Column(
@@ -151,7 +145,7 @@ class _OrangeMoneyTreasuryOperationDialogState extends ConsumerState<OrangeMoney
                           value: _fromAccount,
                           onChanged: (v) => setState(() => _fromAccount = v),
                         ),
-                        const SizedBox(height: 16),
+                        SizedBox(height: AppSpacing.md),
                         _buildAccountDropdown(
                           label: 'Destination',
                           value: _toAccount,
@@ -170,14 +164,13 @@ class _OrangeMoneyTreasuryOperationDialogState extends ConsumerState<OrangeMoney
                           onChanged: (v) => setState(() => _toAccount = v),
                         ),
                       ],
-                      SizedBox(height: isKeyboardOpen ? 12 : 16),
-                      TextFormField(
+                      SizedBox(height: AppSpacing.md),
+                      ElyfField(
+                        label: 'Montant (CFA)',
+                        hint: '0',
                         controller: _amountController,
-                        decoration: const InputDecoration(
-                          labelText: 'Montant (CFA)',
-                          prefixIcon: Icon(Icons.attach_money),
-                        ),
                         keyboardType: TextInputType.number,
+                        prefixIcon: Icons.payments_rounded,
                         validator: (value) {
                           if (value == null || value.isEmpty) return 'Requis';
                           final amount = int.tryParse(value.replaceAll(RegExp(r'[^0-9]'), ''));
@@ -186,62 +179,76 @@ class _OrangeMoneyTreasuryOperationDialogState extends ConsumerState<OrangeMoney
                           return null;
                         },
                       ),
-                      SizedBox(height: isKeyboardOpen ? 12 : 16),
-                      TextFormField(
+                      SizedBox(height: AppSpacing.md),
+                      ElyfField(
+                        label: 'Motif / Raison',
+                        hint: 'Ex: Approvisionnement caisse',
                         controller: _reasonController,
-                        decoration: const InputDecoration(
-                          labelText: 'Motif / Raison',
-                          prefixIcon: Icon(Icons.description_outlined),
-                        ),
+                        prefixIcon: Icons.description_rounded,
                         validator: (value) {
                           if (value == null || value.isEmpty) return 'Requis';
                           return null;
                         },
                       ),
-                      SizedBox(height: isKeyboardOpen ? 12 : 16),
-                      TextFormField(
+                      SizedBox(height: AppSpacing.md),
+                      ElyfField(
+                        label: 'Bénéficiaire / Provenance',
+                        hint: 'Nom ou référence',
                         controller: _recipientController,
-                        decoration: const InputDecoration(
-                          labelText: 'Bénéficiaire / Provenance',
-                          prefixIcon: Icon(Icons.person_outline),
-                        ),
+                        prefixIcon: Icons.person_rounded,
                       ),
-                      SizedBox(height: isKeyboardOpen ? 12 : 16),
-                      TextFormField(
+                      SizedBox(height: AppSpacing.md),
+                      ElyfField(
+                        label: 'Notes (Optionnel)',
+                        hint: 'Informations complémentaires...',
                         controller: _notesController,
-                        decoration: const InputDecoration(
-                          labelText: 'Notes (Optionnel)',
-                          prefixIcon: Icon(Icons.note_alt_outlined),
-                        ),
-                        maxLines: isKeyboardOpen ? 1 : 2,
+                        prefixIcon: Icons.note_alt_rounded,
+                        maxLines: 2,
                       ),
                     ],
                   ),
                 ),
               ),
             ),
-            SizedBox(height: isKeyboardOpen ? 16 : 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                TextButton(
-                  onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
-                  child: const Text('ANNULER'),
-                ),
-                const SizedBox(width: 12),
-                ElevatedButton(
-                  onPressed: _isLoading ? null : _submit,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: color,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            Padding(
+              padding: EdgeInsets.all(AppSpacing.lg),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text('ANNULER'),
+                    ),
                   ),
-                  child: _isLoading 
-                    ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : const Text('ENREGISTRER'),
-                ),
-              ],
+                  SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: _isLoading ? null : _submit,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: color,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        elevation: 0,
+                      ).copyWith(
+                        backgroundColor: WidgetStateProperty.resolveWith((states) {
+                          if (states.contains(WidgetState.disabled)) {
+                            return color.withValues(alpha: 0.5);
+                          }
+                          return color;
+                        }),
+                      ),
+                      child: _isLoading 
+                        ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                        : const Text('ENREGISTRER', style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -254,11 +261,27 @@ class _OrangeMoneyTreasuryOperationDialogState extends ConsumerState<OrangeMoney
     required PaymentMethod? value,
     required ValueChanged<PaymentMethod?> onChanged,
   }) {
+    final theme = Theme.of(context);
     return DropdownButtonFormField<PaymentMethod>(
       value: value,
+      dropdownColor: theme.colorScheme.surface,
+      elevation: 8,
+      style: theme.textTheme.bodyLarge?.copyWith(
+        fontFamily: 'Outfit',
+        fontWeight: FontWeight.w500,
+      ),
+      icon: Icon(Icons.keyboard_arrow_down_rounded, color: theme.colorScheme.primary),
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: const Icon(Icons.account_balance_outlined),
+        labelStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+        prefixIcon: Icon(Icons.account_balance_outlined, color: theme.colorScheme.primary),
+        filled: true,
+        fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       ),
       items: [
         PaymentMethod.cash,

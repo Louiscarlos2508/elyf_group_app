@@ -36,23 +36,4 @@ class SettingsController {
     );
   }
 
-  Future<void> updateThresholds(
-    String enterpriseId, {
-    int? criticalLiquidityThreshold,
-    double? checkpointDiscrepancyThreshold,
-    int? commissionReminderDays,
-    int? largeTransactionThreshold,
-  }) async {
-    return await _repository.updateThresholds(
-      enterpriseId,
-      criticalLiquidityThreshold: criticalLiquidityThreshold,
-      checkpointDiscrepancyThreshold: checkpointDiscrepancyThreshold,
-      commissionReminderDays: commissionReminderDays,
-      largeTransactionThreshold: largeTransactionThreshold,
-    );
-  }
-
-  Future<void> updateSimNumber(String enterpriseId, String simNumber) async {
-    return await _repository.updateSimNumber(enterpriseId, simNumber);
-  }
 }

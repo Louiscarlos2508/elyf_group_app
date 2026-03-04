@@ -20,12 +20,17 @@ class LiquidityFiltersCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFF9FAFB),
-        borderRadius: BorderRadius.circular(10),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
+        ),
       ),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       child: Column(
         children: [
           Row(
@@ -36,25 +41,34 @@ class LiquidityFiltersCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Row(
+                    Row(
                       children: [
-                        Icon(Icons.access_time, size: 16, color: Color(0xFF0A0A0A)),
-                        SizedBox(width: 8),
+                        Icon(Icons.access_time_rounded, 
+                          size: 16, 
+                          color: theme.colorScheme.primary,
+                        ),
+                        const SizedBox(width: 8),
                         Text(
                           'Période',
-                          style: TextStyle(fontSize: 14, color: Color(0xFF0A0A0A)),
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 8),
                     InkWell(
                       onTap: onPeriodFilterTap,
+                      borderRadius: BorderRadius.circular(10),
                       child: Container(
-                        height: 36,
+                        height: 40,
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF3F3F5),
-                          borderRadius: BorderRadius.circular(8),
+                          color: theme.colorScheme.surface,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+                          ),
                         ),
                         child: Row(
                           children: [
@@ -63,16 +77,13 @@ class LiquidityFiltersCard extends StatelessWidget {
                                 selectedPeriodFilter ?? 'Toutes',
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  color: Color(0xFF0A0A0A),
-                                ),
+                                style: theme.textTheme.bodyMedium,
                               ),
                             ),
-                            const Icon(
-                              Icons.arrow_drop_down,
-                              size: 16,
-                              color: Color(0xFF0A0A0A),
+                            Icon(
+                              Icons.keyboard_arrow_down_rounded,
+                              size: 18,
+                              color: theme.colorScheme.onSurfaceVariant,
                             ),
                           ],
                         ),
@@ -87,29 +98,35 @@ class LiquidityFiltersCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Row(
+                    Row(
                       children: [
                         Icon(
-                          Icons.calendar_today,
+                          Icons.calendar_today_rounded,
                           size: 16,
-                          color: Color(0xFF0A0A0A),
+                          color: theme.colorScheme.primary,
                         ),
-                        SizedBox(width: 8),
+                        const SizedBox(width: 8),
                         Text(
                           'Date',
-                          style: TextStyle(fontSize: 14, color: Color(0xFF0A0A0A)),
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 8),
                     InkWell(
                       onTap: onDateFilterTap,
+                      borderRadius: BorderRadius.circular(10),
                       child: Container(
-                        height: 36,
+                        height: 40,
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF3F3F5),
-                          borderRadius: BorderRadius.circular(8),
+                          color: theme.colorScheme.surface,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+                          ),
                         ),
                         child: Row(
                           children: [
@@ -120,16 +137,13 @@ class LiquidityFiltersCard extends StatelessWidget {
                                     : 'Aujourd\'hui',
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  color: Color(0xFF0A0A0A),
-                                ),
+                                style: theme.textTheme.bodyMedium,
                               ),
                             ),
-                            const Icon(
-                              Icons.calendar_today,
+                            Icon(
+                              Icons.calendar_month_rounded,
                               size: 16,
-                              color: Color(0xFF717182),
+                              color: theme.colorScheme.onSurfaceVariant,
                             ),
                           ],
                         ),
@@ -140,26 +154,23 @@ class LiquidityFiltersCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          // Bouton Réinitialiser (en pleine largeur en dessous pour éviter le overflow)
+          const SizedBox(height: 16),
+          // Bouton Réinitialiser
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
               onPressed: onResetFilters,
-              icon: const Icon(Icons.refresh, size: 16),
-              label: const Text(
-                'Réinitialiser les filtres',
-                style: TextStyle(fontSize: 14, color: Color(0xFF0A0A0A)),
-              ),
+              icon: const Icon(Icons.restart_alt_rounded, size: 18),
+              label: const Text('Réinitialiser les filtres'),
               style: OutlinedButton.styleFrom(
-                side: const BorderSide(
-                  color: Color(0xFFE5E5E5),
-                  width: 1.219,
+                foregroundColor: theme.colorScheme.onSurface,
+                side: BorderSide(
+                  color: theme.colorScheme.outlineVariant,
                 ),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                padding: const EdgeInsets.symmetric(vertical: 8),
+                padding: const EdgeInsets.symmetric(vertical: 10),
               ),
             ),
           ),

@@ -94,6 +94,9 @@ class _DashboardContent extends ConsumerWidget {
         GazHeader(
           title: 'GAZ',
           subtitle: "Tableau de Bord",
+          showViewToggle: false, // User requested to only show network view for main depot
+          // Actually isGazManagerProvider is better if available.
+          // In _DashboardContent, we don't have isManager directly yet, let's check.
           actions: [
             ElyfIconButton(
               icon: Icons.refresh,
@@ -218,7 +221,6 @@ class _DashboardKpiSliver extends ConsumerWidget {
         expenses: data.expenses,
         cylinders: data.cylinders,
         stocks: data.stocks,
-        transfers: data.transfers,
         pointsOfSale: data.pointsOfSale,
         settings: settingsAsync.value,
         viewType: viewType,

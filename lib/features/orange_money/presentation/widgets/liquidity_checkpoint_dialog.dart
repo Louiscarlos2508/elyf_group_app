@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 import '../../domain/entities/liquidity_checkpoint.dart';
 import '../../domain/services/liquidity_checkpoint_service.dart';
 import 'package:elyf_groupe_app/shared.dart';
-import 'form_field_with_label.dart';
+import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
 
 /// Dialog pour créer ou modifier un pointage de liquidité.
 class LiquidityCheckpointDialog extends StatefulWidget {
@@ -30,6 +30,7 @@ class _LiquidityCheckpointDialogState extends State<LiquidityCheckpointDialog> {
   final _cashController = TextEditingController();
   final _simController = TextEditingController();
   final _notesController = TextEditingController();
+  final _modificationReasonController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
   @override
@@ -55,6 +56,7 @@ class _LiquidityCheckpointDialogState extends State<LiquidityCheckpointDialog> {
         _simController.text = widget.checkpoint!.simAmount?.toString() ?? '';
       }
       _notesController.text = widget.checkpoint!.notes ?? '';
+      _modificationReasonController.text = widget.checkpoint!.modificationReason ?? '';
     }
     // Écouter les changements pour mettre à jour le total
     _cashController.addListener(() => setState(() {}));
@@ -66,6 +68,7 @@ class _LiquidityCheckpointDialogState extends State<LiquidityCheckpointDialog> {
     _cashController.dispose();
     _simController.dispose();
     _notesController.dispose();
+    _modificationReasonController.dispose();
     super.dispose();
   }
 
@@ -75,6 +78,16 @@ class _LiquidityCheckpointDialogState extends State<LiquidityCheckpointDialog> {
       initialDate: _selectedDate,
       firstDate: DateTime(2020),
       lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: Theme.of(context).colorScheme.copyWith(
+              primary: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
     if (picked != null) {
       setState(() {
@@ -113,6 +126,9 @@ class _LiquidityCheckpointDialogState extends State<LiquidityCheckpointDialog> {
       notes: _notesController.text.trim().isEmpty
           ? null
           : _notesController.text.trim(),
+      modificationReason: _modificationReasonController.text.trim().isEmpty
+          ? null
+          : _modificationReasonController.text.trim(),
       existingCheckpoint: widget.checkpoint,
     );
 
@@ -121,269 +137,238 @@ class _LiquidityCheckpointDialogState extends State<LiquidityCheckpointDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+    final theme = Theme.of(context);
 
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      backgroundColor: theme.colorScheme.surface,
+      surfaceTintColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       child: Container(
-        width: 509,
-        padding: EdgeInsets.all(isKeyboardOpen ? 16 : 24),
+        width: 500,
         constraints: BoxConstraints(
           maxHeight: MediaQuery.of(context).size.height * 0.9,
         ),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Pointage de liquidité',
-                          style: TextStyle(
-                            fontSize: isKeyboardOpen ? 16 : 18,
-                            fontWeight: FontWeight.bold,
-                            color: const Color(0xFF0A0A0A),
-                          ),
-                        ),
-                        if (!isKeyboardOpen) ...[
-                          const SizedBox(height: 8),
-                          const Text(
-                            'Enregistrez les montants disponibles en cash et sur la SIM',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Color(0xFF717182),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  IconButton(
-                    icon: const Icon(Icons.close, size: 16),
-                    onPressed: () => Navigator.of(context).pop(),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                  ),
-                ],
-              ),
-              SizedBox(height: isKeyboardOpen ? 12 : 24),
-              Flexible(
-                child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            FormDialogHeader(
+              title: 'Pointage de liquidité',
+              subtitle: 'Enregistrez les montants en cash et sur la SIM',
+              icon: Icons.account_balance_wallet_rounded,
+            ),
+            Flexible(
+              child: SingleChildScrollView(
+                padding: AppSpacing.sectionPadding,
+                child: Form(
+                  key: _formKey,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Période et Date
+                      // Période et Date selectors
                       Row(
                         children: [
-                          Expanded(child: _buildPeriodSelector(isKeyboardOpen)),
-                          const SizedBox(width: 16),
-                          Expanded(child: _buildDateField(isKeyboardOpen)),
+                          Expanded(child: _buildPeriodSelector(theme)),
+                          const SizedBox(width: AppSpacing.md),
+                          Expanded(child: _buildDateField(theme)),
                         ],
                       ),
-                      SizedBox(height: isKeyboardOpen ? 12 : 16),
+                      const SizedBox(height: AppSpacing.lg),
+                      
                       // Cash disponible
-                      FormFieldWithLabel(
+                      ElyfField(
                         label: '💵 Cash disponible (FCFA) *',
                         controller: _cashController,
-                        hintText: 'Argent liquide comptabilisé',
+                        hint: 'Argent liquide en caisse',
                         keyboardType: TextInputType.number,
                         validator: LiquidityCheckpointService.validateAmount,
+                        prefixIcon: Icons.payments_rounded,
                       ),
-                      if (!isKeyboardOpen) ...[
-                        const SizedBox(height: 4),
-                        const Text(
-                          'Montant en espèces physiques que vous avez',
-                          style: TextStyle(fontSize: 12, color: Color(0xFF4A5565)),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        'Montant total des espèces physiques',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
                         ),
-                      ],
-                      SizedBox(height: isKeyboardOpen ? 12 : 16),
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                      
                       // Solde sur la SIM
-                      FormFieldWithLabel(
+                      ElyfField(
                         label: '📱 Solde sur la SIM (FCFA) *',
                         controller: _simController,
-                        hintText: 'Solde Orange Money',
+                        hint: 'Solde Orange Money',
                         keyboardType: TextInputType.number,
                         validator: LiquidityCheckpointService.validateAmount,
+                        prefixIcon: Icons.sim_card_rounded,
                       ),
-                      if (!isKeyboardOpen) ...[
-                        const SizedBox(height: 4),
-                        const Text(
-                          'Vérifiez votre solde : *144#',
-                          style: TextStyle(fontSize: 12, color: Color(0xFF4A5565)),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        'Vérifiez votre solde : *144#',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                      
+                      // Notes
+                      ElyfField(
+                        label: 'Notes (optionnel)',
+                        controller: _notesController,
+                        hint: 'Observations ou remarques...',
+                        maxLines: 2,
+                        prefixIcon: Icons.notes_rounded,
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+
+                      // Audit Trail (Modification Reason) - Only if editing
+                      if (widget.checkpoint != null) ...[
+                        ElyfField(
+                          label: 'Motif de la modification *',
+                          controller: _modificationReasonController,
+                          hint: 'Pourquoi modifiez-vous ce pointage ?',
+                          maxLines: 2,
+                          prefixIcon: Icons.history_rounded,
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Le motif est obligatoire pour toute modification';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: AppSpacing.xs),
+                        Text(
+                          'Obligatoire pour l\'audit trail',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.error,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ],
-                      SizedBox(height: isKeyboardOpen ? 12 : 16),
-                      // Notes
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Notes (optionnel)',
-                            style: TextStyle(
-                              fontSize: isKeyboardOpen ? 13 : 14,
-                              fontWeight: FontWeight.normal,
-                              color: const Color(0xFF0A0A0A),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          TextFormField(
-                            controller: _notesController,
-                            maxLines: isKeyboardOpen ? 1 : 2,
-                            decoration: InputDecoration(
-                              hintText: 'Informations complémentaires...',
-                              hintStyle: const TextStyle(
-                                fontSize: 13,
-                                color: Color(0xFF717182),
-                              ),
-                              filled: true,
-                              fillColor: const Color(0xFFF3F3F5),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: BorderSide.none,
-                              ),
-                              contentPadding: const EdgeInsets.all(12),
-                            ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: isKeyboardOpen ? 12 : 16),
-                      // Liquidité totale
-                      _buildTotalLiquiditySection(isKeyboardOpen),
+                      const SizedBox(height: AppSpacing.xl),
+                      
+                      // Liquidité totale visualization
+                      _buildTotalLiquiditySection(theme),
                     ],
                   ),
                 ),
               ),
-              SizedBox(height: isKeyboardOpen ? 16 : 24),
-              // Boutons
-              Row(
+            ),
+            
+            // Action Buttons
+            Padding(
+              padding: AppSpacing.dialogPadding,
+              child: Row(
                 children: [
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () => Navigator.of(context).pop(),
                       style: OutlinedButton.styleFrom(
-                        side: const BorderSide(
-                          color: Color(0xFFE5E5E5),
-                          width: 1.219,
-                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        padding: EdgeInsets.symmetric(vertical: isKeyboardOpen ? 8 : 12),
-                      ),
-                      child: Text(
-                        'Annuler',
-                        style: TextStyle(
-                          fontSize: isKeyboardOpen ? 13 : 14,
-                          color: const Color(0xFF0A0A0A),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                       ),
+                      child: const Text('Annuler'),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: ElevatedButton(
                       onPressed: _handleSave,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF155DFC),
-                        foregroundColor: Colors.white,
+                        backgroundColor: theme.colorScheme.primary,
+                        foregroundColor: theme.colorScheme.onPrimary,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        elevation: 0,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        padding: EdgeInsets.symmetric(vertical: isKeyboardOpen ? 8 : 12),
                       ),
-                      child: Text(
+                      child: const Text(
                         'Enregistrer',
-                        style: TextStyle(fontSize: isKeyboardOpen ? 13 : 14),
+                        style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),
                 ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildPeriodSelector(bool isKeyboardOpen) {
+  Widget _buildPeriodSelector(ThemeData theme) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'Période *',
-          style: TextStyle(
-            fontSize: isKeyboardOpen ? 13 : 14,
-            fontWeight: FontWeight.normal,
-            color: const Color(0xFF0A0A0A),
+          style: theme.textTheme.labelMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: _buildPeriodButton(
-                label: 'Matin',
-                icon: Icons.wb_sunny,
-                isSelected: _selectedPeriod == LiquidityCheckpointType.morning,
-                onTap: () {
-                  setState(() {
-                    _selectedPeriod = LiquidityCheckpointType.morning;
-                  });
-                },
+        const SizedBox(height: AppSpacing.sm),
+        Container(
+          height: 48,
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: _buildPeriodButton(
+                  theme: theme,
+                  label: 'Matin',
+                  icon: Icons.wb_sunny_rounded,
+                  isSelected: _selectedPeriod == LiquidityCheckpointType.morning,
+                  onTap: () => setState(() => _selectedPeriod = LiquidityCheckpointType.morning),
+                ),
               ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _buildPeriodButton(
-                label: 'Soir',
-                icon: Icons.nightlight_round,
-                isSelected: _selectedPeriod == LiquidityCheckpointType.evening,
-                onTap: () {
-                  setState(() {
-                    _selectedPeriod = LiquidityCheckpointType.evening;
-                  });
-                },
+              Expanded(
+                child: _buildPeriodButton(
+                  theme: theme,
+                  label: 'Soir',
+                  icon: Icons.nights_stay_rounded,
+                  isSelected: _selectedPeriod == LiquidityCheckpointType.evening,
+                  onTap: () => setState(() => _selectedPeriod = LiquidityCheckpointType.evening),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ],
     );
   }
 
   Widget _buildPeriodButton({
+    required ThemeData theme,
     required String label,
     required IconData icon,
     required bool isSelected,
     required VoidCallback onTap,
   }) {
-    return InkWell(
+    return GestureDetector(
       onTap: onTap,
-      splashColor: Colors.transparent,
-      highlightColor: Colors.transparent,
-      hoverColor: Colors.transparent,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        height: 36,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFF54900) : Colors.white,
+          color: isSelected ? theme.colorScheme.surface : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: isSelected
-                ? const Color(0xFFF54900)
-                : const Color(0xFFE5E5E5),
-            width: 1.219,
-          ),
+          boxShadow: isSelected ? [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            )
+          ] : null,
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -391,14 +376,14 @@ class _LiquidityCheckpointDialogState extends State<LiquidityCheckpointDialog> {
             Icon(
               icon,
               size: 16,
-              color: isSelected ? Colors.white : const Color(0xFF0A0A0A),
+              color: isSelected ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
             ),
-            const SizedBox(width: 4),
+            const SizedBox(width: 8),
             Text(
               label,
-              style: TextStyle(
-                fontSize: 14,
-                color: isSelected ? Colors.white : const Color(0xFF0A0A0A),
+              style: theme.textTheme.labelMedium?.copyWith(
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                color: isSelected ? theme.colorScheme.onSurface : theme.colorScheme.onSurfaceVariant,
               ),
             ),
           ],
@@ -407,44 +392,45 @@ class _LiquidityCheckpointDialogState extends State<LiquidityCheckpointDialog> {
     );
   }
 
-  Widget _buildDateField(bool isKeyboardOpen) {
+  Widget _buildDateField(ThemeData theme) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'Date *',
-          style: TextStyle(
-            fontSize: isKeyboardOpen ? 13 : 14,
-            fontWeight: FontWeight.normal,
-            color: const Color(0xFF0A0A0A),
+          style: theme.textTheme.labelMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppSpacing.sm),
         InkWell(
           onTap: () => _selectDate(context),
+          borderRadius: BorderRadius.circular(12),
           child: Container(
-            height: 36,
+            height: 48,
             padding: const EdgeInsets.symmetric(horizontal: 12),
             decoration: BoxDecoration(
-              color: const Color(0xFFF3F3F5),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.transparent, width: 1.219),
+              color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+              ),
             ),
             child: Row(
               children: [
+                Icon(Icons.calendar_today_rounded, 
+                  size: 16, 
+                  color: theme.colorScheme.primary,
+                ),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     DateFormat('dd/MM/yyyy').format(_selectedDate),
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF0A0A0A),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                ),
-                const Icon(
-                  Icons.calendar_today,
-                  size: 16,
-                  color: Color(0xFF717182),
                 ),
               ],
             ),
@@ -454,43 +440,87 @@ class _LiquidityCheckpointDialogState extends State<LiquidityCheckpointDialog> {
     );
   }
 
-  Widget _buildTotalLiquiditySection(bool isKeyboardOpen) {
+  Widget _buildTotalLiquiditySection(ThemeData theme) {
     final cashAmount = int.tryParse(_cashController.text.trim()) ?? 0;
     final simAmount = int.tryParse(_simController.text.trim()) ?? 0;
     final total = cashAmount + simAmount;
 
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFF0FDF4),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFB9F8CF), width: 1.219),
+        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: theme.colorScheme.primary.withValues(alpha: 0.1),
+        ),
       ),
-      padding: EdgeInsets.all(isKeyboardOpen ? 10 : 13),
+      padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            '💰 Liquidité totale',
-            style: TextStyle(fontSize: isKeyboardOpen ? 12 : 14, color: const Color(0xFF0D542B)),
+          Row(
+            children: [
+              Icon(Icons.account_balance_rounded, 
+                size: 20, 
+                color: theme.colorScheme.primary,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'LIQUIDITÉ TOTALE',
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: theme.colorScheme.primary,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.0,
+                ),
+              ),
+            ],
           ),
-          SizedBox(height: isKeyboardOpen ? 0 : 4),
+          const SizedBox(height: 16),
           Text(
-            CurrencyFormatter.formatShort(total),
-            style: TextStyle(
-              fontSize: isKeyboardOpen ? 20 : 24,
-              fontWeight: FontWeight.normal,
-              color: const Color(0xFF008236),
+            CurrencyFormatter.formatFCFA(total),
+            style: theme.textTheme.headlineMedium?.copyWith(
+              fontWeight: FontWeight.w900,
+              color: theme.colorScheme.onSurface,
+              fontFamily: 'Outfit',
             ),
           ),
-          if (!isKeyboardOpen) ...[
-            const SizedBox(height: 4),
-            Text(
-              'Cash: ${CurrencyFormatter.formatShort(cashAmount)} + SIM: ${CurrencyFormatter.formatShort(simAmount)}',
-              style: const TextStyle(fontSize: 12, color: Color(0xFF00A63E)),
-            ),
-          ],
+          const SizedBox(height: 16),
+          Divider(
+            height: 1,
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.05),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(child: _buildCompactStat('💵 Cash', cashAmount, theme)),
+              const SizedBox(width: 24),
+              Expanded(child: _buildCompactStat('📱 SIM', simAmount, theme)),
+            ],
+          ),
         ],
       ),
+    );
+  }
+
+  Widget _buildCompactStat(String label, int amount, ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          CurrencyFormatter.formatShort(amount),
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+            fontFamily: 'Outfit',
+          ),
+        ),
+      ],
     );
   }
 }

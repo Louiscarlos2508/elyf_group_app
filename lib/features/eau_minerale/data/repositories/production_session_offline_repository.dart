@@ -114,7 +114,7 @@ class ProductionSessionOfflineRepository
         jsonDecode(byRemote.dataJson) as Map<String, dynamic>,
       );
       if (session.isDeleted) return null;
-      return _mergeLocalBobinesIfEmpty(session);
+      return _mergeWithLocalIfAvailable(session);
     }
 
     final byLocal = await driftService.records.findByLocalId(
@@ -128,17 +128,14 @@ class ProductionSessionOfflineRepository
       jsonDecode(byLocal.dataJson) as Map<String, dynamic>,
     );
     if (session.isDeleted) return null;
-    return _mergeLocalBobinesIfEmpty(session);
+    return _mergeWithLocalIfAvailable(session);
   }
 
-  /// Si la session a des bobines vides, tente de les récupérer depuis une
-  /// session locale (sans remoteId) même date+heure début — détail aligné
-  /// avec la liste.
-  Future<ProductionSession> _mergeLocalBobinesIfEmpty(
+  /// Tente de fusionner la session avec une version locale (sans remoteId)
+  /// ayant la même date+heure début pour éviter la perte de données orphelines.
+  Future<ProductionSession> _mergeWithLocalIfAvailable(
     ProductionSession session,
   ) async {
-    if (session.bobinesUtilisees.isNotEmpty) return session;
-
     final rows = await driftService.records.listForEnterprise(
       collectionName: collectionName,
       enterpriseId: enterpriseId,
@@ -146,14 +143,16 @@ class ProductionSessionOfflineRepository
     );
     final key = _sessionKey(session);
     for (final r in rows) {
-      final map = jsonDecode(r.dataJson) as Map<String, dynamic>;
       if (r.remoteId != null && r.remoteId!.isNotEmpty) continue;
       if (r.localId == session.id) continue;
+      
       try {
+        final map = jsonDecode(r.dataJson) as Map<String, dynamic>;
         final other = fromMap(map);
-        if (_sessionKey(other) != key) continue;
-        if (other.bobinesUtilisees.isEmpty) continue;
-        return session.copyWith(bobinesUtilisees: other.bobinesUtilisees);
+        if (_sessionKey(other) == key) {
+          // Fusion constructive
+          return session.mergeWith(other);
+        }
       } catch (_) {
         continue;
       }
@@ -207,9 +206,8 @@ class ProductionSessionOfflineRepository
     return '${d.year}-${d.month}-${d.day}-${h.hour}-${h.minute}';
   }
 
-  /// Fusionne les bobines des sessions locales (sans remoteId) dans les sessions
-  /// sync (avec remoteId) quand la sync a des bobines vides, pour éviter
-  /// "détail montre bobines, ailleurs non" (list/card).
+  /// Fusionne les données des sessions locales (sans remoteId) dans les sessions
+  /// sync (avec remoteId) pour éviter la perte de données (personnel, production).
   List<ProductionSession> _mergeLocalBobinesIntoSync(
     List<ProductionSession> sessions,
   ) {
@@ -222,9 +220,11 @@ class ProductionSessionOfflineRepository
         syncList.add(s);
       } else {
         final existing = localByKey[key];
+        // Garder la version locale orpheline si elle a plus de données ou est plus récente
         if (existing == null ||
-            (s.bobinesUtilisees.isNotEmpty &&
-                existing.bobinesUtilisees.isEmpty)) {
+            s.productionDays.length > existing.productionDays.length ||
+            (s.updatedAt ?? s.createdAt ?? DateTime(0))
+                .isAfter(existing.updatedAt ?? existing.createdAt ?? DateTime(0))) {
           localByKey[key] = s;
         }
       }
@@ -234,18 +234,18 @@ class ProductionSessionOfflineRepository
     for (final sync in syncList) {
       final key = _sessionKey(sync);
       final local = localByKey[key];
-      if (sync.bobinesUtilisees.isEmpty &&
-          local != null &&
-          local.bobinesUtilisees.isNotEmpty) {
-        merged.add(
-          sync.copyWith(bobinesUtilisees: local.bobinesUtilisees),
-        );
+      
+      if (local != null) {
+        // Utiliser la nouvelle méthode mergeWith pour une fusion robuste
+        merged.add(sync.mergeWith(local));
       } else {
         merged.add(sync);
       }
       // Toujours retirer du map local si on a une session sync pour cette clé
       localByKey.remove(key);
     }
+    
+    // Ajouter les sessions locales qui n'ont pas d'équivalent remote
     merged.addAll(localByKey.values);
     return merged;
   }

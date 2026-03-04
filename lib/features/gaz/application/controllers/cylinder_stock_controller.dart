@@ -28,17 +28,24 @@ class CylinderStockController {
     String? siteId,
     List<String>? enterpriseIds,
   }) {
+    Stream<List<CylinderStock>> stream;
     if (enterpriseIds != null && enterpriseIds.isNotEmpty) {
-      return _repository.watchStocksForEnterprises(
+      stream = _repository.watchStocksForEnterprises(
         enterpriseIds,
         status: status,
       );
+    } else {
+      stream = _repository.watchStocks(
+        enterpriseId,
+        status: status,
+        siteId: siteId,
+      );
     }
-    return _repository.watchStocks(
-      enterpriseId,
-      status: status,
-      siteId: siteId,
-    );
+
+    if (siteId != null) {
+      return stream.map((stocks) => stocks.where((s) => s.siteId == siteId).toList());
+    }
+    return stream;
   }
 
   /// Récupère les stocks par poids.

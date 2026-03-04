@@ -1,12 +1,10 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import '../../domain/entities/enterprise.dart';
-import '../../domain/repositories/enterprise_repository.dart';
-import '../../domain/repositories/admin_repository.dart';
-import '../providers.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
+import 'package:elyf_groupe_app/features/administration/domain/repositories/enterprise_repository.dart';
+import 'package:elyf_groupe_app/features/administration/domain/repositories/admin_repository.dart';
 
 /// Service global de gestion du contexte tenant
-/// Permet de gérer le tenant actuel et de naviguer dans la hiérarchie
+/// Permet de gérer le tenant actuel et de naviguer dans la hiérarchie.
+/// Déplacé dans core pour casser les dépendances cycliques.
 class TenantContextService {
   TenantContextService(this._enterpriseRepository, this._adminRepository);
   
@@ -29,16 +27,13 @@ class TenantContextService {
   /// Obtenir tous les tenants accessibles par un utilisateur
   Future<List<Enterprise>> getAccessibleTenants(String userId) async {
     try {
-      // Récupérer les assignations de l'utilisateur
       final assignments = await _adminRepository.getUserEnterpriseModuleUsers(userId);
       
-      // Extraire les IDs d'entreprises uniques
       final enterpriseIds = assignments
           .map((a) => a.enterpriseId)
           .toSet()
           .toList();
       
-      // Récupérer les entreprises
       final enterprises = <Enterprise>[];
       
       for (final id in enterpriseIds) {
@@ -48,7 +43,6 @@ class TenantContextService {
             enterprises.add(enterprise);
           }
         } catch (e) {
-          // Ignorer les entreprises non trouvées
           continue;
         }
       }
@@ -60,23 +54,19 @@ class TenantContextService {
   }
   
   /// Vérifier si un utilisateur a accès à un tenant
-  /// Inclut l'accès aux tenants parents (héritage)
   Future<bool> hasAccessToTenant(String userId, String tenantId) async {
     final accessible = await getAccessibleTenants(userId);
     
-    // Vérifier accès direct
     if (accessible.any((e) => e.id == tenantId)) {
       return true;
     }
     
-    // Vérifier accès via ancêtres (si l'utilisateur a accès à un parent)
     return accessible.any((e) => e.ancestorIds.contains(tenantId));
   }
   
   /// Obtenir tous les descendants d'un tenant
   Future<List<Enterprise>> getDescendants(String tenantId) async {
     try {
-      // Get all enterprises and filter descendants
       final allEnterprises = await _enterpriseRepository.getAllEnterprises();
       return allEnterprises
           .where((e) => e.ancestorIds.contains(tenantId))
@@ -89,7 +79,6 @@ class TenantContextService {
   /// Obtenir les enfants directs d'un tenant
   Future<List<Enterprise>> getChildren(String tenantId) async {
     try {
-      // Get all enterprises and filter children
       final allEnterprises = await _enterpriseRepository.getAllEnterprises();
       return allEnterprises
           .where((e) => e.parentEnterpriseId == tenantId)
@@ -99,14 +88,13 @@ class TenantContextService {
     }
   }
   
-  /// Obtenir la hiérarchie complète d'un tenant (ancêtres + tenant + descendants)
+  /// Obtenir la hiérarchie complète d'un tenant
   Future<EnterpriseHierarchy> getHierarchy(String tenantId) async {
     final current = await _enterpriseRepository.getEnterpriseById(tenantId);
     if (current == null) {
       throw Exception('Enterprise not found: $tenantId');
     }
     
-    // Récupérer les ancêtres
     final ancestors = <Enterprise>[];
     for (final ancestorId in current.ancestorIds) {
       try {
@@ -119,7 +107,6 @@ class TenantContextService {
       }
     }
       
-    // Récupérer les descendants
     final descendants = await getDescendants(tenantId);
     
     return EnterpriseHierarchy(
@@ -129,23 +116,19 @@ class TenantContextService {
     );
   }
   
-  /// Changer le tenant actuel
   void switchTenant(String tenantId) {
     _currentTenantId = tenantId;
   }
   
-  /// Effacer le tenant actuel
   void clearTenant() {
     _currentTenantId = null;
   }
   
-  /// Calculer le chemin hiérarchique pour un nouveau tenant
   Future<HierarchyInfo> calculateHierarchyInfo({
     required String enterpriseId,
     String? parentEnterpriseId,
   }) async {
     if (parentEnterpriseId == null) {
-      // Entreprise racine
       return HierarchyInfo(
         level: 0,
         path: '/$enterpriseId',
@@ -156,7 +139,6 @@ class TenantContextService {
     try {
       final parent = await _enterpriseRepository.getEnterpriseById(parentEnterpriseId);
       if (parent == null) {
-        // Si le parent n'est pas trouvé, traiter comme racine
         return HierarchyInfo(
           level: 0,
           path: '/$enterpriseId',
@@ -170,7 +152,6 @@ class TenantContextService {
         ancestorIds: [...parent.ancestorIds, parent.id],
       );
     } catch (e) {
-      // Si le parent n'est pas trouvé, traiter comme racine
       return HierarchyInfo(
         level: 0,
         path: '/$enterpriseId',
@@ -180,7 +161,6 @@ class TenantContextService {
   }
 }
 
-/// Informations de hiérarchie calculées
 class HierarchyInfo {
   const HierarchyInfo({
     required this.level,
@@ -193,7 +173,6 @@ class HierarchyInfo {
   final List<String> ancestorIds;
 }
 
-/// Hiérarchie complète d'une entreprise
 class EnterpriseHierarchy {
   const EnterpriseHierarchy({
     required this.current,
@@ -205,17 +184,6 @@ class EnterpriseHierarchy {
   final List<Enterprise> ancestors;
   final List<Enterprise> descendants;
   
-  /// Obtenir le breadcrumb (ancêtres + current)
   List<Enterprise> get breadcrumb => [...ancestors, current];
-  
-  /// Obtenir tous les tenants de la hiérarchie
   List<Enterprise> get all => [...ancestors, current, ...descendants];
 }
-
-/// Provider du service de contexte tenant
-final tenantContextServiceProvider = Provider<TenantContextService>((ref) {
-  return TenantContextService(
-    ref.watch(enterpriseRepositoryProvider),
-    ref.watch(adminRepositoryProvider),
-  );
-});

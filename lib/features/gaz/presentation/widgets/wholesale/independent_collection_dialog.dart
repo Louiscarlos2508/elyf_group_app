@@ -17,9 +17,16 @@ import '../../../../../../core/auth/providers.dart';
 
 /// Formulaire d'ajout d'une collecte indépendante (Wholesale/POS).
 class IndependentCollectionDialog extends ConsumerStatefulWidget {
-  const IndependentCollectionDialog({super.key, required this.enterpriseId});
+  const IndependentCollectionDialog({
+    super.key, 
+    required this.enterpriseId,
+    this.tourId,
+    this.initialType,
+  });
 
   final String enterpriseId;
+  final String? tourId;
+  final CollectionType? initialType;
 
   @override
   ConsumerState<IndependentCollectionDialog> createState() =>
@@ -28,7 +35,7 @@ class IndependentCollectionDialog extends ConsumerStatefulWidget {
 
 class _IndependentCollectionDialogState extends ConsumerState<IndependentCollectionDialog> {
   final _formKey = GlobalKey<FormState>();
-  final CollectionType _collectionType = CollectionType.pointOfSale;
+  late CollectionType _collectionType;
   Client? _selectedClient;
   final Map<int, int> _bottles = {}; // poids -> quantité
 
@@ -117,6 +124,12 @@ class _IndependentCollectionDialogState extends ConsumerState<IndependentCollect
         error: (_, __) => [],
       );
     }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _collectionType = widget.initialType ?? CollectionType.pointOfSale;
   }
 
   @override
@@ -216,6 +229,7 @@ class _IndependentCollectionDialogState extends ConsumerState<IndependentCollect
         amountPaid: 0, // Pour l'instant, on suppose paiement manuel ou séparé.
         // TODO: Ajouter un champ "Montant Payé" si nécessaire dans le futur
         paymentDate: DateTime.now(),
+        tourId: widget.tourId,
       );
 
       final transactionService = ref.read(transactionServiceProvider);
@@ -316,7 +330,9 @@ class _IndependentCollectionDialogState extends ConsumerState<IndependentCollect
                       ),
                       */
                       Text(
-                        'Source de collecte : Point de Vente',
+                        _collectionType == CollectionType.wholesaler 
+                            ? 'Source de collecte : Grossiste'
+                            : 'Source de collecte : Point de Vente',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.primary,
                           fontWeight: FontWeight.bold,

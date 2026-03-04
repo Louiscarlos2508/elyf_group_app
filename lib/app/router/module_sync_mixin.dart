@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/errors/error_handler.dart';
 import '../../core/logging/app_logger.dart';
 
-import '../../core/offline/providers.dart' show globalModuleRealtimeSyncServiceProvider;
+import '../../core/offline/sync/sync_orchestrator.dart' show syncOrchestratorProvider;
 import '../../core/tenant/tenant_provider.dart' show activeEnterpriseProvider;
 
 /// Mixin pour déclencher la synchronisation en temps réel lors de l'accès à un module.
@@ -86,39 +86,12 @@ mixin ModuleSyncMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
     }
 
     // Vérifier si le service global est disponible via Riverpod
-    final globalSync = ref.read(globalModuleRealtimeSyncServiceProvider);
+    final syncOrchestrator = ref.read(syncOrchestratorProvider);
 
-    // Vérifier si la synchronisation est déjà active pour ce module
-    // Cela évite les duplications : si la sync a été démarrée après la connexion,
-    // elle est déjà active et on ne fait rien
-    if (globalSync.isListeningTo(enterpriseId, moduleId)) {
-      developer.log(
-        'Realtime sync already active for module $moduleId in enterprise $enterpriseId',
-        name: 'module.sync.mixin',
-      );
-      return;
-    }
-
-    // Récupérer l'entreprise active pour obtenir son parent (si c'est un sous-tenant comme un POS)
-    final activeEnterprise = ref.read(activeEnterpriseProvider).value;
-    final parentEnterpriseId = activeEnterprise?.parentEnterpriseId;
-
-    if (parentEnterpriseId != null) {
-      developer.log(
-        'Detected child enterprise. Using parent $parentEnterpriseId for shared collections.',
-        name: 'module.sync.mixin',
-      );
-    }
-
-    // Démarrer la synchronisation via le service global
-    // Cela évite les duplications car le service global vérifie déjà
-    // si une sync est active avant de démarrer
-    globalSync
-        .startRealtimeSync(
-          enterpriseId: enterpriseId, 
-          moduleId: moduleId,
-          parentEnterpriseId: parentEnterpriseId,
-        )
+    // Déléguer la synchronisation à l'orchestrateur (autorité unique)
+    // Il gérera le filtrage par entreprise active et la résolution du parent.
+    syncOrchestrator
+        .ensureModuleSync(moduleId)
         .then((_) {
           if (!mounted || _isDisposed) {
             developer.log(
@@ -127,7 +100,7 @@ mixin ModuleSyncMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
             );
           } else {
             developer.log(
-              'Realtime sync started/verified for module $moduleId in enterprise $enterpriseId',
+              'Realtime sync requested for module $moduleId (delegated to orchestrator)',
               name: 'module.sync.mixin',
             );
           }
@@ -135,13 +108,11 @@ mixin ModuleSyncMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
         .catchError((error, stackTrace) {
           final appException = ErrorHandler.instance.handleError(error, stackTrace);
           AppLogger.warning(
-            'Error starting module sync: ${appException.message}',
+            'Error requesting module sync from orchestrator: ${appException.message}',
             name: 'module.sync.mixin',
             error: error,
             stackTrace: stackTrace,
           );
-          // Log l'erreur mais ne bloque pas l'affichage du module
-          // Les données locales seront utilisées même si la sync échoue
         });
   }
 }

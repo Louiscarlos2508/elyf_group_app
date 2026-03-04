@@ -23,6 +23,7 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
   final _customerNameController = TextEditingController();
   final _customerPhoneController = TextEditingController();
   final _quantityController = TextEditingController();
+  final _unitPriceController = TextEditingController();
   final _amountPaidController = TextEditingController();
   final _notesController = TextEditingController();
 
@@ -31,18 +32,20 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
   int _cashAmount = 0;
   int _orangeMoneyAmount = 0;
   PaymentMethod _paymentMethod = PaymentMethod.cash;
+  bool _showNewCustomerFields = false;
 
   @override
   void dispose() {
     _customerNameController.dispose();
     _customerPhoneController.dispose();
     _quantityController.dispose();
+    _unitPriceController.dispose();
     _amountPaidController.dispose();
     _notesController.dispose();
     super.dispose();
   }
 
-  int? get _unitPrice => _selectedProduct?.unitPrice;
+  int? get _unitPrice => int.tryParse(_unitPriceController.text);
   int? get _quantity => int.tryParse(_quantityController.text);
   int? get _totalPrice =>
       _unitPrice != null && _quantity != null ? _unitPrice! * _quantity! : null;
@@ -52,12 +55,16 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
   void _handleProductSelected(Product product) {
     setState(() {
       _selectedProduct = product;
-      if (_totalPrice != null && _amountPaidController.text.isEmpty) {
-        _amountPaidController.text = _totalPrice.toString();
-        _cashAmount = _totalPrice!;
-        _orangeMoneyAmount = 0;
-      }
+      _unitPriceController.text = product.unitPrice.toString();
+      _updateTotalAndPayment();
     });
+  }
+
+  void _updateTotalAndPayment() {
+    if (_totalPrice != null) {
+      _amountPaidController.text = _totalPrice.toString();
+      _onAmountPaidChanged(_amountPaidController.text);
+    }
   }
 
   void _handleCustomerSelected(CustomerSummary? customer) {
@@ -81,8 +88,9 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
           _cashAmount = 0;
           _orangeMoneyAmount = _amountPaid ?? 0;
         } else if (method == PaymentMethod.both) {
-          // Ne pas initialiser automatiquement, laisser l'utilisateur répartir
-          _cashAmount = 0;
+          // Pré-remplir avec le montant total en espèces comme point de départ
+          // L'utilisateur peut ensuite ajuster la répartition dans le PaymentSplitter
+          _cashAmount = _amountPaid ?? 0;
           _orangeMoneyAmount = 0;
         }
       });
@@ -100,9 +108,13 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
           } else if (_paymentMethod == PaymentMethod.orangeMoney) {
             _cashAmount = 0;
             _orangeMoneyAmount = amount;
+          } else if (_paymentMethod == PaymentMethod.both) {
+            // Si l'utilisateur n'a pas encore réparti manuellement (orangeMoney = 0),
+            // on met tout en espèces comme point de départ par défaut.
+            if (_orangeMoneyAmount == 0) {
+              _cashAmount = amount;
+            }
           }
-          // Si "Les deux", ne pas modifier automatiquement
-          // L'utilisateur répartira manuellement dans PaymentSplitter
         });
       }
     });
@@ -184,7 +196,9 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
                 : null,
           ),
           keyboardType: TextInputType.number,
-          onChanged: (_) => setState(() {}),
+          onChanged: (_) => setState(() {
+            _updateTotalAndPayment();
+          }),
           validator: (v) {
             if (v == null || v.isEmpty) return 'Requis';
             final qty = int.tryParse(v);
@@ -225,6 +239,31 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
         ),
         readOnly: true,
       );
+  }
+
+  Widget _buildUnitPriceField(BuildContext context) {
+    return TextFormField(
+      controller: _unitPriceController,
+      decoration: _buildInputDecoration(
+        context,
+        label: 'Prix Unitaire (CFA)',
+        icon: Icons.price_change_outlined,
+        helperText: _selectedProduct != null
+            ? 'Prix catalogue: ${_selectedProduct!.unitPrice} CFA'
+            : 'Sélectionnez d\'abord un produit',
+      ),
+      keyboardType: TextInputType.number,
+      onChanged: (_) => setState(() {
+        _updateTotalAndPayment();
+      }),
+      readOnly: _selectedProduct == null,
+      validator: (v) {
+        if (v == null || v.isEmpty) return 'Requis';
+        final price = int.tryParse(v);
+        if (price == null || price < 0) return 'Prix invalide';
+        return null;
+      },
+    );
   }
 
   Widget _buildSessionWarning(BuildContext context, WidgetRef ref) {
@@ -304,6 +343,18 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
         'Veuillez remplir tous les champs',
       );
       return;
+    }
+
+    // Validation du paiement mixte : la répartition doit correspondre au montant versé
+    if (_paymentMethod == PaymentMethod.both) {
+      final splitTotal = _cashAmount + _orangeMoneyAmount;
+      if (splitTotal != _amountPaid!) {
+        NotificationService.showError(
+          context,
+          'La répartition Cash + Orange Money ($splitTotal CFA) doit être égale au montant versé (${_amountPaid!} CFA).',
+        );
+        return;
+      }
     }
 
     final saleService = ref.read(saleServiceProvider);
@@ -466,6 +517,18 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
                     color: colors.primary,
                   ),
                 ),
+                const Spacer(),
+                IconButton.filledTonal(
+                  onPressed: () => setState(() => _showNewCustomerFields = !_showNewCustomerFields),
+                  style: IconButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                  ),
+                  icon: Icon(
+                    _showNewCustomerFields ? Icons.remove_rounded : Icons.add_rounded,
+                    size: 18,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 20),
@@ -479,41 +542,43 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
               onCustomerSelected: _handleCustomerSelected,
             ),
             const SizedBox(height: 16),
-            TextFormField(
-              controller: _customerNameController,
-              decoration: _buildInputDecoration(
-                context,
-                label: 'Nom du client${_isCredit ? ' (Requis)' : ''}',
-                icon: Icons.person_outline_rounded,
-                helperText: _isCredit ? 'Obligatoire pour le crédit' : 'Laisser vide pour client anonyme',
+            if (_showNewCustomerFields || _isCredit) ...[
+              TextFormField(
+                controller: _customerNameController,
+                decoration: _buildInputDecoration(
+                  context,
+                  label: 'Nom du client${_isCredit ? ' (Requis)' : ''}',
+                  icon: Icons.person_outline_rounded,
+                  helperText: _isCredit ? 'Obligatoire pour le crédit' : 'Laisser vide pour client anonyme',
+                ),
+                validator: (v) {
+                  if (_isCredit && (v == null || v.trim().isEmpty)) {
+                    return 'Nom obligatoire pour le crédit';
+                  }
+                  return null;
+                },
               ),
-              validator: (v) {
-                if (_isCredit && (v == null || v.trim().isEmpty)) {
-                  return 'Nom obligatoire pour le crédit';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _customerPhoneController,
-              decoration: _buildInputDecoration(
-                context,
-                label: 'Téléphone${_isCredit ? ' (Requis)' : ''}',
-                icon: Icons.phone_android_rounded,
-                hintText: '70 00 00 00',
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _customerPhoneController,
+                decoration: _buildInputDecoration(
+                  context,
+                  label: 'Téléphone${_isCredit ? ' (Requis)' : ''}',
+                  icon: Icons.phone_android_rounded,
+                  hintText: '70 00 00 00',
+                ),
+                keyboardType: TextInputType.phone,
+                validator: (v) {
+                  if (_isCredit && (v == null || v.trim().isEmpty)) {
+                    return 'Téléphone obligatoire pour le crédit';
+                  }
+                  if (v != null && v.trim().isNotEmpty) {
+                    return Validators.phoneBurkina(v);
+                  }
+                  return null;
+                },
               ),
-              keyboardType: TextInputType.phone,
-              validator: (v) {
-                if (_isCredit && (v == null || v.trim().isEmpty)) {
-                  return 'Téléphone obligatoire pour le crédit';
-                }
-                if (v != null && v.trim().isNotEmpty) {
-                  return Validators.phoneBurkina(v);
-                }
-                return null;
-              },
-            ),
+            ],
           ],
         ),
       ),
@@ -546,6 +611,8 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
               ],
             ),
             const SizedBox(height: 20),
+            _buildUnitPriceField(context),
+            const SizedBox(height: 16),
             _buildQuantityField(context, ref),
             const SizedBox(height: 24),
             if (_totalPrice != null) ...[

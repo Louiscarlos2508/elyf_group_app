@@ -279,6 +279,11 @@ class SyncConflictResolver {
         );
         merged[key] = nestedResult.mergedData;
         conflicts.addAll(nestedResult.conflicts.map((c) => '$key.$c'));
+      } else if (localVal is List && serverVal is List) {
+        // Handle list merging
+        final mergedList = _mergeLists(localVal, serverVal, localTime, serverTime);
+        merged[key] = mergedList;
+        conflicts.add('$key: merged list');
       } else {
         // Simple value conflict: use last-write-wins if possible
         bool useLocal = false;
@@ -297,6 +302,71 @@ class SyncConflictResolver {
     }
 
     return _MergeResult(merged, conflicts);
+  }
+
+  /// Merges two lists of objects, attempting to match by ID.
+  List<dynamic> _mergeLists(
+    List<dynamic> local,
+    List<dynamic> server,
+    DateTime? localTime,
+    DateTime? serverTime,
+  ) {
+    // If lists are simple types, use the most recent list or favor server if same time
+    bool favorLocal = localTime != null && serverTime != null && localTime.isAfter(serverTime);
+    
+    // Check if items are maps with an 'id' or 'localId'
+    final firstItem = local.isNotEmpty ? local.first : (server.isNotEmpty ? server.first : null);
+    if (firstItem is! Map) {
+      return favorLocal ? local : server;
+    }
+
+    final merged = <String, dynamic>{};
+    
+    // Add all from server as base
+    for (final item in server) {
+      if (item is Map) {
+        final id = item['id'] ?? 
+                  item['localId'] ?? 
+                  item['remoteId'] ?? 
+                  item['productId'] ?? 
+                  item['machineId'] ??
+                  item['date']; // Often used for production days
+        if (id != null) {
+          merged[id.toString()] = item;
+        }
+      }
+    }
+
+    // Merge or add from local
+    for (final item in local) {
+      if (item is Map) {
+        final id = item['id'] ?? 
+                  item['localId'] ?? 
+                  item['remoteId'] ?? 
+                  item['productId'] ?? 
+                  item['machineId'] ??
+                  item['date'];
+        if (id != null) {
+          final idStr = id.toString();
+          if (merged.containsKey(idStr)) {
+            // Both have it, recursively merge the item maps
+            final mergedItem = _recursiveMerge(
+              Map<String, dynamic>.from(item),
+              Map<String, dynamic>.from(merged[idStr]),
+              localTime,
+              serverTime,
+              1, // depth 1
+            );
+            merged[idStr] = mergedItem.mergedData;
+          } else {
+            // Only in local
+            merged[idStr] = item;
+          }
+        }
+      }
+    }
+
+    return merged.values.toList();
   }
 
   /// Deep equality check for various types.

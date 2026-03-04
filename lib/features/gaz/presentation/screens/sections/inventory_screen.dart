@@ -3,16 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
-import '../../../../../core/tenant/tenant_provider.dart';
+import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 
 import '../../widgets/gaz_header.dart';
 import '../../widgets/deposit_refund_dialog.dart';
 import 'inventory/inventory_tab_bar.dart';
 import 'inventory/stock_status_tab.dart';
-import 'inventory/stock_audit_tab.dart';
 import 'inventory/leak_tracking_tab.dart';
 import 'sales/collection_history_tab.dart';
-import 'sales/distribution_tab.dart';
 import '../../../application/providers/permission_providers.dart';
 
 /// Unified Inventory & Stock management screen for the Gaz module.
@@ -40,12 +38,6 @@ class _GazInventoryScreenState extends ConsumerState<GazInventoryScreen>
     final List<String> newTabs = ['Stock'];
     if (!isPOS) {
       newTabs.add('Collectes');
-    }
-    if (isManager) {
-      newTabs.add('Distribution');
-    }
-    if (!(enterprise?.isPointOfSale ?? false)) {
-      newTabs.add('Audits');
     }
     newTabs.add('Fuites');
 
@@ -82,10 +74,14 @@ class _GazInventoryScreenState extends ConsumerState<GazInventoryScreen>
     final enterprise = ref.watch(activeEnterpriseProvider).value;
     final enterpriseId = enterprise?.id;
     final isManager = ref.watch(isGazManagerProvider).value ?? false;
+    final isPOS = enterprise?.isPointOfSale ?? false;
 
     if (enterpriseId == null) {
       return Scaffold(
-        appBar: ElyfAppBar(title: 'Stock'),
+        appBar: ElyfAppBar(
+          title: 'Stock',
+          module: EnterpriseModule.gaz,
+        ),
         body: const Center(child: Text('Aucune entreprise sélectionnée')),
       );
     }
@@ -99,6 +95,7 @@ class _GazInventoryScreenState extends ConsumerState<GazInventoryScreen>
             title: 'STOCK',
             subtitle: _getSubtitle(),
             asSliver: true,
+            showViewToggle: false, // User requested to only show network view for main depot
             actions: [
 
               IconButton(
@@ -120,12 +117,8 @@ class _GazInventoryScreenState extends ConsumerState<GazInventoryScreen>
               enterpriseId: enterpriseId,
               moduleId: 'gaz',
             ),
-            if (enterprise?.type.isPointOfSale != true)
+            if (!isPOS)
               const CollectionHistoryTab(),
-            if (isManager)
-              const DistributionTab(),
-            if (!(enterprise?.isPointOfSale ?? false))
-              StockAuditTab(enterpriseId: enterpriseId),
             LeakTrackingTab(
               enterpriseId: enterpriseId,
               moduleId: 'gaz',

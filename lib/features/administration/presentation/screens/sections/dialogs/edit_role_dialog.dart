@@ -215,8 +215,14 @@ class _EditRoleDialogState extends ConsumerState<EditRoleDialog>
                             Icons.view_module_outlined,
                           ),
                           items: () {
-                            final modules = Set<String>.from(PermissionRegistry.instance.registeredModules);
+                            final modules = <String>{};
+                            // Always include current role's moduleId
                             modules.add(_selectedModuleId);
+                            // Add all modules except internal ones
+                            modules.addAll(
+                              PermissionRegistry.instance.registeredModules
+                                  .where((id) => id != 'administration' && id != 'group'),
+                            );
                             
                             return modules.map((moduleId) {
                               return DropdownMenuItem(
@@ -406,7 +412,7 @@ class _EditRoleDialogState extends ConsumerState<EditRoleDialog>
                                     const SizedBox(width: 8),
                                     Expanded(
                                       child: Text(
-                                        '${allPermissionsMap.length} permission${allPermissionsMap.length > 1 ? 's' : ''} disponible${allPermissionsMap.length > 1 ? 's' : ''} (${organizedPermissions.length} module${organizedPermissions.length > 1 ? 's' : ''})',
+                                        '${allPermissionsMap.length} permission${allPermissionsMap.length > 1 ? 's' : ''} disponible${allPermissionsMap.length > 1 ? 's' : ''} (${organizedPermissions.isEmpty ? 0 : organizedPermissions.first.sections.length} section${(organizedPermissions.isEmpty ? 0 : organizedPermissions.first.sections.length) > 1 ? 's' : ''})',
                                         style: theme.textTheme.bodySmall
                                             ?.copyWith(
                                               color: theme.colorScheme.primary,

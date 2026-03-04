@@ -3,16 +3,17 @@ import 'package:flutter/material.dart';
 class SalesTabBar extends StatelessWidget {
   const SalesTabBar({
     super.key,
-    required this.tabController,
+    this.tabController,
     required this.tabs,
   });
 
-  final TabController tabController;
+  final TabController? tabController;
   final List<String> tabs;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final controller = tabController ?? DefaultTabController.of(context);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
@@ -22,23 +23,26 @@ class SalesTabBar extends StatelessWidget {
           color: theme.colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(14),
         ),
-        child: Row(
-          children: List.generate(
-            tabs.length,
-            (index) => _buildTab(context, index: index, label: tabs[index]),
+        child: AnimatedBuilder(
+          animation: controller,
+          builder: (context, _) => Row(
+            children: List.generate(
+              tabs.length,
+              (index) => _buildTab(context, controller, index: index, label: tabs[index]),
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildTab(BuildContext context, {required int index, required String label}) {
+  Widget _buildTab(BuildContext context, TabController controller, {required int index, required String label}) {
     final theme = Theme.of(context);
-    final isSelected = tabController.index == index;
+    final isSelected = controller.index == index;
 
     return Expanded(
       child: GestureDetector(
-        onTap: () => tabController.animateTo(index),
+        onTap: () => controller.animateTo(index),
         child: Container(
           padding: const EdgeInsets.symmetric(
             horizontal: 4,

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../domain/entities/bobine_usage.dart';
 import '../../../domain/entities/production_session.dart';
+import '../../../application/providers.dart';
 import 'tracking_dialogs.dart';
 
 /// Widget pour afficher la liste des bobines avec leur statut.
@@ -14,20 +15,21 @@ class BobinesStatusList extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-
     if (session.bobinesUtilisees.isEmpty) {
       return const SizedBox.shrink();
     }
 
     // 1. Grouper par machine
     final bobinesParMachine = <String, List<BobineUsage>>{};
-    // Note: On utilise machineName comme clé d'affichage facile
     for (final bobine in session.bobinesUtilisees) {
       if (!bobinesParMachine.containsKey(bobine.machineName)) {
         bobinesParMachine[bobine.machineName] = [];
       }
       bobinesParMachine[bobine.machineName]!.add(bobine);
     }
+
+    // 2. Récupérer le statut des machines pour bloquer l'installation si besoin
+    final machinesAsync = ref.watch(allMachinesProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -43,6 +45,14 @@ class BobinesStatusList extends ConsumerWidget {
           final machineName = entry.key;
           final bobines = entry.value;
           
+          // Identifier la machine pour connaître son statut isActive
+          // On se base sur le machineId de la première bobine du groupe
+          final machineId = bobines.first.machineId;
+          final machine = machinesAsync.whenOrNull(
+            data: (list) => list.where((m) => m.id == machineId).firstOrNull,
+          );
+          final isMachineActive = machine?.isActive ?? true; // Par défaut True si non chargé
+
           // Trouver la bobine active (non finie)
           final activeBobine = bobines.cast<BobineUsage?>().firstWhere(
                 (b) => b != null && !b.estFinie,
@@ -63,34 +73,74 @@ class BobinesStatusList extends ConsumerWidget {
                   // En-tête Machine
                   Row(
                     children: [
-                      Icon(Icons.precision_manufacturing, size: 20, color: theme.colorScheme.primary),
+                      Icon(
+                        Icons.precision_manufacturing, 
+                        size: 20, 
+                        color: isMachineActive ? theme.colorScheme.primary : theme.colorScheme.error
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         machineName,
-                        style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: isMachineActive ? null : theme.colorScheme.error,
+                        ),
                       ),
+                      if (!isMachineActive) ...[
+                        const Spacer(),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.errorContainer,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            'EN PANNE',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: theme.colorScheme.error,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                   const Divider(),
                   
                   // Section Active ou Action
                   if (activeBobine != null)
-                    _buildActiveBobineTile(context, ref, session, activeBobine)
+                    _buildActiveBobineTile(context, ref, session, activeBobine, isMachineActive)
+                  else if (!isMachineActive)
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Center(
+                        child: Column(
+                          children: [
+                            Icon(Icons.warning_amber_rounded, color: theme.colorScheme.error, size: 32),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Installation impossible : Machine hors service',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.error,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
                   else
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 8.0),
                       child: Center(
                         child: OutlinedButton.icon(
                           onPressed: () {
-                             // On a besoin d'une bobine de la machine pour connaitre l'ID de la machine
-                             // Ici on prend la première de l'historique car elles sont groupées par machine
-                             // C'est safe car la liste 'bobines' n'est pas vide (garanti par le groupement)
                              final referenceBobine = bobines.first;
                              TrackingDialogs.showInstallNewBobineDialog(
                                context,
                                ref,
                                session,
-                               referenceBobine, // Sert juste à pré-remplir la machine
+                               referenceBobine,
                              );
                           },
                           icon: const Icon(Icons.add_circle, size: 18),
@@ -118,7 +168,7 @@ class BobinesStatusList extends ConsumerWidget {
     );
   }
 
-  Widget _buildActiveBobineTile(BuildContext context, WidgetRef ref, ProductionSession session, BobineUsage bobine) {
+  Widget _buildActiveBobineTile(BuildContext context, WidgetRef ref, ProductionSession session, BobineUsage bobine, bool isMachineActive) {
     final theme = Theme.of(context);
     return ListTile(
       contentPadding: EdgeInsets.zero,
@@ -155,9 +205,15 @@ class BobinesStatusList extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           IconButton(
-            icon: const Icon(Icons.build, color: Colors.orange, size: 20),
-            tooltip: 'Signaler panne',
-            onPressed: () => TrackingDialogs.showMachineBreakdownDialog(context, ref, session, bobine),
+            icon: Icon(
+              isMachineActive ? Icons.build : Icons.report_problem, 
+              color: isMachineActive ? Colors.orange : Colors.grey, 
+              size: 20
+            ),
+            tooltip: isMachineActive ? 'Signaler panne' : 'Machine déjà en panne',
+            onPressed: isMachineActive 
+                ? () => TrackingDialogs.showMachineBreakdownDialog(context, ref, session, bobine)
+                : null,
           ),
           OutlinedButton.icon(
             onPressed: () => TrackingDialogs.showBobineFinishDialog(context, ref, session, bobine),

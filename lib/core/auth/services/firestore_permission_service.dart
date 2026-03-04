@@ -39,7 +39,16 @@ class FirestorePermissionService implements PermissionService {
       // Check wildcard and roles
       final roles = await adminRepository.getAllRoles();
       for (final roleId in access.roleIds) {
-        final role = roles.firstWhere((r) => r.id == roleId);
+        // Skip si le rôle n'est pas encore sync synchronisé localement
+        final roleIndex = roles.indexWhere((r) => r.id == roleId);
+        if (roleIndex == -1) {
+          AppLogger.warning(
+            'Role $roleId not found locally for user $userId — may not be synced yet',
+            name: 'FirestorePermissionService',
+          );
+          continue;
+        }
+        final role = roles[roleIndex];
         if (role.hasPermission('*') || role.hasPermission(permissionId)) {
           return true;
         }
@@ -120,8 +129,10 @@ class FirestorePermissionService implements PermissionService {
     final roles = await adminRepository.getAllRoles();
 
     for (final roleId in access.roleIds) {
-      final role = roles.firstWhere((r) => r.id == roleId);
-      permissions.addAll(role.permissions);
+      // Skip si le rôle n'est pas encore synchronisé localement
+      final roleIndex = roles.indexWhere((r) => r.id == roleId);
+      if (roleIndex == -1) continue;
+      permissions.addAll(roles[roleIndex].permissions);
     }
 
     return permissions;

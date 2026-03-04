@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
 
 /// Net balance card for reports screen.
 class ReportNetBalanceCard extends StatelessWidget {
@@ -13,41 +15,36 @@ class ReportNetBalanceCard extends StatelessWidget {
     final cashInTotal = stats['cashInTotal'] as int? ?? 0;
     final cashOutTotal = stats['cashOutTotal'] as int? ?? 0;
     final netBalance = cashInTotal - cashOutTotal;
+    final theme = Theme.of(context);
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(25.219, 25.219, 1.219, 1.219),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF0FDF4),
-        border: Border.all(color: const Color(0xFFB9F8CF), width: 1.219),
-        borderRadius: BorderRadius.circular(14),
-      ),
+    return ElyfCard(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      backgroundColor: AppColors.success.withValues(alpha: 0.1),
+      borderColor: AppColors.success.withValues(alpha: 0.3),
       child: Center(
         child: Column(
           children: [
-            const Text(
+            Text(
               'Solde net de la période',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.normal,
-                color: Color(0xFF4A5565),
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             Text(
               '${netBalance >= 0 ? '+' : ''}${CurrencyFormatter.formatFCFA(netBalance)}',
-              style: const TextStyle(
-                fontSize: 36,
-                fontWeight: FontWeight.normal,
-                color: Color(0xFF00A63E),
+              style: theme.textTheme.headlineLarge?.copyWith(
+                color: AppColors.success,
+                fontWeight: FontWeight.w900,
+                fontFamily: 'Outfit',
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             Text(
               'Dépôts - Retraits = ${CurrencyFormatter.formatFCFA(cashInTotal)} - ${CurrencyFormatter.formatFCFA(cashOutTotal)}',
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.normal,
-                color: Color(0xFF4A5565),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
           ],

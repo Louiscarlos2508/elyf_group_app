@@ -23,7 +23,7 @@ class SessionManager extends Notifier<SessionState> {
     return currentUser.when(
       data: (AppUser? user) => user == null ? const UnauthenticatedSession() : LoadingContextSession(user),
       error: (e, st) => SessionError(e.toString()),
-      loading: () => const UnauthenticatedSession(),
+      loading: () => const AuthenticatingSession(),
     );
   }
 

@@ -7,6 +7,7 @@ import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/machine.da
 import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/production_session.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/production_session_status.dart';
 import 'machine_breakdown_dialog.dart';
+import 'machine_resume_dialog.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../../../shared/utils/notification_service.dart';
 
@@ -116,13 +117,19 @@ class MachineBreakdownReportCard extends ConsumerWidget {
                         return _BreakdownMachineItem(
                           machine: machine,
                           bobine: bobineNonFinie,
-                          onTap: () => _showBreakdownDialog(
-                            context,
-                            ref,
-                            machine,
-                            bobineNonFinie,
-                            sessionActive,
-                          ),
+                          onTap: () {
+                            if (machine.isActive) {
+                              _showBreakdownDialog(
+                                context,
+                                ref,
+                                machine,
+                                bobineNonFinie,
+                                sessionActive,
+                              );
+                            } else {
+                              _showResumeDialog(context, machine);
+                            }
+                          },
                         );
                       }).toList(),
                     );
@@ -183,6 +190,13 @@ class MachineBreakdownReportCard extends ConsumerWidget {
       ),
     );
   }
+
+  void _showResumeDialog(BuildContext context, Machine machine) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => MachineResumeDialog(machine: machine),
+    );
+  }
 }
 
 class _BreakdownMachineItem extends StatelessWidget {
@@ -200,12 +214,29 @@ class _BreakdownMachineItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
+    final isBreakdown = !machine.isActive;
+    
+    // Status text and color logic
+    String statusLabel = 'Prête';
+    Color statusColor = colors.primary;
+    IconData statusIcon = Icons.precision_manufacturing_outlined;
+    
+    if (isBreakdown) {
+      statusLabel = 'EN PANNE';
+      statusColor = colors.error;
+      statusIcon = Icons.report_gmailerrorred_rounded;
+    } else if (bobine != null) {
+      statusLabel = 'En Production';
+      statusColor = colors.secondary;
+      statusIcon = Icons.settings_suggest_outlined;
+    }
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: colors.surfaceContainerLow,
+        color: statusColor.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: statusColor.withValues(alpha: 0.1)),
       ),
       child: ListTile(
         onTap: onTap,
@@ -214,32 +245,45 @@ class _BreakdownMachineItem extends StatelessWidget {
           width: 40,
           height: 40,
           decoration: BoxDecoration(
-            color: colors.surface,
+            color: statusColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(
-            Icons.precision_manufacturing_outlined,
+            statusIcon,
             size: 20,
-            color: bobine != null ? colors.error : colors.primary,
+            color: statusColor,
           ),
         ),
         title: Text(
           machine.name,
           style: theme.textTheme.titleSmall?.copyWith(
             fontWeight: FontWeight.bold,
+            color: isBreakdown ? colors.error : null,
           ),
         ),
         subtitle: Text(
-          bobine != null ? 'Bobine ${bobine!.bobineType} en cours' : 'Prête',
+          isBreakdown 
+              ? 'Nécessite une remise en service' 
+              : (bobine != null ? 'Bobine ${bobine!.bobineType} en cours' : 'Machine opérationnelle'),
           style: theme.textTheme.bodySmall?.copyWith(
-            color: bobine != null ? colors.error : colors.onSurfaceVariant,
-            fontWeight: bobine != null ? FontWeight.bold : FontWeight.normal,
+            color: statusColor.withValues(alpha: 0.8),
+            fontWeight: (isBreakdown || bobine != null) ? FontWeight.bold : FontWeight.normal,
           ),
         ),
-        trailing: Icon(
-          Icons.chevron_right,
-          size: 20,
-          color: colors.onSurfaceVariant.withValues(alpha: 0.5),
+        trailing: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: statusColor.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(
+            statusLabel.toUpperCase(),
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: statusColor,
+              fontWeight: FontWeight.w900,
+              fontSize: 9,
+            ),
+          ),
         ),
       ),
     );

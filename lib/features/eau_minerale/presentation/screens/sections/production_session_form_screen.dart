@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import '../../../application/providers.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../domain/entities/production_session.dart';
@@ -49,6 +50,7 @@ class _ProductionSessionFormScreenState
     return Scaffold(
       appBar: ElyfAppBar(
         title: isEditing ? 'Modifier session' : 'Nouvelle session',
+        module: EnterpriseModule.eau,
         leading: IconButton(
           icon: const Icon(Icons.close),
           onPressed: () => Navigator.of(context).pop(),

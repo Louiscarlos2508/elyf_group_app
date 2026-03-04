@@ -4,7 +4,6 @@ import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 
 import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import 'package:elyf_groupe_app/shared.dart';
-import '../stock_transfer_dialog.dart';
 
 /// En-tête de la carte de stock d'un point de vente.
 class PosStockHeader extends ConsumerWidget {
@@ -96,20 +95,6 @@ class PosStockHeader extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 8),
-            if (enterprise.parentEnterpriseId != null && !isPOS)
-              ElyfButton(
-                onPressed: () => showDialog(
-                  context: context,
-                  builder: (context) => StockTransferDialog(
-                    fromEnterpriseId: enterprise.parentEnterpriseId ?? '',
-                    initialToEnterpriseId: enterprise.id,
-                  ),
-                ),
-                variant: ElyfButtonVariant.outlined,
-                size: ElyfButtonSize.small,
-                icon: Icons.local_shipping,
-                child: const Text('Ravitaillement'),
-              ),
           ],
         ),
       ],

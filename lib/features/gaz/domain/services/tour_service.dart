@@ -1,6 +1,7 @@
 import '../../../../core/errors/app_exceptions.dart';
 import '../entities/tour.dart';
 import '../repositories/tour_repository.dart';
+import '../repositories/collection_repository.dart';
 
 import 'transaction_service.dart';
 
@@ -9,10 +10,12 @@ class TourService {
   const TourService({
     required this.tourRepository,
     required this.transactionService,
+    required this.collectionRepository,
   });
 
   final TourRepository tourRepository;
   final TransactionService transactionService;
+  final CollectionRepository collectionRepository;
 
   /// Met à jour les bouteilles vides chargées avec gestion du stock transit.
   Future<void> updateEmptyBottlesLoaded(
@@ -79,9 +82,13 @@ class TourService {
       );
     }
 
+    // Récupérer les collectes liées au tour (Grossistes)
+    final collections = await collectionRepository.getCollectionsByTourId(tourId, tour.enterpriseId);
+
     final result = await transactionService.executeTourClosureTransaction(
       tourId: tourId,
       userId: userId,
+      wholesalerCollections: collections,
     );
     return result.alerts;
   }

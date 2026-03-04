@@ -66,7 +66,7 @@ class _ModuleHomeScaffoldState extends ConsumerState<ModuleHomeScaffold> {
           : ElyfAppBar(
               title: activeEnterprise?.name ?? widget.title.split(' • ').last,
               subtitle: widget.title.split(' • ').first.toUpperCase(),
-              module: activeEnterprise?.type.module,
+              moduleId: activeEnterprise?.type.module?.id,
               actions: [
                 EnterpriseSelectorWidget(style: EnterpriseSelectorStyle.appBar),
               ],
@@ -103,6 +103,7 @@ class _ModuleHomeScaffoldState extends ConsumerState<ModuleHomeScaffold> {
       ),
       bottomNavigationBar: ElyfBottomNavigationBar(
         selectedIndex: _selectedIndex,
+        moduleId: activeEnterprise?.type.module?.id,
         onDestinationSelected: (index) {
           setState(() => _selectedIndex = index);
         },

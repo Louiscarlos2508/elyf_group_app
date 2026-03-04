@@ -13,21 +13,15 @@ class ProductTile extends StatelessWidget {
     super.key,
     required this.product,
     required this.onTap,
-    this.onRestock,
-    this.onAdjust,
     this.onDuplicate,
     this.onPriceHistory,
-    this.showRestockButton = false,
     this.isEnabled = true,
   });
 
   final Product product;
   final VoidCallback onTap;
-  final VoidCallback? onRestock;
-  final VoidCallback? onAdjust;
   final VoidCallback? onDuplicate;
   final VoidCallback? onPriceHistory;
-  final bool showRestockButton;
   final bool isEnabled;
 
   @override
@@ -156,93 +150,55 @@ class ProductTile extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 4),
-                      Row(
-                      children: [
-                        // Stock Chip
-                        _buildStockChip(theme, isOutOfStock, isLowStock),
-                        const Spacer(),
-                        if (onPriceHistory != null)
-                          Material(
-                            color: theme.colorScheme.tertiaryContainer,
-                            borderRadius: BorderRadius.circular(8),
-                            child: InkWell(
-                              onTap: onPriceHistory,
-                              borderRadius: BorderRadius.circular(8),
-                              child: Padding(
-                                padding: const EdgeInsets.all(4),
-                                child: Icon(
-                                  Icons.show_chart_rounded,
-                                  size: 16,
-                                  color: theme.colorScheme.onTertiaryContainer,
-                                ),
-                              ),
-                            ),
-                          ),
-                        if (onDuplicate != null)
-                          Padding(
-                            padding: const EdgeInsets.only(left: 4),
-                            child: Material(
-                              color: theme.colorScheme.surfaceContainerHighest,
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Stock Chip
+                          _buildStockChip(theme, isOutOfStock, isLowStock),
+                          const SizedBox(width: 8),
+                          if (onPriceHistory != null)
+                            Material(
+                              color: theme.colorScheme.tertiaryContainer,
                               borderRadius: BorderRadius.circular(8),
                               child: InkWell(
-                                onTap: onDuplicate,
+                                onTap: onPriceHistory,
                                 borderRadius: BorderRadius.circular(8),
                                 child: Padding(
-                                  padding: const EdgeInsets.all(4),
+                                  padding: const EdgeInsets.all(6),
                                   child: Icon(
-                                    Icons.content_copy_rounded,
-                                    size: 16,
-                                    color: theme.colorScheme.onSurfaceVariant,
+                                    Icons.show_chart_rounded,
+                                    size: 18,
+                                    color: theme.colorScheme.onTertiaryContainer,
                                   ),
                                 ),
                               ),
                             ),
-                          ),
-                        if (showRestockButton)
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const SizedBox(width: 4),
-                              if (onAdjust != null)
-                                Material(
-                                  color: theme.colorScheme.secondaryContainer,
+                          if (onDuplicate != null)
+                            Padding(
+                              padding: const EdgeInsets.only(left: 4),
+                              child: Material(
+                                color: theme.colorScheme.surfaceContainerHighest,
+                                borderRadius: BorderRadius.circular(8),
+                                child: InkWell(
+                                  onTap: onDuplicate,
                                   borderRadius: BorderRadius.circular(8),
-                                  child: InkWell(
-                                    onTap: onAdjust,
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(4),
-                                      child: Icon(
-                                        Icons.tune_rounded,
-                                        size: 16,
-                                        color: theme.colorScheme.onSecondaryContainer,
-                                      ),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(6),
+                                    child: Icon(
+                                      Icons.content_copy_rounded,
+                                      size: 18,
+                                      color: theme.colorScheme.onSurfaceVariant,
                                     ),
                                   ),
                                 ),
-                              if (onRestock != null) ...[
-                                const SizedBox(width: 4),
-                                Material(
-                                  color: theme.colorScheme.primaryContainer,
-                                  borderRadius: BorderRadius.circular(8),
-                                  child: InkWell(
-                                    onTap: onRestock,
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(4),
-                                      child: Icon(
-                                        Icons.add_rounded,
-                                        size: 16,
-                                        color: theme.colorScheme.onPrimaryContainer,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ],
+                              ),
                             ),
-                          ],
+                        ],
                         ),
+                      ),
                   ],
                 ),
                 ),

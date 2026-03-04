@@ -36,6 +36,7 @@ class LiquidityCheckpointService {
     required int cashAmount,
     required int simAmount,
     String? notes,
+    String? modificationReason,
     LiquidityCheckpoint? existingCheckpoint,
   }) {
     final totalAmount = cashAmount + simAmount;
@@ -71,6 +72,9 @@ class LiquidityCheckpointService {
           ? (simAmount > 0 ? simAmount : null)
           : existingCheckpoint?.eveningSimAmount,
       notes: notes?.trim().isEmpty ?? true ? null : notes?.trim(),
+      modificationReason: modificationReason?.trim().isEmpty ?? true 
+          ? existingCheckpoint?.modificationReason 
+          : modificationReason?.trim(),
       createdAt: existingCheckpoint?.createdAt ?? DateTime.now(),
       updatedAt: DateTime.now(),
     );

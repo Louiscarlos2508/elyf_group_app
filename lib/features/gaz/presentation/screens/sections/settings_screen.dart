@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/core/logging/app_logger.dart';
+import 'package:elyf_groupe_app/core/permissions/modules/gaz_permissions.dart';
 
 
 import '../../../../../../core/tenant/tenant_provider.dart' show activeEnterpriseProvider;
@@ -40,7 +41,7 @@ class GazSettingsScreen extends ConsumerWidget {
         final effectiveModuleId = moduleId ?? 'gaz';
 
         // 2. Vérifier les permissions via le provider stable
-        final hasAccessAsync = ref.watch(userHasGazPermissionProvider('manage_cylinders'));
+        final hasAccessAsync = ref.watch(userHasGazPermissionProvider(GazPermissions.viewSettings.id));
 
         return hasAccessAsync.when(
           data: (hasAccess) {
@@ -54,6 +55,7 @@ class GazSettingsScreen extends ConsumerWidget {
 
             final theme = Theme.of(context);
             final isMobile = MediaQuery.of(context).size.width < 800;
+            final isPOS = enterprise?.isPointOfSale ?? false;
 
             return Scaffold(
               body: CustomScrollView(
@@ -74,19 +76,20 @@ class GazSettingsScreen extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-                      child: _buildPointOfSaleSection(
-                        context: context,
-                        ref: ref,
-                        theme: theme,
-                        enterpriseId: effectiveEnterpriseId,
-                        moduleId: effectiveModuleId,
-                        isMobile: isMobile,
+                  if (!isPOS)
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+                        child: _buildPointOfSaleSection(
+                          context: context,
+                          ref: ref,
+                          theme: theme,
+                          enterpriseId: effectiveEnterpriseId,
+                          moduleId: effectiveModuleId,
+                          isMobile: isMobile,
+                        ),
                       ),
                     ),
-                  ),
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
@@ -98,17 +101,18 @@ class GazSettingsScreen extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-                      child: _buildDefaultFeesSection(
-                        context: context,
-                        ref: ref,
-                        theme: theme,
-                        enterpriseId: effectiveEnterpriseId,
+                  if (!isPOS)
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+                        child: _buildDefaultFeesSection(
+                          context: context,
+                          ref: ref,
+                          theme: theme,
+                          enterpriseId: effectiveEnterpriseId,
+                        ),
                       ),
                     ),
-                  ),
                   const SliverPadding(padding: EdgeInsets.only(bottom: 60)),
                 ],
               ),

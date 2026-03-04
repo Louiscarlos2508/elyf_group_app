@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
 
 /// Header de l'écran d'historique des transactions.
 class TransactionsHistoryHeader extends StatelessWidget {
@@ -6,26 +7,23 @@ class TransactionsHistoryHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Historique des transactions',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.normal,
-            color: Color(0xFF101828),
-            height: 1.5,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: theme.colorScheme.onSurface,
           ),
         ),
-        const SizedBox(height: 4),
-        const Text(
+        SizedBox(height: AppSpacing.xs),
+        Text(
           'Consultez vos dernières transactions',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.normal,
-            color: Color(0xFF4A5565),
-            height: 1.43,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
       ],

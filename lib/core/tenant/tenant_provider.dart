@@ -1,14 +1,12 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rxdart/rxdart.dart';
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import '../auth/providers.dart';
-import '../auth/entities/enterprise_module_user.dart';
-import '../../features/administration/domain/entities/enterprise.dart';
-import '../../features/administration/domain/entities/user.dart';
-import '../../features/administration/application/providers.dart';
-import '../logging/app_logger.dart';
-import '../offline/providers.dart' show sharedPreferencesProvider;
+import 'package:elyf_groupe_app/core/auth/providers.dart';
+import 'package:elyf_groupe_app/core/auth/entities/enterprise_module_user.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/user.dart';
+import 'package:elyf_groupe_app/core/repositories/repository_providers.dart';
+import 'package:elyf_groupe_app/core/offline/providers.dart' show sharedPreferencesProvider;
 
 const String _activeEnterpriseIdKey = 'active_enterprise_id';
 
@@ -72,14 +70,26 @@ final activeEnterpriseProvider = FutureProvider<Enterprise?>((ref) async {
   );
 });
 
+/// Notifier pour signaler un changement de tenant en cours (transactionnel)
+class SwitchingTenantNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void toggle(bool value) => state = value;
+}
+
+/// Provider pour signaler un changement de tenant en cours
+final isSwitchingTenantProvider = NotifierProvider<SwitchingTenantNotifier, bool>(SwitchingTenantNotifier.new);
+
 /// Provider pour les affectations utilisateur (EnterpriseModuleUser)
 ///
-/// Surveille les affectations en temps réel pour l'utilisateur actuel
+/// Surveille les affectations en temps réel pour l'utilisateur actuel.
+/// NOTE: Ce provider est critique pour le calcul des permissions.
 final userAssignmentsProvider = StreamProvider<List<EnterpriseModuleUser>>((ref) {
   final currentUserId = ref.watch(currentUserIdProvider);
   if (currentUserId == null) return Stream.value([]);
 
-  final adminRepo = ref.watch(adminRepositoryProvider);
+  final adminRepo = ref.read(adminRepositoryProvider);
   return adminRepo.watchEnterpriseModuleUsers().map((allAccesses) {
     return allAccesses.where((access) => access.userId == currentUserId).toList();
   });
@@ -103,134 +113,124 @@ final currentUserStreamProvider = StreamProvider<User?>((ref) {
 
 /// Provider pour récupérer les entreprises accessibles à l'utilisateur actuel
 ///
-/// Récupère toutes les entreprises où l'utilisateur a un accès actif (via assignments ou enterpriseIds).
+/// Utilise CombineLatestStream directement sur les repositories pour éviter
+/// les rebuilds multiples liés aux nested .when() dans les StreamProviders.
+/// La société mère n'est PAS incluse pour les utilisateurs POS uniquement.
 final userAccessibleEnterprisesProvider = StreamProvider<List<Enterprise>>((ref) {
-  final assignmentsAsync = ref.watch(userAssignmentsProvider);
-  final enterprisesAsync = ref.watch(allEnterprisesStreamProvider);
-  final currentUserAsync = ref.watch(currentUserStreamProvider);
+  final currentUserId = ref.watch(currentUserIdProvider);
   final isAdmin = ref.watch(isAdminProvider);
 
-  return assignmentsAsync.when(
-    data: (assignments) {
-      return enterprisesAsync.when(
-        data: (enterprises) {
-          return currentUserAsync.when(
-            data: (currentUser) {
-              if (isAdmin) {
-                return Stream.value(enterprises.where((e) => e.isActive).toList());
-              }
+  if (currentUserId == null) return Stream.value([]);
 
-              final activeAssignments = assignments.where((a) => a.isActive).toList();
-              final profileEnterpriseIds = currentUser?.enterpriseIds ?? [];
-              
-              final accessible = enterprises.where((e) {
-                if (!e.isActive) return false;
+  // Accès direct aux repositories (streams stables — pas de re-emission)
+  final adminRepo = ref.watch(adminRepositoryProvider);
+  final enterpriseRepo = ref.watch(enterpriseRepositoryProvider);
+  final userRepo = ref.watch(userRepositoryProvider);
 
-                // 1. Accès via profile (Enterprise Admin)
-                if (profileEnterpriseIds.contains(e.id)) return true;
+  final assignmentsStream = adminRepo
+      .watchEnterpriseModuleUsers()
+      .map((all) => all.where((a) => a.userId == currentUserId).toList());
 
-                // 2. Accès direct via assignments
-                final hasDirectAccess = activeAssignments.any((a) => a.enterpriseId == e.id);
-                if (hasDirectAccess) return true;
+  final enterprisesStream = enterpriseRepo.watchAllEnterprises();
 
-                // 3. Accès via parent (hiérarchique) avec héritage (includesChildren)
-                String? currentParentId = e.parentEnterpriseId;
-                while (currentParentId != null) {
-                  // Vérifier si l'utilisateur a un accès au parent dans son profil
-                  if (profileEnterpriseIds.contains(currentParentId)) return true;
+  final currentUserStream = userRepo
+      .watchAllUsers()
+      .map((users) => users.where((u) => u.id == currentUserId).firstOrNull);
 
-                  // Vérifier si l'utilisateur a un accès à ce parent avec héritage activé
-                  final hasParentAccessWithInheritance = activeAssignments.any(
-                    (a) => a.enterpriseId == currentParentId && a.includesChildren,
-                  );
-                  
-                  if (hasParentAccessWithInheritance) return true;
-                  
-                  // Continuer à remonter la hiérarchie
-                  final parentDoc = enterprises.where((ent) => ent.id == currentParentId).firstOrNull;
-                  currentParentId = parentDoc?.parentEnterpriseId;
-                }
+  return CombineLatestStream.combine3(
+    assignmentsStream,
+    enterprisesStream,
+    currentUserStream,
+    (List<EnterpriseModuleUser> assignments, List<Enterprise> enterprises, User? currentUser) {
+      if (isAdmin) {
+        return enterprises.where((e) => e.isActive).toList();
+      }
 
-                return false;
-              }).toList();
-              
-              return Stream.value(accessible);
-            },
-            loading: () => const Stream.empty(),
-            error: (e, s) => Stream.error(e, s),
-          );
-        },
-        loading: () => const Stream.empty(),
-        error: (e, s) => Stream.error(e, s),
-      );
+      final activeAssignments = assignments.where((a) => a.isActive).toList();
+
+      // On utilise UNIQUEMENT les assignments directs (EnterpriseModuleUser).
+      // Le champ user.enterpriseIds est un champ dénormalisé auto-maintenu pour
+      // les règles de sécurité Firestore, il inclut aussi les entreprises parentes —
+      // il ne doit PAS être utilisé pour déterminer la liste de sélection.
+      return enterprises.where((e) {
+        if (!e.isActive) return false;
+        return activeAssignments.any((a) => a.enterpriseId == e.id);
+      }).toList();
     },
-    loading: () => const Stream.empty(),
-    error: (e, s) => Stream.error(e, s),
-  );
+  ).distinct((prev, curr) {
+    if (prev.length != curr.length) return false;
+    for (int i = 0; i < prev.length; i++) {
+      if (prev[i].id != curr[i].id) return false;
+    }
+    return true;
+  });
 });
 
 /// Provider pour récupérer les modules accessibles à l'utilisateur pour l'entreprise active
 ///
-/// Désormais réactif aux changements d'affectation via userAssignmentsProvider.
-final userAccessibleModulesForActiveEnterpriseProvider = StreamProvider<List<String>>((
-  ref,
-) {
-  // Récupérer l'ID de l'entreprise active
+/// Utilise CombineLatestStream directement sur les repositories pour éviter
+/// les rebuilds multiples liés aux nested .when() dans les StreamProviders.
+final userAccessibleModulesForActiveEnterpriseProvider = StreamProvider<List<String>>((ref) {
   final activeEnterpriseIdAsync = ref.watch(activeEnterpriseIdProvider);
   final activeEnterpriseId = activeEnterpriseIdAsync.value;
-
-  if (activeEnterpriseId == null) return Stream.value([]);
-
-  // Récupérer les données nécessaires
-  final assignmentsAsync = ref.watch(userAssignmentsProvider);
-  final currentUserAsync = ref.watch(currentUserStreamProvider);
-  final activeEnterpriseAsync = ref.watch(activeEnterpriseProvider);
   final isAdmin = ref.watch(isAdminProvider);
+  final currentUserId = ref.watch(currentUserIdProvider);
 
-  return assignmentsAsync.when(
-    data: (userAccesses) {
-      return currentUserAsync.when(
-        data: (currentUser) {
-          final moduleIds = <String>{};
+  if (activeEnterpriseId == null || currentUserId == null) return Stream.value([]);
 
-          // 1. Gestion des Admins Systèmes (Accès à tout)
-          if (isAdmin) {
-             return Stream.value(EnterpriseModule.values.map((m) => m.id).toList());
+  if (isAdmin) {
+    return Stream.value(EnterpriseModule.values.map((m) => m.id).toList());
+  }
+
+  // Accès direct aux repositories (streams stables)
+  final adminRepo = ref.watch(adminRepositoryProvider);
+  final enterpriseRepo = ref.watch(enterpriseRepositoryProvider);
+  final userRepo = ref.watch(userRepositoryProvider);
+
+  final assignmentsStream = adminRepo
+      .watchEnterpriseModuleUsers()
+      .map((all) => all.where((a) => a.userId == currentUserId).toList());
+
+  final enterprisesStream = enterpriseRepo.watchAllEnterprises();
+
+  final currentUserStream = userRepo
+      .watchAllUsers()
+      .map((users) => users.where((u) => u.id == currentUserId).firstOrNull);
+
+  return CombineLatestStream.combine3(
+    assignmentsStream,
+    enterprisesStream,
+    currentUserStream,
+    (List<EnterpriseModuleUser> userAccesses, List<Enterprise> enterprises, User? currentUser) {
+      final moduleIds = <String>{};
+
+      // 1. Accès via "enterpriseIds" du profil (Enterprise Admin)
+      if (currentUser != null && currentUser.enterpriseIds.contains(activeEnterpriseId)) {
+        final enterprise = enterprises.where((e) => e.id == activeEnterpriseId).firstOrNull;
+        if (enterprise != null) {
+          moduleIds.add(enterprise.type.module.id);
+          if (enterprise.type == EnterpriseType.group) {
+            moduleIds.add(EnterpriseModule.group.id);
           }
+        }
+      }
 
-          // 2. Accès via "enterpriseIds" du profil (Enterprise Admin)
-          // Si l'entreprise active est dans son profil, on lui donne accès au module principal de cette entreprise
-          if (currentUser != null && currentUser.enterpriseIds.contains(activeEnterpriseId)) {
-            activeEnterpriseAsync.whenData((enterprise) {
-              if (enterprise != null) {
-                moduleIds.add(enterprise.type.module.id);
-                // Si c'est une entreprise "group", on donne accès à l'administration
-                if (enterprise.type == EnterpriseType.group) {
-                  moduleIds.add(EnterpriseModule.group.id);
-                }
-              }
-            });
-          }
+      // 2. Accès via les assignations explicites (EnterpriseModuleUser)
+      final activeAccesses = userAccesses
+          .where((access) => access.enterpriseId == activeEnterpriseId && access.isActive)
+          .toList();
 
-          // 3. Accès via les assignations explicites (EnterpriseModuleUser)
-          final activeAccesses = userAccesses
-              .where(
-                (access) =>
-                    access.enterpriseId == activeEnterpriseId && access.isActive,
-              )
-              .toList();
+      moduleIds.addAll(activeAccesses.map((access) => access.moduleId));
 
-          moduleIds.addAll(activeAccesses.map((access) => access.moduleId));
-
-          return Stream.value(moduleIds.toList());
-        },
-        loading: () => const Stream.empty(),
-        error: (e, s) => Stream.error(e, s),
-      );
+      return moduleIds.toList()..sort();
     },
-    loading: () => const Stream.empty(),
-    error: (e, s) => Stream.error(e, s),
-  );
+  ).distinct((prev, curr) {
+    if (prev.length != curr.length) return false;
+    for (int i = 0; i < prev.length; i++) {
+      if (prev[i] != curr[i]) return false;
+    }
+    return true;
+  });
 });
 
 /// Provider qui gère la sélection automatique de l'entreprise

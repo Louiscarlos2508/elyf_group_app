@@ -62,9 +62,10 @@ class CustomerFormState extends ConsumerState<CustomerForm>
 
     return Form(
       key: _formKey,
-      child: SingleChildScrollView(
+      child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 20),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Section Informations Personnelles

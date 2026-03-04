@@ -138,6 +138,9 @@ class SmartDeduplicator {
     // Fusionner les champs manquants depuis les autres versions
     for (int i = 1; i < sorted.length; i++) {
       final other = sorted[i];
+      final mergedUpdated = _parseTimestamp(merged['updatedAt'] ?? merged['createdAt']);
+      final otherUpdated = _parseTimestamp(other['updatedAt'] ?? other['createdAt']);
+
       for (final entry in other.entries) {
         final key = entry.key;
         final value = entry.value;
@@ -151,13 +154,25 @@ class SmartDeduplicator {
           continue;
         }
 
-        // Si le champ n'existe pas dans merged ou est null, prendre la valeur
-        if (!merged.containsKey(key) || merged[key] == null) {
+        // Fusionner intelligemment basé sur le type
+        if (value is Map<String, dynamic> && merged[key] is Map<String, dynamic>) {
+          merged[key] = _recursiveMerge(
+            collectionName,
+            merged[key] as Map<String, dynamic>,
+            value,
+            mergedUpdated,
+            otherUpdated,
+          );
+        } else if (value is List && merged[key] is List) {
+          merged[key] = _mergeLists(
+            merged[key] as List,
+            value,
+            mergedUpdated,
+            otherUpdated,
+          );
+        } else if (!merged.containsKey(key) || merged[key] == null) {
           merged[key] = value;
         } else if (value != null) {
-          // Si les deux valeurs existent, prendre la plus récente
-          final mergedUpdated = _parseTimestamp(merged['updatedAt']);
-          final otherUpdated = _parseTimestamp(other['updatedAt']);
           if (otherUpdated.isAfter(mergedUpdated)) {
             merged[key] = value;
           }
@@ -306,5 +321,106 @@ class SmartDeduplicator {
     }
 
     return DateTime.fromMillisecondsSinceEpoch(0);
+  }
+
+  /// Fusionne récursivement deux maps.
+  Map<String, dynamic> _recursiveMerge(
+    String collectionName,
+    Map<String, dynamic> local,
+    Map<String, dynamic> other,
+    DateTime localTime,
+    DateTime otherTime,
+  ) {
+    final merged = Map<String, dynamic>.from(local);
+
+    for (final entry in other.entries) {
+      final key = entry.key;
+      final value = entry.value;
+
+      if (!merged.containsKey(key) || merged[key] == null) {
+        merged[key] = value;
+      } else if (value != null) {
+        if (value is Map<String, dynamic> && merged[key] is Map<String, dynamic>) {
+          merged[key] = _recursiveMerge(
+            collectionName,
+            merged[key] as Map<String, dynamic>,
+            value,
+            localTime,
+            otherTime,
+          );
+        } else if (value is List && merged[key] is List) {
+          merged[key] = _mergeLists(
+            merged[key] as List,
+            value,
+            localTime,
+            otherTime,
+          );
+        } else {
+          if (otherTime.isAfter(localTime)) {
+            merged[key] = value;
+          }
+        }
+      }
+    }
+
+    return merged;
+  }
+
+  /// Fusionne deux listes en tentant de matcher par ID.
+  List<dynamic> _mergeLists(
+    List<dynamic> local,
+    List<dynamic> other,
+    DateTime localTime,
+    DateTime otherTime,
+  ) {
+    if (local.isEmpty) return other;
+    if (other.isEmpty) return local;
+
+    // Si le premier élément n'est pas une map, on prend la plus récente
+    if (local.first is! Map) {
+      return otherTime.isAfter(localTime) ? other : local;
+    }
+
+    final merged = <String, dynamic>{};
+    
+    // Clés d'ID communes
+    const idKeys = ['id', 'localId', 'remoteId', 'productId', 'machineId', 'date'];
+
+    String? getId(dynamic item) {
+      if (item is! Map) return null;
+      for (final key in idKeys) {
+        if (item.containsKey(key) && item[key] != null) {
+          return item[key].toString();
+        }
+      }
+      return null;
+    }
+
+    for (final item in local) {
+      final id = getId(item);
+      if (id != null) {
+        merged[id] = item;
+      }
+    }
+
+    for (final item in other) {
+      final id = getId(item);
+      if (id != null) {
+        if (merged.containsKey(id)) {
+          // Fusionner les deux maps récursivement
+          merged[id] = _recursiveMerge(
+            '', // collection name unknown here
+            merged[id] as Map<String, dynamic>,
+            item as Map<String, dynamic>,
+            localTime,
+            otherTime,
+          );
+        } else {
+          merged[id] = item;
+        }
+      }
+    }
+
+    return merged.values.toList();
   }
 }

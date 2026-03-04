@@ -29,18 +29,15 @@ class StockKpiSection extends ConsumerWidget {
       enterpriseId: enterpriseId,
       moduleId: 'gaz',
     )));
-    final transfersAsync = ref.watch(stockTransfersProvider(enterpriseId));
     final activeEnterprise = ref.watch(activeEnterpriseProvider).value;
     final isPOS = activeEnterprise?.isPointOfSale ?? false;
 
     return cylindersAsync.when(
       data: (cylinders) {
-        final transfers = transfersAsync.value;
         final metrics = GazStockCalculationService.calculateStockMetrics(
           stocks: allStocks,
           pointsOfSale: pointsOfSale,
           cylinders: cylinders,
-          transfers: transfers,
           settings: isPOS ? null : settingsAsync.value,
           targetEnterpriseId: enterpriseId,
           isPOS: isPOS,

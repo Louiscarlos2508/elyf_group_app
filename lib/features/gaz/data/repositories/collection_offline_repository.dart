@@ -154,4 +154,14 @@ class CollectionOfflineRepository implements CollectionRepository {
       return null;
     }
   }
+
+  @override
+  Future<List<Collection>> getCollectionsByTourId(String tourId, String enterpriseId) async {
+    try {
+      final collections = await getCollections(enterpriseId);
+      return collections.where((c) => c.tourId == tourId).toList();
+    } catch (e) {
+      return [];
+    }
+  }
 }

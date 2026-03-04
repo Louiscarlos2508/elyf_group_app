@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../domain/entities/production_session.dart';
@@ -31,6 +32,7 @@ class _ProductionTrackingScreenState
     return Scaffold(
       appBar: ElyfAppBar(
         title: 'Suivi de production',
+        module: EnterpriseModule.eau,
         actions: [
           EnterpriseSelectorWidget(style: EnterpriseSelectorStyle.appBar),
           IconButton(

@@ -42,6 +42,7 @@ class Tour {
     this.cancelledDate,
     this.notes,
     this.applyLoadingFees = true,
+    this.sessionId,
     double? additionalInvoiceFees,
     this.updatedAt,
     this.createdAt,
@@ -101,6 +102,7 @@ class Tour {
   final DateTime? cancelledDate;
   final String? notes;
   final bool applyLoadingFees;
+  final String? sessionId;
   final double? _additionalInvoiceFees;
   double get additionalInvoiceFees => _additionalInvoiceFees ?? 0.0;
   final DateTime? updatedAt;
@@ -134,6 +136,7 @@ class Tour {
     DateTime? cancelledDate,
     String? notes,
     bool? applyLoadingFees,
+    String? sessionId,
     double? additionalInvoiceFees,
     DateTime? updatedAt,
     DateTime? createdAt,
@@ -170,6 +173,7 @@ class Tour {
       cancelledDate: cancelledDate ?? this.cancelledDate,
       notes: notes ?? this.notes,
       applyLoadingFees: applyLoadingFees ?? this.applyLoadingFees,
+      sessionId: sessionId ?? this.sessionId,
       additionalInvoiceFees: additionalInvoiceFees ?? _additionalInvoiceFees,
       updatedAt: updatedAt ?? this.updatedAt,
       createdAt: createdAt ?? this.createdAt,
@@ -249,6 +253,7 @@ class Tour {
       cancelledDate: _parseDate(map['cancelledDate']),
       notes: map['notes'] as String?,
       applyLoadingFees: map['applyLoadingFees'] as bool? ?? true,
+      sessionId: map['sessionId'] as String?,
       additionalInvoiceFees: (map['additionalInvoiceFees'] as num?)?.toDouble(),
       updatedAt: _parseDate(map['updatedAt']),
       createdAt: _parseDate(map['createdAt']),
@@ -320,6 +325,7 @@ class Tour {
       'cancelledDate': cancelledDate?.toIso8601String(),
       'notes': notes,
       'applyLoadingFees': applyLoadingFees,
+      'sessionId': sessionId,
       'additionalInvoiceFees': additionalInvoiceFees,
       'updatedAt': updatedAt?.toIso8601String(),
       'createdAt': createdAt?.toIso8601String(),

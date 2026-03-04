@@ -48,7 +48,7 @@ class SaleProductSelector extends ConsumerWidget {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 500, maxHeight: 650),
           child: ElyfCard(
-            isGlass: true,
+            isGlass: false,
             padding: EdgeInsets.zero,
             borderRadius: 32,
             child: Column(

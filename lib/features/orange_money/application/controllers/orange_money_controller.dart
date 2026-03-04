@@ -1,3 +1,4 @@
+import '../../domain/entities/customer.dart';
 import '../../domain/entities/transaction.dart';
 import '../../domain/repositories/transaction_repository.dart';
 import '../../domain/repositories/liquidity_repository.dart';
@@ -9,12 +10,17 @@ import 'package:elyf_groupe_app/core/errors/app_exceptions.dart';
 
 import '../../domain/entities/liquidity_checkpoint.dart';
 import '../../domain/adapters/orange_money_permission_adapter.dart';
+import '../../domain/repositories/treasury_repository.dart';
+import 'package:elyf_groupe_app/shared/domain/entities/treasury_operation.dart';
+import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
+import 'package:elyf_groupe_app/shared/utils/id_generator.dart';
 
 class OrangeMoneyController {
   OrangeMoneyController(
     this._repository,
     this._liquidityRepository,
     this._settingsRepository,
+    this._treasuryRepository,
     this._auditTrailService,
     this.userId,
     this._permissionAdapter,
@@ -24,6 +30,7 @@ class OrangeMoneyController {
   final TransactionRepository _repository;
   final LiquidityRepository _liquidityRepository;
   final SettingsRepository _settingsRepository;
+  final OrangeMoneyTreasuryRepository _treasuryRepository;
   final AuditTrailService _auditTrailService;
   final String userId;
   final OrangeMoneyPermissionAdapter _permissionAdapter;
@@ -85,6 +92,11 @@ class OrangeMoneyController {
     required String phoneNumber,
     required String amountStr,
     String? customerName,
+    String? town,
+    String? idType,
+    String? idNumber,
+    DateTime? idIssueDate,
+    String? reference,
     String? createdBy,
   }) async {
     // 1. Validation de base via le service
@@ -120,24 +132,22 @@ class OrangeMoneyController {
 
     // PRD: Morning Checkpoint Rule
     final todayCheckpoint = await _liquidityRepository.getTodayCheckpoint(enterpriseId);
-    if (todayCheckpoint == null) {
-      throw BusinessException(
-          'Veuillez effectuer le pointage du matin avant de commencer les transactions.');
-    }
-
-    if (type == TransactionType.cashIn) {
-      // Cash-In: L'agent reçoit du CASH et envoie de l'argent SIM.
-      // On vérifie donc le solde SIM.
-      final currentSim = todayCheckpoint.simAmount ?? todayCheckpoint.morningSimAmount ?? 0;
-      if (amount > currentSim) {
-        throw BusinessException('Solde SIM insuffisant pour ce Cash-In. Disponible: $currentSim FCFA');
-      }
-    } else if (type == TransactionType.cashOut) {
-      // Cash-Out: L'agent donne du CASH et reçoit de l'argent SIM.
-      // On vérifie donc le solde CASH.
-      final currentCash = todayCheckpoint.cashAmount ?? todayCheckpoint.morningCashAmount ?? 0;
-      if (amount > currentCash) {
-        throw BusinessException('Encaisse insuffisante pour ce Cash-Out. Disponible: $currentCash FCFA');
+    
+    if (todayCheckpoint != null) {
+      if (type == TransactionType.cashIn) {
+        // Cash-In: L'agent reçoit du CASH et envoie de l'argent SIM.
+        // On vérifie donc le solde SIM.
+        final currentSim = todayCheckpoint.simAmount ?? todayCheckpoint.morningSimAmount ?? 0;
+        if (amount > currentSim) {
+          throw BusinessException('Solde SIM insuffisant pour ce Cash-In. Disponible: $currentSim FCFA');
+        }
+      } else if (type == TransactionType.cashOut) {
+        // Cash-Out: L'agent donne du CASH et reçoit de l'argent SIM.
+        // On vérifie donc le solde CASH.
+        final currentCash = todayCheckpoint.cashAmount ?? todayCheckpoint.morningCashAmount ?? 0;
+        if (amount > currentCash) {
+          throw BusinessException('Encaisse insuffisante pour ce Cash-Out. Disponible: $currentCash FCFA');
+        }
       }
     }
 
@@ -161,13 +171,54 @@ class OrangeMoneyController {
       amount: amount,
       phoneNumber: phoneNumber,
       customerName: customerName,
+      idType: idType,
+      idNumber: idNumber,
+      idIssueDate: idIssueDate,
+      town: town,
       commission: calculatedCommission,
       createdBy: createdBy ?? userId,
-    );
+    ).copyWith(reference: reference);
 
     final transactionId = await _repository.createTransaction(transaction);
 
-    // 4. Log to Audit Trail
+    // 4. Automated Treasury Integration (PRD: Transactions must impact balance immediately)
+    try {
+      if (type == TransactionType.cashIn) {
+        // Dépôt: SIM -> Cash
+        await _treasuryRepository.saveOperation(TreasuryOperation(
+          id: IdGenerator.generate(),
+          enterpriseId: enterpriseId,
+          userId: createdBy ?? userId,
+          amount: amount,
+          type: TreasuryOperationType.transfer,
+          fromAccount: PaymentMethod.mobileMoney,
+          toAccount: PaymentMethod.cash,
+          date: DateTime.now(),
+          reason: 'Dépôt Orange Money - $phoneNumber',
+          referenceEntityId: transactionId,
+          referenceEntityType: 'transaction',
+        ));
+      } else if (type == TransactionType.cashOut) {
+        // Retrait: Cash -> SIM
+        await _treasuryRepository.saveOperation(TreasuryOperation(
+          id: IdGenerator.generate(),
+          enterpriseId: enterpriseId,
+          userId: createdBy ?? userId,
+          amount: amount,
+          type: TreasuryOperationType.transfer,
+          fromAccount: PaymentMethod.cash,
+          toAccount: PaymentMethod.mobileMoney,
+          date: DateTime.now(),
+          reason: 'Retrait Orange Money - $phoneNumber',
+          referenceEntityId: transactionId,
+          referenceEntityType: 'transaction',
+        ));
+      }
+    } catch (e) {
+      AppLogger.error('Failed to create automated treasury operation', error: e);
+    }
+
+    // 5. Log to Audit Trail
     try {
       if (createdBy != null) {
         await _auditTrailService.logTransaction(
@@ -199,7 +250,9 @@ class OrangeMoneyController {
   }
 
   Future<void> deleteTransaction(String transactionId) async {
-    return await _repository.deleteTransaction(transactionId, userId);
+    await _repository.deleteTransaction(transactionId, userId);
+    // Also delete linked treasury operations
+    await _treasuryRepository.deleteOperationsByReference(transactionId, 'transaction');
   }
 
   Future<void> restoreTransaction(String transactionId) async {
@@ -243,8 +296,8 @@ class OrangeMoneyController {
   }
 
   /// Recherche un client existant par numéro de téléphone.
-  /// Retourne le nom du client si une transaction avec ce numéro existe, null sinon.
-  Future<String?> findCustomerByPhoneNumber(String phoneNumber) async {
+  /// Retourne le client si une transaction avec ce numéro existe, null sinon.
+  Future<Customer?> findCustomerByPhoneNumber(String phoneNumber) async {
     final transactions = await _repository.fetchTransactions();
 
     try {
@@ -252,7 +305,22 @@ class OrangeMoneyController {
         (t) =>
             TransactionService.comparePhoneNumbers(t.phoneNumber, phoneNumber),
       );
-      return existingTransaction.customerName;
+      
+      // On retourne un objet Customer minimal basé sur la transaction
+      // ou on pourrait chercher dans un repository de clients s'il existait.
+      // Pour l'instant, on reconstruit à partir de la transaction.
+      if (existingTransaction.customerName == null) return null;
+      
+      return Customer(
+        id: '', // Non utilisé pour l'affichage
+        enterpriseId: existingTransaction.enterpriseId,
+        phoneNumber: existingTransaction.phoneNumber,
+        name: existingTransaction.customerName!,
+        idType: existingTransaction.idType,
+        idNumber: existingTransaction.idNumber,
+        idIssueDate: existingTransaction.idIssueDate,
+        town: existingTransaction.town,
+      );
     } catch (e) {
       return null;
     }

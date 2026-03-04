@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import '../../../application/providers.dart';
 import '../../../domain/entities/production_day.dart';
 import '../../../domain/services/payment_reconciliation_service.dart';
@@ -44,91 +45,21 @@ class _PaymentReconciliationScreenState
             return CustomScrollView(
               slivers: [
                 // Premium Header
-                SliverToBoxAdapter(
-                  child: Container(
-                    margin: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          theme.colorScheme.primary,
-                          const Color(0xFF00C2FF), // Cyan for Water Module
-                          const Color(0xFF0369A1), // Deep Blue
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
-                        BoxShadow(
-                          color:
-                              theme.colorScheme.primary.withValues(alpha: 0.3),
-                          blurRadius: 12,
-                          offset: const Offset(0, 6),
-                        ),
-                      ],
+                ElyfModuleHeader(
+                  title: "Audit des Paiements",
+                  subtitle: "Réconciliation des sessions de production",
+                  module: EnterpriseModule.eau,
+                  showBackButton: true,
+                  actions: [
+                    RefreshButton(
+                      onRefresh: () {
+                        ref.invalidate(productionSessionsStateProvider);
+                        ref.invalidate(salaryStateProvider);
+                      },
+                      tooltip: 'Actualiser',
                     ),
-                    child: SafeArea(
-                      bottom: false,
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                const BackButton(color: Colors.white),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        "RÉCONCILIATION",
-                                        style: theme.textTheme.labelLarge
-                                            ?.copyWith(
-                                          color: Colors.white
-                                              .withValues(alpha: 0.9),
-                                          fontWeight: FontWeight.w500,
-                                          letterSpacing: 1.2,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        "Audit des Paiements",
-                                        style: theme.textTheme.headlineSmall
-                                            ?.copyWith(
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                IconButton(
-                                  onPressed: () {
-                                    ref.invalidate(
-                                        productionSessionsStateProvider);
-                                    ref.invalidate(salaryStateProvider);
-                                  },
-                                  icon: const Icon(Icons.refresh_rounded,
-                                      color: Colors.white),
-                                  tooltip: 'Actualiser',
-                                  style: IconButton.styleFrom(
-                                    backgroundColor:
-                                        Colors.white.withValues(alpha: 0.2),
-                                    foregroundColor: Colors.white,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 24),
-                            // Date Selector embedded in Header
-                            _buildHeaderDateSelector(theme),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
+                  ],
+                  bottom: _buildHeaderDateSelector(theme),
                 ),
 
                 // Statistics

@@ -27,6 +27,14 @@ class _TransactionsHistoryScreenState
   DateTime? _selectedDate;
 
   @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(() {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
@@ -74,7 +82,7 @@ class _TransactionsHistoryScreenState
   Widget build(BuildContext context) {
     final providerKey = _buildProviderKey();
     final transactionsAsync = ref.watch(
-      filteredTransactionsProvider((providerKey)),
+      filteredTransactionsProvider(providerKey),
     );
 
     return Container(

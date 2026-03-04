@@ -8,6 +8,8 @@ import 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder_stock.dart';
 import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/gaz_settings.dart';
+import 'package:elyf_groupe_app/features/gaz/domain/entities/collection.dart';
+import 'package:elyf_groupe_app/features/gaz/domain/services/transaction_service.dart';
 
 /// Contenu de l'étape Réception du tour.
 ///
@@ -35,6 +37,7 @@ class _ReceptionStepContentState extends ConsumerState<ReceptionStepContent> {
   final Map<int, TextEditingController> _returnedControllers = {}; // Qté Vides ramenés
   final Map<int, TextEditingController> _purchasePriceControllers = {}; // Prix achat Unitaire
   final Map<int, TextEditingController> _exchangeFeeControllers = {}; // Frais échange
+  final Map<String, Map<int, TextEditingController>> _distributionControllers = {}; // collectionId -> weight -> controller
   
   late final TextEditingController _supplierController;
   late final TextEditingController _gasPurchaseCostController;
@@ -58,6 +61,20 @@ class _ReceptionStepContentState extends ConsumerState<ReceptionStepContent> {
     _gasPurchaseCostController.addListener(() => setState(() {}));
     _additionalFeesController.addListener(() => setState(() {}));
     _supplierController.addListener(() => setState(() {}));
+  }
+
+  void _initializeDistributionControllers(List<Collection> collections) {
+    for (final collection in collections) {
+      if (collection.type != CollectionType.wholesaler && collection.type != CollectionType.pointOfSale) continue;
+      if (!_distributionControllers.containsKey(collection.id)) {
+        _distributionControllers[collection.id] = {};
+        for (final weight in collection.emptyBottles.keys) {
+          _distributionControllers[collection.id]![weight] = TextEditingController(
+            text: (collection.fullBottlesReceived[weight] ?? 0).toString(),
+          );
+        }
+      }
+    }
   }
 
   void _initializeControllers(GazSettings? settings) {
@@ -133,6 +150,11 @@ class _ReceptionStepContentState extends ConsumerState<ReceptionStepContent> {
     _supplierController.dispose();
     _gasPurchaseCostController.dispose();
     _additionalFeesController.dispose();
+    for (final map in _distributionControllers.values) {
+      for (final c in map.values) {
+        c.dispose();
+      }
+    }
     super.dispose();
   }
 
@@ -156,11 +178,19 @@ class _ReceptionStepContentState extends ConsumerState<ReceptionStepContent> {
         _initializeControllers(settings);
         final activeEnterprise = ref.watch(activeEnterpriseProvider).value;
         final isPos = activeEnterprise?.id == widget.enterpriseId && (activeEnterprise?.isPointOfSale ?? false);
+        final collectionsAsync = ref.watch(tourCollectionsProvider(widget.tour.id));
 
-        return cylindersAsync.when(
-          data: (cylinders) => _buildContent(context, theme, isDark, cylinders, allStocksAsync.value ?? [], settings, isPos),
+        return collectionsAsync.when(
+          data: (collections) {
+            _initializeDistributionControllers(collections);
+            return cylindersAsync.when(
+              data: (cylinders) => _buildContent(context, theme, isDark, cylinders, allStocksAsync.value ?? [], settings, isPos, collections),
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Center(child: Text('Erreur Cylindres: $e')),
+            );
+          },
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(child: Text('Erreur Cylindres: $e')),
+          error: (e, _) => Center(child: Text('Erreur Collectes: $e')),
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -176,6 +206,7 @@ class _ReceptionStepContentState extends ConsumerState<ReceptionStepContent> {
     List<CylinderStock> allStocks,
     GazSettings? settings,
     bool isPos,
+    List<Collection> collections,
   ) {
     final weights = widget.tour.emptyBottlesLoaded.keys.toSet().toList()..sort();
     
@@ -497,6 +528,10 @@ class _ReceptionStepContentState extends ConsumerState<ReceptionStepContent> {
                                 ),
                               ],
                             ),
+                            const SizedBox(height: 16),
+                            
+                            // Distribution aux grossistes
+                            _buildDistributionSection(context, theme, weight, collections),
                           ],
                         ),
                       ),
@@ -509,7 +544,7 @@ class _ReceptionStepContentState extends ConsumerState<ReceptionStepContent> {
             const SizedBox(height: 24),
             
             FilledButton.icon(
-              onPressed: () => _saveReception(weights),
+              onPressed: () => _saveReception(weights, collections),
               icon: const Icon(Icons.check_circle_outlined, size: 18),
               label: const Text('Valider la réception'),
               style: FilledButton.styleFrom(
@@ -520,7 +555,79 @@ class _ReceptionStepContentState extends ConsumerState<ReceptionStepContent> {
         );
   }
 
-  Future<void> _saveReception(List<int> weights) async {
+  Widget _buildDistributionSection(
+    BuildContext context, 
+    ThemeData theme, 
+    int weight, 
+    List<Collection> collections,
+  ) {
+    final externalCollections = collections.where((c) => (c.type == CollectionType.wholesaler || c.type == CollectionType.pointOfSale) && c.emptyBottles.containsKey(weight)).toList();
+    if (externalCollections.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Divider(height: 32),
+        Row(
+          children: [
+            Icon(Icons.share_outlined, size: 14, color: theme.colorScheme.secondary),
+            const SizedBox(width: 8),
+            Text(
+              'Répartition Grossistes & POS',
+              style: theme.textTheme.labelSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.secondary,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        ...externalCollections.map((col) {
+          final controller = _distributionControllers[col.id]?[weight];
+          final empties = col.emptyBottles[weight] ?? 0;
+          final isWholesaler = col.type == CollectionType.wholesaler;
+          
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8.0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    col.clientName + (isWholesaler ? '' : ' (POS)'),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                       color: isWholesaler ? null : theme.colorScheme.tertiary,
+                       fontWeight: isWholesaler ? null : FontWeight.bold,
+                    ),
+                  ),
+                ),
+                Text(
+                  '($empties vides chargés)',
+                  style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                ),
+                const SizedBox(width: 12),
+                SizedBox(
+                  width: 80,
+                  child: TextFormField(
+                    controller: controller,
+                    keyboardType: TextInputType.number,
+                    textAlign: TextAlign.center,
+                    decoration: InputDecoration(
+                      labelText: 'Plein',
+                      isDense: true,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
+  Future<void> _saveReception(List<int> weights, List<Collection> collections) async {
     final fullBottles = <int, int>{};
     final returnedEmpties = <int, int>{};
     final purchasePrices = <int, double>{};
@@ -538,6 +645,18 @@ class _ReceptionStepContentState extends ConsumerState<ReceptionStepContent> {
 
       final fee = double.tryParse(_exchangeFeeControllers[weight]?.text ?? '') ?? 0.0;
       if (fee >= 0) exchangeFees[weight] = fee;
+      
+      // Validation de la distribution
+      int totalDistributed = 0;
+      for (final col in collections) {
+        if (col.type != CollectionType.wholesaler && col.type != CollectionType.pointOfSale) continue;
+        final distQty = int.tryParse(_distributionControllers[col.id]?[weight]?.text ?? '0') ?? 0;
+        totalDistributed += distQty;
+      }
+      if (totalDistributed > received) {
+        NotificationService.showError(context, 'Poids $weight kg : La somme distribuée ($totalDistributed) dépasse le total reçu ($received)');
+        return;
+      }
     }
 
     try {
@@ -551,13 +670,29 @@ class _ReceptionStepContentState extends ConsumerState<ReceptionStepContent> {
         emptyBottlesReturned: returnedEmpties,
         purchasePricesUsed: purchasePrices,
         updatedAt: DateTime.now(),
-     );
+      );
       
       await controller.updateTour(updatedTour);
 
+      // Mettre à jour les collectes
+      final transactionService = ref.read(transactionServiceProvider);
+      for (final col in collections) {
+        if (col.type != CollectionType.wholesaler && col.type != CollectionType.pointOfSale) continue;
+        final fulfillment = <int, int>{};
+        for (final weight in weights) {
+          final qty = int.tryParse(_distributionControllers[col.id]?[weight]?.text ?? '0') ?? 0;
+          if (qty > 0) fulfillment[weight] = qty;
+        }
+        
+        if (fulfillment.isNotEmpty || col.fullBottlesReceived.isNotEmpty) {
+           await transactionService.updateCollectionFullBottles(col.id, widget.enterpriseId, fulfillment);
+        }
+      }
+
       if (mounted) {
-        NotificationService.showSuccess(context, 'Réception et Réconciliation enregistrées');
+        NotificationService.showSuccess(context, 'Réception et Répartitions enregistrées');
         ref.invalidate(tourProvider(widget.tour.id));
+        ref.invalidate(tourCollectionsProvider(widget.tour.id));
         widget.onSaved?.call();
       }
     } catch (e) {

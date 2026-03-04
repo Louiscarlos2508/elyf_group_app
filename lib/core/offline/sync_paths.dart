@@ -64,6 +64,8 @@ final collectionPaths = <String, String Function(String?)>{
       'enterprises/${enterpriseId!}/liquidityCheckpoints',
   'orange_money_settings': (enterpriseId) =>
       'enterprises/${enterpriseId!}/orangeMoneySettings',
+  'orange_money_treasury_operations': (enterpriseId) =>
+      'enterprises/${enterpriseId!}/orangeMoneyTreasuryOperations',
 
   // Immobilier module
   'properties': (enterpriseId) => 'enterprises/${enterpriseId!}/properties',

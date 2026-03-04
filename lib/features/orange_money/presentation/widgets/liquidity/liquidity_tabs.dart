@@ -13,41 +13,53 @@ class LiquidityTabs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
     return Container(
-      height: 36,
+      height: 44,
+      padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: const Color(0xFFECECF0),
-        borderRadius: BorderRadius.circular(14),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
         children: [
-          _buildTab(index: 0, label: 'Historique récent'),
-          _buildTab(index: 1, label: 'Tous les pointages'),
+          _buildTab(index: 0, label: 'Historique récent', theme: theme),
+          _buildTab(index: 1, label: 'Tous les pointages', theme: theme),
         ],
       ),
     );
   }
 
-  Widget _buildTab({required int index, required String label}) {
+  Widget _buildTab({required int index, required String label, required ThemeData theme}) {
     final isSelected = selectedTab == index;
     return Expanded(
       child: GestureDetector(
         onTap: () => onTabChanged(index),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          margin: const EdgeInsets.all(2.99),
-          height: 29.428,
+          curve: Curves.easeInOut,
           decoration: BoxDecoration(
-            color: isSelected ? Colors.white : Colors.transparent,
-            borderRadius: BorderRadius.circular(14),
-            border: isSelected
-                ? Border.all(color: Colors.transparent, width: 1.219)
-                : null,
+            color: isSelected ? theme.colorScheme.surface : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: isSelected ? [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ] : null,
           ),
           alignment: Alignment.center,
           child: Text(
             label,
-            style: const TextStyle(fontSize: 14, color: Color(0xFF0A0A0A)),
+            style: theme.textTheme.labelLarge?.copyWith(
+              fontSize: 13,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+              color: isSelected 
+                  ? theme.colorScheme.onSurface 
+                  : theme.colorScheme.onSurfaceVariant,
+            ),
           ),
         ),
       ),

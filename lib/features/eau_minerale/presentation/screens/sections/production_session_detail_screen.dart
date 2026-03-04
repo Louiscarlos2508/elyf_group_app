@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/production_session.dart';
@@ -48,6 +49,7 @@ class _ProductionSessionDetailScreenState
     return Scaffold(
       appBar: ElyfAppBar(
         title: 'Détail session',
+        module: EnterpriseModule.eau,
         bottom: TabBar(
           controller: _tabController,
           tabs: const [

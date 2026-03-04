@@ -24,15 +24,13 @@ class ModuleDetailsDialog extends ConsumerWidget {
     final usersAsync = ref.watch(usersProvider);
     final enterprisesAsync = ref.watch(enterprisesProvider);
 
-    return BackdropFilter(
-      filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-      child: Dialog(
+    return Dialog(
         backgroundColor: Colors.transparent,
         insetPadding: const EdgeInsets.all(24),
         child: Container(
           constraints: const BoxConstraints(maxWidth: 800, maxHeight: 700),
           decoration: BoxDecoration(
-            color: (isDark ? Colors.grey[900] : Colors.white)!.withValues(alpha: 0.95),
+            color: isDark ? Colors.grey[900] : Colors.white,
             borderRadius: BorderRadius.circular(28),
             border: Border.all(
               color: theme.colorScheme.outline.withValues(alpha: 0.1),
@@ -93,7 +91,6 @@ class ModuleDetailsDialog extends ConsumerWidget {
             ),
           ),
         ),
-      ),
-    );
-  }
+      );
+    }
 }

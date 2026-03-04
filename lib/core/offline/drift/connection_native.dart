@@ -9,6 +9,13 @@ QueryExecutor openDriftConnection({String filename = 'elyf_offline.sqlite'}) {
   return LazyDatabase(() async {
     final dir = await getApplicationDocumentsDirectory();
     final file = File(p.join(dir.path, filename));
-    return NativeDatabase.createInBackground(file);
+    return NativeDatabase.createInBackground(
+      file,
+      setup: (db) {
+        // Increase busy timeout to 5 seconds to reduce 'database is locked' errors
+        // during concurrent sync (Foreground + Background)
+        db.execute('PRAGMA busy_timeout = 5000;');
+      },
+    );
   });
 }

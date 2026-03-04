@@ -10,7 +10,6 @@ import 'auth_session_service.dart';
 import 'auth_user_service.dart';
 import 'auth_storage_service.dart';
 import '../../permissions/services/permission_service.dart';
-import '../../tenant/tenant_provider.dart';
 import 'firestore_permission_service.dart';
 
 /// Service d'authentification avec Firebase Auth et Firestore.

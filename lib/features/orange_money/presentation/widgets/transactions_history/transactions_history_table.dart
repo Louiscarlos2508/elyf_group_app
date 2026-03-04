@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
 import '../../../domain/entities/transaction.dart';
 import 'transactions_table_cells.dart';
 
-/// Widget pour afficher le tableau des transactions.
-/// Utilise un SingleChildScrollView horizontal pour éviter les débordements sur mobile.
+/// Tableau affichant l'historique des transactions.
 class TransactionsHistoryTable extends StatelessWidget {
   const TransactionsHistoryTable({super.key, required this.transactions});
 
@@ -11,25 +12,30 @@ class TransactionsHistoryTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-        side: const BorderSide(color: Color(0xFFE5E5E5), width: 1.219),
-      ),
+    final theme = Theme.of(context);
+    
+    return ElyfCard(
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: SizedBox(
-          width: 900, // Largeur minimale pour contenir toutes les colonnes
+          width: 890, // Réduit de 1130 pour minimiser le scroll horizontal
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Table Header
               _TransactionsTableHeader(),
               // Table Rows
-              ...transactions.map(
-                (transaction) => _TransactionRow(transaction: transaction),
-              ),
+              if (transactions.isEmpty)
+                Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(AppSpacing.xxl),
+                    child: Text('Aucune transaction trouvée'),
+                  ),
+                )
+              else
+                ...transactions.map(
+                  (transaction) => _TransactionRow(transaction: transaction),
+                ),
             ],
           ),
         ),
@@ -42,21 +48,28 @@ class TransactionsHistoryTable extends StatelessWidget {
 class _TransactionsTableHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
     return Container(
-      decoration: const BoxDecoration(
-        color: Color(0xFFF9FAFB), // Léger fond pour l'en-tête
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
         border: Border(
-          bottom: BorderSide(color: Color(0xFFE5E5E5), width: 1.219),
+          bottom: BorderSide(
+            color: theme.colorScheme.outlineVariant,
+            width: 1,
+          ),
         ),
       ),
       child: Row(
         children: [
-          _TableHeaderCell('Date & Heure', width: 140),
-          _TableHeaderCell('Type', width: 100),
-          _TableHeaderCell('Client', width: 200),
-          _TableHeaderCell('Téléphone', width: 120),
-          _TableHeaderCell("Pièce d'identité", width: 180),
-          _TableHeaderCell('Montant', width: 160, isRightAligned: true),
+          _TableHeaderCell('Date & Heure', width: 120),
+          _TableHeaderCell('Type', width: 80),
+          _TableHeaderCell('Référence', width: 100),
+          _TableHeaderCell('Client', width: 140),
+          _TableHeaderCell('Tél.', width: 90),
+          _TableHeaderCell("ID Client", width: 130),
+          _TableHeaderCell('Village/Ville', width: 110),
+          _TableHeaderCell('Montant', width: 120, isRightAligned: true),
         ],
       ),
     );
@@ -73,15 +86,17 @@ class _TableHeaderCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
     return Container(
       width: width,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+      padding: EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.md),
       child: Text(
         text,
-        style: const TextStyle(
-          fontSize: 13,
+        style: theme.textTheme.labelSmall?.copyWith(
           fontWeight: FontWeight.bold,
-          color: Color(0xFF4A5565),
+          color: theme.colorScheme.onSurfaceVariant,
+          letterSpacing: 0.5,
         ),
         textAlign: isRightAligned ? TextAlign.right : TextAlign.left,
         maxLines: 1,
@@ -99,19 +114,26 @@ class _TransactionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         border: Border(
-          bottom: BorderSide(color: Color(0xFFE5E5E5), width: 1.219),
+          bottom: BorderSide(
+            color: theme.colorScheme.outlineVariant,
+            width: 0.5,
+          ),
         ),
       ),
       child: Row(
         children: [
           TransactionDateCell(date: transaction.date),
           TransactionTypeCell(transaction: transaction),
+          TransactionReferenceCell(transaction: transaction),
           TransactionClientCell(transaction: transaction),
           TransactionPhoneCell(transaction: transaction),
-          const TransactionIdCardCell(),
+          TransactionIdCardCell(transaction: transaction),
+          TransactionTownCell(transaction: transaction),
           TransactionAmountCell(transaction: transaction),
         ],
       ),

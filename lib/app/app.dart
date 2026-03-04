@@ -3,11 +3,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
-import '../core/navigation/navigation_service.dart';
-import '../core/session/providers.dart';
-import '../shared/providers/app_boot_status_provider.dart';
-import 'router/app_router.dart';
-import 'theme/app_theme.dart';
+import 'package:elyf_groupe_app/core/navigation/navigation_service.dart';
+import 'package:elyf_groupe_app/core/session/providers.dart';
+import 'package:elyf_groupe_app/shared/providers/app_boot_status_provider.dart';
+import 'package:elyf_groupe_app/app/router/app_router.dart';
+import 'package:elyf_groupe_app/app/theme/app_theme.dart';
+import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 
 /// Root widget for the Elyf multi-enterprise application.
 class ElyfApp extends ConsumerStatefulWidget {
@@ -56,8 +57,9 @@ class _ElyfAppState extends ConsumerState<ElyfApp> {
         Locale('en', ''), // Anglais
       ],
       builder: (context, child) {
-        // Configurer SystemUIOverlayStyle pour s'assurer que les AppBar
-        // respectent les safe areas sur Android
+        final isSwitching = ref.watch(isSwitchingTenantProvider);
+
+        // Configurer SystemUIOverlayStyle
         final brightness = Theme.of(context).brightness;
         SystemChrome.setSystemUIOverlayStyle(
           SystemUiOverlayStyle(
@@ -71,7 +73,32 @@ class _ElyfAppState extends ConsumerState<ElyfApp> {
                 : Brightness.dark,
           ),
         );
-        return child ?? const SizedBox.shrink();
+        return Stack(
+          children: [
+            if (child != null) child,
+            if (isSwitching)
+              Container(
+                color: Colors.black54,
+                child: const Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CircularProgressIndicator(color: Colors.white),
+                      SizedBox(height: 16),
+                      Text(
+                        'Changement d\'organisation...',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        );
       },
     );
   }

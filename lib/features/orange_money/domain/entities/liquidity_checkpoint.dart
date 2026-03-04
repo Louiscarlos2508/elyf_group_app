@@ -21,6 +21,7 @@ class LiquidityCheckpoint {
     this.discrepancyPercentage, // Écart total en %
     this.requiresJustification = false, // Si écart > seuil
     this.justification, // Justification de l'écart
+    this.modificationReason, // Motif de la modification (Audit Trail)
     this.validatedBy, // Qui a validé l'écart
     this.validatedAt, // Date de validation
     this.notes,
@@ -54,6 +55,7 @@ class LiquidityCheckpoint {
   // VALIDATION ÉCART
   final bool requiresJustification; // Si écart > seuil
   final String? justification; // Justification de l'écart
+  final String? modificationReason; // Motif de la modification (Audit Trail)
   final String? validatedBy; // Qui a validé l'écart
   final DateTime? validatedAt; // Date de validation
 
@@ -108,6 +110,7 @@ class LiquidityCheckpoint {
     double? discrepancyPercentage,
     bool? requiresJustification,
     String? justification,
+    String? modificationReason,
     String? validatedBy,
     DateTime? validatedAt,
     String? notes,
@@ -139,6 +142,7 @@ class LiquidityCheckpoint {
       requiresJustification:
           requiresJustification ?? this.requiresJustification,
       justification: justification ?? this.justification,
+      modificationReason: modificationReason ?? this.modificationReason,
       validatedBy: validatedBy ?? this.validatedBy,
       validatedAt: validatedAt ?? this.validatedAt,
       notes: notes ?? this.notes,
@@ -177,6 +181,7 @@ class LiquidityCheckpoint {
           (map['discrepancyPercentage'] as num?)?.toDouble(),
       requiresJustification: map['requiresJustification'] as bool? ?? false,
       justification: map['justification'] as String?,
+      modificationReason: map['modificationReason'] as String?,
       validatedBy: map['validatedBy'] as String?,
       validatedAt: map['validatedAt'] != null
           ? DateTime.parse(map['validatedAt'] as String)
@@ -217,6 +222,7 @@ class LiquidityCheckpoint {
       'discrepancyPercentage': discrepancyPercentage,
       'requiresJustification': requiresJustification,
       'justification': justification,
+      'modificationReason': modificationReason,
       'validatedBy': validatedBy,
       'validatedAt': validatedAt?.toIso8601String(),
       'notes': notes,

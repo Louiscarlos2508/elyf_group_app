@@ -110,12 +110,10 @@ class RoleController {
     }
 
     try {
+      // Sauvegarder localement + queue sync Firestore (offline-first)
+      // Le syncManager.queueUpdate dans le repository gère la sync vers Firestore
+      // en arrière-plan — pas besoin d'appel direct à syncRoleToFirestore ici.
       await _repository.createRole(role);
-
-      // Sync to Firestore - cette opération peut échouer avec une exception
-      if (firestoreSync != null) {
-        await firestoreSync!.syncRoleToFirestore(role);
-      }
 
       // Récupérer le nom de l'utilisateur pour l'audit trail
       final userDisplayName = await _getUserDisplayName(currentUserId);
@@ -145,11 +143,7 @@ class RoleController {
         error: e,
         stackTrace: stackTrace,
       );
-      // Si c'est déjà une AppException, la propager
-      if (e is AppException) {
-        rethrow;
-      }
-      // Sinon, envelopper dans une exception avec message clair
+      if (e is AppException) rethrow;
       throw UnknownException(
         'Erreur lors de la création du rôle: ${appException.message}',
         'ROLE_CREATION_ERROR',
@@ -186,51 +180,43 @@ class RoleController {
     }
 
     try {
-      // Get old role if not provided
-      final oldRoleData =
-          oldRole ??
-          (await _repository.getModuleRoles(role.id)).firstWhere(
-            (r) => r.id == role.id,
-            orElse: () => throw NotFoundException(
-              'Rôle non trouvé: ${role.id}',
-              'ROLE_NOT_FOUND',
-            ),
-          );
+      // Sauvegarder localement + queue sync Firestore (offline-first)
+      // La récupération de l'ancien rôle pour l'audit trail seulement
+      final allRoles = await _repository.getAllRoles();
+      final oldRoleData = oldRole ?? allRoles.firstWhere(
+        (r) => r.id == role.id,
+        orElse: () => role, // fallback au rôle courant si non trouvé
+      );
 
       await _repository.updateRole(role);
-
-      // Sync to Firestore - cette opération peut échouer avec une exception
-      if (firestoreSync != null) {
-        await firestoreSync!.syncRoleToFirestore(role, isUpdate: true);
-      }
 
       // Récupérer le nom de l'utilisateur pour l'audit trail
       final userDisplayName = await _getUserDisplayName(currentUserId);
 
       // Log audit trail
       auditService?.logAction(
-        action: AuditAction.update,
-        entityType: 'role',
-        entityId: role.id,
-        userId: currentUserId ?? 'system',
-        description: 'Role updated: ${role.name}',
-        oldValue: {
-          'id': oldRoleData.id,
-          'name': oldRoleData.name,
-          'description': oldRoleData.description,
-          'permissions': oldRoleData.permissions.toList(),
-          'moduleId': oldRoleData.moduleId,
-          'isSystemRole': oldRoleData.isSystemRole,
-        },
-        newValue: {
-          'id': role.id,
-          'name': role.name,
-          'description': role.description,
-          'permissions': role.permissions.toList(),
-          'isSystemRole': role.isSystemRole,
-        },
-        userDisplayName: userDisplayName,
-      );
+          action: AuditAction.update,
+          entityType: 'role',
+          entityId: role.id,
+          userId: currentUserId ?? 'system',
+          description: 'Role updated: ${role.name}',
+          oldValue: {
+            'id': oldRoleData.id,
+            'name': oldRoleData.name,
+            'description': oldRoleData.description,
+            'permissions': oldRoleData.permissions.toList(),
+            'moduleId': oldRoleData.moduleId,
+            'isSystemRole': oldRoleData.isSystemRole,
+          },
+          newValue: {
+            'id': role.id,
+            'name': role.name,
+            'description': role.description,
+            'permissions': role.permissions.toList(),
+            'isSystemRole': role.isSystemRole,
+          },
+          userDisplayName: userDisplayName,
+        );
     } catch (e, stackTrace) {
       final appException = ErrorHandler.instance.handleError(e, stackTrace);
       AppLogger.error(
@@ -239,11 +225,7 @@ class RoleController {
         error: e,
         stackTrace: stackTrace,
       );
-      // Si c'est déjà une AppException, la propager
-      if (e is AppException) {
-        rethrow;
-      }
-      // Sinon, envelopper dans une exception avec message clair
+      if (e is AppException) rethrow;
       throw UnknownException(
         'Erreur lors de la modification du rôle: ${appException.message}',
         'ROLE_UPDATE_ERROR',

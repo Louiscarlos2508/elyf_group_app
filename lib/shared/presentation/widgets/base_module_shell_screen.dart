@@ -32,6 +32,7 @@ abstract class BaseModuleShellScreen extends ConsumerStatefulWidget {
 abstract class BaseModuleShellScreenState<T extends BaseModuleShellScreen>
     extends ConsumerState<T> {
   int _selectedIndex = 0;
+  int get selectedIndex => _selectedIndex;
 
   /// Nom du module (pour l'affichage).
   String get moduleName;
@@ -71,6 +72,7 @@ abstract class BaseModuleShellScreenState<T extends BaseModuleShellScreen>
       appBar: ElyfAppBar(
         title: appTitle,
         actions: _buildAppBarActions(),
+        moduleId: widget.moduleId,
       ),
       body: Center(
         child: Padding(
@@ -105,6 +107,7 @@ abstract class BaseModuleShellScreenState<T extends BaseModuleShellScreen>
       appBar: ElyfAppBar(
         title: appTitle,
         actions: _buildAppBarActions(),
+        moduleId: widget.moduleId,
       ),
       body: const Center(
         child: Padding(
@@ -139,6 +142,7 @@ abstract class BaseModuleShellScreenState<T extends BaseModuleShellScreen>
     final sectionsAsync = getSectionsAsync();
     if (sectionsAsync != null) {
       return sectionsAsync.when(
+        skipLoadingOnRefresh: true,
         data: (loadedSections) {
           // Utiliser les sections chargées
           return _buildWithSections(loadedSections);
@@ -175,6 +179,7 @@ abstract class BaseModuleShellScreenState<T extends BaseModuleShellScreen>
         appBar: ElyfAppBar(
           title: appTitle,
           actions: _buildAppBarActions(),
+          moduleId: widget.moduleId,
         ),
         body: IndexedStack(
           index: currentIndex,

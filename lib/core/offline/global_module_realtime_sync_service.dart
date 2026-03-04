@@ -28,14 +28,17 @@ class GlobalModuleRealtimeSyncService {
     required this.collectionPaths,
     SyncManager? syncManager,
     SyncConflictResolver? conflictResolver,
+    String? Function()? getActiveEnterpriseId,
   })  : _syncManager = syncManager,
-        _conflictResolver = conflictResolver ?? SyncConflictResolver();
+        _conflictResolver = conflictResolver ?? SyncConflictResolver(),
+        _getActiveEnterpriseId = getActiveEnterpriseId;
 
   final FirebaseFirestore firestore;
   final DriftService driftService;
   final SyncManager? _syncManager;
   final SyncConflictResolver _conflictResolver;
   final Map<String, String Function(String p1)> collectionPaths;
+  final String? Function()? _getActiveEnterpriseId;
 
   // Map pour stocker les services de sync par module/entreprise
   final Map<String, ModuleRealtimeSyncService> _syncServices = {};
@@ -49,6 +52,21 @@ class GlobalModuleRealtimeSyncService {
     String? parentEnterpriseId,
   }) async {
     if (kIsWeb) return;
+
+    // Validation Layer (Second layer of defense)
+    if (_getActiveEnterpriseId != null) {
+      final activeId = _getActiveEnterpriseId!();
+      if (activeId != null && 
+          enterpriseId != activeId && 
+          parentEnterpriseId != activeId) {
+         AppLogger.warning(
+           'Blocking realtime sync start for $enterpriseId in module $moduleId: does not match active enterprise $activeId (parent: $parentEnterpriseId)',
+           name: 'global.module.sync',
+         );
+         return;
+      }
+    }
+
     final key = '$enterpriseId/$moduleId';
 
     // Vérifier si la sync est déjà active

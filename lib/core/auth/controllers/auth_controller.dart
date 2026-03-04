@@ -9,6 +9,7 @@ import '../../../features/administration/application/controllers/user_controller
 import '../../../features/administration/application/providers.dart'
     show userControllerProvider;
 import '../../../features/administration/domain/entities/user.dart';
+import '../../offline/sync/sync_orchestrator.dart';
 
 /// Controller pour gérer l'authentification.
 ///
@@ -97,6 +98,18 @@ class AuthController {
   /// L'arrêt des synchronisations est géré par SyncOrchestrator.
   Future<void> signOut() async {
     AppLogger.info('Logging out user', name: 'auth.controller');
+    
+    try {
+      // 1. Arrêter d'abord les synchronisations pour éviter les PERMISSION_DENIED
+      // pendant que le token est encore valide.
+      final syncOrchestrator = _ref.read(syncOrchestratorProvider);
+      syncOrchestrator.stop();
+      AppLogger.info('Sync flows stopped successfully before logout', name: 'auth.controller');
+    } catch (e) {
+      AppLogger.warning('Failed to stop sync flows during logout: $e', name: 'auth.controller');
+    }
+
+    // 2. Déconnexion effective de Firebase
     await authService.signOut();
   }
 

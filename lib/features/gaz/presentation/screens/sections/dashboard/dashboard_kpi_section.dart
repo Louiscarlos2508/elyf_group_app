@@ -23,7 +23,6 @@ class DashboardKpiSection extends ConsumerWidget {
     required this.expenses,
     required this.cylinders,
     required this.stocks,
-    required this.transfers,
     required this.pointsOfSale,
     this.settings,
     this.viewType = GazDashboardViewType.consolidated,
@@ -33,7 +32,6 @@ class DashboardKpiSection extends ConsumerWidget {
   final List<GazExpense> expenses;
   final List<Cylinder> cylinders;
   final List<CylinderStock> stocks;
-  final List<StockTransfer> transfers;
   final List<Enterprise> pointsOfSale;
   final GazSettings? settings;
   final GazDashboardViewType viewType;
@@ -50,7 +48,6 @@ class DashboardKpiSection extends ConsumerWidget {
       stocks: stocks,
       pointsOfSale: pointsOfSale,
       cylinders: cylinders,
-      transfers: transfers,
       settings: isPos ? null : settings,
       targetEnterpriseId: enterpriseId,
     );

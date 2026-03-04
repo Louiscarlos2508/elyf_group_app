@@ -16,6 +16,7 @@ class LiquidityDailyActivitySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final deposits = stats['deposits'] as int? ?? 0;
     final withdrawals = stats['withdrawals'] as int? ?? 0;
     final transactionCount = stats['transactionCount'] as int? ?? 0;
@@ -28,187 +29,96 @@ class LiquidityDailyActivitySection extends StatelessWidget {
         // Activité de la journée
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(10),
+            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
+            ),
           ),
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                '📊 Activité de la journée',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.normal,
-                  color: Color(0xFF101828),
-                ),
-              ),
-              const SizedBox(height: 12),
               Row(
                 children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Dépôts',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Color(0xFF4A5565),
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '+${CurrencyFormatter.formatShort(deposits)}',
-                          style: const TextStyle(
-                            fontSize: 18,
-                            color: Color(0xFF00A63E),
-                          ),
-                        ),
-                      ],
+                  Icon(Icons.analytics_outlined, size: 20, color: theme.colorScheme.primary),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Activité de la journée',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onSurface,
                     ),
                   ),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Retraits',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Color(0xFF4A5565),
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '-${CurrencyFormatter.formatShort(withdrawals)}',
-                          style: const TextStyle(
-                            fontSize: 18,
-                            color: Color(0xFFE7000B),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Transactions',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Color(0xFF4A5565),
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          transactionCount.toString(),
-                          style: const TextStyle(
-                            fontSize: 18,
-                            color: Color(0xFF101828),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(child: _buildStatItem('Dépôts', deposits, theme, theme.colorScheme.primary)),
+                  _buildDivider(theme),
+                  Expanded(child: _buildStatItem('Retraits', withdrawals, theme, theme.colorScheme.error)),
+                  _buildDivider(theme),
+                  Expanded(child: _buildStatItem('Transactions', transactionCount, theme, theme.colorScheme.onSurface, showCurrency: false)),
                 ],
               ),
             ],
           ),
         ),
         const SizedBox(height: 16),
+        
         // Solde disponible (basé sur le pointage du matin)
-        if (checkpoint != null &&
-            (checkpoint!.morningCashAmount != null ||
-                checkpoint!.morningSimAmount != null))
+        if (checkpoint != null && (checkpoint!.morningCashAmount != null || checkpoint!.morningSimAmount != null))
           Container(
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(10),
+              color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
+              ),
             ),
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  '💰 Solde disponible',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.normal,
-                    color: Color(0xFF101828),
-                  ),
+                Row(
+                  children: [
+                    Icon(Icons.account_balance_wallet_outlined, size: 20, color: theme.colorScheme.primary),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Solde d\'ouverture (Matin)',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 12),
-                if (checkpoint!.morningCashAmount != null) ...[
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Cash:',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Color(0xFF4A5565),
-                        ),
-                      ),
-                      Text(
-                        CurrencyFormatter.formatFCFA(
-                          checkpoint!.morningCashAmount!,
-                        ),
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF101828),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                ],
-                if (checkpoint!.morningSimAmount != null) ...[
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'SIM:',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Color(0xFF4A5565),
-                        ),
-                      ),
-                      Text(
-                        CurrencyFormatter.formatFCFA(
-                          checkpoint!.morningSimAmount!,
-                        ),
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF155DFC),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                ],
-                const Divider(),
-                const SizedBox(height: 8),
+                const SizedBox(height: 16),
+                _buildBalanceRow('Cash Opening', checkpoint!.morningCashAmount ?? 0, theme, theme.colorScheme.onSurface),
+                const SizedBox(height: 10),
+                _buildBalanceRow('SIM Opening', checkpoint!.morningSimAmount ?? 0, theme, theme.colorScheme.primary),
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                  child: Divider(height: 1),
+                ),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      'Total:',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF101828),
+                    Text(
+                      'TOTAL OUVERTURE',
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        color: theme.colorScheme.onSurface,
+                        letterSpacing: 0.5,
                       ),
                     ),
                     Text(
                       CurrencyFormatter.formatFCFA(morningCash + morningSim),
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF101828),
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        color: theme.colorScheme.onSurface,
+                        fontFamily: 'Outfit',
                       ),
                     ),
                   ],
@@ -216,6 +126,60 @@ class LiquidityDailyActivitySection extends StatelessWidget {
               ],
             ),
           ),
+      ],
+    );
+  }
+
+  Widget _buildStatItem(String label, dynamic value, ThemeData theme, Color valueColor, {bool showCurrency = true}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          showCurrency ? CurrencyFormatter.formatShort(value as int) : value.toString(),
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w800,
+            color: valueColor,
+            fontFamily: 'Outfit',
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDivider(ThemeData theme) {
+    return Container(
+      height: 30,
+      width: 1,
+      margin: const EdgeInsets.symmetric(horizontal: 12),
+      color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+    );
+  }
+
+  Widget _buildBalanceRow(String label, int amount, ThemeData theme, Color amountColor) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        Text(
+          CurrencyFormatter.formatFCFA(amount),
+          style: theme.textTheme.bodyLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: amountColor,
+          ),
+        ),
       ],
     );
   }

@@ -5,5 +5,7 @@ abstract class OrangeMoneyTreasuryRepository {
   Stream<List<TreasuryOperation>> watchOperations(String enterpriseId, {DateTime? from, DateTime? to, List<String>? enterpriseIds});
   Future<void> saveOperation(TreasuryOperation operation);
   Future<void> deleteOperation(String id);
+  Future<void> deleteOperationsByReference(String entityId, String entityType);
   Future<Map<String, int>> getBalances(String enterpriseId, {List<String>? enterpriseIds});
+  Stream<Map<String, int>> watchBalances(String enterpriseId, {List<String>? enterpriseIds});
 }

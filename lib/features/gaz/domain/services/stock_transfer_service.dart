@@ -127,6 +127,11 @@ class StockTransferService {
       timestamp: DateTime.now(),
       metadata: updatedTransfer.toMap(),
     ));
+
+    // 4. Auto-receive if requested
+    if (updatedTransfer.isAutoReceive) {
+      await receiveTransfer(transferId, userId);
+    }
   }
 
   /// Receives the transfer at the destination site.
@@ -138,11 +143,15 @@ class StockTransferService {
       throw ValidationException('Le transfert doit être expédié pour être reçu', 'INVALID_STATUS');
     }
 
+    final destEnterprise = await enterpriseRepository.getEnterpriseById(transfer.toEnterpriseId);
+    final isDestPos = destEnterprise?.isPointOfSale ?? false;
+    final effectiveDestEnterpriseId = isDestPos ? (destEnterprise!.parentEnterpriseId ?? transfer.toEnterpriseId) : transfer.toEnterpriseId;
+
     final cylinders = await gasRepository.getCylindersForEnterprises([
       transfer.fromEnterpriseId,
-      transfer.toEnterpriseId,
+      effectiveDestEnterpriseId,
     ]);
-    final destCylinders = cylinders.where((c) => c.enterpriseId == transfer.toEnterpriseId).toList();
+    final destCylinders = cylinders.where((c) => c.enterpriseId == effectiveDestEnterpriseId).toList();
 
     // 1. Add stock to destination
     for (final item in transfer.items) {

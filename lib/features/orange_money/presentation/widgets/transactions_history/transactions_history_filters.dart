@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
 import '../../../domain/entities/transaction.dart';
 
 /// Widget pour les filtres de recherche et de date.
@@ -20,139 +21,165 @@ class TransactionsHistoryFilters extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-        side: const BorderSide(color: Color(0xFFFFD6A7), width: 1.219),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Champ de recherche
-            _buildSearchField(),
-            const SizedBox(height: 16),
-            // Filtres Type et Date
-            Row(
-              children: [
-                Expanded(child: _buildTypeFilter()),
-                const SizedBox(width: 12),
-                Expanded(child: _buildDateFilter()),
-              ],
-            ),
-          ],
+    final theme = Theme.of(context);
+
+    return Container(
+      padding: EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppSpacing.md),
+        border: Border.all(
+          color: theme.colorScheme.primary.withValues(alpha: 0.2),
+          width: 1,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: theme.colorScheme.primary.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Champ de recherche
+          _buildSearchField(context),
+          SizedBox(height: AppSpacing.md),
+          // Filtres Type et Date
+          Row(
+            children: [
+              Expanded(child: _buildTypeFilter(context)),
+              SizedBox(width: AppSpacing.md),
+              Expanded(child: _buildDateFilter(context)),
+            ],
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildSearchField() {
+  Widget _buildSearchField(BuildContext context) {
+    final theme = Theme.of(context);
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Rechercher',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.normal,
-            color: Color(0xFF0A0A0A),
-            height: 1.0,
+          style: theme.textTheme.labelMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: theme.colorScheme.onSurface,
           ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: AppSpacing.xs),
         Container(
-          height: 36,
+          height: 45,
           decoration: BoxDecoration(
-            color: const Color(0xFFF3F3F5),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.transparent, width: 1.219),
+            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(AppSpacing.sm),
+            border: Border.all(
+              color: theme.colorScheme.outlineVariant,
+              width: 1,
+            ),
           ),
           child: TextFormField(
             controller: searchController,
+            style: theme.textTheme.bodyMedium,
             decoration: InputDecoration(
               hintText: 'Nom, téléphone ou n° pièce...',
-              hintStyle: const TextStyle(
-                fontSize: 14,
-                color: Color(0xFF717182),
+              hintStyle: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
               ),
               border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 40,
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: AppSpacing.sm,
                 vertical: 10,
               ),
-              prefixIcon: const Padding(
-                padding: EdgeInsets.only(left: 12, right: 8),
-                child: Icon(Icons.search, size: 16, color: Color(0xFF717182)),
-              ),
-              prefixIconConstraints: const BoxConstraints(
-                minWidth: 16,
-                minHeight: 16,
+              prefixIcon: Icon(
+                Icons.search, 
+                size: 20, 
+                color: theme.colorScheme.primary,
               ),
             ),
+            onChanged: (value) {
+              // Trigger search update via parent setState if needed, 
+              // but here it's likely handled by the controller and providerKey rebuild.
+            },
           ),
         ),
       ],
     );
   }
 
-  Widget _buildTypeFilter() {
+  Widget _buildTypeFilter(BuildContext context) {
+    final theme = Theme.of(context);
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: const [
-            Icon(Icons.filter_list, size: 16, color: Color(0xFF0A0A0A)),
-            SizedBox(width: 8),
-            Text(
-              'Type',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.normal,
-                color: Color(0xFF0A0A0A),
-              ),
-            ),
-          ],
+        Text(
+          'Type',
+          style: theme.textTheme.labelMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: theme.colorScheme.onSurface,
+          ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: AppSpacing.xs),
         Container(
-          height: 36,
+          height: 45,
           decoration: BoxDecoration(
-            color: const Color(0xFFF3F3F5),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.transparent, width: 1.219),
+            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(AppSpacing.sm),
+            border: Border.all(
+              color: theme.colorScheme.outlineVariant,
+              width: 1,
+            ),
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<TransactionType?>(
               value: selectedTypeFilter,
               isExpanded: true,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              hint: const Text(
+              dropdownColor: theme.colorScheme.surface,
+              padding: EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+              hint: Text(
                 'Tous',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 14, color: Color(0xFF0A0A0A)),
+                style: theme.textTheme.bodyMedium,
               ),
+              selectedItemBuilder: (context) {
+                return [
+                  null,
+                  TransactionType.cashIn,
+                  TransactionType.cashOut,
+                ].map((type) {
+                  return Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      type == null ? 'Tous types' : type.label,
+                      style: theme.textTheme.bodyMedium,
+                    ),
+                  );
+                }).toList();
+              },
               items: [
                 const DropdownMenuItem<TransactionType?>(
                   value: null,
-                  child: Text('Tous', style: TextStyle(fontSize: 14)),
+                  child: Text('Tous types'),
                 ),
                 DropdownMenuItem<TransactionType>(
                   value: TransactionType.cashIn,
-                  child: Text(TransactionType.cashIn.label, style: const TextStyle(fontSize: 14)),
+                  child: Text(TransactionType.cashIn.label),
                 ),
                 DropdownMenuItem<TransactionType>(
                   value: TransactionType.cashOut,
-                  child: Text(TransactionType.cashOut.label, style: const TextStyle(fontSize: 14)),
+                  child: Text(TransactionType.cashOut.label),
                 ),
               ],
               onChanged: onTypeChanged,
-              icon: const Icon(
+              icon: Icon(
                 Icons.keyboard_arrow_down,
-                size: 16,
-                color: Color(0xFF0A0A0A),
+                size: 20,
+                color: theme.colorScheme.primary,
               ),
             ),
           ),
@@ -161,34 +188,33 @@ class TransactionsHistoryFilters extends StatelessWidget {
     );
   }
 
-  Widget _buildDateFilter() {
+  Widget _buildDateFilter(BuildContext context) {
+    final theme = Theme.of(context);
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: const [
-            Icon(Icons.calendar_today, size: 16, color: Color(0xFF0A0A0A)),
-            SizedBox(width: 8),
-            Text(
-              'Date',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.normal,
-                color: Color(0xFF0A0A0A),
-              ),
-            ),
-          ],
+        Text(
+          'Date',
+          style: theme.textTheme.labelMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: theme.colorScheme.onSurface,
+          ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: AppSpacing.xs),
         InkWell(
           onTap: onDateSelected,
+          borderRadius: BorderRadius.circular(AppSpacing.sm),
           child: Container(
-            height: 36,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
+            height: 45,
+            padding: EdgeInsets.symmetric(horizontal: AppSpacing.sm),
             decoration: BoxDecoration(
-              color: const Color(0xFFF3F3F5),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.transparent, width: 1.219),
+              color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(AppSpacing.sm),
+              border: Border.all(
+                color: theme.colorScheme.outlineVariant,
+                width: 1,
+              ),
             ),
             child: Row(
               children: [
@@ -196,21 +222,18 @@ class TransactionsHistoryFilters extends StatelessWidget {
                   child: Text(
                     selectedDate != null
                         ? '${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}'
-                        : 'Sélectionner',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 14,
+                        : 'Filtrer par date',
+                    style: theme.textTheme.bodyMedium?.copyWith(
                       color: selectedDate != null
-                          ? const Color(0xFF0A0A0A)
-                          : const Color(0xFF717182),
+                          ? theme.colorScheme.onSurface
+                          : theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ),
-                const Icon(
-                  Icons.calendar_today,
-                  size: 16,
-                  color: Color(0xFF717182),
+                Icon(
+                  Icons.calendar_month_outlined,
+                  size: 20,
+                  color: theme.colorScheme.primary,
                 ),
               ],
             ),

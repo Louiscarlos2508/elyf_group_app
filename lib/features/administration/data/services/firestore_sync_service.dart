@@ -39,7 +39,14 @@ class FirestoreSyncService {
   /// This fetches Users, Enterprises, Roles, and EnterpriseModuleUsers.
   /// If [userId] is provided, only fetches assignments for that user.
 
+  bool _isPulling = false;
+
   Future<void> pullInitialData({String? userId, List<String>? allowedEnterpriseIds}) async {
+    if (_isPulling) {
+      developer.log('FirestoreSyncService: Pull already in progress, skipping.', name: 'admin.firestore.sync');
+      return;
+    }
+    
     // Si on est sur le Web, l'administration utilise directement Firestore (online-only)
     // On ne veut pas essayer d'écrire dans Drift (car sql.js n'est pas chargé)
     if (kIsWeb) {
@@ -49,35 +56,17 @@ class FirestoreSyncService {
       );
       return;
     }
-    _currentUserId = userId;
 
-    // Nettoyage initial des doublons : si une entité est dans agences/pointOfSale, 
-    // elle ne doit plus être dans 'enterprises' racine pour éviter les doublons d'affichage.
+    _isPulling = true;
     try {
-      for (final subCollection in ['pointOfSale', 'agences']) {
-        final subTenantRecords = await driftService.records.listForCollection(
-          collectionName: subCollection,
-        );
-        for (final record in subTenantRecords) {
-          final idToRemove = record.remoteId ?? record.localId;
-          await driftService.records.deleteByRemoteId(
-            collectionName: _enterprisesCollection,
-            remoteId: idToRemove,
-            enterpriseId: 'global',
-            moduleType: 'administration',
-          );
-        }
-      }
-    } catch (e) {
-      developer.log('Cleanup of redundant enterprises failed: $e', name: 'admin.firestore.sync');
-    }
+      _currentUserId = userId;
 
-    try {
       developer.log(
-        'Starting initial pull of all collections...',
+        'Starting PRIORITIZED initial pull (Phase 1: User & Assignments)...',
         name: 'admin.firestore.sync',
       );
 
+      // PHASE 1: CRITICAL METADATA
       // 1. D'abord, récupérer l'utilisateur courant pour obtenir ses enterpriseIds
       User? currentUser;
       if (userId != null) {
@@ -96,14 +85,48 @@ class FirestoreSyncService {
         final personalAssignments = await pullEnterpriseModuleUsersFromFirestore(userId: userId);
         for (final assignment in personalAssignments) {
           effectiveAllowedEnterpriseIds.add(assignment.enterpriseId);
+          await _saveEnterpriseModuleUserToDrift(assignment);
         }
       }
+
+      developer.log('Phase 1 (Critical) finished. Redirection now possible.', name: 'admin.firestore.sync');
+
+      // PHASE 2: BACKGROUND SYNC
+      // On lance le reste en arrière-plan sans attendre (unawaited)
+      _runBackgroundSync(
+        userId: userId, 
+        isAdmin: isAdmin, 
+        effectiveAllowedEnterpriseIds: effectiveAllowedEnterpriseIds,
+      );
+
+    } catch (e, stackTrace) {
+      AppLogger.error(
+        'Error during Phase 1 sync: $e',
+        name: 'admin.firestore.sync',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      // On laisse quand même le flux continuer pour ne pas bloquer l'app
+    } finally {
+      _isPulling = false;
+    }
+  }
+
+  Future<void> _runBackgroundSync({
+    String? userId, 
+    required bool isAdmin, 
+    required Set<String> effectiveAllowedEnterpriseIds,
+  }) async {
+    try {
+      developer.log('Starting Phase 2 (Background Sync)...', name: 'admin.firestore.sync');
+
+      // Cleanup initial des doublons (déplacé ici car moins critique)
+      await _cleanupRedundantEnterprises();
 
       // 3. Découvrir tous les sous-tenants (POS/Agences) pour les enterprises autorisées
       if (effectiveAllowedEnterpriseIds.isNotEmpty) {
         developer.log('Discovering sub-tenants for ${effectiveAllowedEnterpriseIds.length} enterprises...', name: 'admin.firestore.sync');
         for (final parentId in effectiveAllowedEnterpriseIds.toList()) {
-          // Chercher dans les sous-collections de chaque entreprise parente
           for (final subCollection in ['pointsOfSale', 'agences']) {
             try {
               final subSnapshot = await firestore
@@ -115,7 +138,6 @@ class FirestoreSyncService {
               for (final doc in subSnapshot.docs) {
                 if (!effectiveAllowedEnterpriseIds.contains(doc.id)) {
                   effectiveAllowedEnterpriseIds.add(doc.id);
-                  // Sauvegarder l'entité sous-tenant immédiatement car on en aura besoin pour le mapping UI
                   final data = Map<String, dynamic>.from(doc.data());
                   final subTenant = Enterprise.fromMap({
                     ...data, 
@@ -125,24 +147,19 @@ class FirestoreSyncService {
                   await _saveSubTenantToDrift(subTenant, parentId);
                 }
               }
-            } catch (e) {
-              // Ignorer si pas d'accès ou erreur
-              AppLogger.debug('Could not fetch sub-collection $subCollection for $parentId: $e');
-            }
+            } catch (_) {}
           }
         }
       }
 
-      // 3. Fetch EnterpriseModuleUsers for ALL discovered enterprises
-      // On ne filtre plus par userId seulement, car on veut voir TOUTES les assignations
-      // des entreprises qu'on gère (pour voir les agents assignés).
-      List<EnterpriseModuleUser> emus = [];
+      // 4. Fetch EnterpriseModuleUsers for ALL discovered enterprises (if Admin)
       if (isAdmin) {
-        emus = await pullEnterpriseModuleUsersFromFirestore();
+        final emus = await pullEnterpriseModuleUsersFromFirestore();
+        for (final emu in emus) {
+          await _saveEnterpriseModuleUserToDrift(emu);
+        }
       } else if (effectiveAllowedEnterpriseIds.isNotEmpty) {
-        // Fetch assignments for each enterprise the user has access to
         final List<String> idList = effectiveAllowedEnterpriseIds.toList();
-        // Firestore 'whereIn' est limité à 30 (ou 10 selon les cas), on fait par chunks
         for (var i = 0; i < idList.length; i += 10) {
           final chunk = idList.sublist(i, i + 10 > idList.length ? idList.length : i + 10);
           try {
@@ -151,55 +168,54 @@ class FirestoreSyncService {
                 .where('enterpriseId', whereIn: chunk)
                 .get();
             
-            emus.addAll(snapshot.docs.map((doc) => 
-              EnterpriseModuleUser.fromMap(doc.data())));
-          } catch (e) {
-            AppLogger.warning('Error pulling emus for chunk: $e');
-          }
-        }
-        
-        // Ajouter aussi les assignations directes de l'utilisateur (même si l'entreprise n'est pas "gérée")
-        if (userId != null) {
-          final userEmus = await pullEnterpriseModuleUsersFromFirestore(userId: userId);
-          for (final emu in userEmus) {
-            if (!emus.any((e) => e.documentId == emu.documentId)) {
-              emus.add(emu);
+            for (final doc in snapshot.docs) {
+              final emu = EnterpriseModuleUser.fromMap(doc.data());
+              await _saveEnterpriseModuleUserToDrift(emu);
             }
-          }
+          } catch (_) {}
         }
       }
 
-      for (final emu in emus) {
-        await _saveEnterpriseModuleUserToDrift(emu);
+      // 5. Pull and save all enterprises
+      final enterprises = await pullEnterprisesFromFirestore(
+        allowedEnterpriseIds: isAdmin ? null : effectiveAllowedEnterpriseIds.toList(),
+      );
+      for (final enterprise in enterprises) {
+        await _saveEnterpriseToDrift(enterprise);
       }
 
-      // 4. Parallel fetch for other collections using filters
-      await Future.wait([
-        if (isAdmin) 
-          _pullAndSaveUsers() 
-        else if (effectiveAllowedEnterpriseIds.isNotEmpty)
-          _pullAndSaveUsers(enterpriseIds: effectiveAllowedEnterpriseIds.toList())
-        else 
-          Future.value(),
-        
-        _pullAndSaveEnterprises(allowedEnterpriseIds: isAdmin ? null : effectiveAllowedEnterpriseIds.toList()),
-        _pullAndSaveRoles(),
-      ]);
+      // 6. Pull and save roles
+      await _pullAndSaveRoles();
 
-      developer.log(
-        'Initial pull completed successfully. Total accessible enterprises (incl. sub-tenants): ${effectiveAllowedEnterpriseIds.length}',
-        name: 'admin.firestore.sync',
-      );
+      developer.log('Phase 2 (Background Sync) completed successfully.', name: 'admin.firestore.sync');
     } catch (e, stackTrace) {
-      final appException = ErrorHandler.instance.handleError(e, stackTrace);
-      AppLogger.error(
-        'Error pulling initial data: ${appException.message}',
+      AppLogger.warning(
+        'Error during Phase 2 (Background Sync): $e',
         name: 'admin.firestore.sync',
         error: e,
         stackTrace: stackTrace,
       );
-      // Propagate error
-      rethrow;
+    }
+  }
+
+  Future<void> _cleanupRedundantEnterprises() async {
+    try {
+      for (final subCollection in ['pointOfSale', 'agences']) {
+        final subTenantRecords = await driftService.records.listForCollection(
+          collectionName: subCollection,
+        );
+        for (final record in subTenantRecords) {
+          final idToRemove = record.remoteId ?? record.localId;
+          await driftService.records.deleteByRemoteId(
+            collectionName: _enterprisesCollection,
+            remoteId: idToRemove,
+            enterpriseId: 'global',
+            moduleType: 'administration',
+          );
+        }
+      }
+    } catch (e) {
+      developer.log('Cleanup of redundant enterprises failed: $e', name: 'admin.firestore.sync');
     }
   }
 
@@ -317,34 +333,38 @@ class FirestoreSyncService {
     await _saveEnterpriseToDrift(updatedEnterprise);
   }
 
-  Future<void> _pullAndSaveRoles() async {
-    final roles = await pullRolesFromFirestore();
-    for (final role in roles) {
-      final existingRecord = await driftService.records.findByRemoteId(
-        collectionName: _rolesCollection,
-        remoteId: role.id,
-        enterpriseId: 'global',
-        moduleType: 'administration',
-      );
+  Future<void> _pullAndSaveRoles({List<String>? roleIds}) async {
+    try {
+      final roles = await pullRolesFromFirestore(roleIds: roleIds);
+      for (final role in roles) {
+        final existingRecord = await driftService.records.findByRemoteId(
+          collectionName: _rolesCollection,
+          remoteId: role.id,
+          enterpriseId: 'global',
+          moduleType: 'administration',
+        );
 
-      final localId = existingRecord?.localId ?? role.id;
+        final localId = existingRecord?.localId ?? role.id;
 
-      await driftService.records.upsert(
-        collectionName: _rolesCollection,
-        localId: localId,
-        remoteId: role.id,
-        enterpriseId: 'global',
-        moduleType: 'administration',
-        dataJson: jsonEncode({
-          'id': role.id,
-          'name': role.name,
-          'description': role.description,
-          'permissions': role.permissions.toList(),
-          'moduleId': role.moduleId, // Assure la persistance du module associé
-          'isSystemRole': role.isSystemRole,
-        }),
-        localUpdatedAt: DateTime.now(),
-      );
+        await driftService.records.upsert(
+          collectionName: _rolesCollection,
+          localId: localId,
+          remoteId: role.id,
+          enterpriseId: 'global',
+          moduleType: 'administration',
+          dataJson: jsonEncode({
+            'id': role.id,
+            'name': role.name,
+            'description': role.description,
+            'permissions': role.permissions.toList(),
+            'moduleId': role.moduleId,
+            'isSystemRole': role.isSystemRole,
+          }),
+          localUpdatedAt: DateTime.now(),
+        );
+      }
+    } catch (e) {
+      AppLogger.warning('Failed to pull roles: $e', name: 'admin.firestore.sync');
     }
   }
 
@@ -434,47 +454,93 @@ class FirestoreSyncService {
   }
 
   /// Synchronise une entreprise spécifique par son ID.
-  /// 
-  /// Utile quand un utilisateur est assigné à un sous-tenant (ex: POS) 
-  /// sans avoir l'entreprise parente synchronisée.
   Future<void> syncSpecificEnterprise(String enterpriseId) async {
     try {
       // 1. Tenter de récupérer dans la collection globale
-      final enterpriseDoc = await firestore
-          .collection(_enterprisesCollection)
-          .doc(enterpriseId)
-          .get();
-
-      if (enterpriseDoc.exists) {
-        await _saveEnterpriseToDrift(Enterprise.fromMap(enterpriseDoc.data()!));
-        return;
+      DocumentSnapshot? enterpriseDoc;
+      try {
+        enterpriseDoc = await firestore
+            .collection(_enterprisesCollection)
+            .doc(enterpriseId)
+            .get();
+            
+        if (enterpriseDoc.exists) {
+          await _saveEnterpriseToDrift(Enterprise.fromMap(enterpriseDoc.data()! as Map<String, dynamic>));
+          return;
+        }
+      } catch (e) {
+        // Si permission denied, on continue vers les autres méthodes
+        AppLogger.debug('Top-level fetch denied for $enterpriseId: $e');
       }
 
-      // 2. Tenter de récupérer dans les sous-collections (via Collection Group)
-      // On cherche dans 'pointsOfSale' (Gaz) et 'agences' (Mobile Money)
-      for (final subName in ['pointsOfSale', 'agences']) {
-        final groupSnapshot = await firestore
-            .collectionGroup(subName)
-            .where('uid', isEqualTo: enterpriseId)
-            .get();
+      // 2. Déterminer si c'est un sous-tenant (POS/Agence) via son pattern d'ID
+      // Pattern: pos_parentId_uid ou agence_parentId_uid
+      final parts = enterpriseId.split('_');
+      if (parts.length >= 3) {
+        final prefix = parts[0];
+        final parentId = '${parts[1]}_${parts[2]}';
+        String? subCollection;
+        
+        if (prefix == 'pos') {
+          subCollection = 'pointsOfSale';
+        } else if (prefix == 'agence' || prefix == 'mm') {
+          subCollection = 'agences';
+        }
 
-        if (groupSnapshot.docs.isNotEmpty) {
-          final doc = groupSnapshot.docs.first;
-          final data = Map<String, dynamic>.from(doc.data());
-          final parentId = doc.reference.parent.parent?.id;
-          
-          if (parentId != null) {
-            final subTenant = Enterprise.fromMap({...data, 'id': doc.id, 'parentEnterpriseId': parentId});
-            await _saveSubTenantToDrift(subTenant, parentId);
-            return;
+        if (subCollection != null) {
+          developer.log('Detected sub-tenant ID pattern: $enterpriseId. Using direct path with parent $parentId', name: 'admin.firestore.sync');
+          try {
+            final subDoc = await firestore
+                .collection(_enterprisesCollection)
+                .doc(parentId)
+                .collection(subCollection)
+                .doc(enterpriseId)
+                .get();
+                
+            if (subDoc.exists) {
+              final data = Map<String, dynamic>.from(subDoc.data()!);
+              final subTenant = Enterprise.fromMap({...data, 'id': subDoc.id, 'parentEnterpriseId': parentId});
+              await _saveSubTenantToDrift(subTenant, parentId);
+              return;
+            }
+          } catch (e) {
+            AppLogger.debug('Direct sub-tenant fetch failed for $enterpriseId: $e');
           }
         }
       }
 
-      AppLogger.warning(
-        'Enterprise $enterpriseId not found in Firestore (Global, pointsOfSale, or agences)',
-        name: 'admin.firestore.sync',
-      );
+      // 3. Fallback: Tenter de récupérer dans les sous-collections (via Collection Group filtré)
+      // On ne fait cela QUE si l'utilisateur est Admin ou si on a un parentId probable
+      // Pour éviter les PERMISSION_DENIED inutiles.
+      final currentUser = await _getCurrentUserFromLocal();
+      final isAdmin = currentUser?.isAdmin ?? false;
+
+      if (isAdmin) {
+        for (final subName in ['pointsOfSale', 'agences']) {
+          try {
+            final groupSnapshot = await firestore
+                .collectionGroup(subName)
+                .where('uid', isEqualTo: enterpriseId)
+                .get();
+
+            if (groupSnapshot.docs.isNotEmpty) {
+              final doc = groupSnapshot.docs.first;
+              final data = Map<String, dynamic>.from(doc.data());
+              final parentId = doc.reference.parent.parent?.id;
+              
+              if (parentId != null) {
+                final subTenant = Enterprise.fromMap({...data, 'id': doc.id, 'parentEnterpriseId': parentId});
+                await _saveSubTenantToDrift(subTenant, parentId);
+                return;
+              }
+            }
+          } catch (e) {
+             AppLogger.warning('Error searching collectionGroup $subName for admin: $e', name: 'admin.firestore.sync');
+          }
+        }
+      } else {
+        AppLogger.debug('Skipping collectionGroup scan for non-admin user regarding $enterpriseId', name: 'admin.firestore.sync');
+      }
     } catch (e, stackTrace) {
       AppLogger.error(
         'Error syncing specific enterprise $enterpriseId: $e',
@@ -482,6 +548,52 @@ class FirestoreSyncService {
         error: e,
         stackTrace: stackTrace,
       );
+    }
+  }
+
+  /// Synchronise les métadonnées critiques pour un changement d'entreprise.
+  /// Inclut: L'entreprise elle-même, les assignations de l'utilisateur et les rôles associés.
+  Future<void> syncTenantMetadata(String enterpriseId, String userId) async {
+    try {
+      developer.log('Pre-fetching metadata for switch to enterprise $enterpriseId', name: 'admin.firestore.sync');
+      
+      // 1. Sync the enterprise document
+      await syncSpecificEnterprise(enterpriseId);
+      
+      // 2. Sync the user's assignments for this specific user
+      final assignments = await pullEnterpriseModuleUsersFromFirestore(userId: userId);
+      final tenantAssignments = assignments.where((a) => a.enterpriseId == enterpriseId).toList();
+      
+      for (final emu in tenantAssignments) {
+        await _saveEnterpriseModuleUserToDrift(emu);
+      }
+      
+      // 3. Sync the corresponding roles
+      final roleIds = tenantAssignments.expand((a) => a.roleIds).toSet().toList();
+      if (roleIds.isNotEmpty) {
+        await _pullAndSaveRoles(roleIds: roleIds);
+      }
+      
+      developer.log('Critical metadata pre-fetched for enterprise $enterpriseId', name: 'admin.firestore.sync');
+    } catch (e, st) {
+      AppLogger.error('Failed to pre-fetch metadata for enterprise $enterpriseId: $e', 
+        name: 'admin.firestore.sync', error: e, stackTrace: st);
+    }
+  }
+
+  Future<User?> _getCurrentUserFromLocal() async {
+    if (_currentUserId == null) return null;
+    final userRecord = await driftService.records.findByRemoteId(
+      collectionName: _usersCollection,
+      remoteId: _currentUserId!,
+      enterpriseId: 'global',
+      moduleType: 'administration',
+    );
+    if (userRecord == null) return null;
+    try {
+      return User.fromMap(jsonDecode(userRecord.dataJson));
+    } catch (_) {
+      return null;
     }
   }
 
@@ -678,13 +790,20 @@ class FirestoreSyncService {
       final snapshot = await snapshotQuery.get();
       return snapshot.docs.map((doc) => _mapFirestoreDocToUser(doc)).toList();
     } on FirebaseException catch (e, stackTrace) {
-      final appException = ErrorHandler.instance.handleError(e, stackTrace);
-      AppLogger.warning(
-        'Firebase error pulling users from Firestore (code: ${e.code}): ${appException.message}',
-        name: 'admin.firestore.sync',
-        error: e,
-        stackTrace: stackTrace,
-      );
+      if (e.code == 'permission-denied') {
+        AppLogger.info(
+          'Note: Global user pull restricted (permission-denied). This is expected for non-admin users.',
+          name: 'admin.firestore.sync',
+        );
+      } else {
+        final appException = ErrorHandler.instance.handleError(e, stackTrace);
+        AppLogger.warning(
+          'Firebase error pulling users from Firestore (code: ${e.code}): ${appException.message}',
+          name: 'admin.firestore.sync',
+          error: e,
+          stackTrace: stackTrace,
+        );
+      }
       return [];
     } catch (e, stackTrace) {
       final appException = ErrorHandler.instance.handleError(e, stackTrace);
@@ -762,12 +881,20 @@ class FirestoreSyncService {
         }
       } else {
         // Admin or all pull
+        // Skip global pull for non-admins to avoid PERMISSION_DENIED
+        final currentUser = await _getCurrentUserFromLocal();
+        final isAdmin = currentUser?.isAdmin ?? false;
+        
+        if (!isAdmin) {
+          developer.log('Skipping global enterprise pull for non-admin user', name: 'admin.firestore.sync');
+          return result;
+        }
+
         final snapshot = await snapshotQuery.get();
         result.addAll(snapshot.docs
             .map((doc) => Enterprise.fromMap(doc.data())));
             
         // Pour les admins, on doit aussi récupérer TOUS les sous-tenants
-        // via collectionGroup sinon on ne les verra pas s'ils ne sont pas à la racine
         for (final subCollection in ['pointsOfSale', 'agences']) {
           try {
             final groupSnapshot = await firestore
@@ -795,46 +922,85 @@ class FirestoreSyncService {
         return result;
       }
 
-      // 2. Search for missing IDs in sub-collections (pointsOfSale and agences)
-      final missingIds = allowedEnterpriseIds.where((id) => !foundIds.contains(id)).toList();
+      // 2. Search for missing IDs
+      final missingIds = allowedEnterpriseIds!.where((id) => !foundIds.contains(id)).toList();
       
       if (missingIds.isNotEmpty) {
-        developer.log('Searching for ${missingIds.length} missing enterprises using collectionGroups...', name: 'admin.firestore.sync');
+        developer.log('Resolving ${missingIds.length} missing enterprise IDs...', name: 'admin.firestore.sync');
         
-        for (final subCollection in ['pointsOfSale', 'agences']) {
-          if (missingIds.every((id) => foundIds.contains(id))) break;
-          
-          final idsToSearch = missingIds.where((id) => !foundIds.contains(id)).toList();
-          
-          // Firestore 'whereIn' est limité à 10 ou 30
-          for (var i = 0; i < idsToSearch.length; i += 10) {
-            final chunk = idsToSearch.sublist(
-              i, 
-              i + 10 > idsToSearch.length ? idsToSearch.length : i + 10,
-            );
+        final List<String> stillMissing = [];
+        
+        // Strategy A: Try direct paths via ID pattern (pos_parentId_uid)
+        for (final id in missingIds) {
+          final parts = id.split('_');
+          if (parts.length >= 3) {
+            final prefix = parts[0];
+            final parentId = '${parts[1]}_${parts[2]}';
+            String? subCollection;
+            
+            if (prefix == 'pos') subCollection = 'pointsOfSale';
+            else if (prefix == 'agence' || prefix == 'mm') subCollection = 'agences';
 
-            try {
-              final groupSnapshot = await firestore
-                  .collectionGroup(subCollection)
-                  .where('uid', whereIn: chunk)
-                  .get();
+            if (subCollection != null) {
+              try {
+                final doc = await firestore
+                    .collection(_enterprisesCollection)
+                    .doc(parentId)
+                    .collection(subCollection)
+                    .doc(id)
+                    .get();
+                if (doc.exists) {
+                   final data = Map<String, dynamic>.from(doc.data()!);
+                   result.add(Enterprise.fromMap({...data, 'id': id, 'parentEnterpriseId': parentId}));
+                   foundIds.add(id);
+                   continue;
+                }
+              } catch (_) {}
+            }
+          }
+          stillMissing.add(id);
+        }
 
-              for (final doc in groupSnapshot.docs) {
-                if (foundIds.contains(doc.id)) continue;
-                
-                final data = Map<String, dynamic>.from(doc.data());
-                final parentId = doc.reference.parent.parent?.id;
-                
-                result.add(Enterprise.fromMap({
-                  ...data,
-                  'id': doc.id,
-                  'parentEnterpriseId': parentId,
-                }));
-                foundIds.add(doc.id);
-                developer.log('Found enterprise ${doc.id} in collectionGroup $subCollection', name: 'admin.firestore.sync');
+        // Strategy B: CollectionGroup fallback (only if Admin)
+        if (stillMissing.isNotEmpty) {
+          final currentUser = await _getCurrentUserFromLocal();
+          final isAdmin = currentUser?.isAdmin ?? false;
+
+          if (isAdmin) {
+            for (final subCollection in ['pointsOfSale', 'agences']) {
+              final idsToSearch = stillMissing.where((id) => !foundIds.contains(id)).toList();
+              if (idsToSearch.isEmpty) break;
+
+              for (var i = 0; i < idsToSearch.length; i += 10) {
+                final chunk = idsToSearch.sublist(
+                  i,
+                  i + 10 > idsToSearch.length ? idsToSearch.length : i + 10,
+                );
+
+                try {
+                  final groupSnapshot = await firestore
+                      .collectionGroup(subCollection)
+                      .where('uid', whereIn: chunk)
+                      .get();
+
+                  for (final doc in groupSnapshot.docs) {
+                    if (foundIds.contains(doc.id)) continue;
+
+                    final data = Map<String, dynamic>.from(doc.data());
+                    final parentId = doc.reference.parent.parent?.id;
+
+                    result.add(Enterprise.fromMap({
+                      ...data,
+                      'id': doc.id,
+                      'parentEnterpriseId': parentId,
+                    }));
+                    foundIds.add(doc.id);
+                    developer.log('Found enterprise ${doc.id} in collectionGroup $subCollection', name: 'admin.firestore.sync');
+                  }
+                } catch (e) {
+                  AppLogger.warning('Error searching collectionGroup $subCollection for missing IDs: $e', name: 'admin.firestore.sync');
+                }
               }
-            } catch (e) {
-              AppLogger.warning('Error searching collectionGroup $subCollection for missing IDs: $e', name: 'admin.firestore.sync');
             }
           }
         }
@@ -854,24 +1020,35 @@ class FirestoreSyncService {
   }
 
   /// Pull roles from Firestore
-  Future<List<UserRole>> pullRolesFromFirestore() async {
+  Future<List<UserRole>> pullRolesFromFirestore({List<String>? roleIds}) async {
     try {
+      // Si on a des IDs spécifiques, on peut les récupérer même sans permission sur la collection racine
+      if (roleIds != null && roleIds.isNotEmpty) {
+        final List<UserRole> result = [];
+        // Ajouter les rôles système par défaut
+        final List<String> targetIds = {...roleIds, 'admin', 'admin_gaz', 'admin_eau_minerale', 'admin_orange_money', 'admin_boutique', 'admin_immobilier'}.toList();
+        
+        for (var i = 0; i < targetIds.length; i += 10) {
+          final chunk = targetIds.sublist(i, i + 10 > targetIds.length ? targetIds.length : i + 10);
+          final snapshot = await firestore
+              .collection(_rolesCollection)
+              .where(FieldPath.documentId, whereIn: chunk)
+              .get();
+              
+          result.addAll(snapshot.docs.map((doc) => _mapFirestoreDocToRole(doc)));
+        }
+        return result;
+      }
+
       final snapshot = await firestore.collection(_rolesCollection).get();
-      return snapshot.docs.map((doc) {
-        final data = doc.data();
-        return UserRole(
-          id: data['id'] as String,
-          name: data['name'] as String,
-          description: data['description'] as String,
-          permissions:
-              (data['permissions'] as List<dynamic>?)
-                  ?.map((e) => e as String)
-                  .toSet() ??
-              {},
-          moduleId: data['moduleId'] as String? ?? 'administration',
-          isSystemRole: data['isSystemRole'] as bool? ?? false,
-        );
-      }).toList();
+      return snapshot.docs.map((doc) => _mapFirestoreDocToRole(doc)).toList();
+    } on FirebaseException catch (e, stackTrace) {
+      if (e.code == 'permission-denied') {
+        AppLogger.info('Note: Global roles pull restricted. Returning empty list.', name: 'admin.firestore.sync');
+      } else {
+        AppLogger.warning('Firebase error pulling roles: ${e.message}', name: 'admin.firestore.sync');
+      }
+      return [];
     } catch (e, stackTrace) {
       final appException = ErrorHandler.instance.handleError(e, stackTrace);
       AppLogger.warning(
@@ -882,6 +1059,21 @@ class FirestoreSyncService {
       );
       return [];
     }
+  }
+
+  UserRole _mapFirestoreDocToRole(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    return UserRole(
+      id: data['id'] as String? ?? doc.id,
+      name: data['name'] as String? ?? '',
+      description: data['description'] as String? ?? '',
+      permissions: (data['permissions'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toSet() ??
+          {},
+      moduleId: data['moduleId'] as String? ?? 'administration',
+      isSystemRole: data['isSystemRole'] as bool? ?? false,
+    );
   }
 
   /// Pull EnterpriseModuleUsers from Firestore

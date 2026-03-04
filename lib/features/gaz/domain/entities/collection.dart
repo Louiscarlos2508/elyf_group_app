@@ -24,6 +24,9 @@ class Collection {
     this.unitPricesByWeight, // poids -> prix unitaire (pour prix en gros par poids)
     this.sessionId,
     this.tourId,
+    this.fullBottlesReceived = const {}, 
+    this.receptionDate,
+    this.receptionUserId,
   });
 
   final String id;
@@ -41,6 +44,9 @@ class Collection {
   final DateTime? paymentDate;
   final String? sessionId;
   final String? tourId;
+  final Map<int, int> fullBottlesReceived;
+  final DateTime? receptionDate;
+  final String? receptionUserId;
 
   Collection copyWith({
     String? id,
@@ -57,6 +63,7 @@ class Collection {
     DateTime? paymentDate,
     String? sessionId,
     String? tourId,
+    Map<int, int>? fullBottlesReceived,
   }) {
     return Collection(
       id: id ?? this.id,
@@ -73,6 +80,9 @@ class Collection {
       paymentDate: paymentDate ?? this.paymentDate,
       sessionId: sessionId ?? this.sessionId,
       tourId: tourId ?? this.tourId,
+      fullBottlesReceived: fullBottlesReceived ?? this.fullBottlesReceived,
+      receptionDate: receptionDate ?? this.receptionDate,
+      receptionUserId: receptionUserId ?? this.receptionUserId,
     );
   }
 
@@ -97,6 +107,12 @@ class Collection {
     // Récupérer les fuites si disponibles
     final leaksRaw = map['leaks'] as Map<String, dynamic>?;
     final leaks = leaksRaw?.map(
+          (k, v) => MapEntry(int.parse(k), (v as num).toInt()),
+        ) ??
+        <int, int>{};
+
+    final fullBottlesReceivedRaw = map['fullBottlesReceived'] as Map<String, dynamic>?;
+    final fullBottlesReceived = fullBottlesReceivedRaw?.map(
           (k, v) => MapEntry(int.parse(k), (v as num).toInt()),
         ) ??
         <int, int>{};
@@ -127,6 +143,11 @@ class Collection {
           : null,
       sessionId: map['sessionId'] as String?,
       tourId: map['tourId'] as String?,
+      fullBottlesReceived: fullBottlesReceived,
+      receptionDate: map['receptionDate'] != null
+          ? DateTime.parse(map['receptionDate'] as String)
+          : null,
+      receptionUserId: map['receptionUserId'] as String?,
     );
   }
 
@@ -150,12 +171,23 @@ class Collection {
       'paymentDate': paymentDate?.toIso8601String(),
       'sessionId': sessionId,
       'tourId': tourId,
+      'fullBottlesReceived': fullBottlesReceived.map((k, v) => MapEntry(k.toString(), v)),
+      'receptionDate': receptionDate?.toIso8601String(),
+      'receptionUserId': receptionUserId,
     };
   }
 
   /// Calcule le total des bouteilles collectées.
   int get totalBottles {
     return emptyBottles.values.fold<int>(0, (sum, qty) => sum + qty);
+  }
+
+  /// Alias pour compatibilité
+  int get totalEmptyBottles => totalBottles;
+
+  /// Calcule le total des bouteilles pleines reçues.
+  int get totalFullBottlesReceived {
+    return fullBottlesReceived.values.fold<int>(0, (sum, qty) => sum + qty);
   }
 
   /// Calcule le total des fuites.
@@ -173,9 +205,23 @@ class Collection {
     return unitPricesByWeight![weight] ?? unitPrice;
   }
 
-  /// Calcule le montant dû (bouteilles sans fuites).
+  /// Calcule le montant dû.
+  /// Pour les grossistes liés à un tour, on base le calcul sur fullBottlesReceived si non vide.
   double get amountDue {
     double total = 0.0;
+    
+    // Si c'est un grossiste et qu'on a des bouteilles pleines attribuées (via tour)
+    if (type == CollectionType.wholesaler && fullBottlesReceived.isNotEmpty) {
+      for (final entry in fullBottlesReceived.entries) {
+        final weight = entry.key;
+        final qty = entry.value;
+        final price = getUnitPriceForWeight(weight);
+        total += qty * price;
+      }
+      return total;
+    }
+
+    // Sinon (POS ou grossiste hors tour), on base sur les vides collectés moins les fuites
     for (final entry in emptyBottles.entries) {
       final weight = entry.key;
       final qty = entry.value;

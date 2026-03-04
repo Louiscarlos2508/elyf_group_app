@@ -76,9 +76,7 @@ void callbackDispatcher() {
       // Cleanup to free resources in the background isolate
       await syncManager.dispose();
       await connectivityService.dispose();
-      // DriftService is a singleton, but closing the DB is good practice in a short-lived isolate
-      await driftService.close();
-
+      
       return Future.value(true);
     } catch (e, stackTrace) {
       developer.log(

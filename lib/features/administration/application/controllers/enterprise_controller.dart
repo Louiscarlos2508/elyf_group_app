@@ -15,7 +15,7 @@ import '../../domain/services/audit/audit_service.dart';
 import '../../domain/entities/audit_log.dart';
 import '../../data/services/firestore_sync_service.dart';
 import '../../domain/services/validation/permission_validator_service.dart';
-import '../services/tenant_context_service.dart';
+import 'package:elyf_groupe_app/core/tenant/services/tenant_context_service.dart';
 
 /// Controller pour gérer les entreprises.
 ///

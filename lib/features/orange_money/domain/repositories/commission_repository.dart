@@ -78,4 +78,10 @@ abstract class CommissionRepository {
 
   /// Obtenir les statistiques des commissions
   Future<Map<String, dynamic>> getStatistics({String? enterpriseId});
+
+  /// Obtenir les statistiques globales pour un réseau d'entreprises
+  Future<Map<String, dynamic>> fetchNetworkStatistics(
+    List<String> enterpriseIds, {
+    String? period,
+  });
 }

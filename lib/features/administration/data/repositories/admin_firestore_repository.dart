@@ -6,19 +6,16 @@ import '../../../../core/auth/entities/enterprise_module_user.dart';
 import '../../../../core/permissions/entities/user_role.dart';
 import '../../domain/entities/enterprise.dart';
 import '../../domain/repositories/admin_repository.dart';
-import '../../application/services/tenant_context_service.dart';
+import 'package:elyf_groupe_app/core/tenant/services/tenant_context_service.dart';
 
 /// Firestore-based repository for administration operations
 /// Online-only, multi-tenant aware
 class AdminFirestoreRepository implements AdminRepository {
   AdminFirestoreRepository({
     required FirebaseFirestore firestore,
-    required Ref ref,
-  })  : _firestore = firestore,
-        _ref = ref;
+  })  : _firestore = firestore;
 
   final FirebaseFirestore _firestore;
-  final Ref _ref;
 
   // Collections
   CollectionReference<Map<String, dynamic>> get _enterprises =>
@@ -65,8 +62,25 @@ class AdminFirestoreRepository implements AdminRepository {
 
   /// Get enterprise hierarchy (ancestors + current + descendants)
   Future<EnterpriseHierarchy> getEnterpriseHierarchy(String enterpriseId) async {
-    final tenantService = _ref.read(tenantContextServiceProvider);
-    return await tenantService.getHierarchy(enterpriseId);
+    final current = await getEnterpriseById(enterpriseId);
+    
+    final ancestors = <Enterprise>[];
+    for (final ancestorId in current.ancestorIds) {
+      try {
+        final ancestor = await getEnterpriseById(ancestorId);
+        ancestors.add(ancestor);
+      } catch (e) {
+        continue;
+      }
+    }
+    
+    final descendants = await getEnterpriseDescendants(enterpriseId);
+    
+    return EnterpriseHierarchy(
+      current: current,
+      ancestors: ancestors,
+      descendants: descendants,
+    );
   }
 
   /// Get children of an enterprise
@@ -91,13 +105,31 @@ class AdminFirestoreRepository implements AdminRepository {
 
   /// Create enterprise with automatic hierarchy calculation
   Future<String> createEnterprise(Enterprise enterprise) async {
-    final tenantService = _ref.read(tenantContextServiceProvider);
-    
     // Calculate hierarchy info
-    final hierarchyInfo = await tenantService.calculateHierarchyInfo(
-      enterpriseId: enterprise.id,
-      parentEnterpriseId: enterprise.parentEnterpriseId,
-    );
+    HierarchyInfo hierarchyInfo;
+    
+    if (enterprise.parentEnterpriseId == null) {
+      hierarchyInfo = HierarchyInfo(
+        level: 0,
+        path: '/${enterprise.id}',
+        ancestorIds: [],
+      );
+    } else {
+      try {
+        final parent = await getEnterpriseById(enterprise.parentEnterpriseId!);
+        hierarchyInfo = HierarchyInfo(
+          level: parent.hierarchyLevel + 1,
+          path: '${parent.hierarchyPath}/${enterprise.id}',
+          ancestorIds: [...parent.ancestorIds, parent.id],
+        );
+      } catch (e) {
+        hierarchyInfo = HierarchyInfo(
+          level: 0,
+          path: '/${enterprise.id}',
+          ancestorIds: [],
+        );
+      }
+    }
     
     // Create enterprise with calculated hierarchy
     final enterpriseWithHierarchy = enterprise.copyWith(

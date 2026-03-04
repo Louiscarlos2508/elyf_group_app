@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
 
 /// Widget pour l'état vide de l'historique des transactions.
 class TransactionsHistoryEmptyState extends StatelessWidget {
@@ -6,41 +8,36 @@ class TransactionsHistoryEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-        side: const BorderSide(color: Color(0xFFE5E5E5), width: 1.219),
-      ),
+    final theme = Theme.of(context);
+    
+    return ElyfCard(
       child: Container(
         height: 234,
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(AppSpacing.xl),
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
-                Icons.inbox_outlined,
+                Icons.history_outlined,
                 size: 48,
-                color: const Color(0xFF4A5565).withValues(alpha: 0.5),
+                color: theme.colorScheme.primary.withValues(alpha: 0.3),
               ),
-              const SizedBox(height: 16),
-              const Text(
+              SizedBox(height: AppSpacing.md),
+              Text(
                 'Aucune transaction',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.normal,
-                  color: Color(0xFF4A5565),
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface,
                 ),
               ),
-              const SizedBox(height: 8),
-              const Text(
-                'Vos transactions apparaîtront ici',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.normal,
-                  color: Color(0xFF6A7282),
+              SizedBox(height: AppSpacing.xs),
+              Text(
+                'Vos transactions apparaîtront ici dès qu\'elles seront enregistrées.',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
+                textAlign: TextAlign.center,
               ),
             ],
           ),

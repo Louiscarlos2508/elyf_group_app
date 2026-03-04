@@ -7,7 +7,7 @@ import 'package:elyf_groupe_app/features/administration/domain/entities/enterpri
 import 'package:elyf_groupe_app/features/administration/domain/repositories/enterprise_repository.dart';
 import '../../../audit_trail/domain/services/audit_trail_service.dart';
 import '../../domain/adapters/orange_money_permission_adapter.dart';
-import '../../../administration/application/services/tenant_context_service.dart';
+import 'package:elyf_groupe_app/core/tenant/services/tenant_context_service.dart';
 import '../../../../core/logging/app_logger.dart';
 
 /// Controller for managing mobile money agents (represented as enterprises).

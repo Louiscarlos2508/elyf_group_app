@@ -39,51 +39,14 @@ import 'controllers/user_assignment_controller.dart';
 import '../../../core/auth/services/auth_service.dart';
 import '../data/repositories/admin_firestore_repository.dart';
 import '../data/repositories/user_firestore_repository.dart';
-export 'services/tenant_context_service.dart';
-import 'services/tenant_context_service.dart';
+import 'package:elyf_groupe_app/core/repositories/repository_providers.dart';
+export 'package:elyf_groupe_app/core/repositories/repository_providers.dart';
 import '../../../core/auth/services/firestore_permission_service.dart';
 
 import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
+// Replaced by direct import/export above
 
-/// Provider for admin repository (platform-aware)
-/// - Web: Utilise Firestore directement (online-only)
-/// - Mobile/Desktop: Utilise Drift (offline-first)
-final adminRepositoryProvider = Provider<AdminRepository>(
-  (ref) {
-    if (kIsWeb) {
-      return AdminFirestoreRepository(
-        firestore: ref.watch(fb_providers.firestoreProvider),
-        ref: ref,
-      );
-    } else {
-      return AdminOfflineRepository(
-        driftService: ref.watch(driftServiceProvider),
-        syncManager: ref.watch(syncManagerProvider),
-        connectivityService: ref.watch(connectivityServiceProvider),
-        userRepository: ref.watch(userRepositoryProvider),
-      );
-    }
-  },
-);
-
-/// Provider for user repository (platform-aware)
-/// - Web: Utilise Firestore directement (online-only)
-/// - Mobile/Desktop: Utilise Drift (offline-first)
-final userRepositoryProvider = Provider<UserRepository>(
-  (ref) {
-    if (kIsWeb) {
-      return UserFirestoreRepository(
-        firestore: ref.watch(fb_providers.firestoreProvider),
-      );
-    } else {
-      return UserOfflineRepository(
-        driftService: ref.watch(driftServiceProvider),
-        syncManager: ref.watch(syncManagerProvider),
-        connectivityService: ref.watch(connectivityServiceProvider),
-      );
-    }
-  },
-);
+/// Permissions and other base providers
 
 /// Provider for permission service
 ///
@@ -97,27 +60,6 @@ final permissionRegistryProvider = Provider<PermissionRegistry>(
   (ref) => PermissionRegistry.instance,
 );
 
-/// Provider for enterprise repository (platform-aware)
-/// - Web: Utilise Firestore directement (online-only)
-/// - Mobile/Desktop: Utilise Drift (offline-first)
-final enterpriseRepositoryProvider = Provider<EnterpriseRepository>(
-  (ref) {
-    if (kIsWeb) {
-      // Sur web: utiliser Firestore directement
-      return EnterpriseFirestoreRepository(
-        firestore: ref.watch(fb_providers.firestoreProvider),
-        authService: ref.watch(authServiceProvider),
-      );
-    } else {
-      // Sur mobile/desktop: utiliser Drift offline-first
-      return EnterpriseOfflineRepository(
-        driftService: ref.watch(driftServiceProvider),
-        syncManager: ref.watch(syncManagerProvider),
-        connectivityService: ref.watch(connectivityServiceProvider),
-      );
-    }
-  },
-);
 
 /// Provider for enterprise type service
 final enterpriseTypeServiceProvider = Provider<EnterpriseTypeService>(

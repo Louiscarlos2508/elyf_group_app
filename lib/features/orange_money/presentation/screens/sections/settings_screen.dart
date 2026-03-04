@@ -6,12 +6,7 @@ import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
 import '../../../../../core/errors/app_exceptions.dart';
 import 'package:elyf_groupe_app/features/orange_money/application/providers.dart';
 import 'package:elyf_groupe_app/features/orange_money/domain/entities/orange_money_settings.dart';
-import '../../widgets/settings_account_card.dart';
 import '../../widgets/settings_notifications_card.dart';
-import '../../widgets/settings_sim_card.dart';
-import '../../widgets/settings_system_info_card.dart';
-import '../../widgets/settings_thresholds_card.dart';
-import '../../widgets/settings_tips_card.dart';
 import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 
 /// Settings screen for Orange Money configuration.
@@ -83,14 +78,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     try {
       final controller = ref.read(settingsControllerProvider);
 
-      // Validate thresholds
-      if (_settings!.criticalLiquidityThreshold < 0) {
-        throw ValidationException(
-          'Le seuil de liquidité ne peut pas être négatif',
-          'NEGATIVE_LIQUIDITY_THRESHOLD',
-        );
-      }
-
       // Update notifications
       await controller.updateNotifications(
         widget.enterpriseId!,
@@ -98,21 +85,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         enableCommissionReminders: _settings!.enableCommissionReminders,
         enableCheckpointReminders: _settings!.enableCheckpointReminders,
         enableTransactionAlerts: _settings!.enableTransactionAlerts,
-      );
-
-      // Update thresholds
-      await controller.updateThresholds(
-        widget.enterpriseId!,
-        criticalLiquidityThreshold: _settings!.criticalLiquidityThreshold,
-        checkpointDiscrepancyThreshold: _settings!.checkpointDiscrepancyThreshold,
-        commissionReminderDays: _settings!.commissionReminderDays,
-        largeTransactionThreshold: _settings!.largeTransactionThreshold,
-      );
-
-      // Update SIM number
-      await controller.updateSimNumber(
-        widget.enterpriseId!,
-        _settings!.simNumber,
       );
 
       if (mounted) {
@@ -175,24 +147,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     settings: _settings!,
                     onSettingsChanged: _handleSettingsChanged,
                   ),
-                  const SizedBox(height: 24),
-                  SettingsThresholdsCard(
-                    settings: _settings!,
-                    onSettingsChanged: _handleSettingsChanged,
-                  ),
-                  const SizedBox(height: 24),
-                  SettingsSimCard(
-                    simNumber: _settings!.simNumber,
-                    onSimNumberChanged: (val) {
-                      _handleSettingsChanged(_settings!.copyWith(simNumber: val));
-                    },
-                  ),
-                  const SizedBox(height: 24),
-                  const SettingsAccountCard(),
-                  const SizedBox(height: 24),
-                  const SettingsSystemInfoCard(),
-                  const SizedBox(height: 24),
-                  const SettingsTipsCard(),
                   const SizedBox(height: 48),
                   _buildActionButtons(theme),
                   const SizedBox(height: 40),

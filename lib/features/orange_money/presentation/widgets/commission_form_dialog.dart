@@ -207,47 +207,53 @@ class _CommissionFormDialogState extends State<CommissionFormDialog> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Mois',
+                   const Text(
+                    'Mois de la commission',
                     style: TextStyle(
                       fontSize: 14,
-                      fontWeight: FontWeight.normal,
+                      fontWeight: FontWeight.w600,
                       color: Color(0xFF0A0A0A),
                     ),
                   ),
                   const SizedBox(height: 8),
                   InkWell(
                     onTap: () => _selectMonth(context),
+                    borderRadius: BorderRadius.circular(12),
                     child: Container(
-                      height: 36,
+                      height: 54,
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 4,
+                        horizontal: 16,
                       ),
                       decoration: BoxDecoration(
                         color: const Color(0xFFF3F3F5),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: Colors.transparent,
-                          width: 1.219,
+                          color: const Color(0xFFE4E4E7),
+                          width: 1,
                         ),
                       ),
                       child: Row(
                         children: [
+                           Icon(
+                            Icons.calendar_today,
+                            size: 20,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              monthText.isEmpty ? '' : monthText,
+                              monthText.isEmpty ? 'Sélectionner un mois' : monthText,
                               style: TextStyle(
-                                fontSize: 14,
+                                fontSize: 16,
                                 color: monthText.isEmpty
                                     ? const Color(0xFF717182)
                                     : const Color(0xFF0A0A0A),
+                                fontWeight: monthText.isEmpty ? FontWeight.normal : FontWeight.bold,
                               ),
                             ),
                           ),
                           const Icon(
-                            Icons.calendar_today,
-                            size: 16,
+                            Icons.arrow_drop_down,
                             color: Color(0xFF717182),
                           ),
                         ],
@@ -258,63 +264,22 @@ class _CommissionFormDialogState extends State<CommissionFormDialog> {
               ),
               const SizedBox(height: 16),
               // Amount field
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Montant total reçu (FCFA)',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.normal,
-                      color: Color(0xFF0A0A0A),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    controller: _amountController,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      hintText: 'Ex: 150000',
-                      hintStyle: const TextStyle(
-                        fontSize: 14,
-                        color: Color(0xFF717182),
-                      ),
-                      filled: true,
-                      fillColor: const Color(0xFFF3F3F5),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 10,
-                      ),
-                    ),
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF0A0A0A),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Le montant est requis';
-                      }
-                      final amount = int.tryParse(value.trim());
-                      if (amount == null || amount <= 0) {
-                        return 'Montant invalide';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'Montant total de la commission reçue du réseau',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.normal,
-                      color: Color(0xFF4A5565),
-                    ),
-                  ),
-                ],
+              ElyfField(
+                label: 'Montant total reçu (FCFA)',
+                controller: _amountController,
+                hint: 'Ex: 150000',
+                keyboardType: TextInputType.number,
+                prefixIcon: Icons.account_balance_wallet_outlined,
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Le montant est requis';
+                  }
+                  final amount = int.tryParse(value.trim());
+                  if (amount == null || amount <= 0) {
+                    return 'Montant invalide';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 16),
               // Photo upload
@@ -418,41 +383,12 @@ class _CommissionFormDialogState extends State<CommissionFormDialog> {
               ),
               const SizedBox(height: 16),
               // Notes field
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Notes (optionnel)',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.normal,
-                      color: Color(0xFF0A0A0A),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: _notesController,
-                    maxLines: 3,
-                    decoration: InputDecoration(
-                      hintText: 'Informations complémentaires...',
-                      hintStyle: const TextStyle(
-                        fontSize: 14,
-                        color: Color(0xFF717182),
-                      ),
-                      filled: true,
-                      fillColor: const Color(0xFFF3F3F5),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.all(12),
-                    ),
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF0A0A0A),
-                    ),
-                  ),
-                ],
+              ElyfField(
+                label: 'Notes (optionnel)',
+                controller: _notesController,
+                hint: 'Informations complémentaires...',
+                maxLines: 3,
+                prefixIcon: Icons.notes_rounded,
               ),
               const SizedBox(height: 16),
               // Action buttons
@@ -487,24 +423,10 @@ class _CommissionFormDialogState extends State<CommissionFormDialog> {
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: ElevatedButton(
+                    child: ElyfButton(
                       onPressed: _handleSave,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFF54900),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        minimumSize: const Size(0, 36),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      child: const Text(
-                        'Enregistrer',
-                        style: TextStyle(fontSize: 14),
-                      ),
+                      height: 48,
+                      child: const Text('Enregistrer'),
                     ),
                   ),
                 ],

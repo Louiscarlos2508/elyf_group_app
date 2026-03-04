@@ -107,8 +107,33 @@ class OrangeMoneyTreasuryOfflineRepository implements OrangeMoneyTreasuryReposit
   }
 
   @override
+  Future<void> deleteOperationsByReference(String entityId, String entityType) async {
+    final query = _db.select(_db.offlineRecords)
+      ..where((t) => t.collectionName.equals(_collectionName));
+    
+    final results = await query.get();
+    for (final r in results) {
+      final data = jsonDecode(r.dataJson) as Map<String, dynamic>;
+      if (data['referenceEntityId'] == entityId && data['referenceEntityType'] == entityType) {
+        await deleteOperation(r.localId);
+      }
+    }
+  }
+
+  @override
+  Stream<Map<String, int>> watchBalances(String enterpriseId, {List<String>? enterpriseIds}) {
+    return watchOperations(enterpriseId, enterpriseIds: enterpriseIds).map((operations) {
+      return _calculateBalances(operations);
+    });
+  }
+
+  @override
   Future<Map<String, int>> getBalances(String enterpriseId, {List<String>? enterpriseIds}) async {
     final operations = await getOperations(enterpriseId, enterpriseIds: enterpriseIds);
+    return _calculateBalances(operations);
+  }
+
+  Map<String, int> _calculateBalances(List<TreasuryOperation> operations) {
     int cashBalance = 0;
     int mobileMoneyBalance = 0;
 

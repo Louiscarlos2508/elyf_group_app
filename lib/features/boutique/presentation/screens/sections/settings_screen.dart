@@ -3,8 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/features/boutique/presentation/widgets/boutique_header.dart';
 import 'package:elyf_groupe_app/features/boutique/presentation/widgets/integrity_verification_dialog.dart';
 import 'package:elyf_groupe_app/features/boutique/presentation/screens/sections/category_management_screen.dart';
-import 'package:elyf_groupe_app/features/boutique/presentation/screens/settings/printer_settings_screen.dart';
-import 'package:elyf_groupe_app/features/boutique/presentation/screens/settings/receipt_settings_screen.dart';
 import 'package:elyf_groupe_app/features/boutique/presentation/screens/settings/alert_settings_screen.dart';
 import 'package:elyf_groupe_app/features/boutique/presentation/screens/settings/payment_settings_screen.dart';
 
@@ -28,26 +26,6 @@ class SettingsScreen extends ConsumerWidget {
           padding: const EdgeInsets.all(24),
           sliver: SliverList(
             delegate: SliverChildListDelegate([
-              _buildSectionTitle("Matériel & Impression"),
-              _buildSettingTile(
-                icon: Icons.print_outlined,
-                title: "Imprimante Thermique",
-                subtitle: "Gérer la connexion Sunmi ou System",
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const PrinterSettingsScreen()),
-                ),
-              ),
-              _buildSettingTile(
-                icon: Icons.receipt_long_outlined,
-                title: "Format du Reçu",
-                subtitle: "Largeur (58mm/80mm), Logo, Message de pied",
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const ReceiptSettingsScreen()),
-                ),
-              ),
-              const SizedBox(height: 24),
               _buildSectionTitle("Configuration Commerciale"),
               _buildSettingTile(
                 icon: Icons.notifications_active_outlined,
@@ -69,20 +47,6 @@ class SettingsScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 24),
               _buildSectionTitle("Administration"),
-              _buildSettingTile(
-                icon: Icons.sync,
-                title: "Synchronisation Forcee",
-                subtitle: "Forcer la remontée des transactions vers le cloud",
-                onTap: () {},
-                color: Colors.blue,
-              ),
-              _buildSettingTile(
-                icon: Icons.delete_outline,
-                title: "Réinitialiser les données locales",
-                subtitle: "Action irréversible - Vide la base Drift locale",
-                onTap: () {},
-                color: Colors.red,
-              ),
               _buildSettingTile(
                 icon: Icons.category_outlined,
                 title: "Gestion des catégories",

@@ -45,6 +45,7 @@ class ModuleRealtimeSyncService {
       {};
 
   bool _isListening = false;
+  bool _isStopping = false;
   String? _currentEnterpriseId;
   String? _currentModuleId;
 
@@ -182,6 +183,14 @@ class ModuleRealtimeSyncService {
       await stopRealtimeSync();
     }
 
+    if (_isStopping) {
+      developer.log(
+        'ModuleRealtimeSyncService: Cannot start while stopping. Waiting...',
+        name: 'module.realtime.sync',
+      );
+      return;
+    }
+
     if (_isListening &&
         _currentEnterpriseId == enterpriseId &&
         _currentModuleId == moduleId) {
@@ -307,6 +316,7 @@ class ModuleRealtimeSyncService {
 
       final subscription = collectionRef.snapshots().listen(
         (snapshot) async {
+          if (_isStopping || !_isListening) return;
           if (snapshot.docChanges.isEmpty) return;
 
           final itemsToUpsert = <OfflineRecordsCompanion>[];
@@ -399,21 +409,22 @@ class ModuleRealtimeSyncService {
             }
           }
 
-          // Apply Batch
+          // Apply Batch — retry on SQLite lock (code 5) caused by concurrent listeners
           if (itemsToUpsert.isNotEmpty) {
-            await driftService.records.upsertAll(itemsToUpsert);
+            await _executeWithRetry(() => driftService.records.upsertAll(itemsToUpsert));
           }
           
           for (final remoteId in itemsToRemove) {
-            await driftService.records.deleteByRemoteId(
+            await _executeWithRetry(() => driftService.records.deleteByRemoteId(
               collectionName: collectionName,
               remoteId: remoteId,
               enterpriseId: enterpriseId,
               moduleType: moduleId,
-            );
+            ));
           }
         },
         onError: (error, stackTrace) {
+          if (_isStopping || !_isListening) return;
           if (error is FirebaseException && error.code == 'permission-denied') {
             developer.log(
               'Permission denied for realtime stream on $collectionName for enterprise $enterpriseId. Ignoring.',
@@ -453,8 +464,37 @@ class ModuleRealtimeSyncService {
     }
   }
 
+  /// Exécute une opération de base de données avec retry sur SQLite locked (code 5).
+  /// Plusieurs listeners Firestore peuvent écrire simultanément → deadlock temporaire.
+  Future<void> _executeWithRetry(Future<void> Function() operation, {int maxRetries = 3}) async {
+    for (var attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        await operation();
+        return;
+      } catch (e) {
+        // SqliteException code 5 = SQLITE_LOCKED
+        final isSqliteLocked = e.toString().contains('database is locked') ||
+            e.toString().contains('SqliteException(5)');
+        if (isSqliteLocked && attempt < maxRetries - 1) {
+          // Attente exponentielle: 50ms, 150ms, 450ms
+          await Future.delayed(Duration(milliseconds: 50 * (attempt + 1) * 3));
+          continue;
+        }
+        // Dernier essai échoué ou erreur non-lock : logger et abandonner sans crash
+        AppLogger.warning(
+          'DB write failed after ${attempt + 1} attempt(s): $e',
+          name: 'module.realtime.sync',
+        );
+        return;
+      }
+    }
+  }
+
   /// Arrête la synchronisation en temps réel.
   Future<void> stopRealtimeSync() async {
+    if (_isStopping) return;
+    _isStopping = true;
+    
     for (final subscriptions in _subscriptions.values) {
       for (final subscription in subscriptions) {
         await subscription.cancel();
@@ -464,6 +504,7 @@ class ModuleRealtimeSyncService {
     _isListening = false;
     _currentEnterpriseId = null;
     _currentModuleId = null;
+    _isStopping = false;
     AppLogger.info(
       'ModuleRealtimeSyncService stopped',
       name: 'module.realtime.sync',

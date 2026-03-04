@@ -71,8 +71,51 @@ class AppColors {
     const Color(0xFFFFC300), // Soft Accent Gold
   ];
 
+  static final List<Color> boutiqueGradient = [
+    const Color(0xFF00C897), // Success Green
+    const Color(0xFF00E6A1), // Light Success
+    const Color(0xFF00FFB2), // Vibrant Mint
+  ];
+
+  static final List<Color> immobilierGradient = [
+    const Color(0xFF8B4513), // SaddleBrown
+    const Color(0xFFA0522D), // Sienna
+    const Color(0xFFCD853F), // Peru
+  ];
+
   static const Color glassWhite = Color(0x1AFFFFFF);
   static const Color glassBlack = Color(0x1A000000);
   static const Color glassBorderWhite = Color(0x33FFFFFF);
   static const Color glassBorderBlack = Color(0x33000000);
+
+  /// Get the gradient for a specific module
+  static List<Color> getModuleGradient(String? moduleId) {
+    if (moduleId == null) return mainGradient;
+    
+    // Support for both enum names and string IDs
+    switch (moduleId.toLowerCase()) {
+      case 'gaz':
+      case 'gas_company':
+        return orangeMoneyGradient; 
+      case 'eau':
+      case 'eau_minerale':
+        return waterGradient;
+      case 'immobilier':
+      case 'real_estate_agency':
+        return immobilierGradient;
+      case 'boutique':
+      case 'shop':
+        return boutiqueGradient;
+      case 'orange_money':
+      case 'mobile_money':
+        return orangeMoneyGradient;
+      default:
+        return mainGradient;
+    }
+  }
+
+  /// Get the primary color for a specific module
+  static Color getModuleColor(String? moduleId) {
+    return getModuleGradient(moduleId).first;
+  }
 }

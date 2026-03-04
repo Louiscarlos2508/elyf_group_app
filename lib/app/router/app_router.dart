@@ -1,23 +1,26 @@
 import 'package:flutter/material.dart';
+import 'dart:developer' as developer;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../features/administration/presentation/screens/admin_home_screen.dart';
-import '../../features/administration/presentation/screens/sections/admin_enterprise_management_section.dart';
-import '../../features/intro/presentation/screens/login_screen.dart';
-import '../../features/intro/presentation/screens/onboarding_screen.dart';
-import '../../features/intro/presentation/screens/splash_screen.dart';
-import '../../features/modules/presentation/screens/module_menu_screen.dart';
-import 'module_route_wrappers.dart';
+import 'package:elyf_groupe_app/features/administration/presentation/screens/admin_home_screen.dart';
+import 'package:elyf_groupe_app/features/administration/presentation/screens/sections/admin_enterprise_management_section.dart';
+import 'package:elyf_groupe_app/features/intro/presentation/screens/login_screen.dart';
+import 'package:elyf_groupe_app/features/intro/presentation/screens/onboarding_screen.dart';
+import 'package:elyf_groupe_app/features/intro/presentation/screens/splash_screen.dart';
+import 'package:elyf_groupe_app/features/modules/presentation/screens/module_menu_screen.dart';
+import 'package:elyf_groupe_app/features/intro/presentation/screens/tenant_selection_screen.dart';
+import 'package:elyf_groupe_app/app/router/module_route_wrappers.dart';
 
-import '../../core/auth/providers.dart';
-import '../../core/tenant/tenant_provider.dart';
+import 'package:elyf_groupe_app/core/auth/providers.dart';
+import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 
 enum AppRoute {
   splash,
   onboarding,
   login,
   moduleMenu,
+  tenantSelection,
   dashboard,
   admin,
   adminEnterpriseManagement,
@@ -37,11 +40,12 @@ class RouterNotifier extends ChangeNotifier {
     ref.listen(currentUserProvider, (_, __) => notifyListeners());
     // Écouter les changements d'entreprise active
     ref.listen(activeEnterpriseIdProvider, (_, __) => notifyListeners());
+    // Écouter le flag de changement de tenant
+    ref.listen(isSwitchingTenantProvider, (_, __) => notifyListeners());
 
-    // Écouter la disponibilité des entreprises pour l'auto-sélection
+    // Écouter les accès aux entreprises et modules pour déclencher la redirection
+    // après le "Phase 1 Pull" (chargement des assignations)
     ref.listen(userAccessibleEnterprisesProvider, (_, __) => notifyListeners());
-
-    // Écouter la disponibilité des modules pour l'auto-sélection
     ref.listen(userAccessibleModulesForActiveEnterpriseProvider, (_, __) => notifyListeners());
   }
 }
@@ -56,6 +60,21 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final authState = ref.read(isAuthenticatedProvider);
       final activeEnterpriseIdSync = ref.read(activeEnterpriseIdProvider);
       final currentUserSync = ref.read(currentUserProvider);
+      final bool isSwitching = ref.read(isSwitchingTenantProvider);
+      final String location = state.uri.path;
+
+      developer.log(
+        'Router: redirect check for $location (auth: $authState, switching: $isSwitching)', 
+        name: 'router'
+      );
+
+      // 0. Bloquer toute redirection pendant un switch transactionnel
+      // Cela évite de tomber sur des "Permission Denied" car les données Drift 
+      // n'ont pas encore fini de s'accorder avec le nouvel enterpriseId.
+      if (isSwitching) {
+        developer.log('Router: Switching tenant in progress, skipping redirect', name: 'router');
+        return null;
+      }
 
       // Récupérer l'état de l'auth de manière synchrone
       final bool isAuthenticated = authState;
@@ -72,8 +91,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         loading: () => null,
         error: (_, __) => null,
       );
-
-      final String location = state.uri.path;
 
       // Routes publiques
       final bool isSplash = location == '/splash';
@@ -120,7 +137,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           }
         }
 
-        return '/modules';
+        return '/tenant_selection';
       }
 
       // 4. Rediriger les admins qui essaient d'accéder à /modules vers /admin
@@ -142,20 +159,43 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final bool isModuleMenu = location == '/modules';
 
       if (isModuleRoute && !isModuleMenu) {
-        // Vérifier si une entreprise est sélectionnée
+        // 1. Vérifier si une entreprise est sélectionnée
         if (activeEnterpriseId == null) {
-          // Rediriger vers la sélection d'entreprise si on essaie d'entrer dans un module
-          return '/modules';
+          return '/tenant_selection';
         }
+
+        // 2. Vérifier si l'utilisateur a accès à ce module spécifique pour cette entreprise
+        // On récupère les modules accessibles (déjà pré-chargés par le switch manager)
+        final modulesAsync = ref.read(userAccessibleModulesForActiveEnterpriseProvider);
+        if (modulesAsync.hasValue) {
+          final List<String> accessibleModuleIds = modulesAsync.value!;
+          final String? currentModuleId = _getModuleIdFromPath(location);
+
+          // Si on connaît le module et qu'il n'est pas dans la liste des accès -> redirection
+          if (currentModuleId != null && !accessibleModuleIds.contains(currentModuleId)) {
+            developer.log(
+              'Router: Access denied for module $currentModuleId in enterprise $activeEnterpriseId. Redirecting to /modules', 
+              name: 'router'
+            );
+            return '/modules';
+          }
+        }
+      }
+
+      // 7. Rediriger vers la sélection d'organisation si aucune entreprise active
+      if (!isAdmin && activeEnterpriseId == null && !isLogin && !isSplash && !isOnboarding && location != '/tenant_selection') {
+        return '/tenant_selection';
       }
 
       // 7. Redirection de la racine / vers /modules ou /admin
       if (location == '/') {
         // Attendre que l'utilisateur soit chargé
         if (currentUserSync.isLoading) return null;
-        return isAdmin ? '/admin' : '/modules';
+        if (isAdmin) return '/admin';
+        return activeEnterpriseId == null ? '/tenant_selection' : '/modules';
       }
 
+      developer.log('Router: passing through to $location', name: 'router');
       return null;
     },
     routes: [
@@ -178,6 +218,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/modules',
         name: AppRoute.moduleMenu.name,
         builder: (context, state) => const ModuleMenuScreen(),
+      ),
+      GoRoute(
+        path: '/tenant_selection',
+        name: AppRoute.tenantSelection.name,
+        builder: (context, state) => const TenantSelectionScreen(),
       ),
       GoRoute(
         path: '/admin',
@@ -245,4 +290,14 @@ String? _getModulePathFromId(String moduleId) {
     default:
       return null;
   }
+}
+
+/// Helper pour mapper un chemin de route vers l'ID d'un module
+String? _getModuleIdFromPath(String path) {
+  if (path.contains('/modules/gaz')) return 'gaz';
+  if (path.contains('/modules/eau_sachet')) return 'eau_minerale';
+  if (path.contains('/modules/orange_money')) return 'orange_money';
+  if (path.contains('/modules/immobilier')) return 'immobilier';
+  if (path.contains('/modules/boutique')) return 'boutique';
+  return null;
 }

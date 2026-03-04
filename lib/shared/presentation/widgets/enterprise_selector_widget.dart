@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../features/administration/domain/entities/enterprise.dart';
 import '../../../core/tenant/tenant_provider.dart';
+import '../../../core/tenant/tenant_switch_manager.dart';
+import '../../../core/auth/providers.dart';
 
 /// Styles de présentation pour le sélecteur d'entreprise
 enum EnterpriseSelectorStyle {
@@ -76,25 +78,14 @@ class EnterpriseSelectorWidget extends ConsumerWidget {
     );
 
     if (selected != null && context.mounted) {
-      final tenantNotifier = ref.read(activeEnterpriseIdProvider.notifier);
-      await tenantNotifier.setActiveEnterpriseId(selected.id);
+      final success = await ref
+          .read(tenantSwitchManagerProvider.notifier)
+          .switchTenant(selected.id);
 
-      // Rafraîchir les providers qui dépendent de l'entreprise active
-      ref.invalidate(activeEnterpriseProvider);
-
-      // Attendre que le provider soit rechargé avant de naviguer
-      try {
-        await ref.read(activeEnterpriseProvider.future);
-      } catch (e) {
-        // Ignorer les erreurs, on naviguera quand même
-      }
-
-      // Rediriger vers le menu des modules pour recharger avec la nouvelle entreprise
-      if (context.mounted) {
+      if (success && context.mounted) {
         context.go('/modules');
         
         // Afficher le message de confirmation après la navigation
-        // Utiliser un délai pour s'assurer que le nouvel écran est monté
         await Future.delayed(const Duration(milliseconds: 100));
         
         if (context.mounted) {
@@ -114,78 +105,7 @@ class EnterpriseSelectorWidget extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
   ) async {
-    // Récupérer les entreprises accessibles
-    final accessibleEnterprisesAsync = ref.read(
-      userAccessibleEnterprisesProvider,
-    );
-
-    final accessibleEnterprises = accessibleEnterprisesAsync.when(
-      data: (enterprises) => enterprises,
-      loading: () => <Enterprise>[],
-      error: (_, __) => <Enterprise>[],
-    );
-
-    if (accessibleEnterprises.isEmpty) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Aucune entreprise accessible')),
-        );
-      }
-      return;
-    }
-
-    // Récupérer l'entreprise active
-    final activeEnterpriseAsync = ref.read(activeEnterpriseProvider);
-    final activeEnterprise = activeEnterpriseAsync.when(
-      data: (enterprise) => enterprise,
-      loading: () => null,
-      error: (_, __) => null,
-    );
-    final activeEnterpriseId = activeEnterprise?.id;
-
-    if (!context.mounted) return;
-
-    final selected = await showDialog<Enterprise>(
-      context: context,
-      builder: (context) => _EnterpriseSelectorDialog(
-        enterprises: accessibleEnterprises,
-        selectedEnterpriseId: activeEnterpriseId,
-      ),
-    );
-
-    if (selected != null && context.mounted) {
-      final tenantNotifier = ref.read(activeEnterpriseIdProvider.notifier);
-      await tenantNotifier.setActiveEnterpriseId(selected.id);
-
-      // Rafraîchir les providers qui dépendent de l'entreprise active
-      ref.invalidate(activeEnterpriseProvider);
-
-      // Attendre que le provider soit rechargé avant de naviguer
-      try {
-        await ref.read(activeEnterpriseProvider.future);
-      } catch (e) {
-        // Ignorer les erreurs, on naviguera quand même
-      }
-
-      // Rediriger vers le menu des modules pour recharger avec la nouvelle entreprise
-      if (context.mounted) {
-        context.go('/modules');
-        
-        // Afficher le message de confirmation après la navigation
-        // Utiliser un délai pour s'assurer que le nouvel écran est monté
-        await Future.delayed(const Duration(milliseconds: 100));
-        
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Entreprise sélectionnée : ${selected.name}'),
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              duration: const Duration(seconds: 2),
-            ),
-          );
-        }
-      }
-    }
+    await showSelector(context, ref);
   }
 
   @override
@@ -193,6 +113,11 @@ class EnterpriseSelectorWidget extends ConsumerWidget {
     final theme = Theme.of(context);
     final activeEnterpriseAsync = ref.watch(activeEnterpriseProvider);
     final accessibleEnterprisesAsync = ref.watch(userAccessibleEnterprisesProvider);
+
+    // Les admins système n'ont pas besoin de changer d'entreprise
+    // (ils opèrent en mode global depuis /admin)
+    final isAdmin = ref.watch(isAdminProvider);
+    if (isAdmin) return const SizedBox.shrink();
 
     // Ne rien afficher si l'utilisateur n'a qu'une seule entreprise
     final canShow = accessibleEnterprisesAsync.when(
@@ -350,18 +275,20 @@ class EnterpriseSelectorWidget extends ConsumerWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primaryContainer.withValues(alpha: 0.5),
-                borderRadius: BorderRadius.circular(8),
+            ...[
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primaryContainer.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  icon,
+                  size: 18,
+                  color: theme.colorScheme.primary,
+                ),
               ),
-              child: Icon(
-                icon,
-                size: 18,
-                color: theme.colorScheme.primary,
-              ),
-            ),
+            ],
             if (label != null || enterpriseName != null) ...[
               const SizedBox(width: 12),
               Column(
@@ -408,8 +335,6 @@ class _EnterpriseSelectorDialog extends StatelessWidget {
     required this.enterprises,
     this.selectedEnterpriseId,
   });
-
-
 
   final List<Enterprise> enterprises;
   final String? selectedEnterpriseId;
@@ -608,4 +533,3 @@ class _EnterpriseSelectorDialog extends StatelessWidget {
     );
   }
 }
-

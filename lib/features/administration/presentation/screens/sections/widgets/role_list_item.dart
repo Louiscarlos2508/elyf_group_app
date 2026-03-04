@@ -92,12 +92,12 @@ class RoleListItem extends ConsumerWidget {
   }
 
   Widget _buildPermissionsSummary(ThemeData theme) {
-    // Group permissions by module for display
+    // A role belongs to exactly ONE module — always group under role.moduleId.
     final registry = PermissionRegistry.instance;
+    final moduleId = role.moduleId.isNotEmpty ? role.moduleId : 'Général';
     final moduleGroups = <String, List<String>>{};
-    
+
     for (final permId in role.permissions) {
-      final moduleId = registry.getModuleForPermission(permId) ?? 'Général';
       moduleGroups.putIfAbsent(moduleId, () => []).add(permId);
     }
 

@@ -6,6 +6,10 @@ class Customer {
     required this.phoneNumber,
     required this.name,
     this.email,
+    this.idType,
+    this.idNumber,
+    this.idIssueDate,
+    this.town,
     this.totalTransactions = 0,
     this.totalAmount = 0,
     this.lastTransactionDate,
@@ -20,6 +24,10 @@ class Customer {
   final String phoneNumber;
   final String name;
   final String? email;
+  final String? idType;
+  final String? idNumber;
+  final DateTime? idIssueDate;
+  final String? town;
   final int totalTransactions;
   final int totalAmount; // Total in FCFA
   final DateTime? lastTransactionDate;
@@ -36,6 +44,10 @@ class Customer {
     String? phoneNumber,
     String? name,
     String? email,
+    String? idType,
+    String? idNumber,
+    DateTime? idIssueDate,
+    String? town,
     int? totalTransactions,
     int? totalAmount,
     DateTime? lastTransactionDate,
@@ -50,6 +62,10 @@ class Customer {
       phoneNumber: phoneNumber ?? this.phoneNumber,
       name: name ?? this.name,
       email: email ?? this.email,
+      idType: idType ?? this.idType,
+      idNumber: idNumber ?? this.idNumber,
+      idIssueDate: idIssueDate ?? this.idIssueDate,
+      town: town ?? this.town,
       totalTransactions: totalTransactions ?? this.totalTransactions,
       totalAmount: totalAmount ?? this.totalAmount,
       lastTransactionDate: lastTransactionDate ?? this.lastTransactionDate,
@@ -72,6 +88,12 @@ class Customer {
       phoneNumber: map['phoneNumber'] as String,
       name: map['name'] as String,
       email: map['email'] as String?,
+      idType: map['idType'] as String?,
+      idNumber: map['idNumber'] as String?,
+      idIssueDate: map['idIssueDate'] != null
+          ? DateTime.parse(map['idIssueDate'] as String)
+          : null,
+      town: map['town'] as String?,
       totalTransactions: (map['totalTransactions'] as num?)?.toInt() ?? 0,
       totalAmount: (map['totalAmount'] as num?)?.toInt() ?? 0,
       lastTransactionDate: map['lastTransactionDate'] != null
@@ -97,6 +119,10 @@ class Customer {
       'phoneNumber': phoneNumber,
       'name': name,
       'email': email,
+      'idType': idType,
+      'idNumber': idNumber,
+      'idIssueDate': idIssueDate?.toIso8601String(),
+      'town': town,
       'totalTransactions': totalTransactions,
       'totalAmount': totalAmount,
       'lastTransactionDate': lastTransactionDate?.toIso8601String(),

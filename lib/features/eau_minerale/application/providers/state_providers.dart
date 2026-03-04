@@ -967,3 +967,27 @@ final treasuryOperationsProvider = StreamProvider.autoDispose<List<TreasuryOpera
 final treasuryBalancesProvider = StreamProvider.autoDispose<Map<String, int>>(
   (ref) => ref.watch(treasuryControllerProvider).watchBalances(),
 );
+
+/// Provider for Absolute Treasury Balances (Cumulative from all-time source data)
+final absoluteTreasuryBalanceProvider = StreamProvider.autoDispose<Map<String, int>>((ref) {
+  final salesStream = ref.watch(saleRepositoryProvider).watchSales();
+  final paymentsStream = ref.watch(creditRepositoryProvider).watchPayments();
+  final expensesStream = ref.watch(financeRepositoryProvider).watchExpenses();
+  final manualOpsStream = ref.watch(treasuryControllerProvider).watchOperations();
+
+  return Rx.combineLatest4(
+    salesStream,
+    paymentsStream,
+    expensesStream,
+    manualOpsStream,
+    (List<Sale> sales, List<CreditPayment> payments, List<ExpenseRecord> expenses, List<TreasuryOperation> manualOps) {
+      final calculationService = ref.read(dashboardCalculationServiceProvider);
+      return calculationService.calculateCumulativeBalances(
+        sales: sales,
+        creditPayments: payments,
+        expenses: expenses,
+        treasuryOperations: manualOps,
+      );
+    },
+  ).debounceTime(const Duration(milliseconds: 500));
+});

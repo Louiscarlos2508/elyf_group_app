@@ -1,19 +1,24 @@
 import '../../domain/entities/commission.dart';
 import '../../domain/repositories/commission_repository.dart';
-
-/// Controller for managing commissions.
 import '../../domain/adapters/orange_money_permission_adapter.dart';
+import '../../domain/repositories/treasury_repository.dart';
+import 'package:elyf_groupe_app/shared/domain/entities/treasury_operation.dart';
+import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
+import 'package:elyf_groupe_app/shared/utils/id_generator.dart';
+import 'package:elyf_groupe_app/core/logging/app_logger.dart';
 
 /// Controller for managing commissions.
 class CommissionsController {
   CommissionsController(
     this._repository,
+    this._treasuryRepository,
     this.userId,
     this._permissionAdapter,
     this._activeEnterpriseId,
   );
 
   final CommissionRepository _repository;
+  final OrangeMoneyTreasuryRepository _treasuryRepository;
   final String userId;
   final OrangeMoneyPermissionAdapter _permissionAdapter;
   final String _activeEnterpriseId;
@@ -60,19 +65,64 @@ class CommissionsController {
   }
 
   Future<String> createCommission(Commission commission) async {
-    return await _repository.createCommission(commission);
+    final commissionId = await _repository.createCommission(commission);
+    if (commission.status == CommissionStatus.declared || 
+        commission.status == CommissionStatus.validated || 
+        commission.status == CommissionStatus.paid) {
+      await _recordTreasuryOperation(commission);
+    }
+    return commissionId;
   }
 
   Future<void> updateCommission(Commission commission) async {
-    return await _repository.updateCommission(commission);
+    final oldCommission = await _repository.getCommission(commission.id);
+    await _repository.updateCommission(commission);
+    
+    // If transitioning to a state that affects treasury (declared/validated/paid), record it
+    final wasNotRecorded = oldCommission == null || 
+        (oldCommission.status != CommissionStatus.declared && 
+         oldCommission.status != CommissionStatus.validated && 
+         oldCommission.status != CommissionStatus.paid);
+    
+    final isNowRecorded = commission.status == CommissionStatus.declared || 
+                          commission.status == CommissionStatus.validated || 
+                          commission.status == CommissionStatus.paid;
+
+    if (wasNotRecorded && isNowRecorded) {
+      await _recordTreasuryOperation(commission);
+    }
+  }
+
+  Future<void> _recordTreasuryOperation(Commission commission) async {
+    try {
+      await _treasuryRepository.saveOperation(TreasuryOperation(
+        id: IdGenerator.generate(),
+        enterpriseId: commission.enterpriseId,
+        userId: userId,
+        amount: commission.finalAmount,
+        type: TreasuryOperationType.supply,
+        toAccount: PaymentMethod.mobileMoney,
+        date: DateTime.now(),
+        reason: 'Commission Orange Money - Période ${commission.period}',
+        referenceEntityId: commission.id,
+        referenceEntityType: 'commission',
+      ));
+    } catch (e) {
+      AppLogger.error('Failed to record commission treasury operation', error: e);
+    }
   }
 
   Future<void> deleteCommission(String commissionId) async {
-    return await _repository.deleteCommission(commissionId, userId);
+    await _repository.deleteCommission(commissionId, userId);
+    await _treasuryRepository.deleteOperationsByReference(commissionId, 'commission');
   }
 
   Future<void> restoreCommission(String commissionId) async {
-    return await _repository.restoreCommission(commissionId);
+    await _repository.restoreCommission(commissionId);
+    final commission = await _repository.getCommission(commissionId);
+    if (commission != null && (commission.status == CommissionStatus.validated || commission.status == CommissionStatus.paid)) {
+      await _recordTreasuryOperation(commission);
+    }
   }
 
   Stream<List<Commission>> watchDeletedCommissions() {
@@ -85,32 +135,22 @@ class CommissionsController {
       return await _repository.getStatistics(enterpriseId: enterpriseId);
     }
 
-    // Otherwise, check hierarchy (Note: getStatistics in repo might need update or we aggregate manually)
-    // For now, if hierarchy, we might need to fetch all commissions and calculate.
-    // But repository.getStatistics only takes single enterpriseId.
-    // Let's implement an aggregate method if network view.
-    
     final accessibleIds = await _permissionAdapter.getAccessibleEnterpriseIds(_activeEnterpriseId);
     
     if (accessibleIds.length > 1) {
-        final commissions = await _repository.fetchCommissionsByEnterprises(accessibleIds.toList());
-        
-        final paidCommissions = commissions.where((c) => c.status == CommissionStatus.paid).toList();
-        final pendingCommissions = commissions.where((c) => c.status == CommissionStatus.validated).toList();
-        final declaredCommissions = commissions.where((c) => c.status == CommissionStatus.declared).toList();
-
-        return {
-          'totalCommissions': commissions.length,
-          'totalPaid': paidCommissions.fold<int>(0, (sum, c) => sum + c.finalAmount),
-          'totalPending': pendingCommissions.fold<int>(0, (sum, c) => sum + c.finalAmount),
-          'totalDeclared': declaredCommissions.fold<int>(0, (sum, c) => sum + c.finalAmount),
-          'paidCount': paidCommissions.length,
-          'pendingCount': pendingCommissions.length,
-          'declaredCount': declaredCommissions.length,
-          'isNetworkView': true,
-        };
+        return await _repository.fetchNetworkStatistics(accessibleIds.toList());
     }
 
     return await _repository.getStatistics(enterpriseId: _activeEnterpriseId);
+  }
+
+  Future<Map<String, dynamic>> getNetworkStatistics({String? period}) async {
+    final accessibleIds = await _permissionAdapter.getAccessibleEnterpriseIds(_activeEnterpriseId);
+    return await _repository.fetchNetworkStatistics(accessibleIds.toList(), period: period);
+  }
+
+  Future<List<Commission>> fetchNetworkCommissions({String? period, CommissionStatus? status}) async {
+    final accessibleIds = await _permissionAdapter.getAccessibleEnterpriseIds(_activeEnterpriseId);
+    return await _repository.fetchCommissionsByEnterprises(accessibleIds.toList(), period: period, status: status);
   }
 }

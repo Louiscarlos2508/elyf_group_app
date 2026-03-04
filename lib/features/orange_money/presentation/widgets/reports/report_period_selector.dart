@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/app/theme/app_spacing.dart' as tokens;
+import 'package:elyf_groupe_app/app/theme/design_tokens.dart' show AppRadius;
 
 /// Period selector card for reports screen.
 class ReportPeriodSelector extends StatelessWidget {
@@ -22,67 +25,58 @@ class ReportPeriodSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-        side: BorderSide(
-          color: Colors.black.withValues(alpha: 0.1),
-          width: 1.219,
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(25.219, 25.219, 1.219, 1.219),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(
-                  Icons.calendar_today,
-                  size: 20,
-                  color: Color(0xFF0A0A0A),
+    final theme = Theme.of(context);
+
+    return ElyfCard(
+      padding: const EdgeInsets.all(tokens.AppSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.calendar_today,
+                size: 20,
+                color: theme.colorScheme.onSurface,
+              ),
+              const SizedBox(width: tokens.AppSpacing.sm),
+              Text(
+                'Période de rapport',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  fontFamily: 'Outfit',
                 ),
-                const SizedBox(width: 8),
-                const Text(
-                  'Période de rapport',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.normal,
-                    color: Color(0xFF0A0A0A),
-                  ),
+              ),
+            ],
+          ),
+          const SizedBox(height: tokens.AppSpacing.xl),
+          Row(
+            children: [
+              Expanded(
+                child: _ReportDateField(
+                  label: 'Date de début',
+                  date: startDate,
+                  onTap: onStartDateSelected,
                 ),
-              ],
-            ),
-            const SizedBox(height: 30),
-            Row(
-              children: [
-                Expanded(
-                  child: _ReportDateField(
-                    label: 'Date de début',
-                    date: startDate,
-                    onTap: onStartDateSelected,
-                  ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: _ReportDateField(
+                  label: 'Date de fin',
+                  date: endDate,
+                  onTap: onEndDateSelected,
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _ReportDateField(
-                    label: 'Date de fin',
-                    date: endDate,
-                    onTap: onEndDateSelected,
-                  ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: _ReportQuickActions(
+                  onTodaySelected: onTodaySelected,
+                  onSevenDaysSelected: onSevenDaysSelected,
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _ReportQuickActions(
-                    onTodaySelected: onTodaySelected,
-                    onSevenDaysSelected: onSevenDaysSelected,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -102,46 +96,45 @@ class _ReportDateField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final dateFormat = DateFormat('dd/MM/yyyy');
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 14,
-            color: Color(0xFF0A0A0A),
-            fontWeight: FontWeight.normal,
+          style: theme.textTheme.labelMedium?.copyWith(
+            color: theme.colorScheme.onSurface,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppSpacing.sm),
         InkWell(
           onTap: onTap,
+          borderRadius: BorderRadius.circular(AppRadius.medium),
           child: Container(
             height: 36,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 4),
             decoration: BoxDecoration(
-              color: const Color(0xFFF3F3F5),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.transparent, width: 1.219),
+              color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(AppRadius.medium),
             ),
             child: Row(
               children: [
                 Expanded(
                   child: Text(
                     date != null ? dateFormat.format(date!) : '',
-                    style: TextStyle(
-                      fontSize: 14,
+                    style: theme.textTheme.bodyMedium?.copyWith(
                       color: date != null
-                          ? const Color(0xFF0A0A0A)
-                          : const Color(0xFF717182),
+                          ? theme.colorScheme.onSurface
+                          : theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ),
-                const Icon(
+                Icon(
                   Icons.calendar_today,
                   size: 16,
-                  color: Color(0xFF717182),
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ],
             ),
@@ -164,67 +157,51 @@ class _ReportQuickActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Actions rapides',
-          style: TextStyle(
-            fontSize: 14,
-            color: Color(0xFF0A0A0A),
-            fontWeight: FontWeight.normal,
+          style: theme.textTheme.labelMedium?.copyWith(
+            color: theme.colorScheme.onSurface,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppSpacing.sm),
         Row(
           children: [
             Expanded(
               child: OutlinedButton(
                 onPressed: onTodaySelected,
                 style: OutlinedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  side: BorderSide(
-                    color: Colors.black.withValues(alpha: 0.1),
-                    width: 1.219,
-                  ),
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 13,
-                    vertical: 1.219,
+                    horizontal: AppSpacing.sm,
+                    vertical: AppSpacing.xs,
                   ),
                   minimumSize: const Size(0, 32),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(AppRadius.small),
                   ),
                 ),
-                child: const Text(
-                  'Aujourd\'hui',
-                  style: TextStyle(fontSize: 14, color: Color(0xFF0A0A0A)),
-                ),
+                child: const Text('Aujourd\'hui'),
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: AppSpacing.sm),
             Expanded(
               child: OutlinedButton(
                 onPressed: onSevenDaysSelected,
                 style: OutlinedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  side: BorderSide(
-                    color: Colors.black.withValues(alpha: 0.1),
-                    width: 1.219,
-                  ),
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 13,
-                    vertical: 1.219,
+                    horizontal: AppSpacing.sm,
+                    vertical: AppSpacing.xs,
                   ),
                   minimumSize: const Size(0, 32),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(AppRadius.small),
                   ),
                 ),
-                child: const Text(
-                  '7 jours',
-                  style: TextStyle(fontSize: 14, color: Color(0xFF0A0A0A)),
-                ),
+                child: const Text('7 jours'),
               ),
             ),
           ],

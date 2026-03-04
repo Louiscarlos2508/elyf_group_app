@@ -2,7 +2,7 @@
 
 ## Vue d'ensemble
 
-Le module Gaz suit une **architecture Clean Architecture** avec séparation stricte des couches : Domain, Data, Application, et Presentation.
+Le module Gaz suit une **architecture Clean Architecture** optimisée pour une gestion multi-tenant à deux niveaux : **Entreprise Parent** (Supervision/Logistique) et **Point de Vente** (Opérations/Ventes).
 
 ## 🏗️ Structure des Couches
 
@@ -10,126 +10,42 @@ Le module Gaz suit une **architecture Clean Architecture** avec séparation stri
 
 #### Entities (Entités)
 
-**Entités principales** :
-- `Cylinder` - Bouteille de gaz avec poids et prix
-- `GasSale` - Vente de gaz (détail ou gros)
-- `CylinderStock` - Stock de bouteilles
-- `CylinderLeak` - Fuite de bouteille
-- `Tour` - Tour d'approvisionnement
-- `PointOfSale` - Point de vente
-- `GazExpense` - Dépense opérationnelle
-- `FinancialReport` - Rapport financier
-- `GazSettings` - Paramètres du module
-
-#### Repositories (Interfaces)
-
-- `GasRepository` - Interface pour la gestion des bouteilles et ventes
-- `CylinderStockRepository` - Interface pour la gestion des stocks
-- `CylinderLeakRepository` - Interface pour la gestion des fuites
-- `TourRepository` - Interface pour la gestion des tours
-- `PointOfSaleRepository` - Interface pour la gestion des points de vente
-- `GazExpenseRepository` - Interface pour la gestion des dépenses
-- `FinancialReportRepository` - Interface pour les rapports financiers
-- `GazSettingsRepository` - Interface pour les paramètres
+- `Cylinder` - Types de bouteilles (3kg, 6kg, etc.)
+- `GasSale` - Ventes (Détail/Gros) avec support de prix forcé.
+- `CylinderStock` - Stock physique isolé par `siteId` (ID du POS).
+- `CylinderLeak` - Tracé des bouteilles défectueuses (reconverties en vides).
+- `Tour` - Tournée **administrative** (Logistique, dépenses, collectes).
+- `GazSettings` - Paramètres locaux (Prix de vente pour POS, Prix d'achat pour Parent).
+- `Payroll` - Nouveau : Gestion des salaires (Parent uniquement).
 
 #### Services (Services Métier)
 
-**Domain Services** :
-- `GazDashboardCalculationService` - Calculs pour le tableau de bord
-- `GazReportCalculationService` - Calculs pour les rapports
-- `GazCalculationService` - Calculs métier
-- `FinancialCalculationService` - Calculs financiers
-- `StockService` - Gestion des stocks
-- `TourService` - Gestion des tours
-- `TransactionService` - Gestion des transactions
-- `DataConsistencyService` - Vérification de cohérence
-- `RealtimeSyncService` - Synchronisation temps réel
+- `StockService` - Gestion des stocks avec isolation par `siteId`.
+- `TourService` - Gestion logistique administrative (sans impact automatique sur stock Parent).
+- `TransactionService` - Exécution atomique (Ventes -> Trésorerie POS, Tours -> Trésorerie Parent).
+- `PayrollService` - Gestion des paiements de salaires.
+- `RealtimeSyncService` - Synchronisation bidirectionnelle Firestore/Drift.
 
 ### 2. Data (Couche Données)
 
-#### Repositories Offline
-
-**Repositories migrés vers Offline-first** ✅ :
-- `GasOfflineRepository` ✅ (bouteilles et ventes)
-- `ExpenseOfflineRepository` ✅
-
-**Repositories encore Mock** ⚠️ :
-- `CylinderStockRepository` → MockCylinderStockRepository
-- `CylinderLeakRepository` → MockCylinderLeakRepository
-- `TourRepository` → MockTourRepository
-- `PointOfSaleRepository` → MockPointOfSaleRepository
-- `FinancialReportRepository` → MockFinancialReportRepository (repository de calcul)
-- `GazSettingsRepository` → MockGazSettingsRepository
-
-**Caractéristiques** :
-- Stockage local dans Drift/SQLite
-- `enterpriseId` utilisé pour isolation multi-tenant
-- `moduleType = 'gaz'` pour tous les repositories
-- Support offline-first avec synchronisation automatique
+#### Multi-Tenancy & Isolation
+- **Isolation Physique** : Les stocks sont enregistrés sous l'ID de l'entreprise Parent mais isolés par le champ **`siteId`** correspondant à l'ID du point de vente.
+- **Trésorerie** : Les opérations financières sont liées à l'ID de l'entité active (POS pour les ventes, Parent pour les tournées/salaires).
 
 ### 3. Application (Couche Application)
 
-#### Controllers
-
-**Controllers disponibles** ✅ :
-- `GasController` - Gestion des bouteilles et ventes
-- `CylinderController` - Gestion des bouteilles
-- `CylinderStockController` - Gestion des stocks
-- `CylinderLeakController` - Gestion des fuites
-- `TourController` - Gestion des tours
-- `PointOfSaleController` - Gestion des points de vente
-- `ExpenseController` - Gestion des dépenses
-- `FinancialReportController` - Rapports financiers
-- `GazSettingsController` - Paramètres
-
 #### Providers (Riverpod)
-
-Tous les providers utilisent les controllers, jamais les repositories directement.
-
-### 4. Presentation (Couche Présentation)
-
-Interface utilisateur Flutter avec écrans pour :
-- Gestion des bouteilles
-- Ventes (détail et gros)
-- Stocks
-- Tours d'approvisionnement
-- Points de vente
-- Fuites
-- Dépenses
-- Rapports
+- `gazSharedScopedEnterpriseIdsProvider` : Gère l'accès aux données partagées (cylindres, grossistes) depuis le Parent vers les POS.
 
 ## 🔄 Flux de Données
 
-### Flux Offline-First
+### 1. Vente POS
+- UI (Manual Price Override) -> `GasSaleController` -> `TransactionService` (Debit Stock `siteId`, Credit Treasury POS).
 
-1. **Écriture** :
-   - UI appelle Controller
-   - Controller appelle Repository
-   - Repository écrit dans Drift (local)
-   - SyncManager enqueue l'opération pour sync
+### 2. Tournée Administrative
+- UI -> `TourController` -> `TourService` (Record Expenses, Record Wholesaler collection, Record POS bottle exchanges).
 
-2. **Lecture** :
-   - UI appelle Controller via Provider
-   - Controller lit depuis Repository
-   - Repository lit depuis Drift (local)
+### 3. Mouvements de Stock POS
+- UI -> `StockController` -> `StockService` (Entry Full/Empty, Exit Empty, Signal Leak).
 
-3. **Synchronisation** :
-   - SyncManager traite la file d'attente
-   - FirebaseSyncHandler envoie vers Firestore
-
-## 🔐 Multi-Tenancy
-
-### Isolation des Données
-
-- **enterpriseId** : Utilisé pour filtrer toutes les données
-- **moduleType** : `'gaz'` pour ce module
-- **Collections Firestore** : `enterprises/{enterpriseId}/modules/gaz/collections/{collectionName}`
-
-## 📊 Synchronisation
-
-### Collections Synchronisées
-
-- `cylinders` - Bouteilles
-- `gas_sales` - Ventes
-- `gaz_expenses` - Dépenses
 

@@ -11,6 +11,7 @@ class ElyfDrawer extends StatelessWidget {
     required this.selectedIndex,
     required this.onDestinationSelected,
     required this.appTitle,
+    this.moduleId,
     this.userEmail,
     this.userName,
     this.userAvatarUrl,
@@ -20,6 +21,7 @@ class ElyfDrawer extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onDestinationSelected;
   final String appTitle;
+  final String? moduleId;
   
   // Optional user info for the header
   final String? userName;
@@ -65,11 +67,11 @@ class ElyfDrawer extends StatelessWidget {
                       child: Container(
                         decoration: BoxDecoration(
                           color: isSelected 
-                              ? theme.colorScheme.primary.withValues(alpha: 0.1)
+                              ? AppColors.getModuleColor(moduleId).withValues(alpha: 0.1)
                               : Colors.transparent,
                           borderRadius: BorderRadius.circular(16),
                           border: isSelected 
-                            ? Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.15))
+                            ? Border.all(color: AppColors.getModuleColor(moduleId).withValues(alpha: 0.15))
                             : null,
                         ),
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -78,7 +80,7 @@ class ElyfDrawer extends StatelessWidget {
                             Icon(
                               section.icon,
                               color: isSelected 
-                                  ? theme.colorScheme.primary 
+                                  ? AppColors.getModuleColor(moduleId)
                                   : theme.colorScheme.onSurfaceVariant,
                               size: 24,
                             ),
@@ -88,7 +90,7 @@ class ElyfDrawer extends StatelessWidget {
                                 section.label,
                                 style: theme.textTheme.labelLarge?.copyWith(
                                   color: isSelected 
-                                      ? theme.colorScheme.primary 
+                                      ? AppColors.getModuleColor(moduleId)
                                       : theme.colorScheme.onSurface,
                                   fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
                                   fontFamily: 'Outfit',
@@ -100,7 +102,7 @@ class ElyfDrawer extends StatelessWidget {
                                 width: 6,
                                 height: 6,
                                 decoration: BoxDecoration(
-                                  color: theme.colorScheme.primary,
+                                  color: AppColors.getModuleColor(moduleId),
                                   shape: BoxShape.circle,
                                 ),
                               ),
@@ -131,6 +133,8 @@ class ElyfDrawer extends StatelessWidget {
 
   Widget _buildHeader(BuildContext context) {
     final theme = Theme.of(context);
+    final gradientColors = AppColors.getModuleGradient(moduleId);
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
@@ -138,10 +142,7 @@ class ElyfDrawer extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            theme.colorScheme.primary,
-            AppColors.primaryLight,
-          ],
+          colors: gradientColors,
         ),
       ),
       child: Column(
@@ -173,7 +174,7 @@ class ElyfDrawer extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'Administration',
+            moduleId != null ? '${moduleId![0].toUpperCase()}${moduleId!.substring(1)} Management' : 'Administration',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: Colors.white.withValues(alpha: 0.8),
             ),

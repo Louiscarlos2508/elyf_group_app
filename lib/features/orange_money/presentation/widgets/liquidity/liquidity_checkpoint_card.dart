@@ -32,35 +32,40 @@ class LiquidityCheckpointCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: Colors.black.withValues(alpha: 0.1),
-          width: 1.219,
-        ),
-      ),
-      padding: const EdgeInsets.all(17),
+    final theme = Theme.of(context);
+    
+    return ElyfCard(
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [_buildHeader(), const SizedBox(height: 12), _buildContent()],
+        children: [
+          _buildHeader(theme),
+          const SizedBox(height: 20),
+          _buildContent(theme),
+        ],
       ),
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(ThemeData theme) {
     return Row(
       children: [
-        Icon(icon, size: 20, color: iconColor),
-        const SizedBox(width: 8),
-        Flexible(
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: iconColor.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, size: 20, color: iconColor),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
           child: Text(
             title,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.normal,
-              color: Color(0xFF101828),
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: theme.colorScheme.onSurface,
+              fontFamily: 'Outfit',
             ),
             overflow: TextOverflow.ellipsis,
           ),
@@ -68,108 +73,24 @@ class LiquidityCheckpointCard extends StatelessWidget {
         if (hasCheckpoint) ...[
           const SizedBox(width: 8),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: const Color(0xFFDCFCE7),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.transparent, width: 1.219),
+              color: theme.colorScheme.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(20),
             ),
-            child: const Text(
-              '✓ Fait',
-              style: TextStyle(fontSize: 12, color: Color(0xFF016630)),
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildContent() {
-    if (hasCheckpoint && (cashAmount != null || simAmount != null)) {
-      return _buildCheckpointDetails();
-    }
-    return _buildEmptyState();
-  }
-
-  Widget _buildCheckpointDetails() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (cashAmount != null) ...[
-          const Text(
-            '💵 Cash disponible',
-            style: TextStyle(fontSize: 14, color: Color(0xFF4A5565)),
-          ),
-          const SizedBox(height: 4),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Text(
-              CurrencyFormatter.formatFCFA(cashAmount!),
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.normal,
-                color: Color(0xFF101828),
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-        ],
-        if (simAmount != null) ...[
-          const Text(
-            '📱 Solde SIM',
-            style: TextStyle(fontSize: 14, color: Color(0xFF4A5565)),
-          ),
-          const SizedBox(height: 4),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Text(
-              CurrencyFormatter.formatFCFA(simAmount!),
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.normal,
-                color: Color(0xFF155DFC),
-              ),
-            ),
-          ),
-        ],
-        if (requiresJustification) ...[
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFEF2F2),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xFFFCA5A5)),
-            ),
-            child: Column(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Row(
-                  children: [
-                    const Icon(Icons.warning_amber_rounded, size: 16, color: Color(0xFFB91C1C)),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        'Écart détecté: ${discrepancyPercentage?.toStringAsFixed(1)}%',
-                        style: const TextStyle(fontSize: 11, color: Color(0xFFB91C1C), fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ],
+                Icon(Icons.check_circle_rounded, 
+                  size: 14, 
+                  color: theme.colorScheme.primary,
                 ),
-                const SizedBox(height: 8),
-                SizedBox(
-                  width: double.infinity,
-                  height: 28,
-                  child: ElevatedButton(
-                    onPressed: onJustifyPressed,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFB91C1C),
-                      foregroundColor: Colors.white,
-                      padding: EdgeInsets.zero,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-                    ),
-                    child: const Text('Justifier', style: TextStyle(fontSize: 11)),
+                const SizedBox(width: 4),
+                Text(
+                  'Fait',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.primary,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ],
@@ -180,38 +101,151 @@ class LiquidityCheckpointCard extends StatelessWidget {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildContent(ThemeData theme) {
+    if (hasCheckpoint && (cashAmount != null || simAmount != null)) {
+      return _buildCheckpointDetails(theme);
+    }
+    return _buildEmptyState(theme);
+  }
+
+  Widget _buildCheckpointDetails(ThemeData theme) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Aucun pointage effectué',
-          style: TextStyle(fontSize: 14, color: Color(0xFF6A7282)),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 12),
+        if (cashAmount != null) ...[
+          _buildDetailRow('💵 Cash disponible', cashAmount!, theme, theme.colorScheme.onSurface),
+          const SizedBox(height: 16),
+        ],
+        if (simAmount != null) ...[
+          _buildDetailRow('📱 Solde SIM', simAmount!, theme, theme.colorScheme.primary),
+        ],
+        const SizedBox(height: 24),
         SizedBox(
           width: double.infinity,
-          child: ElevatedButton(
+          child: OutlinedButton.icon(
             onPressed: onPressed,
+            icon: const Icon(Icons.edit_rounded, size: 16),
+            label: const Text('Modifier le pointage'),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              side: BorderSide(color: theme.colorScheme.outlineVariant),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ),
+        if (requiresJustification) ...[
+          const SizedBox(height: 16),
+          _buildJustificationRequired(theme),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildDetailRow(String label, int amount, ThemeData theme, Color amountColor) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          CurrencyFormatter.formatFCFA(amount),
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w800,
+            color: amountColor,
+            fontFamily: 'Outfit',
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildJustificationRequired(ThemeData theme) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.errorContainer.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: theme.colorScheme.error.withValues(alpha: 0.2),
+        ),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, size: 18, color: theme.colorScheme.error),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Écart de ${discrepancyPercentage?.toStringAsFixed(1)}%',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: theme.colorScheme.error,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: onJustifyPressed,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: theme.colorScheme.error,
+                foregroundColor: theme.colorScheme.onError,
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              child: const Text('Justifier l\'écart', 
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(ThemeData theme) {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Text(
+            'Aucun pointage effectué pour cette période.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+              fontStyle: FontStyle.italic,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: onPressed,
+            icon: const Icon(Icons.add_rounded, size: 18),
+            label: const Text('Faire le pointage'),
             style: ElevatedButton.styleFrom(
               backgroundColor: title.contains('Matin')
                   ? const Color(0xFFF54900)
-                  : const Color(0xFF4F39F6),
+                  : theme.colorScheme.primary,
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 8),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              elevation: 0,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            child: const FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.add, size: 16),
-                  SizedBox(width: 4),
-                  Text('Faire le pointage', style: TextStyle(fontSize: 14)),
-                ],
+                borderRadius: BorderRadius.circular(12),
               ),
             ),
           ),

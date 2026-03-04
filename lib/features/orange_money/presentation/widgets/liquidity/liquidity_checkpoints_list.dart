@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
+import 'package:elyf_groupe_app/shared/presentation/widgets/elyf_ui/organisms/elyf_card.dart';
 import '../../../domain/entities/liquidity_checkpoint.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,165 +16,84 @@ class LiquidityCheckpointsList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dateFormat = DateFormat('yyyy-MM-dd');
+    final theme = Theme.of(context);
+    final dateFormat = DateFormat('dd MMMM yyyy', 'fr');
 
     return Column(
-      children: checkpoints.map((checkpoint) {
+      children: checkpoints.map<Widget>((checkpoint) {
         final hasMorning = checkpoint.hasMorningCheckpoint;
         final hasEvening = checkpoint.hasEveningCheckpoint;
 
-        return Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: Colors.black.withValues(alpha: 0.1),
-              width: 1.219,
-            ),
-          ),
+        return ElyfCard(
+          margin: const EdgeInsets.only(bottom: 16),
+          padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      Text(
-                        dateFormat.format(checkpoint.date),
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.normal,
-                          color: Color(0xFF101828),
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Icon(Icons.calendar_today_rounded, size: 16, color: theme.colorScheme.primary),
+                        const SizedBox(width: 8),
+                        Text(
+                          dateFormat.format(checkpoint.date),
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.onSurface,
+                            fontFamily: 'Outfit',
+                          ),
                         ),
-                      ),
-                      // Display enterprise name if in network view
-                      Consumer(
-                        builder: (context, ref, _) {
-                          final enterprisesMap = ref.watch(networkEnterprisesProvider).value ?? {};
-                          final enterpriseName = enterprisesMap[checkpoint.enterpriseId];
-                          
-                          if (enterpriseName != null) {
-                            return Padding(
-                              padding: const EdgeInsets.only(left: 8),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: Colors.grey.shade200,
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Text(
-                                  enterpriseName,
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.grey.shade700,
+                        // Display enterprise name if in network view
+                        Consumer(
+                          builder: (context, ref, _) {
+                            final enterprisesMap = ref.watch(networkEnterprisesProvider).value ?? {};
+                            final enterpriseName = enterprisesMap[checkpoint.enterpriseId];
+                            
+                            if (enterpriseName != null) {
+                              return Padding(
+                                padding: const EdgeInsets.only(left: 12),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Text(
+                                    enterpriseName,
+                                    style: theme.textTheme.labelSmall?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                    ),
                                   ),
                                 ),
-                              ),
-                            );
-                          }
-                          return const SizedBox.shrink();
-                        },
-                      ),
-                    ],
-                  ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (hasMorning)
-                        Container(
-                          margin: const EdgeInsets.only(right: 8),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFFEDD4),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: Colors.transparent,
-                              width: 1.219,
-                            ),
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.wb_sunny,
-                                size: 12,
-                                color: Color(0xFF9F2D00),
-                              ),
-                              SizedBox(width: 4),
-                              Text(
-                                'Matin',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Color(0xFF9F2D00),
-                                ),
-                              ),
-                            ],
-                          ),
+                              );
+                            }
+                            return const SizedBox.shrink();
+                          },
                         ),
-                      if (hasEvening)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF3E8FF),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: Colors.transparent,
-                              width: 1.219,
-                            ),
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.nightlight_round,
-                                size: 12,
-                                color: Color(0xFF6B21A8),
-                              ),
-                              SizedBox(width: 4),
-                              Text(
-                                'Soir',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Color(0xFF6B21A8),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                    ],
+                      ],
+                    ),
                   ),
+                  _buildStatusBadges(hasMorning, hasEvening, theme),
                 ],
               ),
               if (hasMorning || hasEvening) ...[
-                const SizedBox(height: 12),
-                if (hasMorning &&
-                    (checkpoint.morningCashAmount != null ||
-                        checkpoint.morningSimAmount != null))
+                const SizedBox(height: 20),
+                if (hasMorning && (checkpoint.morningCashAmount != null || checkpoint.morningSimAmount != null))
                   _PeriodCard(
                     title: '🌅 MATIN',
-                    backgroundColor: const Color(0xFFFFF7ED),
-                    titleColor: const Color(0xFFCA3500),
+                    accentColor: const Color(0xFFF54900),
                     cashAmount: checkpoint.morningCashAmount ?? 0,
                     simAmount: checkpoint.morningSimAmount ?? 0,
                   ),
                 if (hasMorning && hasEvening) const SizedBox(height: 12),
-                if (hasEvening &&
-                    (checkpoint.eveningCashAmount != null ||
-                        checkpoint.eveningSimAmount != null))
+                if (hasEvening && (checkpoint.eveningCashAmount != null || checkpoint.eveningSimAmount != null))
                   _PeriodCard(
                     title: '🌙 SOIR',
-                    backgroundColor: const Color(0xFFF5F3FF),
-                    titleColor: const Color(0xFF7C3AED),
+                    accentColor: const Color(0xFF7C3AED),
                     cashAmount: checkpoint.eveningCashAmount ?? 0,
                     simAmount: checkpoint.eveningSimAmount ?? 0,
                     theoreticalCash: checkpoint.theoreticalCash,
@@ -182,8 +102,8 @@ class LiquidityCheckpointsList extends StatelessWidget {
                     discrepancyPercentage: checkpoint.discrepancyPercentage,
                   ),
                 if (hasMorning && hasEvening) ...[
-                  const SizedBox(height: 12),
-                  _buildVariancesCard(checkpoint),
+                  const SizedBox(height: 16),
+                  _buildVariancesCard(checkpoint, theme),
                 ],
               ],
             ],
@@ -193,111 +113,125 @@ class LiquidityCheckpointsList extends StatelessWidget {
     );
   }
 
-  Widget _buildVariancesCard(LiquidityCheckpoint checkpoint) {
+  Widget _buildStatusBadges(bool hasMorning, bool hasEvening, ThemeData theme) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (hasMorning)
+          _buildTinyBadge(
+            icon: Icons.wb_sunny_rounded,
+            label: 'Matin',
+            color: const Color(0xFFF54900),
+            theme: theme,
+          ),
+        if (hasMorning && hasEvening) const SizedBox(width: 8),
+        if (hasEvening)
+          _buildTinyBadge(
+            icon: Icons.nights_stay_rounded,
+            label: 'Soir',
+            color: const Color(0xFF7C3AED),
+            theme: theme,
+          ),
+      ],
+    );
+  }
+
+  Widget _buildTinyBadge({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required ThemeData theme,
+  }) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: const Color(0xFFF0F9FF),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFBFDBFE), width: 1.219),
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 10, color: color),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: color,
+              fontWeight: FontWeight.w900,
+              fontSize: 10,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVariancesCard(LiquidityCheckpoint checkpoint, ThemeData theme) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            '📊 ÉCARTS',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: Color(0xFF1E40AF),
-            ),
+          Row(
+            children: [
+              Icon(Icons.compare_arrows_rounded, size: 16, color: theme.colorScheme.primary),
+              const SizedBox(width: 8),
+              Text(
+                'ÉCARTS DE LA JOURNÉE',
+                style: theme.textTheme.labelMedium?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  color: theme.colorScheme.primary,
+                  letterSpacing: 1.0,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _buildVarianceRow(
+            'Cash Variation',
+            (checkpoint.eveningCashAmount ?? 0) - (checkpoint.morningCashAmount ?? 0),
+            theme,
           ),
           const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Cash:',
-                style: TextStyle(fontSize: 14, color: Color(0xFF4A5565)),
-              ),
-              Builder(
-                builder: (context) {
-                  final morningCash = checkpoint.morningCashAmount ?? 0;
-                  final eveningCash = checkpoint.eveningCashAmount ?? 0;
-                  final diff = eveningCash - morningCash;
-                  final isPositive = diff >= 0;
-                  return Text(
-                    '${isPositive ? '+' : ''}${CurrencyFormatter.formatShort(diff.abs())}',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: isPositive
-                          ? const Color(0xFF16A34A)
-                          : const Color(0xFFDC2626),
-                    ),
-                  );
-                },
-              ),
-            ],
+          _buildVarianceRow(
+            'SIM Variation',
+            (checkpoint.eveningSimAmount ?? 0) - (checkpoint.morningSimAmount ?? 0),
+            theme,
           ),
-          const SizedBox(height: 4),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'SIM:',
-                style: TextStyle(fontSize: 14, color: Color(0xFF4A5565)),
-              ),
-              Builder(
-                builder: (context) {
-                  final morningSim = checkpoint.morningSimAmount ?? 0;
-                  final eveningSim = checkpoint.eveningSimAmount ?? 0;
-                  final diff = eveningSim - morningSim;
-                  final isPositive = diff >= 0;
-                  return Text(
-                    '${isPositive ? '+' : ''}${CurrencyFormatter.formatShort(diff.abs())}',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: isPositive
-                          ? const Color(0xFF16A34A)
-                          : const Color(0xFFDC2626),
-                    ),
-                  );
-                },
-              ),
-            ],
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: Divider(height: 1),
           ),
-          const Divider(height: 20, thickness: 1.219, color: Color(0xFFE5E5E5)),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Total:',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xFF1E40AF),
+              Text(
+                'VARIATION TOTALE',
+                style: theme.textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface,
                 ),
               ),
               Builder(
                 builder: (context) {
-                  final morningTotal =
-                      (checkpoint.morningCashAmount ?? 0) +
-                      (checkpoint.morningSimAmount ?? 0);
-                  final eveningTotal =
-                      (checkpoint.eveningCashAmount ?? 0) +
-                      (checkpoint.eveningSimAmount ?? 0);
+                  final morningTotal = (checkpoint.morningCashAmount ?? 0) + (checkpoint.morningSimAmount ?? 0);
+                  final eveningTotal = (checkpoint.eveningCashAmount ?? 0) + (checkpoint.eveningSimAmount ?? 0);
                   final diff = eveningTotal - morningTotal;
                   final isPositive = diff >= 0;
+                  
                   return Text(
-                    '${isPositive ? '+' : '-'}${CurrencyFormatter.formatShort(diff.abs())}',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: isPositive
-                          ? const Color(0xFF16A34A)
-                          : const Color(0xFFDC2626),
+                    '${isPositive ? '+' : ''}${CurrencyFormatter.formatShort(diff)}',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w900,
+                      color: isPositive ? theme.colorScheme.primary : theme.colorScheme.error,
+                      fontFamily: 'Outfit',
                     ),
                   );
                 },
@@ -308,13 +242,34 @@ class LiquidityCheckpointsList extends StatelessWidget {
       ),
     );
   }
+
+  Widget _buildVarianceRow(String label, int diff, ThemeData theme) {
+    final isPositive = diff >= 0;
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        Text(
+          '${isPositive ? '+' : ''}${CurrencyFormatter.formatShort(diff)}',
+          style: theme.textTheme.bodyLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: isPositive ? theme.colorScheme.primary : theme.colorScheme.error,
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 class _PeriodCard extends StatelessWidget {
   const _PeriodCard({
     required this.title,
-    required this.backgroundColor,
-    required this.titleColor,
+    required this.accentColor,
     required this.cashAmount,
     required this.simAmount,
     this.theoreticalCash,
@@ -324,8 +279,7 @@ class _PeriodCard extends StatelessWidget {
   });
 
   final String title;
-  final Color backgroundColor;
-  final Color titleColor;
+  final Color accentColor;
   final int cashAmount;
   final int simAmount;
   final int? theoreticalCash;
@@ -335,12 +289,18 @@ class _PeriodCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(10),
-        border: requiresJustification ? Border.all(color: const Color(0xFFFCA5A5), width: 1) : null,
+        color: accentColor.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: requiresJustification 
+              ? theme.colorScheme.error.withValues(alpha: 0.3)
+              : accentColor.withValues(alpha: 0.1),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -350,91 +310,89 @@ class _PeriodCard extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: titleColor,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  color: accentColor,
+                  letterSpacing: 1.0,
                 ),
               ),
               if (requiresJustification)
-                const Icon(Icons.warning_amber_rounded, size: 16, color: Color(0xFFDC2626)),
+                Icon(Icons.warning_amber_rounded, size: 16, color: theme.colorScheme.error),
             ],
           ),
-          if (cashAmount > 0 || simAmount > 0) ...[
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                if (cashAmount > 0 || theoreticalCash != null) ...[
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          '💵 Cash',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Color(0xFF4A5565),
-                          ),
-                        ),
-                        Text(
-                          CurrencyFormatter.formatShort(cashAmount),
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: titleColor,
-                          ),
-                        ),
-                        if (theoreticalCash != null)
-                          Text(
-                            'Théo: ${CurrencyFormatter.formatShort(theoreticalCash!)}',
-                            style: const TextStyle(fontSize: 10, color: Color(0xFF64748B)),
-                          ),
-                      ],
-                    ),
-                  ),
-                ],
-                if (simAmount > 0 || theoreticalSim != null) ...[
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          '📱 SIM',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Color(0xFF4A5565),
-                          ),
-                        ),
-                        Text(
-                          CurrencyFormatter.formatShort(simAmount),
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: titleColor,
-                          ),
-                        ),
-                        if (theoreticalSim != null)
-                          Text(
-                            'Théo: ${CurrencyFormatter.formatShort(theoreticalSim!)}',
-                            style: const TextStyle(fontSize: 10, color: Color(0xFF64748B)),
-                          ),
-                      ],
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ],
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              if (cashAmount > 0 || theoreticalCash != null)
+                Expanded(
+                  child: _buildDetail('💵 Cash', cashAmount, theoreticalCash, theme, theme.colorScheme.onSurface),
+                ),
+              if ((cashAmount > 0 || theoreticalCash != null) && (simAmount > 0 || theoreticalSim != null))
+                const SizedBox(width: 16),
+              if (simAmount > 0 || theoreticalSim != null)
+                Expanded(
+                  child: _buildDetail('📱 SIM', simAmount, theoreticalSim, theme, theme.colorScheme.primary),
+                ),
+            ],
+          ),
           if (requiresJustification && discrepancyPercentage != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              '⚠️ Écart détecté: ${discrepancyPercentage!.toStringAsFixed(1)}%',
-              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFDC2626)),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.error.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.error_outline_rounded, size: 14, color: theme.colorScheme.error),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Écart de ${discrepancyPercentage!.toStringAsFixed(1)}%',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.error,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ],
       ),
+    );
+  }
+
+  Widget _buildDetail(String label, int amount, int? theoretical, ThemeData theme, Color amountColor) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          CurrencyFormatter.formatShort(amount),
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w800,
+            color: amountColor,
+            fontFamily: 'Outfit',
+          ),
+        ),
+        if (theoretical != null)
+          Text(
+            'Attendu: ${CurrencyFormatter.formatShort(theoretical)}',
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+              fontSize: 10,
+            ),
+          ),
+      ],
     );
   }
 }

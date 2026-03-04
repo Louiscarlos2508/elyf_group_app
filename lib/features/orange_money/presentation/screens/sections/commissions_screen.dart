@@ -13,7 +13,7 @@ import '../../../domain/services/commission_calculation_service.dart';
 import '../../widgets/commission_form_dialog.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/shared/providers/storage_provider.dart';
-import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
+import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
 
 /// Screen for managing commissions.
 class CommissionsScreen extends ConsumerWidget {
@@ -42,7 +42,7 @@ class CommissionsScreen extends ConsumerWidget {
             module: EnterpriseModule.mobileMoney,
           ),
           SliverPadding(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.all(AppSpacing.lg),
             sliver: SliverToBoxAdapter(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -51,7 +51,7 @@ class CommissionsScreen extends ConsumerWidget {
                     data: (stats) => Column(
                       children: [
                         const CommissionAlertsCard(),
-                        const SizedBox(height: 32),
+                        SizedBox(height: AppSpacing.lg),
                         _buildKpiCards(stats, theme),
                       ],
                     ),
@@ -61,7 +61,7 @@ class CommissionsScreen extends ConsumerWidget {
                     ),
                     error: (_, __) => const SizedBox(),
                   ),
-                  const SizedBox(height: 40),
+                  SizedBox(height: AppSpacing.xl),
                   Text(
                     'Période Actuelle',
                     style: theme.textTheme.titleMedium?.copyWith(
@@ -69,7 +69,7 @@ class CommissionsScreen extends ConsumerWidget {
                       fontFamily: 'Outfit',
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: AppSpacing.md),
                   currentMonthAsync.when(
                     data: (commission) =>
                         _buildCurrentMonthCard(context, commission),
@@ -77,7 +77,7 @@ class CommissionsScreen extends ConsumerWidget {
                         const Center(child: LoadingIndicator()),
                     error: (_, __) => const SizedBox(),
                   ),
-                  const SizedBox(height: 40),
+                  SizedBox(height: AppSpacing.xl),
                   Text(
                     'Historique',
                     style: theme.textTheme.titleMedium?.copyWith(
@@ -85,7 +85,7 @@ class CommissionsScreen extends ConsumerWidget {
                       fontFamily: 'Outfit',
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: AppSpacing.md),
                   commissionsAsync.when(
                     data: (commissions) => _buildCommissionsHistory(
                       context,
@@ -102,9 +102,9 @@ class CommissionsScreen extends ConsumerWidget {
                     error: (error, stack) =>
                         Center(child: Text('Erreur: $error')),
                   ),
-                  const SizedBox(height: 40),
+                  SizedBox(height: AppSpacing.xl),
                   _buildInfoCard(context),
-                  const SizedBox(height: 40),
+                  SizedBox(height: AppSpacing.xl),
                 ],
               ),
             ),
@@ -115,64 +115,14 @@ class CommissionsScreen extends ConsumerWidget {
   }
 
   Widget _buildKpiCards(Map<String, dynamic> stats, ThemeData theme) {
-    return Column(
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: ElyfStatsCard(
-                label: 'Estimé (Mois)',
-                value: CurrencyFormatter.formatFCFA(
-                  stats['estimatedAmount'] as int? ?? 0,
-                ),
-                icon: Icons.calculate_rounded,
-                color: theme.colorScheme.primary,
-                isGlass: true,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: ElyfStatsCard(
-                label: 'Déclaré (Attente)',
-                value: CurrencyFormatter.formatFCFA(
-                  stats['declaredAmount'] as int? ?? 0,
-                ),
-                icon: Icons.pending_actions_rounded,
-                color: theme.colorScheme.secondary,
-                isGlass: true,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: ElyfStatsCard(
-                label: 'Validé (Dû)',
-                value: CurrencyFormatter.formatFCFA(
-                  stats['validatedAmount'] as int? ?? 0,
-                ),
-                icon: Icons.check_circle_outline_rounded,
-                color: const Color(0xFF00C897),
-                isGlass: true,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: ElyfStatsCard(
-                label: 'Payé (Total)',
-                value: CurrencyFormatter.formatFCFA(
-                  stats['paidAmount'] as int? ?? 0,
-                ),
-                icon: Icons.payments_rounded,
-                color: theme.colorScheme.tertiary,
-                isGlass: true,
-              ),
-            ),
-          ],
-        ),
-      ],
+    return ElyfStatsCard(
+      label: 'Mois Passé (Validé)',
+      value: CurrencyFormatter.formatFCFA(
+        stats['lastMonthAmount'] as int? ?? 0,
+      ),
+      icon: Icons.history_rounded,
+      color: theme.colorScheme.secondary,
+      isGlass: true,
     );
   }
 
@@ -202,7 +152,7 @@ class CommissionsScreen extends ConsumerWidget {
                       child: Icon(Icons.calendar_month_rounded,
                           color: theme.colorScheme.primary, size: 22),
                     ),
-                    const SizedBox(width: 16),
+                    SizedBox(width: AppSpacing.md),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -239,47 +189,59 @@ class CommissionsScreen extends ConsumerWidget {
                 ),
             ],
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: AppSpacing.lg),
           Row(
             children: [
               Expanded(
                 child: _buildStatBox(
+                  context,
                   'Transactions',
                   (commission?.transactionsCount ?? 0).toString(),
                   icon: Icons.receipt_long_rounded,
                   iconColor: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildStatBox(
-                  'Estimé (Système)',
-                  CurrencyFormatter.formatFCFA(
-                    commission?.estimatedAmount ?? 0,
-                  ),
-                  icon: Icons.calculate_rounded,
-                  iconColor: theme.colorScheme.primary,
-                  valueColor: theme.colorScheme.primary,
-                ),
-              ),
               if (commission?.declaredAmount != null) ...[
-                const SizedBox(width: 12),
+                SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: _buildStatBox(
-                    'Décl. (SMS)',
+                    context,
+                    'Montant Déclaré (SMS)',
                     CurrencyFormatter.formatFCFA(commission!.declaredAmount!),
                     icon: Icons.message_rounded,
                     iconColor: theme.colorScheme.secondary,
                     valueColor: theme.colorScheme.secondary,
                   ),
                 ),
+              ] else ...[
+                SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Container(
+                    padding: EdgeInsets.all(AppSpacing.md),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceContainer,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      children: [
+                        Icon(Icons.info_outline, color: theme.colorScheme.primary),
+                        SizedBox(height: AppSpacing.sm),
+                        Text(
+                          'En attente du SMS de l\'opérateur',
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ],
             ],
           ),
           if (commission != null) ...[
-            const SizedBox(height: 24),
+            SizedBox(height: AppSpacing.lg),
             const Divider(),
-            const SizedBox(height: 16),
+            SizedBox(height: AppSpacing.md),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
@@ -326,9 +288,9 @@ class CommissionsScreen extends ConsumerWidget {
                   icon: const Icon(Icons.check_circle),
                   label: const Text('Valider Commission'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
+                    backgroundColor: const Color(0xFF00C897),
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
                   ),
                 );
               }
@@ -383,6 +345,7 @@ class CommissionsScreen extends ConsumerWidget {
   }
 
   Widget _buildStatBox(
+    BuildContext context,
     String label,
     String value, {
     String? subtitle,
@@ -391,12 +354,13 @@ class CommissionsScreen extends ConsumerWidget {
     Color? iconColor,
     bool isStatus = false,
   }) {
+    final theme = Theme.of(context);
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade100),
+        border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -404,16 +368,15 @@ class CommissionsScreen extends ConsumerWidget {
           Row(
             children: [
               if (icon != null) ...[
-                Icon(icon, size: 14, color: iconColor ?? Colors.grey),
-                const SizedBox(width: 4),
+                Icon(icon, size: 14, color: iconColor ?? theme.colorScheme.onSurfaceVariant),
+                SizedBox(width: AppSpacing.xs),
               ],
               Expanded(
                 child: Text(
                   label,
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: Colors.grey.shade600,
-                    fontWeight: FontWeight.w500,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -421,26 +384,25 @@ class CommissionsScreen extends ConsumerWidget {
               ),
             ],
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: AppSpacing.xs),
           FittedBox(
             fit: BoxFit.scaleDown,
             child: Text(
               value,
-              style: TextStyle(
+              style: theme.textTheme.titleMedium?.copyWith(
                 fontSize: isStatus ? 13 : 16,
-                fontWeight: FontWeight.bold,
-                color: valueColor ?? const Color(0xFF101828),
+                fontWeight: FontWeight.w800,
+                color: valueColor ?? theme.colorScheme.onSurface,
+                fontFamily: 'Outfit',
               ),
             ),
           ),
           if (subtitle != null) ...[
-            const SizedBox(height: 4),
+            SizedBox(height: AppSpacing.xs),
             Text(
               subtitle,
-              style: const TextStyle(
-                fontSize: 10,
-                color: Color(0xFF6A7282),
-                fontWeight: FontWeight.normal,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -457,6 +419,7 @@ class CommissionsScreen extends ConsumerWidget {
     String enterpriseId,
     List<Commission> commissions,
   ) {
+    final theme = Theme.of(context);
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -471,19 +434,28 @@ class CommissionsScreen extends ConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'Historique des commissions',
-                  style: TextStyle(
-                    fontSize: 18,
+                  style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF0A0A0A),
                   ),
                 ),
-                // Note: Bouton "Ajouter commission" supprimé en faveur du mode hybride
-                // Si besoin, on pourrait ajouter un bouton "Calculer commissions"
+                ElevatedButton.icon(
+                  onPressed: () => _showAddCommissionDialog(context, ref, enterpriseId),
+                  icon: const Icon(Icons.add_a_photo_outlined, size: 18),
+                  label: const Text('Déclarer Commission'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: theme.colorScheme.primary,
+                    foregroundColor: theme.colorScheme.onPrimary,
+                    padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
               ],
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: AppSpacing.lg),
             if (commissions.isEmpty)
               _buildEmptyState(context)
             else
@@ -546,17 +518,18 @@ class CommissionsScreen extends ConsumerWidget {
     WidgetRef ref,
     Commission commission,
   ) {
+    final theme = Theme.of(context);
     return Row(
       children: [
         Container(
-          padding: const EdgeInsets.all(10),
+          padding: EdgeInsets.all(AppSpacing.sm),
           decoration: BoxDecoration(
-            color: Colors.grey.shade100,
+            color: theme.colorScheme.surfaceContainer,
             borderRadius: BorderRadius.circular(10),
           ),
-          child: const Icon(Icons.date_range, color: Colors.black54),
+          child: Icon(Icons.date_range, color: theme.colorScheme.onSurfaceVariant),
         ),
-        const SizedBox(width: 16),
+        SizedBox(width: AppSpacing.md),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -565,22 +538,21 @@ class CommissionsScreen extends ConsumerWidget {
                 CommissionCalculationService.formatPeriod(
                   DateTime.parse('${commission.period}-01'),
                 ),
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  fontFamily: 'Outfit',
                 ),
               ),
-              const SizedBox(height: 4),
+              SizedBox(height: AppSpacing.xs),
               Row(
                 children: [
                   Text(
                     '${commission.transactionsCount} transactions',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.grey.shade600,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  SizedBox(width: AppSpacing.sm),
                   CommissionStatusBadge(
                     status: commission.status,
                     discrepancyStatus: commission.discrepancyStatus,
@@ -598,17 +570,17 @@ class CommissionsScreen extends ConsumerWidget {
                     return Padding(
                       padding: const EdgeInsets.only(top: 4),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: EdgeInsets.symmetric(horizontal: AppSpacing.xs, vertical: 2),
                         decoration: BoxDecoration(
-                          color: Colors.grey.shade200,
+                          color: theme.colorScheme.surfaceContainerHigh,
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
                           enterpriseName,
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.grey.shade700,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: theme.colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ),
@@ -627,22 +599,21 @@ class CommissionsScreen extends ConsumerWidget {
               CurrencyFormatter.formatFCFA(
                 commission.declaredAmount ?? commission.estimatedAmount,
               ),
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w800,
+                fontFamily: 'Outfit',
               ),
             ),
             if (commission.discrepancyPercentage != null &&
                 commission.discrepancyPercentage != 0)
               Text(
                 'Écart: ${commission.discrepancyPercentage!.toStringAsFixed(1)}%',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
                   color: commission.discrepancyStatus ==
                           DiscrepancyStatus.ecartSignificatif
-                      ? Colors.red
-                      : Colors.orange,
+                      ? theme.colorScheme.error
+                      : theme.colorScheme.tertiary,
                 ),
               ),
           ],
@@ -673,11 +644,12 @@ class CommissionsScreen extends ConsumerWidget {
   }
 
   Widget _buildInfoCard(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
-      padding: const EdgeInsets.fromLTRB(25, 25, 1, 1),
+      padding: EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: const Color(0xFFEFF6FF),
-        border: Border.all(color: const Color(0xFFBEDBFF), width: 1.22),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
@@ -687,31 +659,29 @@ class CommissionsScreen extends ConsumerWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: const Color(0xFFDBEAFE),
+              color: theme.colorScheme.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(20),
             ),
-            child: const Icon(Icons.info, color: Color(0xFF1C398E), size: 20),
+            child: Icon(Icons.info, color: theme.colorScheme.primary, size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'ℹ️ À propos des commissions',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.normal,
-                    color: Color(0xFF1C398E),
+                Text(
+                  'Déclaration des commissions',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: theme.colorScheme.primary,
                   ),
                 ),
-                const SizedBox(height: 4),
-                const Text(
-                  'Les commissions sont calculées mensuellement par l\'administrateur selon les règles définies. Vous pouvez voir vos commissions estimées du mois en cours basées sur vos transactions validées.',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.normal,
-                    color: Color(0xFF193CB8),
+                SizedBox(height: AppSpacing.xs),
+                Text(
+                  'Chaque mois, dès que vous recevez le SMS de notification de commissions de la part d\'Orange, veuillez renseigner le montant exact reçu et joindre une capture d\'écran du SMS comme preuve de déclaration.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w500,
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -734,7 +704,7 @@ class CommissionsScreen extends ConsumerWidget {
           try {
             final controller = ref.read(commissionsControllerProvider);
 
-            // ✅ TODO résolu: Upload photo file if provided (to Firebase Storage)
+            // Upload photo file if provided (to Firebase Storage)
             String? photoUrl;
             if (photoFile != null) {
               try {

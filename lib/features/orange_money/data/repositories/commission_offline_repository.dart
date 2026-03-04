@@ -438,6 +438,13 @@ class CommissionOfflineRepository extends OfflineRepository<Commission>
           .where((c) => c.status == CommissionStatus.declared)
           .toList();
 
+      final now = DateTime.now();
+      final lastMonthDate = DateTime(now.year, now.month - 1, 1);
+      final lastMonthPeriod = '${lastMonthDate.year}-${lastMonthDate.month.toString().padLeft(2, '0')}';
+      
+      final lastMonthCommissions = commissions.where((c) => c.period == lastMonthPeriod).toList();
+      final lastMonthAmount = lastMonthCommissions.fold<int>(0, (sum, c) => sum + c.finalAmount);
+
       return {
         'totalCommissions': commissions.length,
         'totalPaid': paidCommissions.fold<int>(0, (sum, c) => sum + c.finalAmount),
@@ -449,6 +456,7 @@ class CommissionOfflineRepository extends OfflineRepository<Commission>
           0,
           (sum, c) => sum + c.finalAmount,
         ),
+        'lastMonthAmount': lastMonthAmount,
         'paidCount': paidCommissions.length,
         'pendingCount': pendingCommissions.length,
         'declaredCount': declaredCommissions.length,
@@ -718,6 +726,49 @@ class CommissionOfflineRepository extends OfflineRepository<Commission>
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       AppLogger.error(
         'Error marking commission as disputed',
+        name: 'CommissionOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      throw appException;
+    }
+  }
+  @override
+  Future<Map<String, dynamic>> fetchNetworkStatistics(
+    List<String> enterpriseIds, {
+    String? period,
+  }) async {
+    try {
+      final commissions = await fetchCommissionsByEnterprises(
+        enterpriseIds,
+        period: period,
+      );
+
+      final paidCommissions =
+          commissions.where((c) => c.status == CommissionStatus.paid).toList();
+      final validatedCommissions =
+          commissions.where((c) => c.status == CommissionStatus.validated).toList();
+      final declaredCommissions =
+          commissions.where((c) => c.status == CommissionStatus.declared).toList();
+
+      return {
+        'totalCommissions': commissions.length,
+        'totalAmount': commissions.fold<int>(0, (sum, c) => sum + c.finalAmount),
+        'totalPaid':
+            paidCommissions.fold<int>(0, (sum, c) => sum + c.finalAmount),
+        'totalValidated':
+            validatedCommissions.fold<int>(0, (sum, c) => sum + c.finalAmount),
+        'totalDeclared':
+            declaredCommissions.fold<int>(0, (sum, c) => sum + c.finalAmount),
+        'paidCount': paidCommissions.length,
+        'validatedCount': validatedCommissions.length,
+        'declaredCount': declaredCommissions.length,
+        'agencyCount': enterpriseIds.length,
+      };
+    } catch (error, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
+      AppLogger.error(
+        'Error fetching network commission statistics',
         name: 'CommissionOfflineRepository',
         error: error,
         stackTrace: stackTrace,

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/tenant/tenant_provider.dart';
+import '../../../../core/tenant/tenant_switch_manager.dart';
 import '../../../../core/auth/controllers/auth_controller.dart';
 
 /// Professional tenant selection screen with premium UI
@@ -16,133 +17,175 @@ class TenantSelectionScreen extends ConsumerWidget {
     final accessibleEnterprisesAsync = ref.watch(
       userAccessibleEnterprisesProvider,
     );
+    final isSwitching = ref.watch(tenantSwitchManagerProvider).isLoading;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Sélection d\'entreprise'),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            onPressed: () => ref.read(authControllerProvider).signOut(),
-            icon: const Icon(Icons.logout),
-            tooltip: 'Se déconnecter',
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              colors.primary.withValues(alpha: 0.05),
-              colors.surface,
+    return Stack(
+      children: [
+        Scaffold(
+          appBar: AppBar(
+            title: const Text('Sélection d\'entreprise'),
+            centerTitle: true,
+            actions: [
+              IconButton(
+                onPressed: () => ref.read(authControllerProvider).signOut(),
+                icon: const Icon(Icons.logout),
+                tooltip: 'Se déconnecter',
+              ),
+              const SizedBox(width: 8),
             ],
           ),
-        ),
-        child: SafeArea(
-          child: accessibleEnterprisesAsync.when(
-            data: (enterprises) {
-              if (enterprises.isEmpty) {
-                return _buildEmptyState(context, ref, colors, textTheme);
-              }
+          body: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  colors.primary.withValues(alpha: 0.05),
+                  colors.surface,
+                ],
+              ),
+            ),
+            child: SafeArea(
+              child: accessibleEnterprisesAsync.when(
+                data: (enterprises) {
+                  if (enterprises.isEmpty) {
+                    return _buildEmptyState(context, ref, colors, textTheme);
+                  }
 
-              return CustomScrollView(
-                slivers: [
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 40, 24, 32),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Sélectionnez votre',
-                            style: textTheme.headlineMedium?.copyWith(
-                              color: colors.onSurfaceVariant,
-                              fontWeight: FontWeight.w300,
-                            ),
-                          ),
-                          Text(
-                            'Entreprise',
-                            style: textTheme.displaySmall?.copyWith(
-                              color: colors.primary,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: -1,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            '${enterprises.length} ${enterprises.length > 1 ? 'entreprises accessibles' : 'entreprise accessible'}',
-                            style: textTheme.bodyLarge?.copyWith(
-                              color: colors.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-                    sliver: SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                          if (index == enterprises.length) {
-                            return Padding(
-                              padding: const EdgeInsets.only(top: 16, bottom: 40),
-                              child: OutlinedButton.icon(
-                                onPressed: () => ref.read(authControllerProvider).signOut(),
-                                icon: const Icon(Icons.logout),
-                                label: const Text('Se déconnecter de ce compte'),
-                                style: OutlinedButton.styleFrom(
-                                  padding: const EdgeInsets.all(16),
-                                  side: BorderSide(color: colors.error.withValues(alpha: 0.5)),
-                                  foregroundColor: colors.error,
+                  return CustomScrollView(
+                    slivers: [
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(24, 40, 24, 32),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Sélectionnez votre',
+                                style: textTheme.headlineMedium?.copyWith(
+                                  color: colors.onSurfaceVariant,
+                                  fontWeight: FontWeight.w300,
                                 ),
                               ),
-                            );
-                          }
-
-                          final enterprise = enterprises[index];
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 16),
-                            child: _EnterpriseCard(
-                              enterprise: enterprise,
-                              onTap: () async {
-                                // Set active enterprise
-                                final tenantNotifier = ref.read(
-                                  activeEnterpriseIdProvider.notifier,
-                                );
-                                await tenantNotifier.setActiveEnterpriseId(
-                                  enterprise.id,
-                                );
-
-                                // Navigate to modules
-                                if (context.mounted) {
-                                  context.go('/modules');
-                                }
-                              },
-                            ),
-                          );
-                        },
-                        childCount: enterprises.length + 1,
+                              Text(
+                                'Entreprise',
+                                style: textTheme.displaySmall?.copyWith(
+                                  color: colors.primary,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: -1,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                '${enterprises.length} ${enterprises.length > 1 ? 'entreprises accessibles' : 'entreprise accessible'}',
+                                style: textTheme.bodyLarge?.copyWith(
+                                  color: colors.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                ],
-              );
-            },
-            loading: () => _buildLoadingState(context, colors),
-            error: (error, stack) => _buildErrorState(
-              context,
-              ref,
-              colors,
-              textTheme,
-              error.toString(),
+                      SliverPadding(
+                        padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                        sliver: SliverList(
+                          delegate: SliverChildBuilderDelegate(
+                            (context, index) {
+                              if (index == enterprises.length) {
+                                return Padding(
+                                  padding: const EdgeInsets.only(top: 16, bottom: 40),
+                                  child: OutlinedButton.icon(
+                                    onPressed: () => ref.read(authControllerProvider).signOut(),
+                                    icon: const Icon(Icons.logout),
+                                    label: const Text('Se déconnecter de ce compte'),
+                                    style: OutlinedButton.styleFrom(
+                                      padding: const EdgeInsets.all(16),
+                                      side: BorderSide(color: colors.error.withValues(alpha: 0.5)),
+                                      foregroundColor: colors.error,
+                                    ),
+                                  ),
+                                );
+                              }
+
+                              final enterprise = enterprises[index];
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 16),
+                                child: _EnterpriseCard(
+                                  enterprise: enterprise,
+                                  onTap: () async {
+                                    // Switch tenant transactionally
+                                    final success = await ref
+                                        .read(tenantSwitchManagerProvider.notifier)
+                                        .switchTenant(enterprise.id);
+
+                                    // Navigate to modules if successful
+                                    if (success && context.mounted) {
+                                      context.go('/modules');
+                                    }
+                                  },
+                                ),
+                              );
+                            },
+                            childCount: enterprises.length + 1,
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+                loading: () => _buildLoadingState(context, colors),
+                error: (error, stack) => _buildErrorState(
+                  context,
+                  ref,
+                  colors,
+                  textTheme,
+                  error.toString(),
+                ),
+              ),
             ),
           ),
         ),
-      ),
+        if (isSwitching)
+          Positioned.fill(
+            child: Container(
+              color: Colors.black.withValues(alpha: 0.5),
+              child: Center(
+                child: Card(
+                  elevation: 8,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 32,
+                      vertical: 24,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const CircularProgressIndicator(),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Changement d\'espace...',
+                          style: textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Synchronisation en cours',
+                          style: textTheme.bodySmall?.copyWith(
+                            color: colors.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 

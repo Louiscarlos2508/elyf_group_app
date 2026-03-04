@@ -10,9 +10,9 @@ import 'package:elyf_groupe_app/features/administration/application/providers.da
 import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import '../stock/stock_kpi_section.dart';
 import '../stock/stock_pos_list.dart';
-import '../stock/stock_transfer_screen.dart';
 import '../../../widgets/wholesale/independent_collection_dialog.dart';
 import '../../../widgets/bottle_conservation_card.dart';
+import '../../../widgets/pos_stock_movement_dialog.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/services/gaz_stock_calculation_service.dart';
 
 class StockStatusTab extends ConsumerWidget {
@@ -56,17 +56,6 @@ class StockStatusTab extends ConsumerWidget {
                   runSpacing: 8,
                   alignment: WrapAlignment.end,
                   children: [
-                    ElyfButton(
-                      onPressed: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(builder: (context) => StockTransferScreen()),
-                        );
-                      },
-                      icon: Icons.swap_horiz,
-                      variant: ElyfButtonVariant.outlined,
-                      size: ElyfButtonSize.small,
-                      child: const Text('Transferts'),
-                    ),
                     if (!isPOS)
                       ElyfButton(
                         onPressed: () {
@@ -82,6 +71,59 @@ class StockStatusTab extends ConsumerWidget {
                         size: ElyfButtonSize.small,
                         child: const Text('Collecte (POS)'),
                       ),
+                    if (isPOS) ...[
+                      // 1. Entrée Pleins (Approvisionnement)
+                      ElyfButton(
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (context) => PosStockMovementDialog(
+                              enterpriseId: enterpriseId,
+                              movementType: PosMovementType.fullEntry,
+                            ),
+                          );
+                        },
+                        icon: Icons.download_rounded,
+                        variant: ElyfButtonVariant.filled,
+                        size: ElyfButtonSize.small,
+                        backgroundColor: AppColors.success,
+                        child: const Text('Approvisionnement'),
+                      ),
+                      // 2. Entrée Vides (Retour Client Hors Vente)
+                      ElyfButton(
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (context) => PosStockMovementDialog(
+                              enterpriseId: enterpriseId,
+                              movementType: PosMovementType.emptyEntry,
+                            ),
+                          );
+                        },
+                        icon: Icons.assignment_return_rounded,
+                        variant: ElyfButtonVariant.filled,
+                        size: ElyfButtonSize.small,
+                        backgroundColor: theme.colorScheme.tertiary,
+                        child: const Text('Retour Vides'),
+                      ),
+                      // 3. Sortie Vides (Envoi Rechargement)
+                      ElyfButton(
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (context) => PosStockMovementDialog(
+                              enterpriseId: enterpriseId,
+                              movementType: PosMovementType.emptyExit,
+                            ),
+                          );
+                        },
+                        icon: Icons.upload_rounded,
+                        variant: ElyfButtonVariant.outlined,
+                        size: ElyfButtonSize.small,
+                        textColor: AppColors.warning,
+                        child: const Text('Envoi Rechargement'),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -107,19 +149,19 @@ class StockStatusTab extends ConsumerWidget {
               ),
             ),
 
-            // Conservation du parc bouteilles (dépôt uniquement)
-            if (!isPOS)
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    AppSpacing.lg,
-                    0,
-                    AppSpacing.lg,
-                    AppSpacing.lg,
-                  ),
-                  child: BottleConservationCard(enterpriseId: enterpriseId),
-                ),
-              ),
+            // Conservation du parc bouteilles (dépôt uniquement) - Removed per user request
+            // if (!isPOS)
+            //   SliverToBoxAdapter(
+            //     child: Padding(
+            //       padding: EdgeInsets.fromLTRB(
+            //         AppSpacing.lg,
+            //         0,
+            //         AppSpacing.lg,
+            //         AppSpacing.lg,
+            //       ),
+            //       child: BottleConservationCard(enterpriseId: enterpriseId),
+            //     ),
+            //   ),
 
             SliverToBoxAdapter(
               child: Padding(
@@ -163,42 +205,40 @@ class StockStatusTab extends ConsumerWidget {
               ),
             ),
 
-            // Stock de l'entité actuelle (Dépôt ou POS)
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                child: allStocksAsync.when(
-                  data: (allStocks) {
-                    final activeId = ref.watch(activeEnterpriseIdProvider).value ?? '';
-                    final currentEnterprise = ref.watch(activeEnterpriseProvider).value;
+            // Stock de l'entité actuelle (POS Uniquement)
+            if (isPOS)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                  child: allStocksAsync.when(
+                    data: (allStocks) {
+                      final activeId = ref.watch(activeEnterpriseIdProvider).value ?? '';
+                      final currentEnterprise = ref.watch(activeEnterpriseProvider).value;
 
-                    if (currentEnterprise == null) return const SizedBox.shrink();
+                      if (currentEnterprise == null) return const SizedBox.shrink();
 
-                    final cylinders = cylindersAsync.value ?? [];
+                      final cylinders = cylindersAsync.value ?? [];
 
-                    final transfers = ref.watch(stockTransfersProvider(activeId)).value;
+                      final metrics = GazStockCalculationService.calculatePosStockMetrics(
+                        enterpriseId: activeId,
+                        allStocks: allStocks,
+                        cylinders: cylinders,
+                      );
 
-                    final metrics = GazStockCalculationService.calculatePosStockMetrics(
-                      enterpriseId: activeId,
-                      allStocks: allStocks,
-                      transfers: transfers,
-                      cylinders: cylinders,
-                    );
-
-                    return PointOfSaleStockCard(
-                      enterprise: currentEnterprise,
-                      fullBottles: metrics.totalFull,
-                      emptyBottles: metrics.totalEmpty,
-                      totalInTransit: metrics.totalInTransit,
-                      issueBottles: metrics.totalIssues,
-                      stockByCapacity: metrics.stockByCapacity,
-                    );
-                  },
-                  loading: () => AppShimmers.card(context),
-                  error: (error, stackTrace) => const SizedBox.shrink(),
+                      return PointOfSaleStockCard(
+                        enterprise: currentEnterprise,
+                        fullBottles: metrics.totalFull,
+                        emptyBottles: metrics.totalEmpty,
+                        totalInTransit: metrics.totalInTransit,
+                        issueBottles: metrics.totalIssues,
+                        stockByCapacity: metrics.stockByCapacity,
+                      );
+                    },
+                    loading: () => AppShimmers.card(context),
+                    error: (error, stackTrace) => const SizedBox.shrink(),
+                  ),
                 ),
               ),
-            ),
 
             const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xl)),
 

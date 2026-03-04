@@ -6,7 +6,6 @@ import '../../../../shared.dart';
 import '../../../../core/offline/offline.dart';
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/tenant/tenant_provider.dart';
-import '../../../administration/application/providers.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/maintenance_ticket.dart';
 import '../../domain/entities/property.dart';
@@ -206,16 +205,6 @@ class _MaintenanceFormDialogState extends ConsumerState<MaintenanceFormDialog>
               onChanged: (value) {
                 if (value != null) setState(() => _status = value);
               },
-            ),
-            const SizedBox(height: 16),
-            ref.watch(usersProvider).when(
-              data: (users) => MaintenanceFormFields.assignedUserField(
-                value: _assignedUserId,
-                users: users.map((u) => (id: u.id, name: u.fullName)).toList(),
-                onChanged: (value) => setState(() => _assignedUserId = value),
-              ),
-              loading: () => const LinearProgressIndicator(),
-              error: (_, __) => const SizedBox.shrink(),
             ),
             const SizedBox(height: 16),
             MaintenanceFormFields.descriptionField(

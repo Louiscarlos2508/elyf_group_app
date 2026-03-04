@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../core/tenant/tenant_switch_manager.dart';
 
 import '../../utils/responsive_helper.dart';
 import 'elyf_ui/organisms/elyf_app_bar.dart';
@@ -34,7 +37,7 @@ class NavigationSection {
 ///
 /// Support multi-tenant :
 /// - Passe enterpriseId et moduleId aux sections pour filtrer les données
-class AdaptiveNavigationScaffold extends StatefulWidget {
+class AdaptiveNavigationScaffold extends ConsumerStatefulWidget {
   const AdaptiveNavigationScaffold({
     super.key,
     required this.sections,
@@ -59,12 +62,12 @@ class AdaptiveNavigationScaffold extends StatefulWidget {
   final List<Widget>? appBarActions;
 
   @override
-  State<AdaptiveNavigationScaffold> createState() =>
+  ConsumerState<AdaptiveNavigationScaffold> createState() =>
       _AdaptiveNavigationScaffoldState();
 }
 
 class _AdaptiveNavigationScaffoldState
-    extends State<AdaptiveNavigationScaffold> {
+    extends ConsumerState<AdaptiveNavigationScaffold> {
   late int _selectedIndex;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final Map<int, Widget> _cachedWidgets = {};
@@ -111,21 +114,70 @@ class _AdaptiveNavigationScaffoldState
       Navigator.of(context).pop();
     }
   }
-
   @override
   Widget build(BuildContext context) {
     if (widget.isLoading && widget.loadingWidget != null) {
       return widget.loadingWidget!;
     }
 
+    final isSwitching = ref.watch(tenantSwitchManagerProvider).isLoading;
+
+    Widget content;
     // Utiliser le helper pour déterminer le type d'écran
     if (ResponsiveHelper.isMobile(context)) {
-      return _buildMobileScreen();
+      content = _buildMobileScreen();
     } else if (ResponsiveHelper.isTablet(context)) {
-      return _buildTabletScreen();
+      content = _buildTabletScreen();
     } else {
-      return _buildDesktopScreen();
+      content = _buildDesktopScreen();
     }
+
+    if (!isSwitching) return content;
+
+    return Stack(
+      children: [
+        content,
+        Positioned.fill(
+          child: Container(
+            color: Colors.black.withValues(alpha: 0.5),
+            child: Center(
+              child: Card(
+                elevation: 8,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 32,
+                    vertical: 24,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const CircularProgressIndicator(),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Changement d\'espace...',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Synchronisation en cours',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _buildTabletScreen() {
@@ -136,6 +188,7 @@ class _AdaptiveNavigationScaffoldState
         centerTitle: true,
         actions: widget.appBarActions,
         elevation: 1, // Subtle elevation for tablet
+        moduleId: widget.moduleId,
       ),
       resizeToAvoidBottomInset: false,
       body: Row(
@@ -145,6 +198,7 @@ class _AdaptiveNavigationScaffoldState
             selectedIndex: _selectedIndex,
             onDestinationSelected: _onDestinationSelected,
             extended: false,
+            moduleId: widget.moduleId,
             destinations: widget.sections
                 .map(
                   (section) => ElyfNavigationDestination(
@@ -170,6 +224,7 @@ class _AdaptiveNavigationScaffoldState
         centerTitle: true,
         actions: widget.appBarActions,
         elevation: 1,
+        moduleId: widget.moduleId,
       ),
       resizeToAvoidBottomInset: false,
       body: Row(
@@ -179,6 +234,7 @@ class _AdaptiveNavigationScaffoldState
             selectedIndex: _selectedIndex,
             onDestinationSelected: _onDestinationSelected,
             extended: isExtended,
+            moduleId: widget.moduleId,
             destinations: widget.sections
                 .map(
                   (section) => ElyfNavigationDestination(
@@ -222,11 +278,13 @@ class _AdaptiveNavigationScaffoldState
         actions: widget.appBarActions,
         useGlassmorphism: false,
         elevation: 0,
+        moduleId: widget.moduleId,
       ),
       body: _getWidgetForIndex(_selectedIndex),
       bottomNavigationBar: ElyfBottomNavigationBar(
         selectedIndex: _selectedIndex,
         onDestinationSelected: _onDestinationSelected,
+        moduleId: widget.moduleId,
         destinations: widget.sections.map((section) {
           return ElyfNavigationDestination(
             icon: section.icon,
@@ -262,12 +320,14 @@ class _AdaptiveNavigationScaffoldState
         ),
         actions: widget.appBarActions,
         elevation: 0,
+        moduleId: widget.moduleId,
       ),
       drawer: ElyfDrawer(
         sections: widget.sections,
         selectedIndex: _selectedIndex,
         onDestinationSelected: _onDestinationSelected,
         appTitle: widget.appTitle,
+        moduleId: widget.moduleId,
       ),
       body: _getWidgetForIndex(_selectedIndex),
     );

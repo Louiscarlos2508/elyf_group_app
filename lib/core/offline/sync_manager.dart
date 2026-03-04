@@ -117,12 +117,18 @@ class SyncManager {
   void _startAuthListener() {
     FirebaseAuth.instance.authStateChanges().listen((user) {
       if (_isInitialized) {
-        AppLogger.info('Auth state changed, restarting sync listener', name: 'offline.sync');
-        _startPendingOperationsListener();
-        
-        // Trigger sync if a new user just logged in
-        if (user != null && _connectivityService.isOnline && !_isSyncing) {
-          unawaited(syncPendingOperations());
+        if (user != null) {
+          AppLogger.info('Auth state changed (User logged in), restarting sync listener', name: 'offline.sync');
+          _startPendingOperationsListener();
+          
+          // Trigger sync if online
+          if (_connectivityService.isOnline && !_isSyncing) {
+            unawaited(syncPendingOperations());
+          }
+        } else {
+          AppLogger.info('Auth state changed (User logged out), stopping sync listeners', name: 'offline.sync');
+          _pendingOperationsSubscription?.cancel();
+          _pendingOperationsSubscription = null;
         }
       }
     });
@@ -620,12 +626,12 @@ class SyncManager {
   /// Cleans up old synced operations.
   Future<void> _cleanupOldOperations() async {
     try {
-      await _driftService.syncOperations.deleteOldSynced(
+      await _retryOnSqliteLock(() => _driftService.syncOperations.deleteOldSynced(
         maxAge: Duration(hours: config.maxOperationAgeHours),
-      );
-      await _driftService.syncOperations.deleteExceededRetries(
+      ));
+      await _retryOnSqliteLock(() => _driftService.syncOperations.deleteExceededRetries(
         config.maxRetryAttempts,
-      );
+      ));
     } catch (e, stackTrace) {
       final appException = ErrorHandler.instance.handleError(e, stackTrace);
       AppLogger.warning(
@@ -635,6 +641,25 @@ class SyncManager {
         stackTrace: stackTrace,
       );
     }
+  }
+
+  /// Retry an async operation up to [maxRetries] times on SQLite locked error (code 5).
+  Future<T> _retryOnSqliteLock<T>(Future<T> Function() operation, {int maxRetries = 3}) async {
+    for (var attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        return await operation();
+      } catch (e) {
+        final isSqliteLocked = e.toString().contains('database is locked') ||
+            e.toString().contains('SqliteException(5)');
+        if (isSqliteLocked && attempt < maxRetries - 1) {
+          await Future.delayed(Duration(milliseconds: 80 * (attempt + 1) * 3));
+          continue;
+        }
+        rethrow;
+      }
+    }
+    // Ne sera jamais atteint mais requis par le compilateur
+    throw StateError('Unreachable');
   }
 
   /// Extrait le type d'erreur depuis une exception.

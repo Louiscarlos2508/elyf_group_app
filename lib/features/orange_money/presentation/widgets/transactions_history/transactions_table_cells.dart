@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
 import '../../../domain/entities/transaction.dart';
 import 'transactions_history_helpers.dart';
 
@@ -11,34 +12,33 @@ class TransactionDateCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dateFormat = DateFormat('dd/MM/yyyy');
-    final timeFormat = DateFormat('HH:mm');
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
 
     return SizedBox(
-      width: 124.683,
+      width: 120,
       child: Padding(
-        padding: const EdgeInsets.all(8),
+        padding: EdgeInsets.all(AppSpacing.sm),
         child: Row(
           children: [
-            const Icon(Icons.access_time, size: 16, color: Color(0xFF4A5565)),
-            const SizedBox(width: 8),
+            Icon(Icons.access_time, size: 16, color: colorScheme.onSurfaceVariant),
+            SizedBox(width: AppSpacing.xs),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  dateFormat.format(date),
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.normal,
-                    color: Color(0xFF101828),
+                  DateFormat('dd/MM/yyyy').format(date),
+                  style: textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w500,
+                    color: colorScheme.onSurface,
                   ),
                 ),
                 Text(
-                  timeFormat.format(date),
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.normal,
-                    color: Color(0xFF4A5565),
+                  DateFormat('HH:mm').format(date),
+                  style: textTheme.labelSmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -58,39 +58,41 @@ class TransactionTypeCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isCashIn = transaction.isCashIn;
+    
     return SizedBox(
-      width: 95.065,
+      width: 80,
       child: Padding(
-        padding: const EdgeInsets.all(8),
+        padding: EdgeInsets.all(AppSpacing.sm),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
-            color: transaction.isCashIn
-                ? const Color(0xFFDCFCE7)
-                : const Color(0xFFFEE2E2),
+            color: isCashIn 
+                ? theme.colorScheme.primaryContainer.withValues(alpha: 0.4) 
+                : theme.colorScheme.errorContainer.withValues(alpha: 0.4),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.transparent, width: 1.219),
+            border: Border.all(
+              color: isCashIn 
+                  ? theme.colorScheme.primary.withValues(alpha: 0.1) 
+                  : theme.colorScheme.error.withValues(alpha: 0.1),
+            ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                transaction.isCashIn ? Icons.check : Icons.arrow_upward,
-                size: 12,
-                color: transaction.isCashIn
-                    ? const Color(0xFF016630)
-                    : const Color(0xFF991B1B),
+                isCashIn ? Icons.add_circle_outline : Icons.remove_circle_outline,
+                size: 14,
+                color: isCashIn ? theme.colorScheme.primary : theme.colorScheme.error,
               ),
               const SizedBox(width: 4),
               Flexible(
                 child: Text(
-                  transaction.isCashIn ? 'Dépôt' : 'Retrait',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.normal,
-                    color: transaction.isCashIn
-                        ? const Color(0xFF016630)
-                        : const Color(0xFF991B1B),
+                  isCashIn ? 'Dépôt' : 'Retrait',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: isCashIn ? theme.colorScheme.primary : theme.colorScheme.error,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -111,16 +113,16 @@ class TransactionClientCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return SizedBox(
-      width: 259.976,
+      width: 140,
       child: Padding(
-        padding: const EdgeInsets.all(8),
+        padding: EdgeInsets.all(AppSpacing.sm),
         child: Text(
           transaction.customerName ?? transaction.phoneNumber,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.normal,
-            color: Color(0xFF101828),
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w500,
+            color: theme.colorScheme.onSurface,
           ),
           overflow: TextOverflow.ellipsis,
         ),
@@ -137,16 +139,15 @@ class TransactionPhoneCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return SizedBox(
-      width: 100.541,
+      width: 90,
       child: Padding(
-        padding: const EdgeInsets.all(8),
+        padding: EdgeInsets.all(AppSpacing.sm),
         child: Text(
           transaction.phoneNumber.replaceAll('+226', ''),
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.normal,
-            color: Color(0xFF4A5565),
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
       ),
@@ -156,40 +157,121 @@ class TransactionPhoneCell extends StatelessWidget {
 
 /// Cellule de pièce d'identité.
 class TransactionIdCardCell extends StatelessWidget {
-  const TransactionIdCardCell({super.key});
+  const TransactionIdCardCell({super.key, required this.transaction});
+
+  final Transaction transaction;
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+
     return SizedBox(
-      width: 175.474,
+      width: 130,
       child: Padding(
-        padding: const EdgeInsets.all(8),
+        padding: EdgeInsets.all(AppSpacing.sm),
         child: Row(
           children: [
-            const Icon(Icons.credit_card, size: 16, color: Color(0xFF4A5565)),
-            const SizedBox(width: 8),
+            Icon(Icons.badge_outlined, size: 16, color: colorScheme.onSurfaceVariant),
+            SizedBox(width: AppSpacing.xs),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
-                  'CNI',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.normal,
-                    color: Color(0xFF101828),
+                Text(
+                  transaction.idType ?? 'CNIB',
+                  style: textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w500,
+                    color: colorScheme.onSurface,
                   ),
                 ),
                 Text(
-                  '-', // Pas de données pour l'instant
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.normal,
-                    color: Color(0xFF4A5565),
+                  transaction.idNumber ?? '-',
+                  style: textTheme.labelSmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
                   ),
                 ),
+                if (transaction.idIssueDate != null)
+                  Text(
+                    DateFormat('dd/MM/yyyy').format(transaction.idIssueDate!),
+                    style: textTheme.labelSmall?.copyWith(
+                      color: colorScheme.primary.withValues(alpha: 0.8),
+                      fontSize: 9,
+                    ),
+                  ),
               ],
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Cellule de village/commune.
+class TransactionTownCell extends StatelessWidget {
+  const TransactionTownCell({super.key, required this.transaction});
+
+  final Transaction transaction;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return SizedBox(
+      width: 110,
+      child: Padding(
+        padding: EdgeInsets.all(AppSpacing.sm),
+        child: Row(
+          children: [
+            Icon(Icons.location_on_outlined, size: 14, color: theme.colorScheme.onSurfaceVariant),
+            const SizedBox(width: 4),
+            Expanded(
+              child: Text(
+                transaction.town ?? '-',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurface,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Cellule de référence de transaction.
+class TransactionReferenceCell extends StatelessWidget {
+  const TransactionReferenceCell({super.key, required this.transaction});
+
+  final Transaction transaction;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final reference = transaction.reference ?? transaction.id;
+    
+    return SizedBox(
+      width: 100,
+      child: Padding(
+        padding: EdgeInsets.all(AppSpacing.sm),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Text(
+            reference,
+            style: theme.textTheme.labelSmall?.copyWith(
+              fontFamily: 'monospace',
+              fontWeight: FontWeight.bold,
+              color: theme.colorScheme.primary,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
       ),
     );
@@ -204,22 +286,26 @@ class TransactionAmountCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
+    final theme = Theme.of(context);
+    final isCashIn = transaction.isCashIn;
+
+    return SizedBox(
+      width: 120,
       child: Padding(
-        padding: const EdgeInsets.all(8),
+        padding: EdgeInsets.all(AppSpacing.sm),
         child: Text(
           TransactionsHistoryHelpers.formatAmount(
             transaction.amount,
-            transaction.isCashIn,
+            isCashIn,
           ),
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.normal,
-            color: transaction.isCashIn
-                ? const Color(0xFF008236)
-                : const Color(0xFFDC2626),
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: isCashIn 
+                ? theme.colorScheme.primary 
+                : theme.colorScheme.error,
           ),
           textAlign: TextAlign.right,
+          overflow: TextOverflow.ellipsis,
         ),
       ),
     );

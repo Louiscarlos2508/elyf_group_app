@@ -27,7 +27,7 @@ class ReportPeriodSelector extends StatelessWidget {
         final isWide = constraints.maxWidth > 600;
 
         return ElyfCard(
-          isGlass: true,
+          isGlass: false,
           borderColor: Colors.indigo.withValues(alpha: 0.1),
           padding: const EdgeInsets.all(24),
           child: Column(

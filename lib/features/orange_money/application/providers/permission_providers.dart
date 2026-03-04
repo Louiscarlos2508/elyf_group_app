@@ -1,10 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:elyf_groupe_app/core/repositories/repository_providers.dart';
 import 'package:elyf_groupe_app/features/administration/application/providers.dart'
-    show 
-      permissionServiceProvider, 
-      adminRepositoryProvider, 
-      enterpriseRepositoryProvider;
+    show permissionServiceProvider;
 import '../../../../core/permissions/services/permission_service.dart';
 import '../../../../core/auth/providers.dart' as auth;
 import '../../domain/adapters/orange_money_permission_adapter.dart';

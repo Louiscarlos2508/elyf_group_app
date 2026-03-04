@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/enterprise.dart';
 import '../../application/providers.dart';
 import '../../application/tenant_providers.dart';
-import '../../application/services/tenant_context_service.dart';
 
 /// Multi-tenant dashboard showing stats and quick access to tenants
 class MultiTenantDashboard extends ConsumerWidget {

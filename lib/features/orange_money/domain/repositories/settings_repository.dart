@@ -20,14 +20,6 @@ abstract class SettingsRepository {
     bool? enableTransactionAlerts,
   });
 
-  /// Met à jour les seuils
-  Future<void> updateThresholds(
-    String enterpriseId, {
-    int? criticalLiquidityThreshold,
-    double? checkpointDiscrepancyThreshold,
-    int? commissionReminderDays,
-    int? largeTransactionThreshold,
-  });
 
   /// Met à jour les barèmes de commission
   Future<void> updateCommissionTiers(
@@ -44,8 +36,6 @@ abstract class SettingsRepository {
     bool? autoValidateConformeCommissions,
   });
 
-  /// Met à jour le numéro SIM
-  Future<void> updateSimNumber(String enterpriseId, String simNumber);
 
   /// Écoute les changements de paramètres
   Stream<OrangeMoneySettings?> watchSettings(String enterpriseId);

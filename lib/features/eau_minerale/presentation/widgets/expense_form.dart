@@ -187,9 +187,10 @@ class ExpenseFormState extends ConsumerState<ExpenseForm> {
 
     return Form(
       key: _formKey,
-      child: SingleChildScrollView(
+      child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 20),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _buildSessionWarning(context, ref),
@@ -237,6 +238,7 @@ class ExpenseFormState extends ConsumerState<ExpenseForm> {
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<ExpenseCategory>(
+                    isExpanded: true,
                     initialValue: _category,
                     decoration: _buildInputDecoration(
                       label: 'Type de dépense',

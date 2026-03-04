@@ -212,12 +212,12 @@ class _PurchaseEntryDialogState extends ConsumerState<PurchaseEntryDialog> {
                                       ? products.where((p) => p.id == _selectedProduct!.id).firstOrNull 
                                       : null,
                                   isExpanded: true,
-                                  decoration: const InputDecoration(
+                                  decoration: InputDecoration(
                                     labelText: 'Produit',
-                                    border: OutlineInputBorder(),
-                                    prefixIcon: Icon(Icons.inventory_2_outlined),
+                                    border: const OutlineInputBorder(),
+                                    prefixIcon: const Icon(Icons.inventory_2_outlined),
                                     filled: true,
-                                    fillColor: Colors.white,
+                                    fillColor: theme.colorScheme.surfaceContainerHighest,
                                   ),
                                   items: products.map((product) {
                                     return DropdownMenuItem(
@@ -246,11 +246,11 @@ class _PurchaseEntryDialogState extends ConsumerState<PurchaseEntryDialog> {
                                   Expanded(
                                     child: TextField(
                                       controller: _quantityController,
-                                      decoration: const InputDecoration(
+                                      decoration: InputDecoration(
                                         labelText: 'Quantité',
-                                        border: OutlineInputBorder(),
+                                        border: const OutlineInputBorder(),
                                         filled: true,
-                                        fillColor: Colors.white,
+                                        fillColor: theme.colorScheme.surfaceContainerHighest,
                                       ),
                                       keyboardType: TextInputType.number,
                                     ),
@@ -259,12 +259,12 @@ class _PurchaseEntryDialogState extends ConsumerState<PurchaseEntryDialog> {
                                   Expanded(
                                     child: TextField(
                                       controller: _priceController,
-                                      decoration: const InputDecoration(
+                                      decoration: InputDecoration(
                                         labelText: 'Prix Unit.',
-                                        border: OutlineInputBorder(),
+                                        border: const OutlineInputBorder(),
                                         suffixText: 'FCFA',
                                         filled: true,
-                                        fillColor: Colors.white,
+                                        fillColor: theme.colorScheme.surfaceContainerHighest,
                                       ),
                                       keyboardType: TextInputType.number,
                                     ),
@@ -324,7 +324,7 @@ class _PurchaseEntryDialogState extends ConsumerState<PurchaseEntryDialog> {
                                       DataCell(Text(CurrencyFormatter.formatFCFA(item.purchasePrice))),
                                       DataCell(Text(CurrencyFormatter.formatFCFA(item.totalPrice), style: const TextStyle(fontWeight: FontWeight.bold))),
                                       DataCell(IconButton(
-                                        icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                                        icon: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error, size: 20),
                                         onPressed: () => _removeItem(index),
                                       )),
                                     ]);
@@ -385,12 +385,12 @@ class _PurchaseEntryDialogState extends ConsumerState<PurchaseEntryDialog> {
                             ref.watch(suppliersProvider).when(
                               data: (suppliers) => DropdownButtonFormField<Supplier>(
                                 initialValue: _selectedSupplier,
-                                decoration: const InputDecoration(
+                                decoration: InputDecoration(
                                   labelText: 'Fournisseur (Optionnel)',
-                                  border: OutlineInputBorder(),
-                                  prefixIcon: Icon(Icons.local_shipping_outlined),
+                                  border: const OutlineInputBorder(),
+                                  prefixIcon: const Icon(Icons.local_shipping_outlined),
                                   filled: true,
-                                  fillColor: Colors.white,
+                                  fillColor: theme.colorScheme.surfaceContainerHighest,
                                 ),
                                 items: suppliers.map((s) => DropdownMenuItem(
                                   value: s,
@@ -406,14 +406,14 @@ class _PurchaseEntryDialogState extends ConsumerState<PurchaseEntryDialog> {
                             // Paid Amount
                             TextField(
                               controller: _paidAmountController,
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 labelText: 'Montant Payé (Acompte)',
-                                border: OutlineInputBorder(),
-                                prefixIcon: Icon(Icons.payments_outlined),
+                                border: const OutlineInputBorder(),
+                                prefixIcon: const Icon(Icons.payments_outlined),
                                 suffixText: 'FCFA',
                                 hintText: 'Laisser vide si tout payé',
                                 filled: true,
-                                fillColor: Colors.white,
+                                fillColor: theme.colorScheme.surfaceContainerHighest,
                               ),
                               keyboardType: TextInputType.number,
                             ),
@@ -422,12 +422,12 @@ class _PurchaseEntryDialogState extends ConsumerState<PurchaseEntryDialog> {
                             // Notes
                             TextField(
                               controller: _notesController,
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 labelText: 'Notes',
-                                border: OutlineInputBorder(),
-                                prefixIcon: Icon(Icons.note_alt_outlined),
+                                border: const OutlineInputBorder(),
+                                prefixIcon: const Icon(Icons.note_alt_outlined),
                                 filled: true,
-                                fillColor: Colors.white,
+                                fillColor: theme.colorScheme.surfaceContainerHighest,
                               ),
                               maxLines: 3,
                             ),
@@ -440,7 +440,7 @@ class _PurchaseEntryDialogState extends ConsumerState<PurchaseEntryDialog> {
                                 padding: const EdgeInsets.symmetric(vertical: 16),
                               ),
                               icon: _isLoading 
-                                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
                                 : const Icon(Icons.check),
                               label: const Text('ENREGISTRER'),
                             ),

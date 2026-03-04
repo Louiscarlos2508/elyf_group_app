@@ -36,6 +36,7 @@ class _LiquidityScreenState extends ConsumerState<LiquidityScreen> {
   Widget build(BuildContext context) {
     final enterpriseKey = widget.enterpriseId ?? '';
     final theme = Theme.of(context);
+    
     final todayCheckpointAsync = ref.watch(
       todayLiquidityCheckpointProvider(enterpriseKey),
     );
@@ -58,13 +59,13 @@ class _LiquidityScreenState extends ConsumerState<LiquidityScreen> {
       backgroundColor: Colors.transparent,
       body: CustomScrollView(
         slivers: [
-          ElyfModuleHeader(
-            title: 'Suivi de Liquidité',
-            subtitle: 'Contrôlez vos pointages matin et soir pour garantir la sécurité de vos fonds.',
+          const ElyfModuleHeader(
+            title: 'Équilibre de Caisse',
+            subtitle: 'Contrôlez vos soldes matin et soir pour garantir la traçabilité de vos revenus.',
             module: EnterpriseModule.mobileMoney,
           ),
           SliverPadding(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
                 _buildTodayTrackingCard(context, todayCheckpointAsync, theme),
@@ -104,16 +105,55 @@ class _LiquidityScreenState extends ConsumerState<LiquidityScreen> {
 
     return ElyfCard(
       padding: const EdgeInsets.all(24),
-      elevation: 4,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildDateHeader(formattedDate, theme),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(
+                  Icons.auto_awesome_rounded,
+                  size: 24,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'POINTAGE DU JOUR',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.2,
+                        fontFamily: 'Outfit',
+                      ),
+                    ),
+                    Text(
+                      formattedDate,
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        color: theme.colorScheme.onSurface,
+                        fontFamily: 'Outfit',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 32),
           todayCheckpointAsync.when(
-            data: (checkpoint) => _buildCheckpointCards(context, checkpoint),
+            data: (checkpoint) => _buildCheckpointCards(context, checkpoint, theme),
             loading: () => const LoadingIndicator(),
-            error: (error, stackTrace) => _buildCheckpointCards(context, null),
+            error: (error, stackTrace) => _buildCheckpointCards(context, null, theme),
           ),
           const SizedBox(height: 32),
           todayCheckpointAsync.when(
@@ -133,54 +173,17 @@ class _LiquidityScreenState extends ConsumerState<LiquidityScreen> {
     );
   }
 
-  Widget _buildDateHeader(String formattedDate, ThemeData theme) {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.primary.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(Icons.calendar_month_rounded, size: 22, color: theme.colorScheme.primary),
-        ),
-        const SizedBox(width: 16),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Aujourd\'hui',
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.5,
-                fontFamily: 'Outfit',
-              ),
-            ),
-            Text(
-              formattedDate,
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w900,
-                color: theme.colorScheme.onSurface,
-                fontFamily: 'Outfit',
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
   Widget _buildCheckpointCards(
     BuildContext context,
     LiquidityCheckpoint? checkpoint,
+    ThemeData theme,
   ) {
     return Row(
       children: [
         Expanded(
           child: LiquidityCheckpointCard(
             title: 'Pointage Matin',
-            icon: Icons.wb_sunny,
+            icon: Icons.wb_sunny_rounded,
             iconColor: const Color(0xFFF54900),
             hasCheckpoint: checkpoint?.hasMorningCheckpoint ?? false,
             cashAmount: checkpoint?.morningCashAmount,
@@ -196,7 +199,7 @@ class _LiquidityScreenState extends ConsumerState<LiquidityScreen> {
         Expanded(
           child: LiquidityCheckpointCard(
             title: 'Pointage Soir',
-            icon: Icons.nightlight_round,
+            icon: Icons.nights_stay_rounded,
             iconColor: const Color(0xFF7C3AED),
             hasCheckpoint: checkpoint?.hasEveningCheckpoint ?? false,
             cashAmount: checkpoint?.eveningCashAmount,

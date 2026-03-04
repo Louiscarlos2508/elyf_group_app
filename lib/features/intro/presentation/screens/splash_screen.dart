@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer' as developer;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +8,9 @@ import 'package:flutter_native_splash/flutter_native_splash.dart';
 import '../../../../core/logging/app_logger.dart';
 
 import '../../../../core/auth/providers.dart';
+import '../../../../core/session/session_manager.dart';
+import '../../../../core/session/session_state.dart';
+import '../../../../core/auth/entities/app_user.dart';
 import '../../application/onboarding_service.dart';
 import '../../../../shared/presentation/widgets/elyf_ui/atoms/elyf_background.dart';
 
@@ -35,9 +39,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     super.initState();
 
     // Supprimer le splash screen natif dès que Flutter est prêt
+    developer.log('Removing native splash from SplashScreen.initState', name: 'splash');
     FlutterNativeSplash.remove();
 
-    // Logo animation - speeded up for a more professional feel
+    // Logo animation
     _logoController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1200),
@@ -55,7 +60,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       ),
     );
 
-    // Text animation - more responsive stagger
+    // Text animation
     _textController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1500),
@@ -65,7 +70,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       end: 1.0,
     ).animate(CurvedAnimation(parent: _textController, curve: Curves.easeOut));
 
-    // Glow/pulse animation (continuous)
+    // Glow/pulse animation
     _glowController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2000),
@@ -74,62 +79,54 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       CurvedAnimation(parent: _glowController, curve: Curves.easeInOut),
     );
 
-    // Wave animation for background effect
+    // Wave animation
     _waveController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 3000),
     )..repeat();
 
-    // Start animations in sequence
+    // Start animations
     _logoController.forward().then((_) {
-      Future.delayed(const Duration(milliseconds: 100), () {
-        if (mounted) _textController.forward();
-      });
-    });
-
-    // Durée totale réduite à 3 secondes (temps standard professionnel)
-    // L'utilisateur n'attend plus inutilement.
-    _timer = Timer(const Duration(milliseconds: 3000), () {
-      if (mounted) {
-        _navigateToNextScreen();
-      }
+      if (mounted) _textController.forward();
     });
   }
 
+  /// Traiter le changement d'état de la session
+  void _processState(SessionState state) {
+    if (_navigated) return;
+    
+    if (state is AuthenticatedSession) {
+      _navigated = true;
+      _handleNavigation(state.user);
+    } else if (state is UnauthenticatedSession) {
+      _navigated = true;
+      _handleNavigation(null);
+    } else if (state is SessionError) {
+      _navigated = true;
+      AppLogger.error('Session error on splash: ${state.message}', name: 'splash');
+      context.go('/login');
+    }
+  }
+
   /// Navigate to the appropriate screen based on authentication status
-  Future<void> _navigateToNextScreen() async {
-    try {
-      // Le bootstrap est déjà fait dans main.dart, donc l'auth est déjà prête
-      // Mais on ajoute un timeout de sécurité au cas où l'initialisation traîne
-      final user = await ref.read(currentUserProvider.future).timeout(
-        const Duration(seconds: 5),
-        onTimeout: () {
-          AppLogger.warning(
-            'SplashScreen: Timeout waiting for currentUserProvider',
-            name: 'splash',
-          );
-          return null; // Fallback to guest/login
-        },
-      );
+  Future<void> _handleNavigation(AppUser? user) async {
+    if (!mounted) return;
+    
+    developer.log('Reactive navigation: user=${user?.email ?? "null"}', name: 'splash');
+    
+    if (user != null) {
+      context.go('/modules');
+    } else {
+      final isOnboardingCompleted =
+          await ref.read(onboardingServiceProvider).isCompleted();
       
       if (!mounted) return;
       
-      if (user != null) {
-        context.go('/modules');
+      if (isOnboardingCompleted) {
+        context.go('/login');
       } else {
-        final isOnboardingCompleted =
-            await ref.read(onboardingServiceProvider).isCompleted();
-        
-        if (!mounted) return;
-        
-        if (isOnboardingCompleted) {
-          context.go('/login');
-        } else {
-          context.go('/onboarding');
-        }
+        context.go('/onboarding');
       }
-    } catch (error) {
-      if (mounted) context.go('/login');
     }
   }
 
@@ -143,8 +140,23 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     super.dispose();
   }
 
+  bool _navigated = false;
+
   @override
   Widget build(BuildContext context) {
+    // Écouter l'état de la session de manière réactive
+    ref.listen<SessionState>(sessionManagerProvider, (previous, next) {
+      _processState(next);
+    });
+
+    // Vérifier l'état initial une seule fois après la première frame
+    if (!_navigated) {
+       final initialState = ref.read(sessionManagerProvider);
+       if (initialState is AuthenticatedSession || initialState is UnauthenticatedSession) {
+         WidgetsBinding.instance.addPostFrameCallback((_) => _processState(initialState));
+       }
+    }
+
     final colors = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 

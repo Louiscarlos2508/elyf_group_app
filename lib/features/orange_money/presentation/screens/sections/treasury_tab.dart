@@ -9,7 +9,8 @@ import 'package:elyf_groupe_app/features/orange_money/presentation/widgets/treas
 import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import 'package:elyf_groupe_app/features/orange_money/domain/entities/orange_money_enterprise_extensions.dart';
-import 'package:elyf_groupe_app/features/orange_money/domain/entities/agent.dart' show AgentStatus;
+import 'package:elyf_groupe_app/features/orange_money/domain/entities/agent.dart' show AgentStatus, Agent;
+import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
 
 class TreasuryTab extends ConsumerWidget {
   const TreasuryTab({super.key});
@@ -29,127 +30,158 @@ class TreasuryTab extends ConsumerWidget {
     );
     final theme = Theme.of(context);
 
-    return CustomScrollView(
-      slivers: [
-        // ── Synthèse automatique ──────────────────────────────────────────────
-        SliverToBoxAdapter(
-          child: _AutoSynthesisSection(enterpriseId: activeEnterprise.id),
+    return Column(
+      children: [
+        ElyfModuleHeader(
+          title: 'Trésorerie',
+          subtitle: 'Suivi des flux de caisse et float principal',
+          module: EnterpriseModule.mobileMoney,
+          enterpriseName: activeEnterprise.name,
+          asSliver: false,
         ),
-
-        // ── Soldes de caisse ──────────────────────────────────────────────────
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-            child: Text(
-              'Caisse & Float Principal',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
+        Expanded(
+          child: CustomScrollView(
+            slivers: [
+              // ── Synthèse automatique ──────────────────────────────────────────────
+              SliverToBoxAdapter(
+                child: _AutoSynthesisSection(enterpriseId: activeEnterprise.id),
               ),
-            ),
-          ),
-        ),
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: balancesAsync.when(
-              data: (balances) => Row(
-                children: [
-                  Expanded(
-                    child: _BalanceCard(
-                      label: 'Espèces en main',
-                      amount: balances['cash'] ?? 0,
-                      color: theme.colorScheme.primary,
-                      icon: Icons.payments_outlined,
+
+              // ── Soldes de caisse ──────────────────────────────────────────────────
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, 0),
+                  child: Text(
+                    'Caisse & Float Principal',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Outfit',
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _BalanceCard(
-                      label: 'Float Principal (SIM)',
-                      amount: balances['mobileMoney'] ?? 0,
-                      color: theme.colorScheme.secondary,
-                      icon: Icons.account_balance_wallet_outlined,
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.all(AppSpacing.lg),
+                  child: balancesAsync.when(
+                    data: (balances) => Row(
+                      children: [
+                        Expanded(
+                          child: _BalanceCard(
+                            label: 'Espèces en main',
+                            amount: balances['cash'] ?? 0,
+                            color: theme.colorScheme.primary,
+                            icon: Icons.payments_outlined,
+                          ),
+                        ),
+                        SizedBox(width: AppSpacing.md),
+                        Expanded(
+                          child: _BalanceCard(
+                            label: 'Float Principal (SIM)',
+                            amount: balances['mobileMoney'] ?? 0,
+                            color: theme.colorScheme.secondary,
+                            icon: Icons.account_balance_wallet_outlined,
+                          ),
+                        ),
+                      ],
+                    ),
+                    loading: () => const Center(child: CircularProgressIndicator()),
+                    error: (e, __) => Text('Erreur: $e'),
+                  ),
+                ),
+              ),
+
+              // ── Actions rapides ───────────────────────────────────────────────────
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        _QuickActionButton(
+                          icon: Icons.add_rounded,
+                          label: isPOS ? 'Approvisionnement' : 'Apport',
+                          color: Colors.green,
+                          onPressed: () => _showOperationDialog(
+                            context,
+                            TreasuryOperationType.supply,
+                          ),
+                        ),
+                        SizedBox(width: AppSpacing.sm),
+                        _QuickActionButton(
+                          icon: Icons.remove_rounded,
+                          label: 'Retrait',
+                          color: theme.colorScheme.error,
+                          onPressed: () => _showOperationDialog(
+                            context,
+                            TreasuryOperationType.removal,
+                          ),
+                        ),
+                        SizedBox(width: AppSpacing.sm),
+                        _QuickActionButton(
+                          icon: Icons.swap_horiz_rounded,
+                          label: 'Transfert',
+                          color: theme.colorScheme.primary,
+                          onPressed: () => _showOperationDialog(
+                            context,
+                            TreasuryOperationType.transfer,
+                          ),
+                        ),
+                        SizedBox(width: AppSpacing.sm),
+                        _QuickActionButton(
+                          icon: Icons.tune_rounded,
+                          label: 'Ajustement',
+                          color: Colors.grey,
+                          onPressed: () => _showOperationDialog(
+                            context,
+                            TreasuryOperationType.adjustment,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
+                ),
               ),
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, __) => Text('Erreur: $e'),
-            ),
-          ),
-        ),
 
-        // ── Actions rapides ───────────────────────────────────────────────────
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Wrap(
-              spacing: 8,
-              children: [
-                ActionChip(
-                  avatar: const Icon(Icons.add, size: 16),
-                  label: Text(isPOS ? 'Approvisionnement' : 'Apport'),
-                  onPressed: () => _showOperationDialog(
-                    context,
-                    TreasuryOperationType.supply,
+              SliverPadding(
+                padding: EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.xl, AppSpacing.lg, AppSpacing.sm),
+                sliver: SliverToBoxAdapter(
+                  child: Text(
+                    'Opérations Récentes',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Outfit',
+                    ),
                   ),
                 ),
-                ActionChip(
-                  avatar: const Icon(Icons.remove, size: 16),
-                  label: const Text('Retrait'),
-                  onPressed: () => _showOperationDialog(
-                    context,
-                    TreasuryOperationType.removal,
-                  ),
-                ),
-                ActionChip(
-                  avatar: const Icon(Icons.swap_horiz, size: 16),
-                  label: const Text('Transfert'),
-                  onPressed: () => _showOperationDialog(
-                    context,
-                    TreasuryOperationType.transfer,
-                  ),
-                ),
-                ActionChip(
-                  avatar: const Icon(Icons.tune, size: 16),
-                  label: const Text('Ajustement'),
-                  onPressed: () => _showOperationDialog(
-                    context,
-                    TreasuryOperationType.adjustment,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+              ),
 
-        const SliverPadding(
-          padding: EdgeInsets.fromLTRB(16, 24, 16, 8),
-          sliver: SliverToBoxAdapter(
-            child: Text(
-              'Opérations Récentes',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-          ),
-        ),
-
-        // ── Liste des opérations ──────────────────────────────────────────────
-        operationsAsync.when(
-          data: (ops) => ops.isEmpty
-              ? const SliverFillRemaining(
-                  child: Center(child: Text('Aucune opération enregistrée')),
-                )
-              : SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) => _OperationTile(operation: ops[index]),
-                    childCount: ops.length,
-                  ),
+              // ── Liste des opérations ──────────────────────────────────────────────
+              operationsAsync.when(
+                data: (ops) => ops.isEmpty
+                    ? const SliverFillRemaining(
+                        hasScrollBody: false,
+                        child: Center(child: Text('Aucune opération enregistrée')),
+                      )
+                    : SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) => _OperationTile(operation: ops[index]),
+                          childCount: ops.length,
+                        ),
+                      ),
+                loading: () => const SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(child: CircularProgressIndicator()),
                 ),
-          loading: () => const SliverFillRemaining(
-            child: Center(child: CircularProgressIndicator()),
+                error: (e, __) =>
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: Center(child: Text('Erreur: $e')),
+                    ),
+              ),
+            ],
           ),
-          error: (e, __) =>
-              SliverFillRemaining(child: Center(child: Text('Erreur: $e'))),
         ),
       ],
     );
@@ -170,20 +202,20 @@ class _AutoSynthesisSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Collecte les données de différentes sources pour une vue d'ensemble
-    final agentsAsync = ref.watch(agentAccountsProvider('$enterpriseId||'));
+    final activeEnterprise = ref.watch(activeEnterpriseProvider).value;
+    final isPOS = activeEnterprise?.isPointOfSale ?? false;
+
+    final agentsAsync = isPOS ? const AsyncValue.data(<Agent>[]) : ref.watch(agentAccountsProvider('$enterpriseId||'));
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final statsKey = '$enterpriseId|${today.millisecondsSinceEpoch}';
     final dailyStatsAsync = ref.watch(dailyTransactionStatsProvider(statsKey));
-    final commissionsAsync = ref.watch(commissionsStatisticsProvider(enterpriseId));
     
     final theme = Theme.of(context);
     final fmt = NumberFormat('#,###');
 
     final agents = agentsAsync.value ?? [];
     final dailyStats = dailyStatsAsync.value ?? {};
-    final commStats = commissionsAsync.value ?? {};
 
     final totalFloatWithAgents = agents.fold<int>(
       0,
@@ -192,88 +224,119 @@ class _AutoSynthesisSection extends ConsumerWidget {
 
     final totalDepositsToday = dailyStats['deposits'] as int? ?? 0;
     final totalWithdrawalsToday = dailyStats['withdrawals'] as int? ?? 0;
-    final totalCommissions = commStats['totalAmount'] as int? ?? 0;
+    final netImpact = totalDepositsToday - totalWithdrawalsToday;
 
-    return Container(
-      margin: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.auto_graph,
-                  size: 18,
-                  color: theme.colorScheme.primary,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Vue d\'ensemble Réseau',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.primary,
-                  ),
-                ),
-              ],
+    return Padding(
+      padding: EdgeInsets.all(AppSpacing.lg),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.8),
+              theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+            ],
+          ),
+          border: Border.all(
+            color: theme.colorScheme.primary.withValues(alpha: 0.1),
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
-          ),
-          const Divider(height: 1),
-          _SynthesisRow(
-            label: 'Float chez les agents',
-            amount: totalFloatWithAgents.toDouble(),
-            color: theme.colorScheme.secondary,
-            icon: Icons.people_outline,
-          ),
-          _SynthesisRow(
-            label: 'Total Dépôts (SIM)',
-            amount: totalDepositsToday.toDouble(),
-            color: Colors.green,
-            icon: Icons.arrow_upward,
-          ),
-          _SynthesisRow(
-            label: 'Total Retraits (CASH)',
-            amount: -totalWithdrawalsToday.toDouble(),
-            color: theme.colorScheme.error,
-            icon: Icons.arrow_downward,
-          ),
-          _SynthesisRow(
-            label: 'Commissions gagnées',
-            amount: totalCommissions.toDouble(),
-            color: Colors.blue,
-            icon: Icons.account_balance_wallet_outlined,
-          ),
-          const Divider(height: 1),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Impact Cash net du jour',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: EdgeInsets.all(AppSpacing.lg),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        isPOS ? Icons.analytics_rounded : Icons.auto_graph_rounded,
+                        size: 18,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                    SizedBox(width: AppSpacing.sm),
+                    Text(
+                      isPOS ? 'Performance du jour' : 'Vue d\'ensemble Réseau',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Outfit',
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
+                  ],
                 ),
-                Text(
-                  '${(totalDepositsToday - totalWithdrawalsToday) >= 0 ? "+" : ""}${fmt.format(totalDepositsToday - totalWithdrawalsToday)} CFA',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: (totalDepositsToday - totalWithdrawalsToday) >= 0
-                        ? Colors.green
-                        : theme.colorScheme.error,
-                  ),
+              ),
+              const Divider(height: 1, indent: 16, endIndent: 16),
+              if (!isPOS)
+                _SynthesisRow(
+                  label: 'Float chez les agents',
+                  amount: totalFloatWithAgents.toDouble(),
+                  color: theme.colorScheme.secondary,
+                  icon: Icons.people_outline_rounded,
                 ),
-              ],
-            ),
+              _SynthesisRow(
+                label: 'Dépôts',
+                amount: totalDepositsToday.toDouble(),
+                color: Colors.green,
+                icon: Icons.arrow_upward_rounded,
+              ),
+              _SynthesisRow(
+                label: 'Retraits',
+                amount: -totalWithdrawalsToday.toDouble(),
+                color: theme.colorScheme.error,
+                icon: Icons.arrow_downward_rounded,
+              ),
+              Container(
+                margin: EdgeInsets.all(AppSpacing.md),
+                padding: EdgeInsets.all(AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Impact Cash net du jour',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    Text(
+                      '${netImpact >= 0 ? "+" : ""}${fmt.format(netImpact)} CFA',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Outfit',
+                        color: netImpact >= 0
+                            ? Colors.green
+                            : theme.colorScheme.error,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -295,13 +358,31 @@ class _SynthesisRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fmt = NumberFormat('#,###');
-    return ListTile(
-      dense: true,
-      leading: Icon(icon, size: 18, color: color),
-      title: Text(label, style: Theme.of(context).textTheme.bodyMedium),
-      trailing: Text(
-        '${amount >= 0 ? "+" : ""}${fmt.format(amount.round())} CFA',
-        style: TextStyle(fontWeight: FontWeight.w600, color: color),
+    final theme = Theme.of(context);
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: color.withValues(alpha: 0.8)),
+          SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Text(
+              label, 
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          Text(
+            '${amount >= 0 ? "+" : ""}${fmt.format(amount.round())} CFA',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              fontFamily: 'Outfit',
+              color: color,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -322,34 +403,105 @@ class _BalanceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withValues(alpha: 0.2)),
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: color.withValues(alpha: 0.2),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.08),
+            blurRadius: 15,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: color, size: 20),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: color, size: 20),
+          ),
           const SizedBox(height: 12),
           Text(
             label,
-            style: TextStyle(color: color.withValues(alpha: 0.8), fontSize: 12),
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 4),
           FittedBox(
             child: Text(
               '${NumberFormat('#,###').format(amount)} CFA',
-              style: TextStyle(
-                color: color,
-                fontSize: 18,
+              style: theme.textTheme.titleLarge?.copyWith(
+                color: theme.colorScheme.onSurface,
                 fontWeight: FontWeight.bold,
+                fontFamily: 'Outfit',
               ),
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _QuickActionButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onPressed;
+
+  const _QuickActionButton({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return InkWell(
+      onTap: onPressed,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: color.withValues(alpha: 0.2),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 18, color: color),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: color,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -362,6 +514,7 @@ class _OperationTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final isNegative =
         operation.type == TreasuryOperationType.removal ||
         (operation.type == TreasuryOperationType.transfer &&
@@ -372,20 +525,20 @@ class _OperationTile extends StatelessWidget {
     Color color;
     switch (operation.type) {
       case TreasuryOperationType.supply:
-        icon = Icons.add_circle_outline;
+        icon = Icons.add_circle_outline_rounded;
         color = Colors.green;
         break;
       case TreasuryOperationType.removal:
-        icon = Icons.remove_circle_outline;
-        color = Colors.red;
+        icon = Icons.remove_circle_outline_rounded;
+        color = theme.colorScheme.error;
         break;
       case TreasuryOperationType.transfer:
-        icon = Icons.swap_horiz;
-        color = Colors.blue;
+        icon = Icons.swap_horiz_rounded;
+        color = theme.colorScheme.primary;
         break;
       case TreasuryOperationType.adjustment:
-        icon = Icons.tune;
-        color = Colors.grey;
+        icon = Icons.tune_rounded;
+        color = theme.colorScheme.outline;
         break;
     }
 
@@ -398,32 +551,58 @@ class _OperationTile extends StatelessWidget {
           operation.fromAccount?.label ?? operation.toAccount?.label ?? '';
     }
 
-    return ListTile(
-      leading: CircleAvatar(
-        backgroundColor: color.withValues(alpha: 0.1),
-        child: Icon(icon, color: color, size: 20),
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.xs),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+          width: 1,
+        ),
       ),
-      title: Text(operation.reason ?? operation.type.name),
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (accountInfo.isNotEmpty)
-            Text(
-              accountInfo,
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
-            ),
-          Text(
-            DateFormat('dd/MM/yyyy HH:mm').format(operation.date),
-            style: const TextStyle(fontSize: 11),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.1),
+            shape: BoxShape.circle,
           ),
-        ],
-      ),
-      trailing: Text(
-        '${isNegative ? "-" : "+"}${NumberFormat('#,###').format(operation.amount)}',
-        style: TextStyle(
-          fontWeight: FontWeight.bold,
-          color: isNegative ? Colors.red : Colors.green,
-          fontSize: 15,
+          child: Icon(icon, color: color, size: 20),
+        ),
+        title: Text(
+          operation.reason ?? operation.type.name,
+          style: theme.textTheme.bodyLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (accountInfo.isNotEmpty)
+              Text(
+                accountInfo,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            Text(
+              DateFormat('dd MMMM yyyy, HH:mm', 'fr_FR').format(operation.date),
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.outline,
+              ),
+            ),
+          ],
+        ),
+        trailing: Text(
+          '${isNegative ? "-" : "+"}${NumberFormat('#,###').format(operation.amount)}',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+            fontFamily: 'Outfit',
+            color: isNegative ? theme.colorScheme.error : Colors.green,
+          ),
         ),
       ),
     );

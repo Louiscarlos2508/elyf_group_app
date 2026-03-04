@@ -217,6 +217,10 @@ service cloud.firestore {
         allow read: if isAuthenticated();
         allow write: if hasPermission(enterpriseId, 'orange_money:manage_settings');
       }
+
+      match /orangeMoneyTreasuryOperations/{opId} {
+        allow read, write: if hasEffectiveAccess(enterpriseId);
+      }
       
       // Module Immobilier
       match /properties/{propertyId} {
@@ -333,47 +337,34 @@ service cloud.firestore {
       }
     }
     
-    // Règles pour collection groups (supporte pullEnterprisesFromFirestore via collectionGroup)
+    // Règles pour collection groups (supporte les requêtes globales ou filtrées sur les sous-tenants)
     match /{path=**}/pointsOfSale/{posId} {
-      allow read: if isSystemAdmin() || hasEffectiveAccess(posId);
+      allow read: if isSystemAdmin() || 
+                    hasEffectiveAccess(posId) || 
+                    (resource != null && hasEffectiveAccess(resource.data.get('parentEnterpriseId', '')));
     }
     
     match /{path=**}/agences/{agenceId} {
-      allow read: if isSystemAdmin() || hasEffectiveAccess(agenceId);
+      allow read: if isSystemAdmin() || 
+                    hasEffectiveAccess(agenceId) || 
+                    (resource != null && hasEffectiveAccess(resource.data.get('parentEnterpriseId', '')));
     }
     
     // Collection globale des rôles (administration)
     match /roles/{roleId} {
-      // Tous les utilisateurs authentifiés peuvent lire les rôles
       allow read: if isAuthenticated();
-      
-      // Seuls les admins système peuvent créer/modifier/supprimer des rôles
       allow write: if isSystemAdmin();
     }
     
     // Collection globale des assignations utilisateurs-entreprises-modules
     match /enterprise_module_users/{documentId} {
-      // Les utilisateurs authentifiés peuvent lire leurs propres assignations
-      // Les admins système peuvent tout lire
-      // Ou si on a accès à l'entreprise concernée
       allow read: if isAuthenticated() && (
         resource == null ||
         resource.data.userId == request.auth.uid || 
         isSystemAdmin() ||
         (resource != null && ("enterpriseId" in resource.data) && hasEffectiveAccess(resource.data.enterpriseId))
       );
-      
-      // Seuls les admins système peuvent créer/modifier/supprimer des assignations
       allow write: if isSystemAdmin();
-    }
-    
-    // Collection Group rules pour permettre les requêtes globales sur les sous-tenants
-    match /{path=**}/pointsOfSale/{posId} {
-      allow read: if isSystemAdmin() || hasEnterprise(posId) || (resource != null && hasEnterprise(resource.data.get('parentEnterpriseId', '')));
-    }
-
-    match /{path=**}/agences/{agenceId} {
-      allow read: if isSystemAdmin() || hasEnterprise(agenceId) || (resource != null && hasEnterprise(resource.data.get('parentEnterpriseId', '')));
     }
 
     // Autres collections globales (si nécessaire)

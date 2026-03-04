@@ -68,7 +68,8 @@ class PermissionSectionMapper {
         permissionId.startsWith('manage_') ||
         permissionId.startsWith('validate_') ||
         permissionId.startsWith('declare_') ||
-        permissionId.startsWith('export_')) {
+        permissionId.startsWith('export_') ||
+        permissionId.startsWith('terminate_')) {
       final prefix = permissionId.split('_').first;
       final suffix = permissionId.substring(prefix.length + 1);
 
@@ -199,17 +200,25 @@ class PermissionSectionMapper {
             return 'tenants';
           } else if (suffix == 'contract' ||
               suffix == 'contracts' ||
-              suffix == 'terminate') {
+              permissionId == 'terminate_contract') {
             // terminate_contract va dans contracts
             return 'contracts';
           } else if (suffix == 'payment' || suffix == 'payments') {
             return 'payments';
           } else if (suffix == 'expenses' || suffix == 'expense') {
             return 'expenses';
+          } else if (suffix == 'maintenance' || suffix == 'maintenances') {
+            return 'maintenance';
+          } else if (suffix == 'treasury' ||
+              suffix == 'treasury_operation' ||
+              suffix == 'treasury_operations') {
+            return 'treasury';
           } else if (suffix == 'reports' || suffix == 'report') {
             return 'reports';
           } else if (suffix == 'settings' || suffix == 'setting') {
             return 'settings';
+          } else if (suffix == 'trash') {
+            return 'trash';
           } else if (suffix == 'profile' || suffix == 'password') {
             return 'profile';
           }

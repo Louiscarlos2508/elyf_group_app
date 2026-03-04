@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart'
     show FirebaseAuth, User, UserCredential, FirebaseAuthException;
 import 'package:firebase_core/firebase_core.dart';
+import 'dart:developer' as developer;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import '../../firebase/firestore_user_service.dart';
@@ -57,6 +58,7 @@ class AuthSessionService {
     if (_isInitialized) return;
 
     try {
+      developer.log('Initializing AuthSessionService...', name: 'auth.session');
       // Vérifier d'abord si Firebase Core est initialisé
       if (Firebase.apps.isEmpty) {
         AppLogger.info(
@@ -73,30 +75,23 @@ class AuthSessionService {
 
       await _authStorageService.isLoggedIn();
 
+      developer.log('Checking for Firebase currentUser...', name: 'auth.session');
       // Attendre activement que Firebase Auth restaure l'état
-      // Passer de 2s à 5s pour être plus robuste lors des Hot Reloads/Restarts
+      // Plus de timeout fixe : on attend le premier signal de Firebase (authStateChanges)
       User? firebaseUser = _firebaseAuth.currentUser;
       
       if (firebaseUser == null) {
-        try {
-          AppLogger.debug(
-            'Waiting for Firebase Auth to restore session...',
-            name: 'auth.session',
-          );
-          firebaseUser = await _firebaseAuth.authStateChanges().first.timeout(
-            const Duration(seconds: 3),
-            onTimeout: () => null,
-          );
-        } catch (e) {
-          AppLogger.error(
-            'Timeout waiting for authStateChanges(): $e',
-            name: 'auth.session',
-          );
-        }
+        AppLogger.debug(
+          'Waiting for Firebase Auth to restore session...',
+          name: 'auth.session',
+        );
+        // On attend sans timeout pour garantir la reconnexion même sur réseau lent (>10s)
+        firebaseUser = await _firebaseAuth.authStateChanges().first;
       }
 
       // Charger l'utilisateur depuis le cache local pour la persistence offline
       final localUser = await _authStorageService.loadUser();
+      developer.log('Local user from storage: ${localUser?.email}', name: 'auth.session');
 
       // LOGIQUE DE SÉCURITÉ CRITIQUE : Vérification de cohérence
       if (firebaseUser != null) {
@@ -106,28 +101,35 @@ class AuthSessionService {
         );
 
         if (localUser != null && localUser.id != firebaseUser.uid) {
-          // ALERTE ROUGE : L'ID local ne correspond pas à l'ID Firebase
-          // Cela peut arriver après un changement de compte rapide ou un bug de persistence
           AppLogger.warning(
-            'SECURITY ALERT: Local ID (${localUser.id}) mismatch with Firebase ID (${firebaseUser.uid}). '
-            'Clearing stale local data...',
+            'SECURITY ALERT: Local ID mismatch. Clearing stale local data...',
             name: 'auth.session',
           );
           await _authStorageService.clearLocalAuthData();
         }
         
-        // Continuer avec l'utilisateur Firebase (Source de vérité)
-        await _fetchAndSyncFirestoreUser(firebaseUser);
+        // IMPORTANT : Ne pas bloquer l'initialisation sur le fetch Firestore
+        // On émet d'abord l'utilisateur Firebase (ou local s'il correspond)
+        // pour permettre la navigation immédiate.
+        final appUser = localUser != null && localUser.id == firebaseUser.uid
+            ? localUser
+            : AppUser(
+                id: firebaseUser.uid,
+                email: firebaseUser.email ?? '',
+                isAdmin: firebaseUser.email?.toLowerCase() == _adminEmail.toLowerCase(),
+              );
+
+        _updateUser(appUser);
+        
+        // Lancer la synchronisation Firestore en arrière-plan sans l'attendre
+        unawaited(_fetchAndSyncFirestoreUser(firebaseUser));
       } else {
-        // Pas d'utilisateur Firebase trouvé après l'attente
+        // Pas d'utilisateur Firebase trouvé
         if (localUser != null) {
-          AppLogger.info(
-            'No Firebase user found. Falling back to secure local storage for offline access.',
-            name: 'auth.session',
-          );
+          AppLogger.info('No Firebase user but local user found. Using local data.', name: 'auth.session');
           _updateUser(localUser);
         } else {
-          AppLogger.info('No user session found (Firebase or Local).', name: 'auth.session');
+          AppLogger.info('No user session found.', name: 'auth.session');
           _updateUser(null);
         }
       }

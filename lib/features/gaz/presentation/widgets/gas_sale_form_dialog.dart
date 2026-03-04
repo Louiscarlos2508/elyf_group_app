@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
+import 'package:elyf_groupe_app/core/tenant/tenant_switch_manager.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
 import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
@@ -131,6 +132,7 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
 
     final quantity = int.tryParse(_quantityController.text) ?? 1;
 
+    final activeEnterprise = ref.read(activeEnterpriseProvider).value;
     final sale = await GasSaleSubmitHandler.submit(
       context: context,
       ref: ref,
@@ -138,6 +140,7 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
       quantity: quantity,
       availableStock: _availableStock,
       enterpriseId: enterpriseId,
+      siteId: activeEnterprise?.isPointOfSale == true ? activeEnterprise?.id : null,
       saleType: widget.saleType,
       customerName: _customerNameController.text.trim().isEmpty
           ? null
@@ -199,8 +202,17 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
     final activeEnterpriseAsync = ref.watch(activeEnterpriseProvider);
 
     // Récupérer l'ID de l'entreprise active
+    // Si c'est un point de vente (POS), le stock est enregistré sous la mère →
+    // on utilise parentEnterpriseId pour les requêtes de stock et d'enregistrement.
     final enterpriseId = activeEnterpriseAsync.when(
-      data: (enterprise) => enterprise?.id,
+      data: (enterprise) {
+        if (enterprise != null &&
+            enterprise.isPointOfSale &&
+            enterprise.type.module == EnterpriseModule.gaz) {
+          return enterprise.parentEnterpriseId ?? enterprise.id;
+        }
+        return enterprise?.id;
+      },
       loading: () => null,
       error: (_, __) => null,
     );
@@ -497,104 +509,6 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
     }
   }
 
-  Widget _buildPOSSelectionRequiredView(ThemeData theme, Enterprise currentEnterprise) {
-    final accessibleEnterprisesAsync = ref.watch(userAccessibleEnterprisesProvider);
-    
-    return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Container(
-        padding: const EdgeInsets.all(24),
-        constraints: const BoxConstraints(maxWidth: 400),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.store_outlined, size: 48, color: theme.colorScheme.primary),
-            const SizedBox(height: 16),
-            Text(
-              'Point de Vente Requis',
-              style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Les ventes au détail doivent être effectuées depuis un Point de Vente (POS). Vous êtes actuellement sur "${currentEnterprise.name}".',
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 24),
-            accessibleEnterprisesAsync.when(
-              data: (enterprises) {
-                final posList = enterprises.where((e) => 
-                  e.isPointOfSale && 
-                  (e.parentEnterpriseId == currentEnterprise.id || 
-                   currentEnterprise.type == EnterpriseType.group ||
-                   e.ancestorIds.contains(currentEnterprise.id))
-                ).toList();
-
-                if (posList.isEmpty) {
-                  return Column(
-                    children: [
-                      Icon(Icons.warning_amber_rounded, color: theme.colorScheme.error),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Aucun point de vente Gaz accessible trouvé pour cette entreprise.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: theme.colorScheme.error),
-                      ),
-                    ],
-                  );
-                }
-
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Sélectionnez un Point de Vente :',
-                      style: theme.textTheme.labelLarge,
-                    ),
-                    const SizedBox(height: 12),
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(maxHeight: 300),
-                      child: ListView.separated(
-                        shrinkWrap: true,
-                        itemCount: posList.length,
-                        separatorBuilder: (_, __) => const Divider(),
-                        itemBuilder: (context, index) {
-                          final pos = posList[index];
-                          return ListTile(
-                            leading: CircleAvatar(
-                              backgroundColor: theme.colorScheme.primaryContainer,
-                              child: Icon(Icons.location_on_outlined, 
-                                size: 20, color: theme.colorScheme.onPrimaryContainer),
-                            ),
-                            title: Text(pos.name, style: const TextStyle(fontWeight: FontWeight.w600)),
-                            subtitle: Text(pos.address ?? 'Pas d\'adresse', maxLines: 1, overflow: TextOverflow.ellipsis),
-                            onTap: () async {
-                              final notifier = ref.read(activeEnterpriseIdProvider.notifier);
-                              await notifier.setActiveEnterpriseId(pos.id);
-                            },
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                );
-              },
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, __) => Text('Erreur: $e'),
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Annuler'),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }
 
 

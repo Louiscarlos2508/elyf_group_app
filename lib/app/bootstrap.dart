@@ -48,14 +48,28 @@ Future<ProviderContainer> bootstrap() async {
 
   // Initialize Firebase sequentially to avoid ConcurrentModificationException
   // Default App
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  developer.log('Initializing Default Firebase App', name: 'bootstrap');
+  try {
+    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform).timeout(
+      const Duration(seconds: 10),
+    );
+  } catch (e) {
+    developer.log('Default Firebase App initialization error or timeout: $e', name: 'bootstrap');
+    // If it's already initialized, this is fine, otherwise some services might fail later
+    try {
+      Firebase.app();
+    } catch (_) {
+      // Really failed to initialize
+    }
+  }
   
   // Secondary Management App
+  developer.log('Initializing ManagementApp', name: 'bootstrap');
   try {
     await Firebase.initializeApp(
       name: 'ManagementApp',
       options: DefaultFirebaseOptions.currentPlatform,
-    );
+    ).timeout(const Duration(seconds: 5));
   } catch (e) {
     developer.log('Failed to initialize ManagementApp: $e', name: 'bootstrap');
     // If it fails, managementFirebaseAuthProvider should fallback to default or we can try to retrieve existing

@@ -1,6 +1,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:elyf_groupe_app/app/theme/app_colors.dart';
 
 /// A premium, glassmorphic bottom navigation bar.
 class ElyfBottomNavigationBar extends StatelessWidget {
@@ -9,11 +10,13 @@ class ElyfBottomNavigationBar extends StatelessWidget {
     required this.selectedIndex,
     required this.onDestinationSelected,
     required this.destinations,
+    this.moduleId,
   });
 
   final int selectedIndex;
   final ValueChanged<int> onDestinationSelected;
   final List<ElyfNavigationDestination> destinations;
+  final String? moduleId;
 
   @override
   Widget build(BuildContext context) {
@@ -59,6 +62,7 @@ class ElyfBottomNavigationBar extends StatelessWidget {
                     item,
                     isSelected,
                     () => onDestinationSelected(index),
+                    moduleId,
                   ),
                 );
               }).toList(),
@@ -69,8 +73,9 @@ class ElyfBottomNavigationBar extends StatelessWidget {
     );
   }
 
-  Widget _buildNavItem(BuildContext context, ElyfNavigationDestination item, bool isSelected, VoidCallback onTap) {
+  Widget _buildNavItem(BuildContext context, ElyfNavigationDestination item, bool isSelected, VoidCallback onTap, String? moduleId) {
     final theme = Theme.of(context);
+    final moduleColor = AppColors.getModuleColor(moduleId);
     
     return GestureDetector(
       onTap: () {
@@ -83,7 +88,7 @@ class ElyfBottomNavigationBar extends StatelessWidget {
         curve: Curves.easeOutCubic,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? theme.colorScheme.primaryContainer.withValues(alpha: 0.6) : Colors.transparent,
+          color: isSelected ? moduleColor.withValues(alpha: 0.1) : Colors.transparent,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
@@ -92,8 +97,8 @@ class ElyfBottomNavigationBar extends StatelessWidget {
             Icon(
               item.icon,
               color: isSelected 
-                  ? theme.colorScheme.primary 
-                  : theme.colorScheme.onSurface.withValues(alpha: 0.7), // Plus visible que onSurfaceVariant
+                  ? moduleColor 
+                  : theme.colorScheme.onSurface.withValues(alpha: 0.7),
               size: 24,
             ),
             if (isSelected) ...[
@@ -101,7 +106,7 @@ class ElyfBottomNavigationBar extends StatelessWidget {
               Text(
                 item.label,
                 style: theme.textTheme.labelLarge?.copyWith(
-                  color: theme.colorScheme.primary,
+                  color: moduleColor,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -127,12 +132,14 @@ class ElyfNavigationRail extends StatelessWidget {
     required this.selectedIndex,
     required this.onDestinationSelected,
     required this.destinations,
+    this.moduleId,
     this.extended = false,
   });
 
   final int selectedIndex;
   final ValueChanged<int> onDestinationSelected;
   final List<ElyfNavigationDestination> destinations;
+  final String? moduleId;
   final bool extended;
 
   @override
@@ -170,6 +177,7 @@ class ElyfNavigationRail extends StatelessWidget {
                   isSelected: isSelected,
                   extended: extended,
                   onTap: () => onDestinationSelected(index),
+                  moduleId: moduleId,
                 );
               },
             ),
@@ -187,6 +195,7 @@ class _RailItem extends StatelessWidget {
     required this.isSelected,
     required this.extended,
     required this.onTap,
+    this.moduleId,
   });
 
   final IconData icon;
@@ -194,14 +203,16 @@ class _RailItem extends StatelessWidget {
   final bool isSelected;
   final bool extended;
   final VoidCallback onTap;
+  final String? moduleId;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final moduleColor = AppColors.getModuleColor(moduleId);
 
     // Determines text style based on selection
     final textStyle = theme.textTheme.labelLarge?.copyWith(
-                  color: isSelected ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
+                  color: isSelected ? moduleColor : theme.colorScheme.onSurfaceVariant,
                   fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
                   fontFamily: 'Outfit',
                 );
@@ -220,13 +231,13 @@ class _RailItem extends StatelessWidget {
               alignment: Alignment.center,
               decoration: isSelected
                   ? BoxDecoration(
-                      color: theme.colorScheme.primaryContainer.withValues(alpha: 0.5),
+                      color: moduleColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     )
                   : null,
               child: Icon(
                 icon,
-                color: isSelected ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
+                color: isSelected ? moduleColor : theme.colorScheme.onSurfaceVariant,
                 size: 24,
               ),
             ),
@@ -246,16 +257,16 @@ class _RailItem extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           decoration: isSelected
               ? BoxDecoration(
-                  color: theme.colorScheme.primary.withValues(alpha: 0.08),
+                  color: moduleColor.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.1)),
+                  border: Border.all(color: moduleColor.withValues(alpha: 0.1)),
                 )
               : null,
           child: Row(
             children: [
               Icon(
                 icon,
-                color: isSelected ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
+                color: isSelected ? moduleColor : theme.colorScheme.onSurfaceVariant,
                 size: 22,
               ),
               const SizedBox(width: 16),
@@ -270,7 +281,7 @@ class _RailItem extends StatelessWidget {
               if (isSelected) 
                 Icon(
                   Icons.chevron_right, 
-                  color: theme.colorScheme.primary,
+                  color: moduleColor,
                   size: 16
                 ),
             ],

@@ -164,10 +164,28 @@ class ModuleSectionsRegistry {
         description: 'Gestion des dépenses liées aux propriétés',
       ),
       ModuleSection(
+        id: 'maintenance',
+        name: 'Maintenance',
+        icon: Icons.build_outlined,
+        description: 'Tickets de maintenance des propriétés',
+      ),
+      ModuleSection(
+        id: 'treasury',
+        name: 'Trésorerie',
+        icon: Icons.account_balance_outlined,
+        description: 'Opérations de trésorerie',
+      ),
+      ModuleSection(
         id: 'reports',
         name: 'Rapports',
         icon: Icons.assessment_outlined,
         description: 'Rapports immobiliers',
+      ),
+      ModuleSection(
+        id: 'trash',
+        name: 'Corbeille',
+        icon: Icons.delete_outline,
+        description: 'Éléments supprimés (restauration)',
       ),
       ModuleSection(
         id: 'settings',

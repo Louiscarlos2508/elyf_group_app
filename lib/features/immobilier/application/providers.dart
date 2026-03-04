@@ -49,7 +49,6 @@ import '../domain/repositories/treasury_repository.dart';
 import '../data/repositories/treasury_offline_repository.dart';
 import 'controllers/immobilier_treasury_controller.dart';
 import '../domain/services/immobilier_settings_service.dart';
-import '../../../../core/printing/printer_provider.dart';
 import '../domain/services/calculation/immobilier_report_calculation_service.dart';
 import '../domain/repositories/immobilier_settings_repository.dart';
 import '../data/repositories/immobilier_settings_offline_repository.dart';
@@ -68,14 +67,6 @@ final immobilierSettingsServiceProvider = Provider<ImmobilierSettingsService>((r
 final immobilierSettingsProvider = StreamProvider.family<ImmobilierSettings?, String>((ref, enterpriseId) {
   final repository = ref.watch(immobilierSettingsRepositoryProvider);
   return repository.watchSettings(enterpriseId);
-});
-
-final immobilierPrinterConfigProvider = Provider<PrinterConfig>((ref) {
-  final settings = ref.watch(immobilierSettingsServiceProvider);
-  return PrinterConfig(
-    type: settings.printerType,
-    address: settings.printerAddress,
-  );
 });
 
 // --- Services ---

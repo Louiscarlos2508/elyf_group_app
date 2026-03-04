@@ -17,11 +17,9 @@ class BottleConservationCard extends ConsumerWidget {
 
     final cylindersAsync = ref.watch(cylindersProvider);
     final allStocksAsync = ref.watch(gazStocksProvider);
-    final transfersAsync = ref.watch(stockTransfersProvider(enterpriseId));
 
     final cylinders = cylindersAsync.value ?? [];
     final allStocks = allStocksAsync.value ?? [];
-    final transfers = transfersAsync.value ?? [];
 
     // Seulement si au moins un cylinder a un parc déclaré
     final tracked = cylinders.where((c) => c.registeredTotal > 0);
@@ -31,7 +29,6 @@ class BottleConservationCard extends ConsumerWidget {
     final result = GazStockCalculationService.calculateConservation(
       cylinders: cylinders,
       allStocks: allStocks,
-      transfers: transfers,
     );
 
     final hasAlert = result.hasAnyDiscrepancy;

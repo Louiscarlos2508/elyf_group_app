@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
+import 'package:elyf_groupe_app/app/theme/app_colors.dart';
 
 /// A premium AppBar implementation for Elyf Group App.
 /// Supports transparent/glassmorphic backgrounds, gradients, and custom action styling.
@@ -10,6 +11,7 @@ class ElyfAppBar extends StatelessWidget implements PreferredSizeWidget {
     required this.title,
     this.subtitle,
     this.module,
+    this.moduleId,
     this.actions,
     this.leading,
     this.bottom,
@@ -23,6 +25,7 @@ class ElyfAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final String? subtitle;
   final EnterpriseModule? module;
+  final String? moduleId;
   final List<Widget>? actions;
   final Widget? leading;
   final PreferredSizeWidget? bottom;
@@ -40,17 +43,16 @@ class ElyfAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     
     // Determine background
-    Color? bg = backgroundColor ?? theme.colorScheme.surface;
-    if (useGlassmorphism) {
-      bg = backgroundColor ?? theme.colorScheme.surface; // Solid background
-    } else if (useGradient) {
-      bg = Colors.transparent; // Handled by Container decoration
-    }
+    Color bg = backgroundColor ?? theme.colorScheme.surface;
+    
+    // In this premium version, the AppBar uses the surface color to stay clean
+    // but we can force a gradient if useGradient is true.
+    final bool applyGradient = useGradient;
 
-    // Module-aware text color
-    final textColor = useGradient || module != null 
+    final textColor = applyGradient 
         ? Colors.white 
         : theme.colorScheme.onSurface;
 
@@ -80,7 +82,7 @@ class ElyfAppBar extends StatelessWidget implements PreferredSizeWidget {
         ],
       ),
       centerTitle: centerTitle,
-      backgroundColor: (useGradient || module != null) ? Colors.transparent : bg,
+      backgroundColor: applyGradient ? Colors.transparent : bg,
       elevation: elevation,
       scrolledUnderElevation: useGlassmorphism ? 0 : 2,
       actions: actions,
@@ -89,38 +91,17 @@ class ElyfAppBar extends StatelessWidget implements PreferredSizeWidget {
       iconTheme: IconThemeData(
         color: textColor,
       ),
-      systemOverlayStyle: (useGradient || module != null) ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
+      systemOverlayStyle: applyGradient || isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
     );
 
-    // Apply gradient if requested or module-aware
-    if (useGradient || module != null) {
-      List<Color> gradientColors = [
-        theme.colorScheme.primary,
-        theme.colorScheme.secondary,
-      ];
-
-      if (module != null) {
-        switch (module!) {
-          case EnterpriseModule.gaz:
-            gradientColors = [const Color(0xFFFF6B00), const Color(0xFFFF9E00)];
-            break;
-          case EnterpriseModule.eau:
-            gradientColors = [const Color(0xFF00C2FF), const Color(0xFF00A8FF)];
-            break;
-          case EnterpriseModule.mobileMoney:
-            gradientColors = [const Color(0xFFFF6B00), const Color(0xFFFF9E00)];
-            break;
-          default:
-            break;
-        }
-      }
-
+    // Apply gradient ONLY if explicitly requested
+    if (applyGradient) {
       appBar = Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: gradientColors,
+            colors: AppColors.mainGradient,
           ),
         ),
         child: appBar,

@@ -73,6 +73,11 @@ class FirebaseSyncHandler implements SyncOperationHandler {
 
     final pathBuilder = collectionPaths[collectionName];
     if (pathBuilder == null) {
+      AppLogger.error(
+        'No path configured for collection: $collectionName. '
+        'Available keys: ${collectionPaths.keys.join(", ")}',
+        name: 'offline.firebase',
+      );
       throw SyncException(
         'No path configured for collection: $collectionName',
       );

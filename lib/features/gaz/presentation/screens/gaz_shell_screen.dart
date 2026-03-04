@@ -29,6 +29,13 @@ class _GazShellScreenState extends BaseModuleShellScreenState<GazShellScreen> {
 
   @override
   AsyncValue<List<NavigationSection>>? getSectionsAsync() {
+    // Listen to the navigation provider to update the internal state
+    ref.listen(gazNavigationIndexProvider, (previous, next) {
+      if (next != selectedIndex) {
+        navigateToIndex(next as int);
+      }
+    });
+
     // Retourner le provider async pour les sections filtrées par permissions
     return ref.watch(accessibleGazSectionsProvider);
   }

@@ -35,6 +35,10 @@ class TransactionService {
     required String phoneNumber,
     int? commission,
     String? customerName,
+    String? idType,
+    String? idNumber,
+    DateTime? idIssueDate,
+    String? town,
     String? createdBy,
   }) {
     final normalized =
@@ -49,6 +53,10 @@ class TransactionService {
       status: TransactionStatus.pending,
       commission: commission,
       customerName: customerName?.trim(),
+      idType: idType,
+      idNumber: idNumber,
+      idIssueDate: idIssueDate,
+      town: town,
       createdBy: createdBy,
     );
   }

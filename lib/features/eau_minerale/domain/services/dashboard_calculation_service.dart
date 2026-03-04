@@ -392,6 +392,70 @@ class DashboardCalculationService {
       productionVolume: productionVolume,
     );
   }
+
+  /// Calculates cumulative treasury balances from all historical data.
+  Map<String, int> calculateCumulativeBalances({
+    required List<Sale> sales,
+    required List<CreditPayment> creditPayments,
+    required List<ExpenseRecord> expenses,
+    required List<TreasuryOperation> treasuryOperations,
+  }) {
+    int cash = 0;
+    int mm = 0;
+
+    // 1. Incomes from Sales
+    for (final sale in sales) {
+      if (sale.status == SaleStatus.voided) continue;
+      cash += sale.cashAmount;
+      mm += sale.orangeMoneyAmount;
+    }
+
+    // 2. Incomes from Credit Recoveries
+    for (final p in creditPayments) {
+      cash += p.cashAmount;
+      mm += p.orangeMoneyAmount;
+    }
+
+    // 3. Outgoings from Expenses
+    for (final e in expenses) {
+      if (e.paymentMethod == PaymentMethod.cash) cash -= e.amountCfa;
+      if (e.paymentMethod == PaymentMethod.mobileMoney) mm -= e.amountCfa;
+    }
+
+    // 4. Manual Operations (Apports, Retraits, Transferts)
+    for (final op in treasuryOperations) {
+      // Ignore operations already linked to sales or expenses to avoid double counting
+      if (op.referenceEntityId != null && op.referenceEntityId!.isNotEmpty) {
+        continue;
+      }
+
+      switch (op.type) {
+        case TreasuryOperationType.supply:
+          if (op.toAccount == PaymentMethod.cash) cash += op.amount;
+          if (op.toAccount == PaymentMethod.mobileMoney) mm += op.amount;
+          break;
+        case TreasuryOperationType.removal:
+          if (op.fromAccount == PaymentMethod.cash) cash -= op.amount;
+          if (op.fromAccount == PaymentMethod.mobileMoney) mm -= op.amount;
+          break;
+        case TreasuryOperationType.transfer:
+          if (op.fromAccount == PaymentMethod.cash) cash -= op.amount;
+          if (op.fromAccount == PaymentMethod.mobileMoney) mm -= op.amount;
+          if (op.toAccount == PaymentMethod.cash) cash += op.amount;
+          if (op.toAccount == PaymentMethod.mobileMoney) mm += op.amount;
+          break;
+        case TreasuryOperationType.adjustment:
+          if (op.toAccount == PaymentMethod.cash) cash += op.amount;
+          if (op.toAccount == PaymentMethod.mobileMoney) mm += op.amount;
+          break;
+      }
+    }
+
+    return {
+      'cash': cash,
+      'mobileMoney': mm,
+    };
+  }
 }
 
 /// Daily dashboard metrics.
