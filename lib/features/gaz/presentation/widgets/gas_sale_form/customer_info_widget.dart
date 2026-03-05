@@ -7,6 +7,7 @@ class CustomerInfoWidget extends StatelessWidget {
   final TextEditingController customerPhoneController;
   final TextEditingController notesController;
   final bool isRequired;
+  final bool showCustomerFields;
 
   const CustomerInfoWidget({
     super.key,
@@ -14,6 +15,7 @@ class CustomerInfoWidget extends StatelessWidget {
     required this.customerPhoneController,
     required this.notesController,
     this.isRequired = false,
+    this.showCustomerFields = true,
   });
 
   @override
@@ -21,36 +23,38 @@ class CustomerInfoWidget extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        TextFormField(
-          controller: customerNameController,
-          decoration: InputDecoration(
-            labelText: isRequired ? 'Nom du client *' : 'Nom du client (optionnel)',
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
-            prefixIcon: const Icon(Icons.person),
+        if (showCustomerFields) ...[
+          TextFormField(
+            controller: customerNameController,
+            decoration: InputDecoration(
+              labelText: isRequired ? 'Nom du client *' : 'Nom du client (optionnel)',
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+              prefixIcon: const Icon(Icons.person),
+            ),
+            validator: isRequired
+                ? (v) => (v == null || v.trim().isEmpty) ? 'Le nom est obligatoire' : null
+                : null,
           ),
-          validator: isRequired
-              ? (v) => (v == null || v.trim().isEmpty) ? 'Le nom est obligatoire' : null
-              : null,
-        ),
-        const SizedBox(height: 16),
-        TextFormField(
-          controller: customerPhoneController,
-          decoration: InputDecoration(
-            labelText: isRequired ? 'Téléphone *' : 'Téléphone (optionnel)',
-            hintText: '+226 70 00 00 00',
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
-            prefixIcon: const Icon(Icons.phone),
+          const SizedBox(height: 16),
+          TextFormField(
+            controller: customerPhoneController,
+            decoration: InputDecoration(
+              labelText: isRequired ? 'Téléphone *' : 'Téléphone (optionnel)',
+              hintText: '+226 70 00 00 00',
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+              prefixIcon: const Icon(Icons.phone),
+            ),
+            keyboardType: TextInputType.phone,
+            validator: (v) {
+              if (isRequired && (v == null || v.trim().isEmpty)) {
+                return 'Le téléphone est obligatoire';
+              }
+              if (v == null || v.trim().isEmpty) return null;
+              return Validators.phoneBurkina(v);
+            },
           ),
-          keyboardType: TextInputType.phone,
-          validator: (v) {
-            if (isRequired && (v == null || v.trim().isEmpty)) {
-              return 'Le téléphone est obligatoire';
-            }
-            if (v == null || v.trim().isEmpty) return null;
-            return Validators.phoneBurkina(v);
-          },
-        ),
-        const SizedBox(height: 16),
+          const SizedBox(height: 16),
+        ],
         TextFormField(
           controller: notesController,
           decoration: InputDecoration(

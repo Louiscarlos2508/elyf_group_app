@@ -505,11 +505,18 @@ final agentTransactionsProvider = StreamProvider.autoDispose.family<List<Transac
 final agentTreasuryHistoryProvider = StreamProvider.autoDispose.family<List<TreasuryOperation>, String>((ref, key) {
   final parts = key.split('|');
   final agentId = parts[0];
-  final startDate = parts.length > 1 ? DateTime.fromMillisecondsSinceEpoch(int.parse(parts[1])) : null;
-  final endDate = parts.length > 2 ? DateTime.fromMillisecondsSinceEpoch(int.parse(parts[2])) : null;
+  
+  // Safe date parsing
+  final startDate = (parts.length > 1 && parts[1].isNotEmpty) 
+      ? DateTime.fromMillisecondsSinceEpoch(int.parse(parts[1])) 
+      : null;
+  final endDate = (parts.length > 2 && parts[2].isNotEmpty) 
+      ? DateTime.fromMillisecondsSinceEpoch(int.parse(parts[2])) 
+      : null;
 
   final repo = ref.watch(orangeMoneyTreasuryRepositoryProvider);
   final activeEnterprise = ref.watch(activeEnterpriseProvider).value;
+  
   return repo.watchOperations(
     activeEnterprise?.id ?? 'default',
     referenceEntityId: agentId,
@@ -525,12 +532,11 @@ final agentStatisticsProvider = Provider.autoDispose.family<AsyncValue<Map<Strin
   final agentId = parts[0];
   final startDateStr = parts.length > 1 ? parts[1] : '';
   final endDateStr = parts.length > 2 ? parts[2] : '';
-  
-  // Create downstream keys with the same dates
-  final downstreamKey = parts.length > 1 ? '$agentId|$startDateStr|$endDateStr' : agentId;
 
-  final transactionsAsync = ref.watch(agentTransactionsProvider(downstreamKey));
-  final treasuryAsync = ref.watch(agentTreasuryHistoryProvider(downstreamKey));
+  // Use the history provider to get the operations
+  final historyKey = '$agentId|$startDateStr|$endDateStr';
+  final transactionsAsync = ref.watch(agentTransactionsProvider(historyKey));
+  final treasuryAsync = ref.watch(agentTreasuryHistoryProvider(historyKey));
 
   return transactionsAsync.when(
     data: (transactions) {
@@ -539,31 +545,37 @@ final agentStatisticsProvider = Provider.autoDispose.family<AsyncValue<Map<Strin
           int totalRecharged = 0;
           int totalWithdrawn = 0;
           int totalCommission = 0;
-          int totalCashIn = 0;
-          int totalCashOut = 0;
 
-          // Process Treasury Ops (Recharges/Withdrawals)
+          // Process Treasury Ops (Agent Recharges/Withdrawals)
+          // Perspective: Agency's Treasury
           for (final op in treasuryOps) {
-            // Recharges (Dépôts Agent)
-            if (op.fromAccount == PaymentMethod.cash && op.toAccount == PaymentMethod.mobileMoney) {
+            final reason = op.reason?.toLowerCase() ?? '';
+            final isRechargeStr = reason.contains('recharge') || reason.contains('approvisionnement');
+            final isRetraitStr = reason.contains('retrait');
+
+            // 1. Check by keywords (Preferred)
+            if (isRechargeStr) {
               totalRecharged += op.amount.toInt();
-            } 
-            // Withdrawals (Retraits Agent)
-            else if (op.fromAccount == PaymentMethod.mobileMoney && op.toAccount == PaymentMethod.cash) {
+            } else if (isRetraitStr) {
               totalWithdrawn += op.amount.toInt();
+            } 
+            // 2. Fallback to accounts mapping
+            else {
+              // Recharge (Agency gives Float, gets Cash)
+              if (op.fromAccount == PaymentMethod.mobileMoney && op.toAccount == PaymentMethod.cash) {
+                totalRecharged += op.amount.toInt();
+              } 
+              // Withdrawal (Agency gives Cash, gets Float)
+              else if (op.fromAccount == PaymentMethod.cash && op.toAccount == PaymentMethod.mobileMoney) {
+                totalWithdrawn += op.amount.toInt();
+              }
             }
           }
 
-          // Process Transactions (Cash-In/Cash-Out Clients)
+          // Still calculate commission from client transactions if any
           for (final t in transactions) {
             if (t.isCompleted) {
-              if (t.isCashIn) {
-                totalCashIn += t.amount.toInt();
-                totalCommission += (t.commission ?? 0).toInt();
-              } else if (t.isCashOut) {
-                totalCashOut += t.amount.toInt();
-                totalCommission += (t.commission ?? 0).toInt();
-              }
+              totalCommission += (t.commission ?? 0).toInt();
             }
           }
 
@@ -571,9 +583,12 @@ final agentStatisticsProvider = Provider.autoDispose.family<AsyncValue<Map<Strin
             'totalRecharged': totalRecharged,
             'totalWithdrawn': totalWithdrawn,
             'totalCommission': totalCommission,
-            'totalCashIn': totalCashIn,
-            'totalCashOut': totalCashOut,
-            'transactionCount': transactions.length,
+            // Map to CashIn/CashOut for UI (AgentNetworkCard) compatibility
+            'totalCashIn': totalRecharged, 
+            'totalCashOut': totalWithdrawn,
+            'transactionCount': treasuryOps.length, // Count of recharge/withdraw ops
+            'clientTransactionCount': transactions.length,
+            'totalVolume': totalRecharged + totalWithdrawn,
             'source': 'aggregate',
           });
         },
@@ -685,49 +700,93 @@ final dailyTransactionStatsProvider = StreamProvider.autoDispose
 
 /// Provider for agent performance ranking.
 /// Fetches all agents and calculates their flux to return a ranked list.
-final agentPerformanceRankingProvider = FutureProvider.autoDispose
-    .family<List<Map<String, dynamic>>, String>((ref, key) async {
+/// Uses a bulk-fetch strategy for performance and reliability.
+final agentPerformanceRankingProvider = StreamProvider.autoDispose
+    .family<List<Map<String, dynamic>>, String>((ref, key) {
   final parts = key.split('|');
   final enterpriseId = parts[0].isEmpty ? null : parts[0];
   final searchQuery = parts.length > 1 && parts[1].isNotEmpty ? parts[1] : null;
-  final startDateStr = parts.length > 2 ? parts[2] : '';
-  final endDateStr = parts.length > 3 ? parts[3] : '';
+  
+  // Safe date parsing
+  final startDate = (parts.length > 2 && parts[2].isNotEmpty) 
+      ? DateTime.fromMillisecondsSinceEpoch(int.parse(parts[2])) 
+      : null;
+  final endDate = (parts.length > 3 && parts[3].isNotEmpty) 
+      ? DateTime.fromMillisecondsSinceEpoch(int.parse(parts[3])) 
+      : null;
 
   final controller = ref.watch(agentsControllerProvider);
-  final agents = await controller.fetchAgents(
+  final repo = ref.watch(orangeMoneyTreasuryRepositoryProvider);
+  final activeEnterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+
+  // 1. Fetch all agents first (Future inside StreamProvider)
+  final agentsFuture = controller.fetchAgents(
     enterpriseId: enterpriseId,
     searchQuery: searchQuery,
   );
 
-  final List<Map<String, dynamic>> ranking = [];
+  // 2. Watch ALL treasury operations for this period that belong to agents
+  final opsStream = repo.watchOperations(
+    activeEnterpriseId,
+    from: startDate,
+    to: endDate,
+    referenceEntityType: 'agent_account',
+  );
 
-  for (final agent in agents) {
-    // Create the stats key with dates if available
-    final statsKey = parts.length > 2 ? '${agent.id}|$startDateStr|$endDateStr' : agent.id;
-    
-    // Watch the provider to get the current value (or trigger calculation)
-    final statsAsync = ref.watch(agentStatisticsProvider(statsKey));
-    
-    // Since it's an AsyncValue, we only add it if it's data
-    statsAsync.whenData((stats) {
-      final int totalCashIn = stats['totalCashIn'] as int? ?? 0;
-      final int totalCashOut = stats['totalCashOut'] as int? ?? 0;
-      final int totalVolume = totalCashIn + totalCashOut;
-      
+  return opsStream.asyncMap((ops) async {
+    final agents = await agentsFuture;
+    final List<Map<String, dynamic>> ranking = [];
+
+    // Grouping operations by agent
+    final opsByAgent = <String, List<TreasuryOperation>>{};
+    for (final op in ops) {
+      if (op.referenceEntityId != null) {
+        opsByAgent.putIfAbsent(op.referenceEntityId!, () => []).add(op);
+      }
+    }
+
+    for (final agent in agents) {
+      final agentOps = opsByAgent[agent.id] ?? [];
+      int totalCashIn = 0;
+      int totalCashOut = 0;
+
+      for (final op in agentOps) {
+        final reason = op.reason?.toLowerCase() ?? '';
+        final isRechargeStr = reason.contains('recharge') || reason.contains('approvisionnement');
+        final isRetraitStr = reason.contains('retrait');
+
+        if (isRechargeStr) {
+          totalCashIn += op.amount;
+        } else if (isRetraitStr) {
+          totalCashOut += op.amount;
+        } else {
+          // Fallback mapping
+          if (op.fromAccount == PaymentMethod.mobileMoney && op.toAccount == PaymentMethod.cash) {
+            totalCashIn += op.amount;
+          } else if (op.fromAccount == PaymentMethod.cash && op.toAccount == PaymentMethod.mobileMoney) {
+            totalCashOut += op.amount;
+          }
+        }
+      }
+
       ranking.add({
         'agent': agent,
-        'stats': stats,
-        'totalVolume': totalVolume,
-        'count': stats['transactionCount'] as int? ?? 0,
+        'totalVolume': totalCashIn + totalCashOut,
+        'count': agentOps.length,
         'deposits': totalCashIn,
         'withdrawals': totalCashOut,
+        // Mock stats for UI consistency if needed
+        'stats': {
+          'totalCashIn': totalCashIn,
+          'totalCashOut': totalCashOut,
+          'transactionCount': agentOps.length,
+        }
       });
-    });
-  }
+    }
 
-  // Sort by totalVolume descending
-  ranking.sort((a, b) => (b['totalVolume'] as int).compareTo(a['totalVolume'] as int));
-
-  return ranking;
+    // Sort by totalVolume descending
+    ranking.sort((a, b) => (b['totalVolume'] as int).compareTo(a['totalVolume'] as int));
+    return ranking;
+  });
 });
 

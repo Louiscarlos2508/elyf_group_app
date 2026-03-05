@@ -1,5 +1,4 @@
-
-
+import 'package:rxdart/rxdart.dart';
 import '../../../../core/logging/app_logger.dart';
 import '../entities/gas_sale.dart';
 import '../entities/wholesaler.dart';
@@ -19,6 +18,40 @@ class WholesalerService {
   /// Récupère tous les grossistes formels depuis le repository.
   Future<List<Wholesaler>> getWholesalers(String enterpriseId) async {
     return wholesalerRepository.getWholesalers(enterpriseId);
+  }
+
+  /// Observe tous les grossistes uniques (formels + découverts depuis l'historique).
+  Stream<List<Wholesaler>> watchAllWholesalers(String enterpriseId) {
+    return CombineLatestStream.combine2<List<Wholesaler>, List<GasSale>, List<Wholesaler>>(
+      wholesalerRepository.watchWholesalers(enterpriseId),
+      gasRepository.watchSales(enterpriseIds: [enterpriseId]),
+      (formalWholesalers, sales) {
+        final wholesalersMap = {for (var w in formalWholesalers) w.id: w};
+
+        final wholesaleSales = sales
+            .where((sale) =>
+                sale.saleType == SaleType.wholesale &&
+                sale.wholesalerId != null &&
+                sale.wholesalerName != null)
+            .toList();
+
+        for (final sale in wholesaleSales) {
+          if (sale.wholesalerId != null && sale.wholesalerName != null) {
+            if (!wholesalersMap.containsKey(sale.wholesalerId!)) {
+              wholesalersMap[sale.wholesalerId!] = Wholesaler(
+                id: sale.wholesalerId!,
+                enterpriseId: enterpriseId,
+                name: sale.wholesalerName!,
+                phone: sale.customerPhone,
+              );
+            }
+          }
+        }
+
+        return wholesalersMap.values.toList()
+          ..sort((a, b) => a.name.compareTo(b.name));
+      },
+    );
   }
 
   /// Récupère tous les grossistes uniques (formels + découverts depuis l'historique).

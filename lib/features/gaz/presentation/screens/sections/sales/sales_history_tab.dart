@@ -36,7 +36,7 @@ class _SalesHistoryTabState extends ConsumerState<SalesHistoryTab> {
       data: (isManager) {
         final enterprise = enterpriseAsync.value;
         final isPOS = enterprise?.type == EnterpriseType.gasPointOfSale;
-        final showWholesale = !isPOS;
+        const showWholesale = true;
 
         return CustomScrollView(
           slivers: [

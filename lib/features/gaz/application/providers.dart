@@ -384,10 +384,7 @@ final tourRepositoryProvider = Provider<TourRepository>((ref) {
 
 final wholesalerRepositoryProvider = Provider<WholesalerRepository>((ref) {
   final activeEnterprise = ref.watch(activeEnterpriseProvider).value;
-  final enterpriseId = (activeEnterprise?.isPointOfSale == true &&
-          activeEnterprise?.type.module == EnterpriseModule.gaz)
-      ? (activeEnterprise?.parentEnterpriseId ?? activeEnterprise?.id ?? 'default')
-      : (activeEnterprise?.id ?? 'default');
+  final enterpriseId = activeEnterprise?.id ?? 'default';
   final driftService = DriftService.instance;
   final syncManager = ref.watch(syncManagerProvider);
   final connectivityService = ref.watch(connectivityServiceProvider);
@@ -1195,13 +1192,13 @@ final financialNetAmountProvider =
       );
     });
 
-/// Provider pour récupérer tous les grossistes.
+/// Provider pour récupérer tous les grossistes (réactif).
 final allWholesalersProvider = StreamProvider.family<List<Wholesaler>, String>((
   ref,
   enterpriseId,
 ) {
   final service = ref.watch(wholesalerServiceProvider);
-  return Stream.fromFuture(service.getAllWholesalers(enterpriseId));
+  return service.watchAllWholesalers(enterpriseId);
 });
 
 

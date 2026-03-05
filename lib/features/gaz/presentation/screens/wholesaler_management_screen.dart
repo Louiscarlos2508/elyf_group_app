@@ -96,7 +96,7 @@ class WholesalerManagementScreen extends ConsumerWidget {
                     ),
                     IconButton(
                       icon: const Icon(Icons.delete_outline, color: Colors.red),
-                      onPressed: () => _confirmDelete(context, ref, wholesaler),
+                      onPressed: () => _confirmDelete(context, ref, wholesaler, enterpriseId),
                     ),
                   ],
                 ),
@@ -128,7 +128,7 @@ class WholesalerManagementScreen extends ConsumerWidget {
     });
   }
 
-  void _confirmDelete(BuildContext context, WidgetRef ref, Wholesaler wholesaler) {
+  void _confirmDelete(BuildContext context, WidgetRef ref, Wholesaler wholesaler, String enterpriseId) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -142,6 +142,7 @@ class WholesalerManagementScreen extends ConsumerWidget {
           TextButton(
             onPressed: () async {
               await ref.read(wholesalerControllerProvider).deleteWholesaler(wholesaler.id);
+              ref.invalidate(allWholesalersProvider(enterpriseId));
               if (context.mounted) Navigator.pop(context);
             },
             child: const Text('Supprimer', style: TextStyle(color: Colors.red)),

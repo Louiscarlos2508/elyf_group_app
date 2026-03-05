@@ -6,6 +6,9 @@ abstract class WholesalerRepository {
   /// Récupère tous les grossistes d'une entreprise.
   Future<List<Wholesaler>> getWholesalers(String enterpriseId);
 
+  /// Observe les grossistes d'une entreprise en temps réel.
+  Stream<List<Wholesaler>> watchWholesalers(String enterpriseId);
+
   /// Récupère un grossiste par son identifiant.
   Future<Wholesaler?> getWholesalerById(String id);
 

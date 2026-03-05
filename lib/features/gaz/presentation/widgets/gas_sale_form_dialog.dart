@@ -355,13 +355,14 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
                         ),
                       ],
                     ] else ...[
-                      // Wholesale: Toujours afficher les infos client
+                      // Wholesale: Cacher les champs client redondants (gérés par le grossiste)
                       const SizedBox(height: 16),
                       CustomerInfoWidget(
                         customerNameController: _customerNameController,
                         customerPhoneController: _customerPhoneController,
                         notesController: _notesController,
-                        isRequired: true,
+                        isRequired: false,
+                        showCustomerFields: false,
                       ),
                     ],
                     if (_completedSale != null) ...[

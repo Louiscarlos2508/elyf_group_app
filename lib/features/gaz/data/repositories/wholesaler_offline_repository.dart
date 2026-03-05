@@ -64,6 +64,31 @@ class WholesalerOfflineRepository implements WholesalerRepository {
   }
 
   @override
+  Stream<List<Wholesaler>> watchWholesalers(String enterpriseId) {
+    return driftService.records
+        .watchForEnterprise(
+          collectionName: _collectionName,
+          enterpriseId: enterpriseId,
+          moduleType: 'gaz',
+        )
+        .map((rows) {
+          return rows
+              .map((row) {
+                try {
+                  final map = jsonDecode(row.dataJson) as Map<String, dynamic>;
+                  return _fromMap(map).copyWith(id: row.localId);
+                } catch (e) {
+                  return null;
+                }
+              })
+              .whereType<Wholesaler>()
+              .where((w) => w.isActive)
+              .toList()
+            ..sort((a, b) => a.name.compareTo(b.name));
+        });
+  }
+
+  @override
   Future<Wholesaler?> getWholesalerById(String id) async {
     try {
       final rows = await driftService.records.listForEnterprise(
@@ -106,12 +131,15 @@ class WholesalerOfflineRepository implements WholesalerRepository {
       final remoteId = wholesaler.id.startsWith('local_') ? null : wholesaler.id;
 
       final map = _toMap(wholesaler)..['localId'] = localId..['id'] = localId;
+      final targetEnterpriseId = wholesaler.enterpriseId.isNotEmpty 
+          ? wholesaler.enterpriseId 
+          : enterpriseId;
 
       await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
         collectionName: _collectionName,
         localId: localId,
         remoteId: remoteId,
-        enterpriseId: enterpriseId,
+        enterpriseId: targetEnterpriseId,
         moduleType: 'gaz',
         dataJson: jsonEncode(map),
         localUpdatedAt: DateTime.now(),

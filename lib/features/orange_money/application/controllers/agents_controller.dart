@@ -186,8 +186,8 @@ class AgentsController {
     final resolvedEnterpriseId = enterpriseId ?? _activeEnterpriseId;
 
     // 1. Compter les recharges SIM agents via TreasuryOperations (source de vérité)
-    // Les recharges agents créent: fromAccount=cash, toAccount=mobileMoney, referenceEntityType=agent_account
-    // Les retraits agents créent: fromAccount=mobileMoney, toAccount=cash, referenceEntityType=agent_account
+    // Les recharges agents créent: fromAccount=mobileMoney, toAccount=cash (Agency gives float, gets cash)
+    // Les retraits agents créent: fromAccount=cash, toAccount=mobileMoney (Agency gives cash, gets float)
     int rechargesToday = 0;
     int withdrawalsToday = 0;
     try {
@@ -199,15 +199,18 @@ class AgentsController {
       );
       for (final op in treasuryOps) {
         final reason = op.reason?.toLowerCase() ?? '';
-        if (reason.contains('recharge')) {
+        final isRechargeStr = reason.contains('recharge') || reason.contains('approvisionnement');
+        final isRetraitStr = reason.contains('retrait');
+
+        if (isRechargeStr) {
           rechargesToday += op.amount;
-        } else if (reason.contains('retrait')) {
+        } else if (isRetraitStr) {
           withdrawalsToday += op.amount;
         } else {
-          // Backward compatibility
-          if (op.fromAccount == PaymentMethod.cash && op.toAccount == PaymentMethod.mobileMoney) {
+          // Backward compatibility or fallback
+          if (op.fromAccount == PaymentMethod.mobileMoney && op.toAccount == PaymentMethod.cash) {
             rechargesToday += op.amount;
-          } else if (op.fromAccount == PaymentMethod.mobileMoney && op.toAccount == PaymentMethod.cash) {
+          } else if (op.fromAccount == PaymentMethod.cash && op.toAccount == PaymentMethod.mobileMoney) {
             withdrawalsToday += op.amount;
           }
         }
@@ -286,12 +289,12 @@ class AgentsController {
     required int amount,
     required bool isRecharge,
   }) async {
-    // isRecharge (Dépôt): Customer gives cash (cash++), Agent sends e-money (liquidity--)
-    // Retrait: Customer gives e-money (liquidity++), Agent gives cash (cash--)
+    // isRecharge (Approvisionnement SIM): Agency sends Float (mobileMoney--) to Agent (liquidity++)
+    // Retrait (Agent Cash-Out): Agent sends Float (liquidity--) to Agency (mobileMoney++)
     final updatedAgent = agent.copyWith(
       liquidity: isRecharge 
-          ? (agent.liquidity - amount).clamp(0, double.infinity).toInt()
-          : agent.liquidity + amount,
+          ? agent.liquidity + amount
+          : (agent.liquidity - amount).clamp(0, double.infinity).toInt(),
     );
 
     await _agentRepository.updateAgent(updatedAgent);
@@ -305,12 +308,15 @@ class AgentsController {
         userId: userId,
         amount: amount,
         type: TreasuryOperationType.transfer,
+        // From Agency Perspective: 
+        // Recharge Agent: Agency gives Float (from MM), Agency gets Cash (to Cash)
+        // Retrait Agent: Agency gives Cash (from Cash), Agency gets Float (to MM)
         fromAccount: isRecharge ? PaymentMethod.mobileMoney : PaymentMethod.cash,
         toAccount: isRecharge ? PaymentMethod.cash : PaymentMethod.mobileMoney,
         date: DateTime.now(),
         reason: isRecharge 
-            ? 'Recharge (Dépôt) Agent: ${agent.name} (SIM: ${agent.simNumber})'
-            : 'Retrait Agent: ${agent.name} (SIM: ${agent.simNumber})',
+            ? 'Approvisionnement SIM Agent: ${agent.name} (SIM: ${agent.simNumber})'
+            : 'Retrait Fonds Agent: ${agent.name} (SIM: ${agent.simNumber})',
         referenceEntityId: agent.id,
         referenceEntityType: 'agent_account',
       ));

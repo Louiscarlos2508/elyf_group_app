@@ -132,6 +132,7 @@ class _WholesalerFormDialogState extends ConsumerState<WholesalerFormDialog> {
       }
 
       if (mounted) {
+        ref.invalidate(allWholesalersProvider(widget.enterpriseId));
         NotificationService.showSuccess(context, 'Grossiste enregistré avec succès');
         Navigator.pop(context, true);
       }
