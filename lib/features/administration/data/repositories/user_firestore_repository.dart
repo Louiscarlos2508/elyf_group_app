@@ -169,7 +169,7 @@ class UserFirestoreRepository implements UserRepository {
       updatedAt: DateTime.now(),
     );
     
-    return await createUser(adminUser);
+    return createUser(adminUser);
   }
 
   /// Get users for a specific enterprise (via enterprise_module_users)

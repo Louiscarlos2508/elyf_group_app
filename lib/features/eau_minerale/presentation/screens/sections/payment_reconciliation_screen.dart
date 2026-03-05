@@ -164,7 +164,7 @@ class _PaymentReconciliationScreenState
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Row(
           children: [
-            Icon(Icons.calendar_today_rounded, size: 14, color: Colors.white),
+            const Icon(Icons.calendar_today_rounded, size: 14, color: Colors.white),
             const SizedBox(width: 8),
             Text(
               label,

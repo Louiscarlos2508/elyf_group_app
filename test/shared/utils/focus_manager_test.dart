@@ -114,7 +114,7 @@ void main() {
 
   group('FocusMixin', () {
     testWidgets('FocusMixin crée et gère les focus nodes', (tester) async {
-      await tester.pumpWidget(MaterialApp(home: _TestWidget()));
+      await tester.pumpWidget(const MaterialApp(home: _TestWidget()));
 
       final state = tester.state<_TestState>(find.byType(_TestWidget));
 
@@ -128,9 +128,9 @@ void main() {
   group('FocusTrap', () {
     testWidgets('crée un FocusScope avec autofocus', (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
-            body: FocusTrap(autofocus: true, child: const Text('Test')),
+            body: FocusTrap(autofocus: true, child: Text('Test')),
           ),
         ),
       );

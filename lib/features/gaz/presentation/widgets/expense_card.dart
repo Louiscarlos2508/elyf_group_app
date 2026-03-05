@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../../../shared/presentation/widgets/elyf_ui/atoms/elyf_icon_button.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
-import '../../../../../shared/utils/currency_formatter.dart';
 import '../../domain/entities/expense.dart';
 
 /// Carte affichant les détails d'une dépense.

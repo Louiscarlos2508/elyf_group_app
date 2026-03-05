@@ -24,7 +24,7 @@ class EauMineraleInvoiceService {
   /// Imprime une facture de vente via Sunmi.
   Future<bool> printSaleInvoice(Sale sale) async {
     final content = generateSaleReceipt(sale);
-    return await _sunmi.printReceipt(content);
+    return _sunmi.printReceipt(content);
   }
 
   /// Génère et ouvre un PDF de facture de vente.
@@ -65,7 +65,7 @@ class EauMineraleInvoiceService {
       cashAmount: cashAmount,
       omAmount: omAmount,
     );
-    return await _sunmi.printReceipt(content);
+    return _sunmi.printReceipt(content);
   }
 
   /// Génère et ouvre un PDF de reçu de paiement crédit.

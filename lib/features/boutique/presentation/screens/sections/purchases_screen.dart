@@ -28,9 +28,9 @@ class PurchasesScreen extends ConsumerWidget {
               BoutiqueHeader(
                 title: "APPROVISIONNEMENT",
                 subtitle: "Historique des Achats",
-                gradientColors: [
-                  const Color(0xFF0F766E), // Teal 700
-                  const Color(0xFF134E4A), // Teal 900
+                gradientColors: const [
+                  Color(0xFF0F766E), // Teal 700
+                  Color(0xFF134E4A), // Teal 900
                 ],
                 shadowColor: const Color(0xFF0F766E),
                 actions: [

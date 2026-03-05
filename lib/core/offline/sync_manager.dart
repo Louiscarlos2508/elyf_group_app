@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:workmanager/workmanager.dart';
@@ -136,11 +135,11 @@ class SyncManager {
 
   /// Syncs all pending operations.
   Future<SyncResult> syncPendingOperations() async {
-    if (kIsWeb) return SyncResult(success: true, message: 'No-op on Web', syncedCount: 0);
+    if (kIsWeb) return const SyncResult(success: true, message: 'No-op on Web', syncedCount: 0);
     
     if (_isSyncing) {
       AppLogger.debug('Sync already in progress', name: 'offline.sync');
-      return SyncResult(
+      return const SyncResult(
         success: false,
         message: 'Sync already in progress',
         syncedCount: 0,
@@ -154,7 +153,7 @@ class SyncManager {
         'No user logged in, stopping sync operations',
         name: 'offline.sync',
       );
-      return SyncResult(
+      return const SyncResult(
         success: false,
         message: 'User not logged in',
         syncedCount: 0,
@@ -163,7 +162,7 @@ class SyncManager {
 
     if (!_connectivityService.isOnline) {
       AppLogger.debug('Device is offline, skipping sync', name: 'offline.sync');
-      return SyncResult(
+      return const SyncResult(
         success: false,
         message: 'Device is offline',
         syncedCount: 0,
@@ -178,7 +177,7 @@ class SyncManager {
       if (pendingCount == 0) {
         _isSyncing = false;
         _syncStatusController.add(SyncProgress.completed(0));
-        return SyncResult(
+        return const SyncResult(
           success: true,
           message: 'No pending operations',
           syncedCount: 0,
@@ -210,7 +209,7 @@ class SyncManager {
         );
         _isSyncing = false;
         _syncStatusController.add(SyncProgress.completed(0));
-        return SyncResult(
+        return const SyncResult(
           success: true,
           message: 'Retrying later...',
           syncedCount: 0,
@@ -249,7 +248,7 @@ class SyncManager {
         // Vérifier à nouveau l'authentification avant chaque opération
         bool stillAuthenticated = true;
         if (_authService != null) {
-          stillAuthenticated = _authService!.isAuthenticated;
+          stillAuthenticated = _authService.isAuthenticated;
         } else {
           try {
             stillAuthenticated = FirebaseAuth.instance.currentUser != null;
@@ -533,13 +532,13 @@ class SyncManager {
 
   /// Gets the count of pending operations.
   Future<int> getPendingCount() async {
-    return await _driftService.syncOperations.countPending(
+    return _driftService.syncOperations.countPending(
       userId: getUserId(),
     );
   }
 
   String? getUserId() {
-    if (_authService != null) return _authService!.currentUser?.id;
+    if (_authService != null) return _authService.currentUser?.id;
     try {
       return FirebaseAuth.instance.currentUser?.uid;
     } catch (e) {

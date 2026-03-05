@@ -73,7 +73,7 @@ class MonthlySalaryPaymentFormState
     // Validate date is not in the future
     final now = DateTime.now();
     if (_paymentDate.isAfter(now)) {
-      throw InvalidPaymentDateException(
+      throw const InvalidPaymentDateException(
         reason: 'La date de paiement ne peut pas être dans le futur',
       );
     }

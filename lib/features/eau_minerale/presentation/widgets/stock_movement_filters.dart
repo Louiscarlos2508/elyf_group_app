@@ -387,7 +387,7 @@ class _StockMovementFiltersState extends ConsumerState<StockMovementFilters> {
             DropdownMenuItem<StockMovementType>(
               value: StockMovementType.entry,
               child: isWide
-                  ? Row(
+                  ? const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
@@ -395,8 +395,8 @@ class _StockMovementFiltersState extends ConsumerState<StockMovementFilters> {
                           size: 16,
                           color: Colors.green,
                         ),
-                        const SizedBox(width: 8),
-                        const Text('Entrées'),
+                        SizedBox(width: 8),
+                        Text('Entrées'),
                       ],
                     )
                   : const Text('Entrées'),
@@ -404,12 +404,12 @@ class _StockMovementFiltersState extends ConsumerState<StockMovementFilters> {
             DropdownMenuItem<StockMovementType>(
               value: StockMovementType.exit,
               child: isWide
-                  ? Row(
+                  ? const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(Icons.arrow_upward, size: 16, color: Colors.red),
-                        const SizedBox(width: 8),
-                        const Text('Sorties'),
+                        SizedBox(width: 8),
+                        Text('Sorties'),
                       ],
                     )
                   : const Text('Sorties'),

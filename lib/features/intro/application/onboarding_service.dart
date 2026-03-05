@@ -31,5 +31,5 @@ final onboardingServiceProvider = Provider<OnboardingService>((ref) {
 
 /// FutureProvider to check if onboarding is completed.
 final isOnboardingCompletedProvider = FutureProvider<bool>((ref) async {
-  return await ref.watch(onboardingServiceProvider).isCompleted();
+  return ref.watch(onboardingServiceProvider).isCompleted();
 });

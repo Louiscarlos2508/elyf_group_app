@@ -745,7 +745,7 @@ class GasOfflineRepository implements GasRepository {
       // Stock Pleines
       final fullStock = allStocks.firstWhere(
         (s) => s.cylinderId == sale.cylinderId && s.status == CylinderStatus.full,
-        orElse: () => throw BusinessException('Stock plein introuvable pour cette bouteille'),
+        orElse: () => throw const BusinessException('Stock plein introuvable pour cette bouteille'),
       );
 
       // Mettre à jour les Pleines (décrémenter)
@@ -758,7 +758,7 @@ class GasOfflineRepository implements GasRepository {
       if (sale.isExchange) {
         final emptyStock = allStocks.firstWhere(
           (s) => s.cylinderId == sale.cylinderId && s.status == CylinderStatus.emptyAtStore,
-          orElse: () => throw BusinessException('Stock vide introuvable pour cette bouteille'),
+          orElse: () => throw const BusinessException('Stock vide introuvable pour cette bouteille'),
         );
 
         await cylinderStockRepository.updateStockQuantity(

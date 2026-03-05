@@ -55,9 +55,9 @@ class ExpensesScreen extends ConsumerWidget {
                   BoutiqueHeader(
                     title: "GESTION FINANCIÈRE",
                     subtitle: "Dépenses & Charges",
-                    gradientColors: [
-                      const Color(0xFFDC2626), // Red 600
-                      const Color(0xFFB91C1C), // Red 700
+                    gradientColors: const [
+                      Color(0xFFDC2626), // Red 600
+                      Color(0xFFB91C1C), // Red 700
                     ],
                     shadowColor: const Color(0xFFDC2626),
                     actions: [
@@ -170,7 +170,7 @@ class ExpensesScreen extends ConsumerWidget {
                   // Today's expenses table
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: EdgeInsets.fromLTRB(
+                      padding: const EdgeInsets.fromLTRB(
                         AppSpacing.lg,
                         AppSpacing.lg,
                         AppSpacing.lg,
@@ -196,7 +196,7 @@ class ExpensesScreen extends ConsumerWidget {
                                 ),
                               ),
                             ),
-                            padding: EdgeInsets.all(AppSpacing.lg),
+                            padding: const EdgeInsets.all(AppSpacing.lg),
                             child: ExpensesTable(
                               expenses: todayExpenses,
                               formatCurrency: CurrencyFormatter.formatFCFA,
@@ -234,7 +234,7 @@ class ExpensesScreen extends ConsumerWidget {
                     ),
                   ),
 
-                  SliverToBoxAdapter(
+                  const SliverToBoxAdapter(
                     child: SizedBox(height: AppSpacing.lg),
                   ),
                 ],

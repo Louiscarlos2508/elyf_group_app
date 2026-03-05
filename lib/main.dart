@@ -11,7 +11,7 @@ import 'core/offline/sync_worker.dart';
 
 Future<void> main() async {
   // S'assurer que les bindings sont initialisés
-  WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  final WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
   
   // Préserver le splash screen natif pendant l'initialisation (bootstrap)
   developer.log('Preserving native splash', name: 'main');

@@ -721,7 +721,7 @@ class ReportOfflineRepository implements ReportRepository {
       supplierRepository.watchSuppliers(),
       purchaseRepository.watchPurchases(limit: 2000),
       settlementRepository.watchSettlements(),
-      (suppliers, purchases, settlements) => _calculateDebtsData(suppliers, purchases, settlements),
+      _calculateDebtsData,
     );
   }
 

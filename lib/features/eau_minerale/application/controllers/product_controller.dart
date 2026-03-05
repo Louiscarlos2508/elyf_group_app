@@ -105,21 +105,21 @@ class ProductController {
 
   /// Récupère un produit par son ID.
   Future<Product?> getProduct(String id) async {
-    return await _repository.getProduct(id);
+    return _repository.getProduct(id);
   }
 
   /// Crée un nouveau produit.
   Future<String> createProduct(Product product) async {
-    return await _repository.createProduct(product);
+    return _repository.createProduct(product);
   }
 
   /// Met à jour un produit existant.
   Future<void> updateProduct(Product product) async {
-    return await _repository.updateProduct(product);
+    return _repository.updateProduct(product);
   }
 
   /// Supprime un produit.
   Future<void> deleteProduct(String id) async {
-    return await _repository.deleteProduct(id);
+    return _repository.deleteProduct(id);
   }
 }

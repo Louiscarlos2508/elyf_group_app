@@ -217,7 +217,7 @@ class _FilterChip<T> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isSelected = true; // For ArchiveFilter it's always one of the values
+    const isSelected = true; // For ArchiveFilter it's always one of the values
 
     return PopupMenuButton<T?>(
       initialValue: value,

@@ -83,7 +83,7 @@ class RoleController {
 
   /// Récupère les rôles pour un module spécifique.
   Future<List<UserRole>> getModuleRoles(String moduleId) async {
-    return await _repository.getModuleRoles(moduleId);
+    return _repository.getModuleRoles(moduleId);
   }
 
   /// Crée un nouveau rôle.
@@ -101,7 +101,7 @@ class RoleController {
         userId: currentUserId,
       );
       if (!hasPermission) {
-        throw AuthorizationException(
+        throw const AuthorizationException(
           'Permission refusée : Vous n\'avez pas les droits pour créer des rôles. '
           'Contactez un administrateur pour obtenir les permissions nécessaires.',
           'PERMISSION_DENIED',
@@ -171,7 +171,7 @@ class RoleController {
         userId: currentUserId,
       );
       if (!hasPermission) {
-        throw AuthorizationException(
+        throw const AuthorizationException(
           'Permission refusée : Vous n\'avez pas les droits pour modifier des rôles. '
           'Contactez un administrateur pour obtenir les permissions nécessaires.',
           'PERMISSION_DENIED',
@@ -253,7 +253,7 @@ class RoleController {
         userId: currentUserId,
       );
       if (!hasPermission) {
-        throw AuthorizationException(
+        throw const AuthorizationException(
           'Permission refusée : Vous n\'avez pas les droits pour supprimer des rôles. '
           'Contactez un administrateur pour obtenir les permissions nécessaires.',
           'PERMISSION_DENIED',

@@ -88,12 +88,12 @@ class _TransactionsHistoryScreenState
     return Container(
       color: Colors.transparent,
       child: SingleChildScrollView(
-        padding: EdgeInsets.all(AppSpacing.lg),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const TransactionsHistoryHeader(),
-            SizedBox(height: AppSpacing.lg),
+            const SizedBox(height: AppSpacing.lg),
             TransactionsHistoryFilters(
               searchController: _searchController,
               selectedTypeFilter: _selectedTypeFilter,
@@ -105,7 +105,7 @@ class _TransactionsHistoryScreenState
               },
               onDateSelected: () => _selectDate(context),
             ),
-            SizedBox(height: AppSpacing.lg),
+            const SizedBox(height: AppSpacing.lg),
             transactionsAsync.when(
               data: (transactions) => transactions.isEmpty
                   ? const TransactionsHistoryEmptyState()

@@ -6,7 +6,6 @@ import 'package:elyf_groupe_app/core/logging/app_logger.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder_leak.dart';
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
-import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import 'package:elyf_groupe_app/features/gaz/presentation/widgets/leak_report_dialog.dart';
 import '../cylinder_leak/leak_filters.dart';
 import '../cylinder_leak/leak_list_item.dart';
@@ -115,7 +114,7 @@ class _LeakTrackingTabState extends ConsumerState<LeakTrackingTab> {
             }
 
             return SliverPadding(
-              padding: EdgeInsets.fromLTRB(
+              padding: const EdgeInsets.fromLTRB(
                 AppSpacing.lg,
                 0,
                 AppSpacing.lg,

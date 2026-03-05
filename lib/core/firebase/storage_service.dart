@@ -152,7 +152,7 @@ class StorageService {
       }
 
       if (data == null) {
-        throw NotFoundException(
+        throw const NotFoundException(
           'Failed to download file: data is null',
           'FILE_DOWNLOAD_FAILED',
         );

@@ -29,11 +29,11 @@ class MaintenanceController {
   }
 
   Future<List<MaintenanceTicket>> getTicketsByProperty(String propertyId) async {
-    return await _maintenanceRepository.getTicketsByProperty(propertyId);
+    return _maintenanceRepository.getTicketsByProperty(propertyId);
   }
 
   Future<List<MaintenanceTicket>> getTicketsByStatus(MaintenanceStatus status) async {
-    return await _maintenanceRepository.getTicketsByStatus(status);
+    return _maintenanceRepository.getTicketsByStatus(status);
   }
 
   Future<MaintenanceTicket> createTicket(MaintenanceTicket ticket) async {

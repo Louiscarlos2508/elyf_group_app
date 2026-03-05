@@ -1,14 +1,7 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/shared.dart';
 
-import 'profile_logout_card.dart';
-import 'profile_personal_info_card.dart';
-import 'profile_security_card.dart';
-import 'profile_security_note_card.dart';
-import 'edit_profile_dialog.dart';
-import 'change_password_dialog.dart';
 import '../../../../core/domain/entities/user_profile.dart';
 import '../../../../core/auth/providers.dart'
     show currentUserIdProvider, currentUserProfileProvider, currentUserProvider;
@@ -98,16 +91,16 @@ class ProfileScreen extends ConsumerWidget {
               ),
             ),
           ),
-          SliverToBoxAdapter(
-            child: const Padding(
+          const SliverToBoxAdapter(
+            child: Padding(
               padding: EdgeInsets.symmetric(horizontal: 24),
               child: ProfileSecurityNoteCard(),
             ),
           ),
-          SliverToBoxAdapter(
+          const SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
-              child: const ProfileLogoutCard(),
+              padding: EdgeInsets.fromLTRB(24, 16, 24, 16),
+              child: ProfileLogoutCard(),
             ),
           ),
           const SliverToBoxAdapter(child: SizedBox(height: 24)),

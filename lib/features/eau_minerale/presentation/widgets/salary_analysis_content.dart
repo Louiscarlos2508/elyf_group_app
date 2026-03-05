@@ -471,7 +471,7 @@ class _ErrorState extends StatelessWidget {
         children: [
           Icon(Icons.error_outline_rounded, size: 48, color: theme.colorScheme.error),
           const SizedBox(height: 16),
-          Text('Impossible de charger les statistiques'),
+          const Text('Impossible de charger les statistiques'),
           const SizedBox(height: 8),
           FilledButton.tonal(onPressed: onRetry, child: const Text('Réessayer')),
         ],

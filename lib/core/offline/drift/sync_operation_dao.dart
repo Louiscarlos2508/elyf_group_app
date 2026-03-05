@@ -108,7 +108,7 @@ class SyncOperationDao {
     required String status,
     String? userId,
   }) async {
-    return await (_db.select(_db.syncOperations)
+    return (_db.select(_db.syncOperations)
           ..where(
             (t) =>
                 t.operationType.equals(operationType) &
@@ -123,7 +123,7 @@ class SyncOperationDao {
 
   /// Gets a pending operation by ID.
   Future<SyncOperation?> getById(int id) async {
-    return await (_db.select(
+    return (_db.select(
       _db.syncOperations,
     )..where((t) => t.id.equals(id))).getSingleOrNull();
   }
@@ -161,7 +161,7 @@ class SyncOperationDao {
       query = query..limit(limit);
     }
 
-    return await query.get();
+    return query.get();
   }
 
   /// Watches pending operations for real-time sync triggers.
@@ -188,7 +188,7 @@ class SyncOperationDao {
     String? enterpriseId,
     int? limit,
   }) async {
-    return await getPending(
+    return getPending(
       limit: limit,
       collectionName: collectionName,
       enterpriseId: enterpriseId,

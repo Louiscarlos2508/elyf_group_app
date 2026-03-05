@@ -20,7 +20,7 @@ class TenantController {
   final String _userId;
 
   Future<List<Tenant>> fetchTenants() async {
-    return await _tenantRepository.getAllTenants();
+    return _tenantRepository.getAllTenants();
   }
 
   Stream<List<Tenant>> watchTenants({bool? isDeleted = false}) {
@@ -32,14 +32,14 @@ class TenantController {
   }
 
   Future<Tenant?> getTenant(String id) async {
-    return await _tenantRepository.getTenantById(id);
+    return _tenantRepository.getTenantById(id);
   }
 
   Future<List<Tenant>> searchTenants(String query) async {
     if (query.isEmpty) {
-      return await fetchTenants();
+      return fetchTenants();
     }
-    return await _tenantRepository.searchTenants(query);
+    return _tenantRepository.searchTenants(query);
   }
 
   Future<Tenant> createTenant(Tenant tenant) async {

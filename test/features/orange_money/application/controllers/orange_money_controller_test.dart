@@ -10,9 +10,6 @@ import 'package:elyf_groupe_app/core/errors/app_exceptions.dart';
 import 'package:elyf_groupe_app/features/audit_trail/domain/services/audit_trail_service.dart';
 import 'package:elyf_groupe_app/features/orange_money/domain/repositories/settings_repository.dart';
 import 'package:elyf_groupe_app/features/orange_money/domain/adapters/orange_money_permission_adapter.dart';
-import 'package:elyf_groupe_app/features/administration/domain/repositories/admin_repository.dart';
-import 'package:elyf_groupe_app/features/administration/domain/repositories/enterprise_repository.dart';
-import 'package:elyf_groupe_app/core/permissions/services/permission_service.dart';
 
 import 'orange_money_controller_test.mocks.dart';
 

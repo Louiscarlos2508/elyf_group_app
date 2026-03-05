@@ -56,13 +56,13 @@ class _PaymentProofInputWidgetState extends State<PaymentProofInputWidget> {
         TextField(
           controller: _controller,
           onChanged: widget.onUrlChanged,
-          decoration: InputDecoration(
+          decoration: const InputDecoration(
             labelText: 'URL de l\'image',
             hintText: 'https://example.com/image.png',
-            border: const OutlineInputBorder(),
+            border: OutlineInputBorder(),
             helperText:
                 'L\'upload d\'image sera disponible dans une future version',
-            prefixIcon: const Icon(Icons.image_outlined),
+            prefixIcon: Icon(Icons.image_outlined),
           ),
           keyboardType: TextInputType.url,
         ),

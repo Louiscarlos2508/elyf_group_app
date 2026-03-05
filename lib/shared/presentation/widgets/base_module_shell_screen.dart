@@ -143,12 +143,9 @@ abstract class BaseModuleShellScreenState<T extends BaseModuleShellScreen>
     if (sectionsAsync != null) {
       return sectionsAsync.when(
         skipLoadingOnRefresh: true,
-        data: (loadedSections) {
-          // Utiliser les sections chargées
-          return _buildWithSections(loadedSections);
-        },
-        loading: () => buildLoading(),
-        error: (error, stackTrace) => buildError(error, stackTrace),
+        data: _buildWithSections,
+        loading: buildLoading,
+        error: buildError,
       );
     }
 

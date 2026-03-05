@@ -5,7 +5,6 @@ import 'package:elyf_groupe_app/core/logging/app_logger.dart';
 import 'package:elyf_groupe_app/core/permissions/modules/gaz_permissions.dart';
 import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart'
     show activeEnterpriseProvider;
-import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import '../../presentation/screens/sections/dashboard_screen.dart';
 import '../../presentation/screens/sections/profile_screen.dart';
 import '../../presentation/screens/sections/reports_screen.dart';
@@ -34,7 +33,7 @@ final accessibleGazSectionsProvider = FutureProvider<List<NavigationSection>>((
   }
 
   final enterpriseId = activeEnterprise.id;
-  final moduleId = 'gaz';
+  const moduleId = 'gaz';
 
   // Toutes les sections possibles avec leurs permissions requises
   final allSections =

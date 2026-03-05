@@ -47,9 +47,7 @@ class _PaymentSignatureDialogState extends State<PaymentSignatureDialog> {
   }
 
   void _clearSignature() {
-    setState(() {
-      _points.clear();
-    });
+    setState(_points.clear);
   }
 
   Future<Uint8List?> _captureSignature() async {

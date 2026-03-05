@@ -64,11 +64,11 @@ class SalesTableHelpers {
         }
       },
       itemBuilder: (context) => [
-        PopupMenuItem(
+        const PopupMenuItem(
           value: 'view',
           child: ListTile(
-            leading: const Icon(Icons.visibility_outlined, size: 20),
-            title: const Text('Voir les détails'),
+            leading: Icon(Icons.visibility_outlined, size: 20),
+            title: Text('Voir les détails'),
             contentPadding: EdgeInsets.zero,
             visualDensity: VisualDensity.compact,
             dense: true,
@@ -77,9 +77,9 @@ class SalesTableHelpers {
         PopupMenuItem(
           value: 'print',
           enabled: sale.status != SaleStatus.voided,
-          child: ListTile(
-            leading: const Icon(Icons.print_outlined, size: 20),
-            title: const Text('Imprimer Facture'),
+          child: const ListTile(
+            leading: Icon(Icons.print_outlined, size: 20),
+            title: Text('Imprimer Facture'),
             contentPadding: EdgeInsets.zero,
             visualDensity: VisualDensity.compact,
             dense: true,

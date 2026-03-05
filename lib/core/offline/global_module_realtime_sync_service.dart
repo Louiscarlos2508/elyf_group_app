@@ -30,7 +30,7 @@ class GlobalModuleRealtimeSyncService {
     SyncConflictResolver? conflictResolver,
     String? Function()? getActiveEnterpriseId,
   })  : _syncManager = syncManager,
-        _conflictResolver = conflictResolver ?? SyncConflictResolver(),
+        _conflictResolver = conflictResolver ?? const SyncConflictResolver(),
         _getActiveEnterpriseId = getActiveEnterpriseId;
 
   final FirebaseFirestore firestore;
@@ -55,7 +55,7 @@ class GlobalModuleRealtimeSyncService {
 
     // Validation Layer (Second layer of defense)
     if (_getActiveEnterpriseId != null) {
-      final activeId = _getActiveEnterpriseId!();
+      final activeId = _getActiveEnterpriseId();
       if (activeId != null && 
           enterpriseId != activeId && 
           parentEnterpriseId != activeId) {

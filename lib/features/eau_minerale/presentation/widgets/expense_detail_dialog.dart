@@ -200,9 +200,9 @@ class ExpenseDetailDialog extends StatelessWidget {
                               height: 250,
                               width: double.infinity,
                               fit: BoxFit.contain,
-                              errorBuilder: (context, error, stackTrace) => SizedBox(
+                              errorBuilder: (context, error, stackTrace) => const SizedBox(
                                 height: 100,
-                                child: const Center(child: Icon(Icons.broken_image_outlined)),
+                                child: Center(child: Icon(Icons.broken_image_outlined)),
                               ),
                             ),
                           ),

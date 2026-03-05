@@ -14,7 +14,7 @@ class AuditController {
     int limit = 50,
     DateTime? since,
   }) async {
-    return await _auditService.getRecentLogs(limit: limit, since: since);
+    return _auditService.getRecentLogs(limit: limit, since: since);
   }
 
   /// Récupère les logs pour une entité spécifique.
@@ -22,7 +22,7 @@ class AuditController {
     required String entityType,
     required String entityId,
   }) async {
-    return await _auditService.getLogsForEntity(
+    return _auditService.getLogsForEntity(
       entityType: entityType,
       entityId: entityId,
     );
@@ -30,17 +30,17 @@ class AuditController {
 
   /// Récupère les logs pour un utilisateur.
   Future<List<AuditLog>> getLogsForUser(String userId) async {
-    return await _auditService.getLogsForUser(userId);
+    return _auditService.getLogsForUser(userId);
   }
 
   /// Récupère les logs pour un module.
   Future<List<AuditLog>> getLogsForModule(String moduleId) async {
-    return await _auditService.getLogsForModule(moduleId);
+    return _auditService.getLogsForModule(moduleId);
   }
 
   /// Récupère les logs pour une entreprise.
   Future<List<AuditLog>> getLogsForEnterprise(String enterpriseId) async {
-    return await _auditService.getLogsForEnterprise(enterpriseId);
+    return _auditService.getLogsForEnterprise(enterpriseId);
   }
 
   /// Enregistre une action dans l'audit trail.

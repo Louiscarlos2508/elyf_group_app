@@ -7,7 +7,6 @@ import '../../core/errors/error_handler.dart';
 import '../../core/logging/app_logger.dart';
 
 import '../../core/offline/sync/sync_orchestrator.dart' show syncOrchestratorProvider;
-import '../../core/tenant/tenant_provider.dart' show activeEnterpriseProvider;
 
 /// Mixin pour déclencher la synchronisation en temps réel lors de l'accès à un module.
 ///

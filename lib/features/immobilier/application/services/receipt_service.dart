@@ -83,7 +83,7 @@ class ReceiptService {
       tenant: tenant,
       property: property,
     );
-    return await _sunmi.printReceipt(content);
+    return _sunmi.printReceipt(content);
   }
 
   /// Génère un PDF du reçu de paiement.

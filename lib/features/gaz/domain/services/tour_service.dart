@@ -22,8 +22,8 @@ class TourService {
       String tourId, Map<int, int> quantities, String userId,
       {Map<int, int> leakingQuantities = const {}}) async {
     final tour = await tourRepository.getTourById(tourId);
-    if (tour == null) throw NotFoundException('Tour introuvable', 'TOUR_NOT_FOUND');
-    if (tour.status != TourStatus.open) throw ValidationException('Le tour est clôturé', 'TOUR_CLOSED');
+    if (tour == null) throw const NotFoundException('Tour introuvable', 'TOUR_NOT_FOUND');
+    if (tour.status != TourStatus.open) throw const ValidationException('Le tour est clôturé', 'TOUR_CLOSED');
 
     await transactionService.executeTourLoadingTransaction(
       tourId: tourId,
@@ -44,8 +44,8 @@ class TourService {
   /// Met à jour les bouteilles pleines reçues.
   Future<void> updateFullBottlesReceived(String tourId, Map<int, int> quantities, double? gasCost, String? supplier) async {
     final tour = await tourRepository.getTourById(tourId);
-    if (tour == null) throw NotFoundException('Tour introuvable', 'TOUR_NOT_FOUND');
-    if (tour.status != TourStatus.open) throw ValidationException('Le tour est clôturé', 'TOUR_CLOSED');
+    if (tour == null) throw const NotFoundException('Tour introuvable', 'TOUR_NOT_FOUND');
+    if (tour.status != TourStatus.open) throw const ValidationException('Le tour est clôturé', 'TOUR_CLOSED');
 
     final updated = tour.copyWith(
       fullBottlesReceived: quantities,
@@ -60,8 +60,8 @@ class TourService {
   /// Valide l'étape de transport et frais.
   Future<void> validateTransport(String tourId) async {
     final tour = await tourRepository.getTourById(tourId);
-    if (tour == null) throw NotFoundException('Tour introuvable', 'TOUR_NOT_FOUND');
-    if (tour.status != TourStatus.open) throw ValidationException('Le tour est clôturé', 'TOUR_CLOSED');
+    if (tour == null) throw const NotFoundException('Tour introuvable', 'TOUR_NOT_FOUND');
+    if (tour.status != TourStatus.open) throw const ValidationException('Le tour est clôturé', 'TOUR_CLOSED');
 
     final updated = tour.copyWith(
       transportCompletedDate: DateTime.now(),
@@ -73,10 +73,10 @@ class TourService {
   /// Clôture un tour avec mise à jour des stocks.
   Future<List<dynamic>> closeTour(String tourId, String userId) async {
     final tour = await tourRepository.getTourById(tourId);
-    if (tour == null) throw NotFoundException('Tour introuvable', 'TOUR_NOT_FOUND');
+    if (tour == null) throw const NotFoundException('Tour introuvable', 'TOUR_NOT_FOUND');
     
     if (tour.fullBottlesReceived.isEmpty) {
-      throw ValidationException(
+      throw const ValidationException(
         'Saisissez les bouteilles pleines reçues avant la clôture',
         'NO_FULLS_RECEIVED',
       );

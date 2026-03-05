@@ -10,8 +10,6 @@ import 'package:elyf_groupe_app/features/boutique/domain/services/product_filter
 import 'package:elyf_groupe_app/features/boutique/presentation/widgets/permission_guard.dart';
 import 'package:elyf_groupe_app/features/boutique/presentation/widgets/product_form_dialog.dart';
 import 'package:elyf_groupe_app/features/boutique/presentation/widgets/product_tile.dart';
-import 'package:elyf_groupe_app/features/boutique/presentation/widgets/purchase_entry_dialog.dart';
-import 'package:elyf_groupe_app/features/boutique/presentation/widgets/stock_adjustment_dialog.dart';
 import 'package:elyf_groupe_app/features/boutique/presentation/widgets/boutique_header.dart';
 import 'package:elyf_groupe_app/features/boutique/presentation/widgets/boutique_search_bar.dart';
 import 'package:elyf_groupe_app/features/boutique/domain/entities/category.dart';
@@ -69,9 +67,9 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
         BoutiqueHeader(
           title: "CATALOGUE",
           subtitle: "Produits & Stocks",
-          gradientColors: [
-            const Color(0xFF059669), // Emerald 600
-            const Color(0xFF047857), // Emerald 700
+          gradientColors: const [
+            Color(0xFF059669), // Emerald 600
+            Color(0xFF047857), // Emerald 700
           ],
           shadowColor: const Color(0xFF059669),
           actions: [
@@ -144,7 +142,7 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
           ),
         ),
         SliverPadding(
-          padding: EdgeInsets.all(AppSpacing.lg),
+          padding: const EdgeInsets.all(AppSpacing.lg),
           sliver: productsAsync.when(
             data: (products) {
               final categories = categoriesAsync.value ?? [];

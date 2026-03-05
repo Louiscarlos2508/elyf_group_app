@@ -43,7 +43,7 @@ class SecureStorageService {
   /// [key] : Clé unique de la valeur à récupérer
   /// Retourne la valeur ou `null` si la clé n'existe pas
   Future<String?> read(String key) async {
-    return await _storage.read(key: key);
+    return _storage.read(key: key);
   }
 
   /// Supprime une valeur.
@@ -63,13 +63,13 @@ class SecureStorageService {
   /// [key] : Clé à vérifier
   /// Retourne `true` si la clé existe, `false` sinon
   Future<bool> containsKey(String key) async {
-    return await _storage.containsKey(key: key);
+    return _storage.containsKey(key: key);
   }
 
   /// Récupère toutes les clés stockées.
   ///
   /// Retourne une map de toutes les clés/valeurs stockées
   Future<Map<String, String>> readAll() async {
-    return await _storage.readAll();
+    return _storage.readAll();
   }
 }

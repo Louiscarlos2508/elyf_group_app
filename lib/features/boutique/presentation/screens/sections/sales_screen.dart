@@ -27,9 +27,9 @@ class SalesScreen extends ConsumerWidget {
               BoutiqueHeader(
                 title: "JOURNAL DES VENTES",
                 subtitle: "Historique des Transactions",
-                gradientColors: [
-                  const Color(0xFF0D9488), // Teal 600
-                  const Color(0xFF0F766E), // Teal 700
+                gradientColors: const [
+                  Color(0xFF0D9488), // Teal 600
+                  Color(0xFF0F766E), // Teal 700
                 ],
                 shadowColor: const Color(0xFF0D9488),
                 actions: [

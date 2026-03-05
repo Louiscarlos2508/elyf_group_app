@@ -121,14 +121,14 @@ pw.Widget _buildPaymentSection(Sale sale, int paymentAmount, {int cashAmount = 0
           pw.SizedBox(height: 5),
           pw.Text(
             'Cash: ${InvoicePrintHelpers.formatCurrency(cashAmount)}',
-            style: pw.TextStyle(fontSize: 10, color: PdfColors.green900),
+            style: const pw.TextStyle(fontSize: 10, color: PdfColors.green900),
           ),
         ],
         if (omAmount > 0) ...[
           pw.SizedBox(height: 5),
           pw.Text(
             'OM: ${InvoicePrintHelpers.formatCurrency(omAmount)}',
-            style: pw.TextStyle(fontSize: 10, color: PdfColors.green900),
+            style: const pw.TextStyle(fontSize: 10, color: PdfColors.green900),
           ),
         ],
         pw.SizedBox(height: 10),

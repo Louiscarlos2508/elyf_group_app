@@ -5,7 +5,6 @@ import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/gas_sale.dart';
-import 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder_stock.dart';
 import 'package:elyf_groupe_app/features/audit_trail/domain/entities/audit_record.dart';
 import 'package:elyf_groupe_app/features/audit_trail/application/providers.dart';
 import 'package:elyf_groupe_app/app/theme/app_spacing.dart';

@@ -58,7 +58,7 @@ class _ModuleMenuScreenState extends ConsumerState<ModuleMenuScreen> {
           elevation: 0,
           actions: activeEnterpriseAsync.asData?.value != null
               ? [
-                  EnterpriseSelectorWidget(style: EnterpriseSelectorStyle.appBar),
+                  const EnterpriseSelectorWidget(style: EnterpriseSelectorStyle.appBar),
                 ]
               : [
                   IconButton(

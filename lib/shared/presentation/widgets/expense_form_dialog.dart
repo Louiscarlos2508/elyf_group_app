@@ -201,7 +201,7 @@ class _ExpenseFormDialogState<T extends Enum>
             AmountInputField(
               controller: _amountController,
               label: widget.amountLabel,
-              validator: (value) => Validators.amount(value),
+              validator: Validators.amount,
             ),
             const SizedBox(height: 16),
             DatePickerField(
@@ -235,7 +235,7 @@ class _ExpenseFormDialogState<T extends Enum>
                 hintText: widget.descriptionHint,
                 prefixIcon: const Icon(Icons.description),
               ),
-              validator: (value) => Validators.required(value),
+              validator: Validators.required,
               maxLines: 2,
             ),
             ...widget.additionalFields.map(

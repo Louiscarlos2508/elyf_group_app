@@ -23,7 +23,7 @@ final driftServiceProvider = Provider<DriftService>((ref) {
 /// Provider for the connectivity service.
 final connectivityServiceProvider = Provider<ConnectivityService>((ref) {
   final service = ConnectivityService();
-  ref.onDispose(() => service.dispose());
+  ref.onDispose(service.dispose);
   return service;
 });
 
@@ -58,7 +58,7 @@ final syncManagerProvider = Provider<SyncManager>((ref) {
     syncHandler: syncHandler,
   );
 
-  ref.onDispose(() => manager.dispose());
+  ref.onDispose(manager.dispose);
   return manager;
 });
 

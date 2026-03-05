@@ -8,7 +8,6 @@ import 'package:elyf_groupe_app/shared/domain/entities/treasury_operation.dart';
 import 'package:elyf_groupe_app/features/orange_money/presentation/widgets/treasury_operation_dialog.dart';
 import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
-import 'package:elyf_groupe_app/features/orange_money/domain/entities/orange_money_enterprise_extensions.dart';
 import 'package:elyf_groupe_app/features/orange_money/domain/entities/agent.dart' show AgentStatus, Agent;
 import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
 
@@ -18,8 +17,9 @@ class TreasuryTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final activeEnterprise = ref.watch(activeEnterpriseProvider).value;
-    if (activeEnterprise == null)
+    if (activeEnterprise == null) {
       return const Center(child: CircularProgressIndicator());
+    }
 
     final isPOS = activeEnterprise.isPointOfSale;
     final balancesAsync = ref.watch(
@@ -50,7 +50,7 @@ class TreasuryTab extends ConsumerWidget {
               // ── Soldes de caisse ──────────────────────────────────────────────────
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, 0),
+                  padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, 0),
                   child: Text(
                     'Caisse & Float Principal',
                     style: theme.textTheme.titleMedium?.copyWith(
@@ -62,7 +62,7 @@ class TreasuryTab extends ConsumerWidget {
               ),
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: EdgeInsets.all(AppSpacing.lg),
+                  padding: const EdgeInsets.all(AppSpacing.lg),
                   child: balancesAsync.when(
                     data: (balances) => Row(
                       children: [
@@ -74,7 +74,7 @@ class TreasuryTab extends ConsumerWidget {
                             icon: Icons.payments_outlined,
                           ),
                         ),
-                        SizedBox(width: AppSpacing.md),
+                        const SizedBox(width: AppSpacing.md),
                         Expanded(
                           child: _BalanceCard(
                             label: 'Float Principal (SIM)',
@@ -94,7 +94,7 @@ class TreasuryTab extends ConsumerWidget {
               // ── Actions rapides ───────────────────────────────────────────────────
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                   child: SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: Row(
@@ -108,7 +108,7 @@ class TreasuryTab extends ConsumerWidget {
                             TreasuryOperationType.supply,
                           ),
                         ),
-                        SizedBox(width: AppSpacing.sm),
+                        const SizedBox(width: AppSpacing.sm),
                         _QuickActionButton(
                           icon: Icons.remove_rounded,
                           label: 'Retrait',
@@ -118,7 +118,7 @@ class TreasuryTab extends ConsumerWidget {
                             TreasuryOperationType.removal,
                           ),
                         ),
-                        SizedBox(width: AppSpacing.sm),
+                        const SizedBox(width: AppSpacing.sm),
                         _QuickActionButton(
                           icon: Icons.swap_horiz_rounded,
                           label: 'Transfert',
@@ -128,7 +128,7 @@ class TreasuryTab extends ConsumerWidget {
                             TreasuryOperationType.transfer,
                           ),
                         ),
-                        SizedBox(width: AppSpacing.sm),
+                        const SizedBox(width: AppSpacing.sm),
                         _QuickActionButton(
                           icon: Icons.tune_rounded,
                           label: 'Ajustement',
@@ -145,7 +145,7 @@ class TreasuryTab extends ConsumerWidget {
               ),
 
               SliverPadding(
-                padding: EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.xl, AppSpacing.lg, AppSpacing.sm),
+                padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.xl, AppSpacing.lg, AppSpacing.sm),
                 sliver: SliverToBoxAdapter(
                   child: Text(
                     'Opérations Récentes',
@@ -249,7 +249,7 @@ class _AutoSynthesisSection extends ConsumerWidget {
     final netImpact = totalDepositsToday - totalWithdrawalsToday;
 
     return Padding(
-      padding: EdgeInsets.all(AppSpacing.lg),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
@@ -279,7 +279,7 @@ class _AutoSynthesisSection extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Padding(
-                padding: EdgeInsets.all(AppSpacing.lg),
+                padding: const EdgeInsets.all(AppSpacing.lg),
                 child: Row(
                   children: [
                     Container(
@@ -294,7 +294,7 @@ class _AutoSynthesisSection extends ConsumerWidget {
                         color: theme.colorScheme.primary,
                       ),
                     ),
-                    SizedBox(width: AppSpacing.sm),
+                    const SizedBox(width: AppSpacing.sm),
                     Text(
                       isPOS ? 'Performance du jour' : 'Vue d\'ensemble Réseau',
                       style: theme.textTheme.titleSmall?.copyWith(
@@ -327,8 +327,8 @@ class _AutoSynthesisSection extends ConsumerWidget {
                 icon: Icons.arrow_downward_rounded,
               ),
               Container(
-                margin: EdgeInsets.all(AppSpacing.md),
-                padding: EdgeInsets.all(AppSpacing.md),
+                margin: const EdgeInsets.all(AppSpacing.md),
+                padding: const EdgeInsets.all(AppSpacing.md),
                 decoration: BoxDecoration(
                   color: theme.colorScheme.primary.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(12),
@@ -383,11 +383,11 @@ class _SynthesisRow extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
       child: Row(
         children: [
           Icon(icon, size: 18, color: color.withValues(alpha: 0.8)),
-          SizedBox(width: AppSpacing.md),
+          const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Text(
               label, 
@@ -428,7 +428,7 @@ class _BalanceCard extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Container(
-      padding: EdgeInsets.all(AppSpacing.lg),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
@@ -574,7 +574,7 @@ class _OperationTile extends StatelessWidget {
     }
 
     return Container(
-      margin: EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.xs),
+      margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.xs),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(16),

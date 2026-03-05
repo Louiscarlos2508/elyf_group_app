@@ -54,7 +54,7 @@ void main() {
 
   group('EnterpriseController', () {
     group('createEnterprise', () {
-      final testEnterprise = Enterprise(
+      const testEnterprise = Enterprise(
         id: 'enterprise-1',
         name: 'Test Enterprise',
         type: EnterpriseType.waterEntity,
@@ -155,7 +155,7 @@ void main() {
     });
 
     group('updateEnterprise', () {
-      final oldEnterprise = Enterprise(
+      const oldEnterprise = Enterprise(
         id: 'enterprise-1',
         name: 'Old Enterprise',
         type: EnterpriseType.waterEntity,
@@ -165,7 +165,7 @@ void main() {
         isActive: true,
       );
 
-      final updatedEnterprise = Enterprise(
+      const updatedEnterprise = Enterprise(
         id: 'enterprise-1',
         name: 'Updated Enterprise',
         type: EnterpriseType.waterEntity,
@@ -245,7 +245,7 @@ void main() {
     });
 
     group('deleteEnterprise', () {
-      final testEnterprise = Enterprise(
+      const testEnterprise = Enterprise(
         id: 'enterprise-1',
         name: 'Test Enterprise',
         type: EnterpriseType.waterEntity,
@@ -324,7 +324,7 @@ void main() {
     });
 
     group('toggleEnterpriseStatus', () {
-      final inactiveEnterprise = Enterprise(
+      const inactiveEnterprise = Enterprise(
         id: 'enterprise-1',
         name: 'Test Enterprise',
         type: EnterpriseType.waterEntity,
@@ -334,7 +334,7 @@ void main() {
         isActive: false,
       );
 
-      final activeEnterprise = Enterprise(
+      const activeEnterprise = Enterprise(
         id: 'enterprise-1',
         name: 'Test Enterprise',
         type: EnterpriseType.waterEntity,
@@ -427,7 +427,7 @@ void main() {
       test('should return list from repository', () async {
         // Arrange
         final expectedEnterprises = [
-          Enterprise(
+          const Enterprise(
             id: 'enterprise-1',
             name: 'Enterprise 1',
             type: EnterpriseType.waterEntity,
@@ -453,7 +453,7 @@ void main() {
     group('getEnterpriseById', () {
       test('should return enterprise from repository', () async {
         // Arrange
-        final expectedEnterprise = Enterprise(
+        const expectedEnterprise = Enterprise(
           id: 'enterprise-1',
           name: 'Test Enterprise',
           type: EnterpriseType.waterEntity,

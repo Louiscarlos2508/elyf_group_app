@@ -142,7 +142,7 @@ class InventoryOfflineRepository extends OfflineRepository<StockItem>
   Future<void> updateStockItem(StockItem item) async {
     try {
       if (item.id.trim().isEmpty) {
-        throw ValidationException(
+        throw const ValidationException(
           'StockItem.id requis',
           'INVALID_STOCK_ITEM_ID',
         );

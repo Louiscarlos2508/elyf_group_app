@@ -66,7 +66,7 @@ class SalesReportWholesaleStats extends StatelessWidget {
                 Expanded(
                   child: Row(
                     children: [
-                      Icon(Icons.local_shipping, size: 16, color: const Color(0xFF8B5CF6)),
+                      const Icon(Icons.local_shipping, size: 16, color: Color(0xFF8B5CF6)),
                       const SizedBox(width: 8),
                       Text(
                         'Tour ${entry.key.substring(0, 8)}...',
@@ -139,7 +139,7 @@ class SalesReportWholesaleStats extends StatelessWidget {
                 Expanded(
                   child: Row(
                     children: [
-                      Icon(Icons.business, size: 16, color: const Color(0xFF8B5CF6)),
+                      const Icon(Icons.business, size: 16, color: Color(0xFF8B5CF6)),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(

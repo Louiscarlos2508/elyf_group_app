@@ -55,10 +55,10 @@ class _WeeklySalaryCalculatorState
         );
         return _buildContent(context, theme, salaries, total);
       },
-      loading: () => Card(
+      loading: () => const Card(
         child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: const Center(child: CircularProgressIndicator()),
+          padding: EdgeInsets.all(24),
+          child: Center(child: CircularProgressIndicator()),
         ),
       ),
       error: (error, stack) => Card(

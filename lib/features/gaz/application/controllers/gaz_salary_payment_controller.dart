@@ -3,7 +3,6 @@ import '../../domain/entities/gaz_salary_payment.dart';
 import '../../domain/repositories/gaz_salary_payment_repository.dart';
 import '../../domain/repositories/treasury_repository.dart';
 import 'package:elyf_groupe_app/shared/domain/entities/treasury_operation.dart';
-import 'package:elyf_groupe_app/core/auth/providers.dart';
 
 class GazSalaryPaymentController {
   final GazSalaryPaymentRepository repository;

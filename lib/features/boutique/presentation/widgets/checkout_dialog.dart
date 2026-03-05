@@ -369,7 +369,7 @@ class _CheckoutDialogState extends ConsumerState<CheckoutDialog>
                         children: [
                           Row(
                             children: [
-                                Icon(
+                                const Icon(
                                   Icons.check_circle_rounded,
                                   color: AppColors.success,
                                   size: 24,

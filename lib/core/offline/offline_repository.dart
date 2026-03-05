@@ -321,7 +321,7 @@ abstract class OfflineRepository<T> with OptimisticUIRepositoryMixin<T> {
     final deduplicator = SmartDeduplicator();
     
     // Convertir les entités en maps pour la déduplication
-    final entityMaps = entities.map((e) => toMap(e)).toList();
+    final entityMaps = entities.map(toMap).toList();
     
     // Dédupliquer
     final deduplicatedMaps = deduplicator.deduplicate(
@@ -330,7 +330,7 @@ abstract class OfflineRepository<T> with OptimisticUIRepositoryMixin<T> {
     );
     
     // Reconvertir en entités
-    return deduplicatedMaps.map((map) => fromMap(map)).toList();
+    return deduplicatedMaps.map(fromMap).toList();
   }
 
   /// Déduplique une liste d'entités par remoteId.

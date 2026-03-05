@@ -55,7 +55,7 @@ class _ProductionSessionFormScreenState
           icon: const Icon(Icons.close),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        actions: [
+        actions: const [
           EnterpriseSelectorWidget(style: EnterpriseSelectorStyle.appBar),
         ],
       ),

@@ -14,7 +14,7 @@ void main() {
   final regex5 = RegExp(r"id:\s*map\['id'\]\s*as\s*String\?\s*\?\?\s*map\['localId'\],\s*");
   final regex6 = RegExp(r"id:\s*map\['id'\]\s*as\s*String\?\s*\?\?\s*map\['localId'\]\s*as\s*String\?\s*\?\?\s*'',\s*");
 
-  final replaceStr = '''id: (map['localId'] as String?)?.trim().isNotEmpty == true 
+  const replaceStr = '''id: (map['localId'] as String?)?.trim().isNotEmpty == true 
           ? map['localId'] as String 
           : (map['id'] as String? ?? ''),
       ''';
@@ -27,7 +27,7 @@ void main() {
     }
     
     var content = file.readAsStringSync();
-    var originalContent = content;
+    final originalContent = content;
     
     content = content.replaceAll(regex1, replaceStr);
     content = content.replaceAll(regex2, replaceStr);

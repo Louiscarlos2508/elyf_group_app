@@ -46,7 +46,7 @@ class FinancesController {
     // 1. Vérifier si une session de trésorerie est ouverte
     final currentSession = await _closingRepository.getCurrentSession();
     if (currentSession == null || currentSession.status != ClosingStatus.open) {
-      throw ValidationException(
+      throw const ValidationException(
         'Impossible d\'enregistrer une dépense : la session de trésorerie est fermée. '
         'Veuillez ouvrir une session dans la section Trésorerie.',
         'TREASURY_SESSION_CLOSED',
@@ -79,7 +79,7 @@ class FinancesController {
   }
 
   Future<void> updateExpense(ExpenseRecord expense) async {
-    return await _repository.updateExpense(expense);
+    return _repository.updateExpense(expense);
   }
 }
 

@@ -170,7 +170,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                     // Today's expenses table
                     SliverToBoxAdapter(
                       child: Padding(
-                        padding: EdgeInsets.fromLTRB(
+                        padding: const EdgeInsets.fromLTRB(
                           AppSpacing.lg,
                           AppSpacing.md,
                           AppSpacing.lg,
@@ -203,7 +203,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                     // Filtered results
                     SliverToBoxAdapter(
                       child: Padding(
-                        padding: EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, AppSpacing.sm),
+                        padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, AppSpacing.sm),
                         child: Text(
                           'Résultats du filtrage (${filteredExpenses.length})',
                           style: theme.textTheme.titleLarge?.copyWith(
@@ -214,13 +214,13 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                     ),
                     SliverToBoxAdapter(
                       child: Padding(
-                        padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                         child: _buildExpensesTable(theme, filteredExpenses),
                       ),
                     ),
                   ],
 
-                  SliverToBoxAdapter(
+                  const SliverToBoxAdapter(
                     child: SizedBox(height: AppSpacing.xl),
                   ),
                 ],
@@ -378,7 +378,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
           ),
         ),
       ),
-      padding: EdgeInsets.all(AppSpacing.lg),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: ExpensesTableV2(
         expenses: expenses,
         formatCurrency: CurrencyFormatter.formatFCFA,

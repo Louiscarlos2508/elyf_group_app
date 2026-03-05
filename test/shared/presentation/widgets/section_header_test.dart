@@ -7,11 +7,11 @@ void main() {
   group('SectionHeader', () {
     testWidgets('displays title correctly', (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: CustomScrollView(
               slivers: [
-                const SectionHeader(
+                SectionHeader(
                   title: 'Test Section',
                 ),
               ],
@@ -25,11 +25,11 @@ void main() {
 
     testWidgets('applies custom top and bottom spacing', (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: CustomScrollView(
               slivers: [
-                const SectionHeader(
+                SectionHeader(
                   title: 'Test Section',
                   top: 32,
                   bottom: 16,
@@ -65,10 +65,10 @@ void main() {
               ),
             ),
           ),
-          home: Scaffold(
+          home: const Scaffold(
             body: CustomScrollView(
               slivers: [
-                const SectionHeader(
+                SectionHeader(
                   title: 'Test Section',
                 ),
               ],

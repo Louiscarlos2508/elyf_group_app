@@ -101,7 +101,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       color: theme.scaffoldBackgroundColor,
       child: CustomScrollView(
         slivers: [
-          ElyfModuleHeader(
+          const ElyfModuleHeader(
             title: 'Analytique Performance',
             subtitle: "Visualisez vos performances historiques et exportez vos données d'activité.",
             module: EnterpriseModule.mobileMoney,

@@ -37,7 +37,7 @@ class ExpensesKpiSection extends StatelessWidget {
                     color: Theme.of(context).colorScheme.primary,
                   ),
                 ),
-                SizedBox(width: AppSpacing.md),
+                const SizedBox(width: AppSpacing.md),
                 Expanded(
                   child: ElyfStatsCard(
                     label: 'Total général',
@@ -61,7 +61,7 @@ class ExpensesKpiSection extends StatelessWidget {
                 icon: Icons.account_balance_wallet,
                 color: Theme.of(context).colorScheme.primary,
               ),
-              SizedBox(height: AppSpacing.md),
+              const SizedBox(height: AppSpacing.md),
               ElyfStatsCard(
                 label: 'Total général',
                 value: CurrencyFormatter.formatDouble(totalExpenses),

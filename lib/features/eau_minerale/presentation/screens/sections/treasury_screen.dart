@@ -23,7 +23,7 @@ class TreasuryScreen extends ConsumerWidget {
     return CustomScrollView(
       slivers: [
         // Premium Header
-        ElyfModuleHeader(
+        const ElyfModuleHeader(
           title: "Trésorerie",
           subtitle: "Suivi des flux de caisse et OM",
           module: EnterpriseModule.eau,
@@ -117,7 +117,7 @@ class TreasuryScreen extends ConsumerWidget {
                     label: Text(session != null ? 'Z-Report' : 'Ouvrir Session'),
                     onPressed: () => showDialog(
                       context: context,
-                      builder: (context) => ZReportDialog(),
+                      builder: (context) => const ZReportDialog(),
                     ),
                   ),
                   orElse: () => const SizedBox.shrink(),

@@ -7,7 +7,6 @@ import 'package:elyf_groupe_app/core/logging/app_logger.dart';
 import '../../../../core/tenant/tenant_provider.dart' show activeEnterpriseProvider;
 import '../../../../features/administration/domain/entities/enterprise.dart';
 import '../../../../features/administration/domain/entities/user.dart';
-import '../../../../shared/presentation/widgets/elyf_ui/atoms/elyf_icon_button.dart';
 import '../../../../core/auth/providers.dart' show currentUserIdProvider;
 import '../../../../features/administration/application/providers.dart'
     show

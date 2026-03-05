@@ -434,7 +434,7 @@ class _PaymentsTab extends ConsumerWidget {
     return paymentsAsync.when(
       data: (payments) {
         if (payments.isEmpty) {
-          return Center(
+          return const Center(
 // ... (omitted same lines)
           );
         }

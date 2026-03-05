@@ -40,7 +40,7 @@ void main() {
 
   group('AdminController', () {
     group('assignUserToEnterprise', () {
-      final testUser = EnterpriseModuleUser(
+      const testUser = EnterpriseModuleUser(
         userId: 'user-1',
         enterpriseId: 'enterprise-1',
         moduleId: 'module-1',
@@ -143,7 +143,7 @@ void main() {
     });
 
     group('createRole', () {
-      final testRole = UserRole(
+      const testRole = UserRole(
         id: 'role-1',
         name: 'Test Role',
         description: 'Test Description',
@@ -208,7 +208,7 @@ void main() {
     });
 
     group('updateRole', () {
-      final oldRole = UserRole(
+      const oldRole = UserRole(
         id: 'role-1',
         name: 'Old Role',
         description: 'Old Description',
@@ -217,7 +217,7 @@ void main() {
         moduleId: 'module-1',
       );
 
-      final updatedRole = UserRole(
+      const updatedRole = UserRole(
         id: 'role-1',
         name: 'Updated Role',
         description: 'Updated Description',
@@ -293,7 +293,7 @@ void main() {
     });
 
     group('deleteRole', () {
-      final testRole = UserRole(
+      const testRole = UserRole(
         id: 'role-1',
         name: 'Test Role',
         description: 'Test Description',
@@ -369,7 +369,7 @@ void main() {
       test('should return list from repository', () async {
         // Arrange
         final expectedUsers = [
-          EnterpriseModuleUser(
+          const EnterpriseModuleUser(
             userId: 'user-1',
             enterpriseId: 'enterprise-1',
             moduleId: 'module-1',

@@ -63,7 +63,7 @@ class _TypeButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final darkColor = const Color(0xFF030213);
+    const darkColor = Color(0xFF030213);
 
     return InkWell(
       onTap: onTap,

@@ -43,7 +43,7 @@ class EmployeePaymentCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final currencyFormat = CurrencyFormatter.formatFCFA;
+    const currencyFormat = CurrencyFormatter.formatFCFA;
 
     return Container(
       decoration: BoxDecoration(

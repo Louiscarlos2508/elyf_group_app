@@ -9,7 +9,6 @@ import '../../../../../../core/tenant/tenant_provider.dart' show activeEnterpris
 import 'package:elyf_groupe_app/features/administration/application/providers.dart';
 import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 
-import '../../widgets/cylinder_form_dialog.dart';
 import '../../widgets/point_of_sale_form_dialog.dart';
 import '../../widgets/point_of_sale_table.dart';
 import '../../widgets/gaz_header.dart';

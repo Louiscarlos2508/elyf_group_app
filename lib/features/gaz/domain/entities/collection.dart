@@ -81,8 +81,8 @@ class Collection {
       sessionId: sessionId ?? this.sessionId,
       tourId: tourId ?? this.tourId,
       fullBottlesReceived: fullBottlesReceived ?? this.fullBottlesReceived,
-      receptionDate: receptionDate ?? this.receptionDate,
-      receptionUserId: receptionUserId ?? this.receptionUserId,
+      receptionDate: receptionDate ?? receptionDate,
+      receptionUserId: receptionUserId ?? receptionUserId,
     );
   }
 

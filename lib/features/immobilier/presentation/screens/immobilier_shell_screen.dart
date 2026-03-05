@@ -55,8 +55,4 @@ class _ImmobilierShellScreenState
     return [];
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return super.build(context);
-  }
 }

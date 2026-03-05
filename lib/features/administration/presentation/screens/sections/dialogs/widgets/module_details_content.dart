@@ -33,11 +33,11 @@ class ModuleDetailsContent extends StatelessWidget {
       length: 3,
       child: Column(
         children: [
-          TabBar(
+          const TabBar(
             tabs: [
-              const Tab(text: 'Sections', icon: Icon(Icons.apps_outlined)),
-              const Tab(text: 'Utilisateurs', icon: Icon(Icons.people_outline)),
-              const Tab(
+              Tab(text: 'Sections', icon: Icon(Icons.apps_outlined)),
+              Tab(text: 'Utilisateurs', icon: Icon(Icons.people_outline)),
+              Tab(
                 text: 'Entreprises',
                 icon: Icon(Icons.business_outlined),
               ),

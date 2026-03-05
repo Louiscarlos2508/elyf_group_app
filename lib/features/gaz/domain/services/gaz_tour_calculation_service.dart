@@ -1,5 +1,4 @@
 import '../entities/collection.dart';
-import '../entities/expense.dart';
 
 class GazTourCalculationService {
   GazTourCalculationService._();

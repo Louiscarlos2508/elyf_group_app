@@ -37,7 +37,7 @@ class SaleCustomerFields extends StatelessWidget {
             hintText: '+226 70 00 00 00',
           ),
           keyboardType: TextInputType.phone,
-          validator: (v) => Validators.phoneBurkina(v),
+          validator: Validators.phoneBurkina,
         ),
         const SizedBox(height: 16),
         TextFormField(

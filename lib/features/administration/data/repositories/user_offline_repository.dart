@@ -320,7 +320,7 @@ class UserOfflineRepository extends OfflineRepository<User>
     await save(user);
     final updatedUser = await getUserById(user.id);
     if (updatedUser == null) {
-      throw StorageException(
+      throw const StorageException(
         'Failed to update user',
         'USER_UPDATE_FAILED',
       );
@@ -398,7 +398,7 @@ class UserOfflineRepository extends OfflineRepository<User>
     await save(adminUser);
     final createdUser = await getUserById(adminId);
     if (createdUser == null) {
-      throw StorageException(
+      throw const StorageException(
         'Failed to create default admin user',
         'ADMIN_CREATION_FAILED',
       );

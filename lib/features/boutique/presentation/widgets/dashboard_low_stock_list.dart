@@ -28,7 +28,7 @@ class DashboardLowStockList extends StatelessWidget {
         borderColor: AppColors.success.withValues(alpha: 0.1),
         child: Row(
           children: [
-            Icon(Icons.check_circle_rounded, color: AppColors.success),
+            const Icon(Icons.check_circle_rounded, color: AppColors.success),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
@@ -59,7 +59,7 @@ class DashboardLowStockList extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Icon(Icons.warning_rounded, color: const Color(0xFFF59E0B), size: 18),
+                const Icon(Icons.warning_rounded, color: Color(0xFFF59E0B), size: 18),
                 const SizedBox(width: 12),
                 Text(
                   '${products.length} produit(s) en stock faible',

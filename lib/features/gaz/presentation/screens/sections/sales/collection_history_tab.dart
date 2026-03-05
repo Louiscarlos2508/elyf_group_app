@@ -62,7 +62,7 @@ class _CollectionCard extends ConsumerWidget {
     final theme = Theme.of(context);
     final dateFormat = DateFormat('dd/MM/yyyy à HH:mm');
     final date = collection.paymentDate ?? collection.receptionDate ?? DateTime.now();
-    final isPendingReception = false; // Désactivé (Logistique purement administrative)
+    const isPendingReception = false; // Désactivé (Logistique purement administrative)
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),

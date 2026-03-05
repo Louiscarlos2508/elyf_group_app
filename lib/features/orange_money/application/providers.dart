@@ -348,7 +348,7 @@ final agentAgenciesProvider = FutureProvider.autoDispose.family<List<Enterprise>
   final includeAgencyId = parts.length > 4 && parts[4].isNotEmpty ? parts[4] : null;
 
   final controller = ref.watch(agentsControllerProvider);
-  return await controller.fetchAgencies(
+  return controller.fetchAgencies(
     parentEnterpriseId: parentEnterpriseId,
     searchQuery: searchQuery,
     excludeAssigned: excludeAssigned,
@@ -366,7 +366,7 @@ final agentAccountsProvider = FutureProvider.autoDispose.family<List<Agent>, Str
   final searchQuery = parts.length > 2 && parts[2].isNotEmpty ? parts[2] : null;
 
   final controller = ref.watch(agentsControllerProvider);
-  return await controller.fetchAgents(
+  return controller.fetchAgents(
     enterpriseId: enterpriseId,
     searchQuery: searchQuery,
   );
@@ -379,7 +379,7 @@ final agentsDailyStatisticsProvider = FutureProvider.autoDispose
       final enterpriseId = parts[0].isEmpty ? null : parts[0];
 
       final controller = ref.watch(agentsControllerProvider);
-      return await controller.getDailyStatistics(
+      return controller.getDailyStatistics(
         enterpriseId: enterpriseId,
         date: DateTime.now(),
       );
@@ -390,7 +390,7 @@ final commissionsStatisticsProvider = FutureProvider.autoDispose
     .family<Map<String, dynamic>, String>((ref, key) async {
       final enterpriseId = key.isEmpty ? null : key;
       final controller = ref.watch(commissionsControllerProvider);
-      return await controller.getStatistics(enterpriseId: enterpriseId);
+      return controller.getStatistics(enterpriseId: enterpriseId);
     });
 
 /// Provider for commissions list.
@@ -398,7 +398,7 @@ final commissionsProvider = FutureProvider.autoDispose
     .family<List<Commission>, String>((ref, key) async {
       final enterpriseId = key.isEmpty ? null : key;
       final controller = ref.watch(commissionsControllerProvider);
-      return await controller.fetchCommissions(enterpriseId: enterpriseId);
+      return controller.fetchCommissions(enterpriseId: enterpriseId);
     });
 
 /// Provider for current month commission.
@@ -406,7 +406,7 @@ final currentMonthCommissionProvider = FutureProvider.autoDispose
     .family<Commission?, String>((ref, key) async {
       if (key.isEmpty) return null;
       final controller = ref.watch(commissionsControllerProvider);
-      return await controller.getCurrentMonthCommission(key);
+      return controller.getCurrentMonthCommission(key);
     });
 
 /// Provider for agency commissions (network-wide).
@@ -419,7 +419,7 @@ final agencyCommissionsProvider = FutureProvider.autoDispose
       final status = statusStr != null ? CommissionStatus.values.byName(statusStr) : null;
       
       final controller = ref.watch(commissionsControllerProvider);
-      return await controller.fetchNetworkCommissions(period: period, status: status);
+      return controller.fetchNetworkCommissions(period: period, status: status);
     });
 
 /// Provider for agency commission statistics (network-wide).
@@ -427,7 +427,7 @@ final agencyCommissionsProvider = FutureProvider.autoDispose
 final agencyCommissionsStatisticsProvider = FutureProvider.autoDispose
     .family<Map<String, dynamic>, String>((ref, period) async {
       final controller = ref.watch(commissionsControllerProvider);
-      return await controller.getNetworkStatistics(period: period.isEmpty ? null : period);
+      return controller.getNetworkStatistics(period: period.isEmpty ? null : period);
     });
 
 /// Provider for mapping network enterprise IDs to their names.
@@ -460,7 +460,7 @@ final reportsStatisticsProvider = FutureProvider.autoDispose
           : null;
 
       final controller = ref.watch(orangeMoneyControllerProvider);
-      return await controller.getStatistics(
+      return controller.getStatistics(
         startDate: startDate,
         endDate: endDate,
       );
@@ -471,7 +471,7 @@ final todayLiquidityCheckpointProvider = FutureProvider.autoDispose
     .family<LiquidityCheckpoint?, String>((ref, key) async {
       if (key.isEmpty) return null;
       final controller = ref.watch(liquidityControllerProvider);
-      return await controller.getTodayCheckpoint(key);
+      return controller.getTodayCheckpoint(key);
     });
 
 /// Provider for all agent-related treasury operations (recharges/withdrawals).
@@ -593,11 +593,11 @@ final agentStatisticsProvider = Provider.autoDispose.family<AsyncValue<Map<Strin
           });
         },
         loading: () => const AsyncValue.loading(),
-        error: (e, s) => AsyncValue.error(e, s),
+        error: AsyncValue.error,
       );
     },
     loading: () => const AsyncValue.loading(),
-    error: (e, s) => AsyncValue.error(e, s),
+    error: AsyncValue.error,
   );
 });
 
@@ -617,7 +617,7 @@ final liquidityCheckpointsProvider = FutureProvider.autoDispose
           : null;
 
       final controller = ref.watch(liquidityControllerProvider);
-      return await controller.fetchCheckpoints(
+      return controller.fetchCheckpoints(
         enterpriseId: enterpriseId,
         startDate: startDate,
         endDate: endDate,

@@ -65,7 +65,7 @@ class _ActivityContent extends StatelessWidget {
       builder: (context, constraints) {
         final crossAxisCount = constraints.maxWidth > 900 ? 4 : 2;
         return GridView.count(
-          padding: EdgeInsets.all(AppSpacing.lg),
+          padding: const EdgeInsets.all(AppSpacing.lg),
           crossAxisCount: crossAxisCount,
           crossAxisSpacing: AppSpacing.md,
           mainAxisSpacing: AppSpacing.md,

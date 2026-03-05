@@ -17,7 +17,7 @@ class MachineSelectionDialog {
       return machinesDisponibles.first;
     }
 
-    return await showDialog<Machine>(
+    return showDialog<Machine>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Sélectionner une machine'),

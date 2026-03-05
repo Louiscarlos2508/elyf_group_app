@@ -19,10 +19,10 @@ class DashboardTrendsChart extends ConsumerWidget {
     return salesState.when(
       data: (sales) => productionState.when(
         data: (sessions) => _buildChart(context, sales.sales, sessions),
-        loading: () => _buildLoadingState(),
+        loading: _buildLoadingState,
         error: (_, __) => _buildErrorState(context),
       ),
-      loading: () => _buildLoadingState(),
+      loading: _buildLoadingState,
       error: (_, __) => _buildErrorState(context),
     );
   }
@@ -122,7 +122,7 @@ class DashboardTrendsChart extends ConsumerWidget {
                 children: [
                   _LegendItem(color: theme.colorScheme.primary, label: 'Ventes'),
                   const SizedBox(width: 16),
-                  _LegendItem(color: Colors.purple, label: 'Production'),
+                  const _LegendItem(color: Colors.purple, label: 'Production'),
                 ],
               ),
             ],

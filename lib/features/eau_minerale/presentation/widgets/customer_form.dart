@@ -117,7 +117,7 @@ class CustomerFormState extends ConsumerState<CustomerForm>
                       fontWeight: FontWeight.bold,
                       letterSpacing: 1,
                     ),
-                    validator: (v) => Validators.phoneBurkina(v),
+                    validator: Validators.phoneBurkina,
                   ),
                 ],
               ),

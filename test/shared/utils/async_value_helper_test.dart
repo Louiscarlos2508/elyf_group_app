@@ -7,8 +7,8 @@ void main() {
   group('AsyncValueHelper', () {
     group('combine2', () {
       test('returns loading when first is loading', () {
-        final first = const AsyncValue.loading();
-        final second = AsyncValue.data(2);
+        const first = AsyncValue.loading();
+        const second = AsyncValue.data(2);
 
         final result = AsyncValueHelper.combine2(first, second);
 
@@ -16,7 +16,7 @@ void main() {
       });
 
       test('returns loading when second is loading', () {
-        final first = AsyncValue.data(1);
+        const first = AsyncValue.data(1);
         const second = AsyncValue.loading();
 
         final result = AsyncValueHelper.combine2(first, second);
@@ -28,7 +28,7 @@ void main() {
         final error = Exception('Test error');
         final stackTrace = StackTrace.current;
         final first = AsyncValue.error(error, stackTrace);
-        final second = AsyncValue.data(2);
+        const second = AsyncValue.data(2);
 
         final result = AsyncValueHelper.combine2(first, second);
 
@@ -37,7 +37,7 @@ void main() {
       });
 
       test('returns error when second has error', () {
-        final first = AsyncValue.data(1);
+        const first = AsyncValue.data(1);
         final error = Exception('Test error');
         final stackTrace = StackTrace.current;
         final second = AsyncValue.error(error, stackTrace);
@@ -49,8 +49,8 @@ void main() {
       });
 
       test('returns data when both have data', () {
-        final first = AsyncValue.data(1);
-        final second = AsyncValue.data(2);
+        const first = AsyncValue.data(1);
+        const second = AsyncValue.data(2);
 
         final result = AsyncValueHelper.combine2(first, second);
 
@@ -62,9 +62,9 @@ void main() {
 
     group('combine3', () {
       test('returns loading when any is loading', () {
-        final first = const AsyncValue.loading();
-        final second = AsyncValue.data(2);
-        final third = AsyncValue.data(3);
+        const first = AsyncValue.loading();
+        const second = AsyncValue.data(2);
+        const third = AsyncValue.data(3);
 
         final result = AsyncValueHelper.combine3(first, second, third);
 
@@ -75,8 +75,8 @@ void main() {
         final error = Exception('Test error');
         final stackTrace = StackTrace.current;
         final first = AsyncValue.error(error, stackTrace);
-        final second = AsyncValue.data(2);
-        final third = AsyncValue.data(3);
+        const second = AsyncValue.data(2);
+        const third = AsyncValue.data(3);
 
         final result = AsyncValueHelper.combine3(first, second, third);
 
@@ -85,9 +85,9 @@ void main() {
       });
 
       test('returns data when all have data', () {
-        final first = AsyncValue.data(1);
-        final second = AsyncValue.data(2);
-        final third = AsyncValue.data(3);
+        const first = AsyncValue.data(1);
+        const second = AsyncValue.data(2);
+        const third = AsyncValue.data(3);
 
         final result = AsyncValueHelper.combine3(first, second, third);
 
@@ -100,10 +100,10 @@ void main() {
 
     group('combine4', () {
       test('returns loading when any is loading', () {
-        final first = const AsyncValue.loading();
-        final second = AsyncValue.data(2);
-        final third = AsyncValue.data(3);
-        final fourth = AsyncValue.data(4);
+        const first = AsyncValue.loading();
+        const second = AsyncValue.data(2);
+        const third = AsyncValue.data(3);
+        const fourth = AsyncValue.data(4);
 
         final result = AsyncValueHelper.combine4(
           first,
@@ -116,10 +116,10 @@ void main() {
       });
 
       test('returns data when all have data', () {
-        final first = AsyncValue.data(1);
-        final second = AsyncValue.data(2);
-        final third = AsyncValue.data(3);
-        final fourth = AsyncValue.data(4);
+        const first = AsyncValue.data(1);
+        const second = AsyncValue.data(2);
+        const third = AsyncValue.data(3);
+        const fourth = AsyncValue.data(4);
 
         final result = AsyncValueHelper.combine4(
           first,
@@ -138,11 +138,11 @@ void main() {
 
     group('combine5', () {
       test('returns loading when any is loading', () {
-        final first = const AsyncValue.loading();
-        final second = AsyncValue.data(2);
-        final third = AsyncValue.data(3);
-        final fourth = AsyncValue.data(4);
-        final fifth = AsyncValue.data(5);
+        const first = AsyncValue.loading();
+        const second = AsyncValue.data(2);
+        const third = AsyncValue.data(3);
+        const fourth = AsyncValue.data(4);
+        const fifth = AsyncValue.data(5);
 
         final result = AsyncValueHelper.combine5(
           first,
@@ -156,11 +156,11 @@ void main() {
       });
 
       test('returns data when all have data', () {
-        final first = AsyncValue.data(1);
-        final second = AsyncValue.data(2);
-        final third = AsyncValue.data(3);
-        final fourth = AsyncValue.data(4);
-        final fifth = AsyncValue.data(5);
+        const first = AsyncValue.data(1);
+        const second = AsyncValue.data(2);
+        const third = AsyncValue.data(3);
+        const fourth = AsyncValue.data(4);
+        const fifth = AsyncValue.data(5);
 
         final result = AsyncValueHelper.combine5(
           first,

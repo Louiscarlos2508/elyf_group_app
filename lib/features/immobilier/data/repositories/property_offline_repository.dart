@@ -137,7 +137,7 @@ class PropertyOfflineRepository extends OfflineRepository<Property>
 
   @override
   Stream<List<Property>> watchProperties({bool? isDeleted = false}) {
-    var query = driftService.db.select(driftService.db.propertiesTable)
+    final query = driftService.db.select(driftService.db.propertiesTable)
       ..where((t) => t.enterpriseId.equals(enterpriseId));
 
     if (isDeleted != null) {

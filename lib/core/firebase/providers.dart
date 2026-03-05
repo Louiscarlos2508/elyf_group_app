@@ -4,7 +4,6 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../firebase_options.dart';
 import 'messaging_service.dart';
 
 /// Provider for Firebase Firestore instance

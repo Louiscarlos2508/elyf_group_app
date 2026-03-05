@@ -142,7 +142,7 @@ class StockMovementOfflineRepository extends OfflineRepository<StockMovement>
           moduleType: moduleType,
         )
         .map((rows) {
-          var movements = rows
+          final movements = rows
             .map((r) => fromMap(jsonDecode(r.dataJson)))
             .where((m) => m.deletedAt == null)
             .toList();

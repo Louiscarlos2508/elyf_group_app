@@ -20,7 +20,7 @@ class ClientsController {
     String phone, {
     String? cnib,
   }) async {
-    return await _repository.createCustomer(name, phone, cnib: cnib);
+    return _repository.createCustomer(name, phone, cnib: cnib);
   }
 
   Stream<List<CreditPayment>> watchAllCreditPayments() {

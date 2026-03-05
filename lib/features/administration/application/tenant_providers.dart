@@ -2,7 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../domain/entities/enterprise.dart';
 import 'providers.dart';
-import 'providers.dart';
 
 /// Notifier for the current tenant ID
 class CurrentTenantIdNotifier extends Notifier<String?> {
@@ -76,7 +75,7 @@ final tenantDescendantsProvider = FutureProvider.family<
   String
 >((ref, tenantId) async {
   final service = ref.watch(tenantContextServiceProvider);
-  return await service.getDescendants(tenantId);
+  return service.getDescendants(tenantId);
 });
 
 /// Provider des enfants directs d'un tenant
@@ -85,7 +84,7 @@ final tenantChildrenProvider = FutureProvider.family<
   String
 >((ref, tenantId) async {
   final service = ref.watch(tenantContextServiceProvider);
-  return await service.getChildren(tenantId);
+  return service.getChildren(tenantId);
 });
 
 /// Provider de la hiérarchie complète d'un tenant
@@ -94,7 +93,7 @@ final tenantHierarchyProvider = FutureProvider.family<
   String
 >((ref, tenantId) async {
   final service = ref.watch(tenantContextServiceProvider);
-  return await service.getHierarchy(tenantId);
+  return service.getHierarchy(tenantId);
 });
 
 /// Provider de l'ID utilisateur actuel (à implémenter selon votre logique auth)
@@ -107,11 +106,11 @@ final currentUserIdProvider = Provider<String?>((ref) {
 /// Provider de toutes les entreprises
 final enterprisesProvider = FutureProvider<List<Enterprise>>((ref) async {
   final repository = ref.watch(enterpriseRepositoryProvider);
-  return await repository.getAllEnterprises();
+  return repository.getAllEnterprises();
 });
 
 /// Provider des assignations d'un utilisateur à des entreprises
 final enterpriseModuleUsersProvider = FutureProvider.family((ref, String userId) async {
   final repository = ref.watch(adminRepositoryProvider);
-  return await repository.getUserEnterpriseModuleUsers(userId);
+  return repository.getUserEnterpriseModuleUsers(userId);
 });

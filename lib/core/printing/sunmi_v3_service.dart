@@ -142,7 +142,7 @@ class SunmiV3Service implements PrinterInterface {
 
   @override
   Future<bool> initialize() async {
-    return await _initializePrinter();
+    return _initializePrinter();
   }
 
   /// Checks if printer is available.
@@ -171,7 +171,7 @@ class SunmiV3Service implements PrinterInterface {
 
   @override
   Future<bool> isAvailable() async {
-    return await isPrinterAvailable();
+    return isPrinterAvailable();
   }
 
   @override
@@ -288,7 +288,7 @@ class SunmiV3Service implements PrinterInterface {
 
   @override
   Future<bool> printText(String text) async {
-    return await printReceipt(text);
+    return printReceipt(text);
   }
 
   @override
@@ -333,12 +333,12 @@ class SunmiV3Service implements PrinterInterface {
 
   // Alias for compatibility if needed
   Future<bool> printPaymentReceipt(String content) async {
-    return await printReceipt(content);
+    return printReceipt(content);
   }
 
   @override
   Future<bool> openDrawer() async {
-    return await openCashDrawer();
+    return openCashDrawer();
   }
 
   /// Opens cash drawer (if available).

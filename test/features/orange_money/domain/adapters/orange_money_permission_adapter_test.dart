@@ -74,7 +74,7 @@ void main() {
           type: EnterpriseType.fromId('mm_agent'), // Corrected: Using a valid type
           createdAt: DateTime.now(), 
           updatedAt: DateTime.now(),
-          ancestorIds: [],
+          ancestorIds: const [],
       );
       final child1 = Enterprise(
           id: 'child_1', 
@@ -83,7 +83,7 @@ void main() {
           parentEnterpriseId: rootId, 
           createdAt: DateTime.now(), 
           updatedAt: DateTime.now(),
-          ancestorIds: [rootId],
+          ancestorIds: const [rootId],
       );
       final child2 = Enterprise(
           id: 'child_2', 
@@ -92,7 +92,7 @@ void main() {
           parentEnterpriseId: rootId, 
           createdAt: DateTime.now(), 
           updatedAt: DateTime.now(),
-          ancestorIds: [rootId],
+          ancestorIds: const [rootId],
       );
       final grandChild = Enterprise(
           id: 'grand_child', 
@@ -101,7 +101,7 @@ void main() {
           parentEnterpriseId: 'child_1', 
           createdAt: DateTime.now(), 
           updatedAt: DateTime.now(),
-          ancestorIds: [rootId, 'child_1'],
+          ancestorIds: const [rootId, 'child_1'],
       );
       final unrelated = Enterprise(
           id: 'unrelated', 
@@ -109,7 +109,7 @@ void main() {
           type: EnterpriseType.fromId('mm_agent'),
           createdAt: DateTime.now(), 
           updatedAt: DateTime.now(),
-          ancestorIds: [],
+          ancestorIds: const [],
       );
 
       final List<Enterprise> allEnterprises = [rootEnt, child1, child2, grandChild, unrelated];

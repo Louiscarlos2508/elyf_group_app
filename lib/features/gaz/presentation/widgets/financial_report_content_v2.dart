@@ -369,10 +369,10 @@ class GazFinancialReportContentV2 extends ConsumerWidget {
                 children: [
                   Row(
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.local_shipping,
                         size: 16,
-                        color: const Color(0xFF8B5CF6), // Violet
+                        color: Color(0xFF8B5CF6), // Violet
                       ),
                       const SizedBox(width: 8),
                       Text(

@@ -191,7 +191,7 @@ class TreasuryOfflineRepository extends OfflineRepository<TreasuryOperation> imp
 
   @override
   Stream<Map<String, int>> watchBalances() {
-    return watchOperations().map((ops) => _calculateBalances(ops));
+    return watchOperations().map(_calculateBalances);
   }
 
   Map<String, int> _calculateBalances(List<TreasuryOperation> ops) {

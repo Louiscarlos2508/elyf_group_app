@@ -182,7 +182,7 @@ class ProductionSessionsScreen extends ConsumerWidget {
   Widget _buildEmptyState(BuildContext context, ThemeData theme) {
     return CustomScrollView(
       slivers: [
-        ElyfModuleHeader(
+        const ElyfModuleHeader(
           title: "Production",
           subtitle: "Commencez par créer une nouvelle session de production",
           module: EnterpriseModule.eau,

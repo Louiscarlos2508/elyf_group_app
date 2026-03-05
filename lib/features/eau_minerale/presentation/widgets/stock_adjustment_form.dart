@@ -57,7 +57,7 @@ class StockAdjustmentFormState
   /// Méthode publique pour soumettre le formulaire (utilisée par FormDialog).
   Future<bool> submit() async {
     if (widget.onSubmit != null) {
-      return await widget.onSubmit!();
+      return widget.onSubmit!();
     }
 
     if (!_formKey.currentState!.validate()) return false;
@@ -83,10 +83,10 @@ class StockAdjustmentFormState
           // Récupérer le stock de bobines
           final bobineController =
               ref.read(bobineStockQuantityControllerProvider);
-          var stock = await bobineController.fetchByType(_bobineType);
+          final stock = await bobineController.fetchByType(_bobineType);
 
           if (stock == null) {
-            throw NotFoundException('Stock de bobines non trouvé');
+            throw const NotFoundException('Stock de bobines non trouvé');
           }
 
           // Vérifier que le stock est suffisant pour le retrait
@@ -101,7 +101,7 @@ class StockAdjustmentFormState
           }
 
           // Enregistrer le mouvement d'ajustement (retrait uniquement)
-          final movementType = BobineMovementType.retrait;
+          const movementType = BobineMovementType.retrait;
 
           final enterpriseId = ref.read(activeEnterpriseProvider).value?.id ?? 'default';
           final movement = BobineStockMovement(
@@ -124,10 +124,10 @@ class StockAdjustmentFormState
           // Récupérer le stock d'emballages
           final packagingController =
               ref.read(packagingStockControllerProvider);
-          var packagingStock = await packagingController.fetchByType('Emballage');
+          final packagingStock = await packagingController.fetchByType('Emballage');
 
           if (packagingStock == null) {
-            throw NotFoundException('Stock d\'emballages non trouvé');
+            throw const NotFoundException('Stock d\'emballages non trouvé');
           }
 
           // Calculer la quantité en unités si lots sélectionnés
@@ -150,7 +150,7 @@ class StockAdjustmentFormState
 
           // Enregistrer le mouvement d'ajustement (retrait uniquement)
           // recordMovement met automatiquement à jour le stock (comme pour les bobines)
-          final movementType = PackagingMovementType.ajustement;
+          const movementType = PackagingMovementType.ajustement;
 
           final enterpriseId = ref.read(activeEnterpriseProvider).value?.id ?? 'default';
           final movement = PackagingStockMovement(
@@ -183,7 +183,7 @@ class StockAdjustmentFormState
                   item.name.toLowerCase().contains(packName.toLowerCase()),
             );
           } catch (_) {
-            throw NotFoundException(
+            throw const NotFoundException(
               'Stock $packName non trouvé. Créez un item « $packName » '
               'en produits finis.',
             );
@@ -200,7 +200,7 @@ class StockAdjustmentFormState
           }
 
           // Enregistrer le mouvement d'ajustement (retrait uniquement)
-          final movementType = StockMovementType.exit;
+          const movementType = StockMovementType.exit;
 
           await stockController.recordItemMovement(
             itemId: packStock.id,

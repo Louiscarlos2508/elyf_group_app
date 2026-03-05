@@ -187,7 +187,7 @@ final stockMovementsProvider = FutureProvider.autoDispose
       params,
     ) async {
       final controller = ref.read(stockControllerProvider);
-      return await controller.fetchAllMovements(
+      return controller.fetchAllMovements(
         startDate: params.startDate,
         endDate: params.endDate,
       );
@@ -509,10 +509,8 @@ MonthlyDashboardSummary _calculateMonthlySummary(
 final customerCreditsProvider = FutureProvider.autoDispose.family<List<Sale>, String>((ref, customerId) async {
   // Keep alive for 3 minutes to prevent rapid rebuilds
   final link = ref.keepAlive();
-  final timer = Timer(const Duration(minutes: 3), () {
-    link.close();
-  });
-  ref.onDispose(() => timer.cancel());
+  final timer = Timer(const Duration(minutes: 3), link.close);
+  ref.onDispose(timer.cancel);
 
   return ref.read(creditRepositoryProvider).fetchCustomerAllCredits(customerId);
 });
@@ -524,10 +522,8 @@ final customerCreditHistoryProvider = FutureProvider.autoDispose
 ) async {
   // Keep alive for 3 minutes
   final link = ref.keepAlive();
-  final timer = Timer(const Duration(minutes: 3), () {
-    link.close();
-  });
-  ref.onDispose(() => timer.cancel());
+  final timer = Timer(const Duration(minutes: 3), link.close);
+  ref.onDispose(timer.cancel);
 
   final creditRepo = ref.read(creditRepositoryProvider);
   final customerRepo = ref.read(customerRepositoryProvider);
@@ -583,10 +579,8 @@ final salePaymentsProvider =
 ) async {
   // Keep alive for 3 minutes
   final link = ref.keepAlive();
-  final timer = Timer(const Duration(minutes: 3), () {
-    link.close();
-  });
-  ref.onDispose(() => timer.cancel());
+  final timer = Timer(const Duration(minutes: 3), link.close);
+  ref.onDispose(timer.cancel);
 
   return ref.read(creditRepositoryProvider).fetchSalePayments(saleId);
 });
@@ -598,10 +592,8 @@ final workerMonthlyStatsProvider =
 ) async {
   // Keep alive for 3 minutes
   final link = ref.keepAlive();
-  final timer = Timer(const Duration(minutes: 3), () {
-    link.close();
-  });
-  ref.onDispose(() => timer.cancel());
+  final timer = Timer(const Duration(minutes: 3), link.close);
+  ref.onDispose(timer.cancel);
 
   return ref.read(salaryControllerProvider).fetchWorkerMonthlyStats(month);
 });
@@ -623,10 +615,8 @@ class CreditsDashboardState {
 final creditsDashboardProvider = FutureProvider.autoDispose<CreditsDashboardState>((ref) async {
   // Keep alive for 3 minutes
   final link = ref.keepAlive();
-  final timer = Timer(const Duration(minutes: 3), () {
-    link.close();
-  });
-  ref.onDispose(() => timer.cancel());
+  final timer = Timer(const Duration(minutes: 3), link.close);
+  ref.onDispose(timer.cancel);
 
   final creditRepo = ref.read(creditRepositoryProvider);
   final customerRepo = ref.read(customerRepositoryProvider);

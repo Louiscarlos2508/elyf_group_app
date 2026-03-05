@@ -2,7 +2,6 @@ import 'dart:developer' as developer;
 import 'dart:convert';
 import 'package:rxdart/rxdart.dart';
 
-import '../../../../core/errors/app_exceptions.dart';
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/drift/app_database.dart';

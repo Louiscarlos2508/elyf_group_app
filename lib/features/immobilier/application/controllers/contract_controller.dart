@@ -24,7 +24,7 @@ class ContractController {
   final String _userId;
 
   Future<List<Contract>> fetchContracts() async {
-    return await _contractRepository.getAllContracts();
+    return _contractRepository.getAllContracts();
   }
 
   Stream<List<Contract>> watchContracts({bool? isDeleted = false}) {
@@ -36,15 +36,15 @@ class ContractController {
   }
 
   Future<Contract?> getContract(String id) async {
-    return await _contractRepository.getContractById(id);
+    return _contractRepository.getContractById(id);
   }
 
   Future<List<Contract>> getActiveContracts() async {
-    return await _contractRepository.getActiveContracts();
+    return _contractRepository.getActiveContracts();
   }
 
   Future<List<Contract>> getContractsByProperty(String propertyId) async {
-    return await _contractRepository.getContractsByProperty(propertyId);
+    return _contractRepository.getContractsByProperty(propertyId);
   }
 
   Future<Contract?> getActiveContractForProperty(String propertyId) async {
@@ -55,7 +55,7 @@ class ContractController {
   }
 
   Future<List<Contract>> getContractsByTenant(String tenantId) async {
-    return await _contractRepository.getContractsByTenant(tenantId);
+    return _contractRepository.getContractsByTenant(tenantId);
   }
 
   /// Crée un contrat et met à jour le statut de la propriété si nécessaire.
@@ -109,7 +109,7 @@ class ContractController {
     // Récupérer l'ancien contrat pour comparer les statuts
     final oldContract = await _contractRepository.getContractById(contract.id);
     if (oldContract == null) {
-      throw NotFoundException(
+      throw const NotFoundException(
         'Le contrat à mettre à jour n\'existe pas',
         'CONTRACT_NOT_FOUND',
       );
@@ -187,7 +187,7 @@ class ContractController {
   Future<void> deleteContract(String id) async {
     final contract = await _contractRepository.getContractById(id);
     if (contract == null) {
-      throw NotFoundException(
+      throw const NotFoundException(
         'Le contrat à supprimer n\'existe pas',
         'CONTRACT_NOT_FOUND',
       );

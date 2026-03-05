@@ -9,8 +9,6 @@ import '../entities/app_user.dart';
 import 'auth_session_service.dart';
 import 'auth_user_service.dart';
 import 'auth_storage_service.dart';
-import '../../permissions/services/permission_service.dart';
-import 'firestore_permission_service.dart';
 
 /// Service d'authentification avec Firebase Auth et Firestore.
 ///
@@ -47,7 +45,7 @@ class AuthService {
     required String email,
     required String password,
   }) async {
-    return await _sessionService.signInWithEmailAndPassword(
+    return _sessionService.signInWithEmailAndPassword(
       email: email,
       password: password,
     );
@@ -77,7 +75,7 @@ class AuthService {
     String? displayName,
     FirebaseAuth? firebaseAuth,
   }) async {
-    return await _userService.createUserAccount(
+    return _userService.createUserAccount(
       email: email,
       password: password,
       displayName: displayName,
@@ -95,7 +93,7 @@ class AuthService {
     required String email,
     required String password,
   }) async {
-    return await _userService.createFirstAdmin(
+    return _userService.createFirstAdmin(
       email: email,
       password: password,
     );
@@ -109,7 +107,7 @@ class AuthService {
     required String currentPassword,
     required String newPassword,
   }) async {
-    return await _userService.changePassword(
+    return _userService.changePassword(
       currentPassword: currentPassword,
       newPassword: newPassword,
     );

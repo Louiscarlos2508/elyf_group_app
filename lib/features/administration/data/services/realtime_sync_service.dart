@@ -968,7 +968,7 @@ class RealtimeSyncService {
         // Détecter un changement d'enterpriseIds pour rafraîchir les écouteurs filtrés
         final newEnterpriseIds = Set<String>.from(user.enterpriseIds);
         final hasChanged = _knownEnterpriseIds.length != newEnterpriseIds.length ||
-            !_knownEnterpriseIds.every((id) => newEnterpriseIds.contains(id));
+            !_knownEnterpriseIds.every(newEnterpriseIds.contains);
             
         await _saveUserToLocal(user);
         

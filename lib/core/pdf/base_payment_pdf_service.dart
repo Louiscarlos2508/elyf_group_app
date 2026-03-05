@@ -23,7 +23,7 @@ abstract class BasePaymentPdfService {
             pw.SizedBox(height: 4),
             pw.Text(
               'Immobilier',
-              style: pw.TextStyle(fontSize: 14, color: PdfColors.blueGrey600),
+              style: const pw.TextStyle(fontSize: 14, color: PdfColors.blueGrey600),
             ),
           ],
         ),
@@ -79,7 +79,7 @@ abstract class BasePaymentPdfService {
             pw.SizedBox(height: 5),
             pw.Text(
               'Signature du Locataire',
-              style: pw.TextStyle(fontSize: 10, color: PdfColors.grey700),
+              style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700),
             ),
           ],
         ),
@@ -90,7 +90,7 @@ abstract class BasePaymentPdfService {
             pw.SizedBox(height: 5),
             pw.Text(
               'Signature de l\'Agent',
-              style: pw.TextStyle(fontSize: 10, color: PdfColors.grey700),
+              style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700),
             ),
           ],
         ),

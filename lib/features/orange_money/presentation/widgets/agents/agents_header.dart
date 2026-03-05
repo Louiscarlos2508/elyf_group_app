@@ -11,14 +11,14 @@ class AgentsHeader extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
+        const Expanded(
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
+            padding: EdgeInsets.symmetric(vertical: 4),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
+                Text(
                   '👥 Agents Affiliés',
                   style: TextStyle(
                     fontSize: 20,
@@ -26,8 +26,8 @@ class AgentsHeader extends StatelessWidget {
                     color: Color(0xFFF54900),
                   ),
                 ),
-                const SizedBox(height: 4),
-                const Text(
+                SizedBox(height: 4),
+                Text(
                   'Gérez vos sous-agences et suivez leurs performances',
                   style: TextStyle(
                     fontSize: 16,

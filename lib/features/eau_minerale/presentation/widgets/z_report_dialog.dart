@@ -99,18 +99,18 @@ class _ZReportDialogState extends ConsumerState<ZReportDialog> {
           children: [
             _SummaryTile(label: "Fonds de caisse", value: "${session.openingCashAmount} CFA"),
             const Divider(),
-            _SectionSubHeader(title: " ESPÈCES (CASH)"),
+            const _SectionSubHeader(title: " ESPÈCES (CASH)"),
             _SummaryTile(label: "Recettes Cash", value: "${metrics.cashCollections} CFA", color: Colors.green),
             _SummaryTile(label: "Dépenses Cash", value: "-${metrics.cashExpenses} CFA", color: Colors.red),
             _SummaryTile(label: "Solde Cash Théorique", value: "$expectedCash CFA", bold: true),
             const SizedBox(height: 12),
-            _SectionSubHeader(title: " MOBILE MONEY (OM)"),
+            const _SectionSubHeader(title: " MOBILE MONEY (OM)"),
             _SummaryTile(label: "Recettes OM", value: "${metrics.mobileMoneyCollections} CFA", color: Colors.green),
             _SummaryTile(label: "Dépenses OM", value: "-${metrics.mobileMoneyExpenses} CFA", color: Colors.red),
             _SummaryTile(label: "Solde OM Théorique", value: "$expectedMM CFA", bold: true),
             const Divider(),
             if (metrics.apports > 0 || metrics.retraits > 0) ...[
-              _SectionSubHeader(title: " TRÉSORERIE MANUELLE"),
+              const _SectionSubHeader(title: " TRÉSORERIE MANUELLE"),
               if (metrics.apports > 0) 
                  _SummaryTile(label: "Total Apports (+)", value: "${metrics.apports} CFA", color: Colors.green),
               if (metrics.retraits > 0)

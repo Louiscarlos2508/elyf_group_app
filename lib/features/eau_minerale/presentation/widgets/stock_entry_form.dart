@@ -60,7 +60,7 @@ class StockEntryFormState extends ConsumerState<StockEntryForm> {
     
     if (widget.onSubmit != null) {
       AppLogger.debug('Using widget.onSubmit', name: 'StockEntryForm');
-      return await widget.onSubmit!();
+      return widget.onSubmit!();
     }
     
     if (!_formKey.currentState!.validate()) {

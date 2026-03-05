@@ -62,10 +62,10 @@ class StockController {
   }) async {
     // Validation des paramètres
     if (bobineType.trim().isEmpty) {
-      throw ValidationException('Le type de bobine est requis.');
+      throw const ValidationException('Le type de bobine est requis.');
     }
     if (quantite <= 0 || quantite > 1000000) {
-      throw ValidationException(
+      throw const ValidationException(
         'La quantité de bobines doit être un nombre entier positif et inférieur à 1 000 000.',
       );
     }
@@ -135,7 +135,7 @@ class StockController {
     String? notes,
   }) async {
     // Récupérer le stock de bobines
-    var stock = productId != null 
+    final stock = productId != null 
         ? await _bobineStockQuantityRepository.fetchByProductId(productId)
         : await _bobineStockQuantityRepository.fetchByType(bobineType);
     
@@ -356,13 +356,13 @@ class StockController {
   }) async {
     // Validation des paramètres
     if (packagingId.trim().isEmpty) {
-      throw ValidationException('L\'ID d\'emballage est requis.');
+      throw const ValidationException('L\'ID d\'emballage est requis.');
     }
     if (packagingType.trim().isEmpty) {
-      throw ValidationException('Le type d\'emballage est requis.');
+      throw const ValidationException('Le type d\'emballage est requis.');
     }
     if (quantite <= 0 || quantite > 1000000) {
-      throw ValidationException(
+      throw const ValidationException(
         'La quantité d\'emballages doit être un nombre positif et inférieur à 1 000 000.',
       );
     }
@@ -446,7 +446,7 @@ class StockController {
 
   /// Récupère les alertes de stock faible.
   Future<List<PackagingStock>> getLowStockAlerts() async {
-    return await _packagingStockRepository.fetchLowStockAlerts();
+    return _packagingStockRepository.fetchLowStockAlerts();
   }
 
   /// Récupère tous les mouvements de stock (bobines, emballages) combinés.
@@ -777,9 +777,9 @@ class StockController {
     );
 
     // 3. Préparer les Listes de stock à modifier (copies)
-    var items = List<StockItem>.from(currentSnapshot.items);
-    var bobineStocks = List<BobineStock>.from(currentSnapshot.bobineStocks);
-    var packagingStocks = List<PackagingStock>.from(currentSnapshot.packagingStocks);
+    final items = List<StockItem>.from(currentSnapshot.items);
+    final bobineStocks = List<BobineStock>.from(currentSnapshot.bobineStocks);
+    final packagingStocks = List<PackagingStock>.from(currentSnapshot.packagingStocks);
 
     // 4. Appliquer le "rembobinage" (Reverse movements)
     for (final m in movements) {

@@ -119,7 +119,7 @@ class TenantOfflineRepository extends OfflineRepository<Tenant>
 
   @override
   Stream<List<Tenant>> watchTenants({bool? isDeleted = false}) {
-    var query = driftService.db.select(driftService.db.tenantsTable)
+    final query = driftService.db.select(driftService.db.tenantsTable)
       ..where((t) => t.enterpriseId.equals(enterpriseId));
 
     if (isDeleted != null) {

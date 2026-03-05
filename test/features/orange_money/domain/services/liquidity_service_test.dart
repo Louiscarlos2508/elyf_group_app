@@ -33,8 +33,8 @@ void main() {
     test('calculates correct theoretical liquidity based on transactions', () async {
       // Arrange
       final date = DateTime(2024, 2, 11);
-      final morningCash = 100000;
-      final morningSim = 200000;
+      const morningCash = 100000;
+      const morningSim = 200000;
 
       final transactions = [
         Transaction(

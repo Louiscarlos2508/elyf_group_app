@@ -154,9 +154,7 @@ class PersonnelSection extends ConsumerWidget {
             session: tempSession,
             date: date,
             existingDay: existingDay,
-            onSaved: (productionDay) {
-              onProductionDayAdded(productionDay);
-            },
+            onSaved: onProductionDayAdded,
           ),
         ),
       ),

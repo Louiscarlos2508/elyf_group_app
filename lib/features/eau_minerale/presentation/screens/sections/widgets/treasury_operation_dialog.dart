@@ -76,9 +76,9 @@ class _TreasuryOperationDialogState extends State<TreasuryOperationDialog> {
                 DropdownButtonFormField<PaymentMethod>(
                   initialValue: _fromAccount,
                   decoration: const InputDecoration(labelText: 'Depuis le compte'),
-                  items: [
-                    DropdownMenuItem(value: PaymentMethod.cash, child: const Text('Caisse (Espèces)')),
-                    DropdownMenuItem(value: PaymentMethod.mobileMoney, child: const Text('Mobile Money')),
+                  items: const [
+                    DropdownMenuItem(value: PaymentMethod.cash, child: Text('Caisse (Espèces)')),
+                    DropdownMenuItem(value: PaymentMethod.mobileMoney, child: Text('Mobile Money')),
                   ],
                   onChanged: (v) => setState(() => _fromAccount = v),
                 ),
@@ -111,9 +111,9 @@ class _TreasuryOperationDialogState extends State<TreasuryOperationDialog> {
                 DropdownButtonFormField<PaymentMethod>(
                   initialValue: _toAccount,
                   decoration: const InputDecoration(labelText: 'Vers le compte'),
-                  items: [
-                    DropdownMenuItem(value: PaymentMethod.cash, child: const Text('Caisse (Espèces)')),
-                    DropdownMenuItem(value: PaymentMethod.mobileMoney, child: const Text('Mobile Money')),
+                  items: const [
+                    DropdownMenuItem(value: PaymentMethod.cash, child: Text('Caisse (Espèces)')),
+                    DropdownMenuItem(value: PaymentMethod.mobileMoney, child: Text('Mobile Money')),
                   ],
                   onChanged: (v) => setState(() => _toAccount = v),
                 ),

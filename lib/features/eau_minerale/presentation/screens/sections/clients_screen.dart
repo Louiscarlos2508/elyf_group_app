@@ -64,7 +64,7 @@ class ClientsScreen extends ConsumerWidget {
       }
 
       // Calculer le crédit total réel
-      int totalCreditReal = activeCredits.fold(0, (sum, s) => sum + s.remainingAmount);
+      final int totalCreditReal = activeCredits.fold(0, (sum, s) => sum + s.remainingAmount);
 
       if (totalCreditReal <= 0) {
         if (!context.mounted) return;

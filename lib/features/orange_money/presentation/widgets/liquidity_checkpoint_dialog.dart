@@ -153,7 +153,7 @@ class _LiquidityCheckpointDialogState extends State<LiquidityCheckpointDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            FormDialogHeader(
+            const FormDialogHeader(
               title: 'Pointage de liquidité',
               subtitle: 'Enregistrez les montants en cash et sur la SIM',
               icon: Icons.account_balance_wallet_rounded,

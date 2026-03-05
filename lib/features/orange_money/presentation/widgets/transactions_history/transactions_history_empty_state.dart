@@ -13,7 +13,7 @@ class TransactionsHistoryEmptyState extends StatelessWidget {
     return ElyfCard(
       child: Container(
         height: 234,
-        padding: EdgeInsets.all(AppSpacing.xl),
+        padding: const EdgeInsets.all(AppSpacing.xl),
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -23,7 +23,7 @@ class TransactionsHistoryEmptyState extends StatelessWidget {
                 size: 48,
                 color: theme.colorScheme.primary.withValues(alpha: 0.3),
               ),
-              SizedBox(height: AppSpacing.md),
+              const SizedBox(height: AppSpacing.md),
               Text(
                 'Aucune transaction',
                 style: theme.textTheme.titleSmall?.copyWith(
@@ -31,7 +31,7 @@ class TransactionsHistoryEmptyState extends StatelessWidget {
                   color: theme.colorScheme.onSurface,
                 ),
               ),
-              SizedBox(height: AppSpacing.xs),
+              const SizedBox(height: AppSpacing.xs),
               Text(
                 'Vos transactions apparaîtront ici dès qu\'elles seront enregistrées.',
                 style: theme.textTheme.bodyMedium?.copyWith(

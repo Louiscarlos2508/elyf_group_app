@@ -18,7 +18,7 @@ class ErrorHandler {
     if (errorString.contains('network') ||
         errorString.contains('connection') ||
         errorString.contains('timeout')) {
-      return NetworkException(
+      return const NetworkException(
         'Erreur de connexion réseau. Vérifiez votre connexion internet.',
         'NETWORK_ERROR',
       );
@@ -27,7 +27,7 @@ class ErrorHandler {
     if (errorString.contains('authentication') ||
         errorString.contains('unauthorized') ||
         errorString.contains('login')) {
-      return AuthenticationException(
+      return const AuthenticationException(
         'Erreur d\'authentification. Veuillez vous reconnecter.',
         'AUTH_ERROR',
       );
@@ -36,7 +36,7 @@ class ErrorHandler {
     if (errorString.contains('permission') ||
         errorString.contains('forbidden') ||
         errorString.contains('access denied')) {
-      return AuthorizationException(
+      return const AuthorizationException(
         'Vous n\'avez pas les permissions nécessaires pour cette action.',
         'AUTHZ_ERROR',
       );
@@ -45,7 +45,7 @@ class ErrorHandler {
     if (errorString.contains('validation') ||
         errorString.contains('invalid') ||
         errorString.contains('format')) {
-      return ValidationException(
+      return const ValidationException(
         'Les données fournies ne sont pas valides.',
         'VALIDATION_ERROR',
       );
@@ -54,7 +54,7 @@ class ErrorHandler {
     if (errorString.contains('not found') ||
         errorString.contains('404') ||
         errorString.contains('does not exist')) {
-      return NotFoundException(
+      return const NotFoundException(
         'La ressource demandée n\'a pas été trouvée.',
         'NOT_FOUND',
       );
@@ -63,7 +63,7 @@ class ErrorHandler {
     if (errorString.contains('storage') ||
         errorString.contains('database') ||
         errorString.contains('isar')) {
-      return StorageException(
+      return const StorageException(
         'Erreur de stockage local. Veuillez réessayer.',
         'STORAGE_ERROR',
       );
@@ -71,7 +71,7 @@ class ErrorHandler {
 
     if (errorString.contains('sync') ||
         errorString.contains('synchronization')) {
-      return SyncException(
+      return const SyncException(
         'Erreur de synchronisation. Les données seront synchronisées plus tard.',
         'SYNC_ERROR',
       );
@@ -92,7 +92,7 @@ class ErrorHandler {
     }
 
     // Erreur inconnue
-    return UnknownException(
+    return const UnknownException(
       'Une erreur inattendue s\'est produite. Veuillez réessayer.',
       'UNKNOWN_ERROR',
     );

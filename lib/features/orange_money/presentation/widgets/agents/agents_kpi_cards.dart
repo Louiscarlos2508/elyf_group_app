@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:elyf_groupe_app/shared.dart';
-import 'package:elyf_groupe_app/app/theme/app_colors.dart';
 import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
 
 /// Widget pour afficher les cartes KPI des agents avec un design premium.
@@ -15,7 +14,7 @@ class AgentsKpiCards extends StatelessWidget {
     final retraits = stats['withdrawalsToday'] as int? ?? 0;
 
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
       child: Row(
         children: [
           Expanded(
@@ -27,7 +26,7 @@ class AgentsKpiCards extends StatelessWidget {
               isGlass: false,
             ),
           ),
-          SizedBox(width: AppSpacing.md),
+          const SizedBox(width: AppSpacing.md),
           Expanded(
             child: ElyfStatsCard(
               label: 'RETRAITS (JOUR)',

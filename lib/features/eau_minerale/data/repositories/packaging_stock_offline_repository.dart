@@ -353,13 +353,13 @@ class PackagingStockOfflineRepository extends OfflineRepository<PackagingStock>
     try {
       // Validation du mouvement AVANT toute opération de sauvegarde
       if (movement.packagingId.trim().isEmpty) {
-        throw ValidationException('L\'ID d\'emballage est requis pour le mouvement.');
+        throw const ValidationException('L\'ID d\'emballage est requis pour le mouvement.');
       }
       if (movement.packagingType.trim().isEmpty) {
-        throw ValidationException('Le type d\'emballage est requis pour le mouvement.');
+        throw const ValidationException('Le type d\'emballage est requis pour le mouvement.');
       }
       if (movement.quantite <= 0) {
-        throw ValidationException('La quantité du mouvement doit être positive.');
+        throw const ValidationException('La quantité du mouvement doit être positive.');
       }
 
       final localId = movement.id.startsWith('local_')

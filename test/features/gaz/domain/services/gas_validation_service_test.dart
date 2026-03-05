@@ -3,7 +3,7 @@ import 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/services/gas_validation_service.dart';
 
 void main() {
-  final testCylinder = Cylinder(
+  const testCylinder = Cylinder(
     id: 'cyl-1',
     weight: 6,
     buyPrice: 2500,

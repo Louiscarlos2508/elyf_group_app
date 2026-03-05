@@ -5,7 +5,7 @@ void main() {
   late SyncConflictResolver resolver;
 
   setUp(() {
-    resolver = SyncConflictResolver();
+    resolver = const SyncConflictResolver();
   });
 
   group('SyncConflictResolver - Basic Strategies', () {

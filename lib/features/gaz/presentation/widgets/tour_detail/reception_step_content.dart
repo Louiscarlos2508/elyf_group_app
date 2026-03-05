@@ -9,7 +9,6 @@ import 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder_stock.dart
 import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/gaz_settings.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/collection.dart';
-import 'package:elyf_groupe_app/features/gaz/domain/services/transaction_service.dart';
 
 /// Contenu de l'étape Réception du tour.
 ///

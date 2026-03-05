@@ -16,7 +16,7 @@ class MultipleModuleSelection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final availableModules = AdminModules.all;
+    const availableModules = AdminModules.all;
 
     if (availableModules.isEmpty) {
       return const Text('Aucun module disponible');

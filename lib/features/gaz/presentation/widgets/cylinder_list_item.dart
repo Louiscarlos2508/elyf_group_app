@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/cylinder.dart';
-import './cylinder_form/stock_alert_threshold_dialog.dart';
 
 /// Widget pour afficher une bouteille dans la liste des paramètres.
 class CylinderListItem extends ConsumerWidget {
@@ -273,29 +272,29 @@ child: LayoutBuilder(
             ),
           );
         },
-          loading: () => Card(
+          loading: () => const Card(
             child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: const Center(child: CircularProgressIndicator()),
+              padding: EdgeInsets.all(16),
+              child: Center(child: CircularProgressIndicator()),
             ),
           ),
-          error: (_, __) => Card(
+          error: (_, __) => const Card(
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(16),
               child: Text('Erreur de chargement des paramètres'),
             ),
           ),
         );
       },
-      loading: () => Card(
+      loading: () => const Card(
         child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: const Center(child: CircularProgressIndicator()),
+          padding: EdgeInsets.all(16),
+          child: Center(child: CircularProgressIndicator()),
         ),
       ),
-      error: (_, __) => Card(
+      error: (_, __) => const Card(
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(16),
           child: Text('Erreur de chargement du stock'),
         ),
       ),

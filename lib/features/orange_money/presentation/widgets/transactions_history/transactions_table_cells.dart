@@ -19,11 +19,11 @@ class TransactionDateCell extends StatelessWidget {
     return SizedBox(
       width: 120,
       child: Padding(
-        padding: EdgeInsets.all(AppSpacing.sm),
+        padding: const EdgeInsets.all(AppSpacing.sm),
         child: Row(
           children: [
             Icon(Icons.access_time, size: 16, color: colorScheme.onSurfaceVariant),
-            SizedBox(width: AppSpacing.xs),
+            const SizedBox(width: AppSpacing.xs),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
@@ -64,7 +64,7 @@ class TransactionTypeCell extends StatelessWidget {
     return SizedBox(
       width: 80,
       child: Padding(
-        padding: EdgeInsets.all(AppSpacing.sm),
+        padding: const EdgeInsets.all(AppSpacing.sm),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
@@ -117,7 +117,7 @@ class TransactionClientCell extends StatelessWidget {
     return SizedBox(
       width: 140,
       child: Padding(
-        padding: EdgeInsets.all(AppSpacing.sm),
+        padding: const EdgeInsets.all(AppSpacing.sm),
         child: Text(
           transaction.customerName ?? transaction.phoneNumber,
           style: theme.textTheme.bodyMedium?.copyWith(
@@ -143,7 +143,7 @@ class TransactionPhoneCell extends StatelessWidget {
     return SizedBox(
       width: 90,
       child: Padding(
-        padding: EdgeInsets.all(AppSpacing.sm),
+        padding: const EdgeInsets.all(AppSpacing.sm),
         child: Text(
           transaction.phoneNumber.replaceAll('+226', ''),
           style: theme.textTheme.bodySmall?.copyWith(
@@ -170,11 +170,11 @@ class TransactionIdCardCell extends StatelessWidget {
     return SizedBox(
       width: 130,
       child: Padding(
-        padding: EdgeInsets.all(AppSpacing.sm),
+        padding: const EdgeInsets.all(AppSpacing.sm),
         child: Row(
           children: [
             Icon(Icons.badge_outlined, size: 16, color: colorScheme.onSurfaceVariant),
-            SizedBox(width: AppSpacing.xs),
+            const SizedBox(width: AppSpacing.xs),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
@@ -221,7 +221,7 @@ class TransactionTownCell extends StatelessWidget {
     return SizedBox(
       width: 110,
       child: Padding(
-        padding: EdgeInsets.all(AppSpacing.sm),
+        padding: const EdgeInsets.all(AppSpacing.sm),
         child: Row(
           children: [
             Icon(Icons.location_on_outlined, size: 14, color: theme.colorScheme.onSurfaceVariant),
@@ -256,7 +256,7 @@ class TransactionReferenceCell extends StatelessWidget {
     return SizedBox(
       width: 100,
       child: Padding(
-        padding: EdgeInsets.all(AppSpacing.sm),
+        padding: const EdgeInsets.all(AppSpacing.sm),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
@@ -292,7 +292,7 @@ class TransactionAmountCell extends StatelessWidget {
     return SizedBox(
       width: 120,
       child: Padding(
-        padding: EdgeInsets.all(AppSpacing.sm),
+        padding: const EdgeInsets.all(AppSpacing.sm),
         child: Text(
           TransactionsHistoryHelpers.formatAmount(
             transaction.amount,

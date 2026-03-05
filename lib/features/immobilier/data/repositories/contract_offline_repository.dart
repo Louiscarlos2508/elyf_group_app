@@ -132,7 +132,7 @@ class ContractOfflineRepository extends OfflineRepository<Contract>
 
   @override
   Stream<List<Contract>> watchContracts({bool? isDeleted = false}) {
-    var query = driftService.db.select(driftService.db.contractsTable)
+    final query = driftService.db.select(driftService.db.contractsTable)
       ..where((t) => t.enterpriseId.equals(enterpriseId));
 
     if (isDeleted != null) {

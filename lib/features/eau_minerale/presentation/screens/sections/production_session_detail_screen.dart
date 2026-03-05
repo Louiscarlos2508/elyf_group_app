@@ -58,7 +58,7 @@ class _ProductionSessionDetailScreenState
           ],
         ),
         actions: [
-          EnterpriseSelectorWidget(style: EnterpriseSelectorStyle.appBar),
+          const EnterpriseSelectorWidget(style: EnterpriseSelectorStyle.appBar),
           sessionAsync.when(
             data: (session) {
               if (session.status == ProductionSessionStatus.completed) {

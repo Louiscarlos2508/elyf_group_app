@@ -66,7 +66,7 @@ class ReportPeriodSelector extends StatelessWidget {
                   onTap: onStartDateSelected,
                 ),
               ),
-              SizedBox(width: AppSpacing.md),
+              const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: _ReportDateField(
                   label: 'Date de fin',
@@ -74,7 +74,7 @@ class ReportPeriodSelector extends StatelessWidget {
                   onTap: onEndDateSelected,
                 ),
               ),
-              SizedBox(width: AppSpacing.md),
+              const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: _ReportQuickActions(
                   onTodaySelected: onTodaySelected,
@@ -117,13 +117,13 @@ class _ReportDateField extends StatelessWidget {
             color: theme.colorScheme.onSurface,
           ),
         ),
-        SizedBox(height: AppSpacing.sm),
+        const SizedBox(height: AppSpacing.sm),
         InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(AppRadius.medium),
           child: Container(
             height: 36,
-            padding: EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 4),
             decoration: BoxDecoration(
               color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(AppRadius.medium),
@@ -181,7 +181,7 @@ class _ReportQuickActions extends StatelessWidget {
             color: theme.colorScheme.onSurface,
           ),
         ),
-        SizedBox(height: AppSpacing.sm),
+        const SizedBox(height: AppSpacing.sm),
         Wrap(
           spacing: AppSpacing.sm,
           runSpacing: AppSpacing.sm,

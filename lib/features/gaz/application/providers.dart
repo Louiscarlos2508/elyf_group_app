@@ -43,7 +43,6 @@ import '../data/repositories/gas_offline_repository.dart';
 import '../data/repositories/exchange_offline_repository.dart';
 import '../data/repositories/gaz_settings_offline_repository.dart';
 import 'package:elyf_groupe_app/features/administration/application/providers.dart';
-import 'package:elyf_groupe_app/core/repositories/repository_providers.dart';
 import '../data/repositories/tour_offline_repository.dart';
 import '../data/repositories/wholesaler_offline_repository.dart';
 import '../data/repositories/treasury_offline_repository.dart';
@@ -974,7 +973,7 @@ final gazReportDataProvider = FutureProvider.family
 
       // Calculate POS performance if the current enterprise has children
       final activeEnterprise = ref.watch(activeEnterpriseProvider).value;
-      List<GazPosPerformance> posPerf = [];
+      final List<GazPosPerformance> posPerf = [];
       
       if (activeEnterprise != null && !activeEnterprise.isPointOfSale) {
         final posListAsync = ref.watch(enterprisesByParentAndTypeProvider((
@@ -1208,7 +1207,7 @@ final tourCollectionsProvider = StreamProvider.family<List<Collection>, String>(
   return ref.watch(collectionsProvider(enterpriseId)).when(
     data: (collections) => Stream.value(collections.where((c) => c.tourId == tourId).toList()),
     loading: () => const Stream.empty(),
-    error: (e, st) => Stream.error(e, st),
+    error: Stream.error,
   );
 });
 

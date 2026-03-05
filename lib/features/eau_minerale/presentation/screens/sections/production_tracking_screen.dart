@@ -34,7 +34,7 @@ class _ProductionTrackingScreenState
         title: 'Suivi de production',
         module: EnterpriseModule.eau,
         actions: [
-          EnterpriseSelectorWidget(style: EnterpriseSelectorStyle.appBar),
+          const EnterpriseSelectorWidget(style: EnterpriseSelectorStyle.appBar),
           IconButton(
             icon: const Icon(Icons.edit),
             onPressed: () {

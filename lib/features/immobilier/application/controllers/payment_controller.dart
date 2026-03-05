@@ -36,7 +36,7 @@ class PaymentController {
   final String _userId;
 
   Future<List<Payment>> fetchPayments({bool? isDeleted = false}) async {
-    return await _paymentRepository.getAllPayments(isDeleted: isDeleted);
+    return _paymentRepository.getAllPayments(isDeleted: isDeleted);
   }
 
   Stream<List<Payment>> watchPayments({bool? isDeleted = false}) {
@@ -48,18 +48,18 @@ class PaymentController {
   }
 
   Future<Payment?> getPayment(String id) async {
-    return await _paymentRepository.getPaymentById(id);
+    return _paymentRepository.getPaymentById(id);
   }
 
   Future<List<Payment>> getPaymentsByContract(String contractId) async {
-    return await _paymentRepository.getPaymentsByContract(contractId);
+    return _paymentRepository.getPaymentsByContract(contractId);
   }
 
   Future<List<Payment>> getPaymentsByPeriod(
     DateTime start,
     DateTime end,
   ) async {
-    return await _paymentRepository.getPaymentsByPeriod(start, end);
+    return _paymentRepository.getPaymentsByPeriod(start, end);
   }
 
   /// Crée un paiement après validation.
@@ -162,7 +162,7 @@ class PaymentController {
   Future<bool> printReceipt(String paymentId) async {
     final payment = await _paymentRepository.getPaymentById(paymentId);
     if (payment == null) {
-      throw NotFoundException(
+      throw const NotFoundException(
         'Le paiement n\'existe pas',
         'PAYMENT_NOT_FOUND',
       );
@@ -170,7 +170,7 @@ class PaymentController {
 
     final contract = await _contractRepository.getContractById(payment.contractId);
     if (contract == null) {
-      throw NotFoundException(
+      throw const NotFoundException(
         'Le contrat lié au paiement n\'existe pas',
         'CONTRACT_NOT_FOUND',
       );
@@ -178,7 +178,7 @@ class PaymentController {
 
     final tenant = await _tenantRepository.getTenantById(contract.tenantId);
     if (tenant == null) {
-      throw NotFoundException(
+      throw const NotFoundException(
         'Le locataire lié au paiement n\'existe pas',
         'TENANT_NOT_FOUND',
       );
@@ -186,7 +186,7 @@ class PaymentController {
 
     final property = await _propertyRepository.getPropertyById(contract.propertyId);
     if (property == null) {
-      throw NotFoundException(
+      throw const NotFoundException(
         'La propriété liée au paiement n\'existe pas',
         'PROPERTY_NOT_FOUND',
       );

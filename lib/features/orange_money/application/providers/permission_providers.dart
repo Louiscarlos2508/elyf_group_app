@@ -37,5 +37,5 @@ final orangeMoneyPermissionAdapterProvider =
 /// Provider to check if user can validate commissions.
 final canValidateCommissionProvider = FutureProvider.autoDispose<bool>((ref) async {
   final adapter = ref.watch(orangeMoneyPermissionAdapterProvider);
-  return await adapter.hasPermission('validate_commission');
+  return adapter.hasPermission('validate_commission');
 });

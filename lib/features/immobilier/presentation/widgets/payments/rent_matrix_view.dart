@@ -118,7 +118,7 @@ class RentMatrixView extends ConsumerWidget {
                     message: 'Il n\'y a pas de contrats actifs pour générer la matrice.',
                   )
                 : ListView.builder(
-                    padding: EdgeInsets.all(AppSpacing.lg),
+                    padding: const EdgeInsets.all(AppSpacing.lg),
                     itemCount: entries.length,
                     itemBuilder: (context, index) {
                       return _RentMatrixCard(entry: entries[index], selectedDate: selectedDate);
@@ -134,7 +134,7 @@ class RentMatrixView extends ConsumerWidget {
 
   Widget _buildMonthSelector(BuildContext context, WidgetRef ref, DateTime selectedDate) {
     return Container(
-      padding: EdgeInsets.all(AppSpacing.md),
+      padding: const EdgeInsets.all(AppSpacing.md),
       color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -178,7 +178,7 @@ class _RentMatrixCard extends StatelessWidget {
     final isPaid = entry.isPaid;
 
     return Card(
-      margin: EdgeInsets.only(bottom: AppSpacing.md),
+      margin: const EdgeInsets.only(bottom: AppSpacing.md),
       clipBehavior: Clip.antiAlias,
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -202,7 +202,7 @@ class _RentMatrixCard extends StatelessWidget {
             ),
             Expanded(
               child: Padding(
-                padding: EdgeInsets.all(AppSpacing.md),
+                padding: const EdgeInsets.all(AppSpacing.md),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

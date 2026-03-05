@@ -141,7 +141,7 @@ class _TenantFormDialogState extends ConsumerState<TenantFormDialog>
                 prefixIcon: Icon(Icons.phone),
               ),
               keyboardType: TextInputType.phone,
-              validator: (v) => Validators.phoneBurkina(v),
+              validator: Validators.phoneBurkina,
             ),
             const SizedBox(height: 16),
             TextFormField(

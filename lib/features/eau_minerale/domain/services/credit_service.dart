@@ -23,7 +23,7 @@ class CreditService {
   Future<String> recordPayment(CreditPayment payment) async {
     final sale = await saleRepository.getSale(payment.saleId);
     if (sale == null) {
-      throw NotFoundException(
+      throw const NotFoundException(
         'Vente introuvable',
         'SALE_NOT_FOUND',
       );
@@ -37,7 +37,7 @@ class CreditService {
     }
 
     if (payment.amount <= 0) {
-      throw ValidationException(
+      throw const ValidationException(
         'Le montant doit être supérieur à 0',
         'INVALID_PAYMENT_AMOUNT',
       );

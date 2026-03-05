@@ -5,7 +5,6 @@ import 'package:elyf_groupe_app/shared.dart';
 import '../../domain/entities/transaction.dart';
 import '../../domain/services/customer_service.dart';
 import 'new_customer_form/transaction_info_card.dart';
-import 'new_customer_form/customer_name_fields.dart';
 import 'new_customer_form/id_type_field.dart';
 
 /// Widget pour afficher le formulaire d'enregistrement d'une nouvelle personne.

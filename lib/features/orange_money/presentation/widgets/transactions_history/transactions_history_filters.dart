@@ -24,7 +24,7 @@ class TransactionsHistoryFilters extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Container(
-      padding: EdgeInsets.all(AppSpacing.lg),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(AppSpacing.md),
@@ -45,12 +45,12 @@ class TransactionsHistoryFilters extends StatelessWidget {
         children: [
           // Champ de recherche
           _buildSearchField(context),
-          SizedBox(height: AppSpacing.md),
+          const SizedBox(height: AppSpacing.md),
           // Filtres Type et Date
           Row(
             children: [
               Expanded(child: _buildTypeFilter(context)),
-              SizedBox(width: AppSpacing.md),
+              const SizedBox(width: AppSpacing.md),
               Expanded(child: _buildDateFilter(context)),
             ],
           ),
@@ -72,7 +72,7 @@ class TransactionsHistoryFilters extends StatelessWidget {
             color: theme.colorScheme.onSurface,
           ),
         ),
-        SizedBox(height: AppSpacing.xs),
+        const SizedBox(height: AppSpacing.xs),
         Container(
           height: 45,
           decoration: BoxDecoration(
@@ -92,7 +92,7 @@ class TransactionsHistoryFilters extends StatelessWidget {
                 color: theme.colorScheme.onSurfaceVariant,
               ),
               border: InputBorder.none,
-              contentPadding: EdgeInsets.symmetric(
+              contentPadding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.sm,
                 vertical: 10,
               ),
@@ -125,7 +125,7 @@ class TransactionsHistoryFilters extends StatelessWidget {
             color: theme.colorScheme.onSurface,
           ),
         ),
-        SizedBox(height: AppSpacing.xs),
+        const SizedBox(height: AppSpacing.xs),
         Container(
           height: 45,
           decoration: BoxDecoration(
@@ -141,7 +141,7 @@ class TransactionsHistoryFilters extends StatelessWidget {
               value: selectedTypeFilter,
               isExpanded: true,
               dropdownColor: theme.colorScheme.surface,
-              padding: EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
               hint: Text(
                 'Tous',
                 style: theme.textTheme.bodyMedium,
@@ -201,13 +201,13 @@ class TransactionsHistoryFilters extends StatelessWidget {
             color: theme.colorScheme.onSurface,
           ),
         ),
-        SizedBox(height: AppSpacing.xs),
+        const SizedBox(height: AppSpacing.xs),
         InkWell(
           onTap: onDateSelected,
           borderRadius: BorderRadius.circular(AppSpacing.sm),
           child: Container(
             height: 45,
-            padding: EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
             decoration: BoxDecoration(
               color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(AppSpacing.sm),

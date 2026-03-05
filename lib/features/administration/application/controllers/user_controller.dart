@@ -64,17 +64,17 @@ class UserController {
 
   /// Récupère un utilisateur par son ID.
   Future<User?> getUserById(String userId) async {
-    return await _repository.getUserById(userId);
+    return _repository.getUserById(userId);
   }
 
   /// Récupère un utilisateur par son nom d'utilisateur.
   Future<User?> getUserByUsername(String username) async {
-    return await _repository.getUserByUsername(username);
+    return _repository.getUserByUsername(username);
   }
 
   /// Recherche des utilisateurs par nom, prénom ou username.
   Future<List<User>> searchUsers(String query) async {
-    return await _repository.searchUsers(query);
+    return _repository.searchUsers(query);
   }
 
   /// Crée un nouvel utilisateur.

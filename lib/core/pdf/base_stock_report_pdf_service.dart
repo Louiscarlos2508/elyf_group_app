@@ -67,13 +67,13 @@ abstract class BaseStockReportPdfService {
             ),
             pw.Text(
               moduleName,
-              style: pw.TextStyle(fontSize: 14, color: PdfColors.grey700),
+              style: const pw.TextStyle(fontSize: 14, color: PdfColors.grey700),
             ),
           ],
         ),
         pw.Text(
           DateFormat('dd/MM/yyyy').format(DateTime.now()),
-          style: pw.TextStyle(fontSize: 12, color: PdfColors.grey600),
+          style: const pw.TextStyle(fontSize: 12, color: PdfColors.grey600),
         ),
       ],
     );
@@ -89,7 +89,7 @@ abstract class BaseStockReportPdfService {
   pw.Widget _buildReportInfo(String info) {
     return pw.Text(
       info,
-      style: pw.TextStyle(fontSize: 12, color: PdfColors.grey600),
+      style: const pw.TextStyle(fontSize: 12, color: PdfColors.grey600),
     );
   }
 
@@ -104,7 +104,7 @@ abstract class BaseStockReportPdfService {
       },
       children: [
         _buildTableHeader(),
-        ...items.map((item) => _buildTableRow(item)),
+        ...items.map(_buildTableRow),
       ],
     );
   }
@@ -176,7 +176,7 @@ abstract class BaseStockReportPdfService {
       children: [
         pw.Text(
           'Document généré le ${DateFormat('dd/MM/yyyy à HH:mm').format(DateTime.now())}',
-          style: pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
+          style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
         ),
       ],
     );

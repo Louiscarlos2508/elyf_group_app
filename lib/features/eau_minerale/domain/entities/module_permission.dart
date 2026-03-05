@@ -85,11 +85,11 @@ class RolePermissions {
   }
 
   bool hasAnyPermission(Set<ModulePermission> requiredPermissions) {
-    return requiredPermissions.any((p) => permissions.contains(p));
+    return requiredPermissions.any(permissions.contains);
   }
 
   bool hasAllPermissions(Set<ModulePermission> requiredPermissions) {
-    return requiredPermissions.every((p) => permissions.contains(p));
+    return requiredPermissions.every(permissions.contains);
   }
 
   /// Default permissions for each role.

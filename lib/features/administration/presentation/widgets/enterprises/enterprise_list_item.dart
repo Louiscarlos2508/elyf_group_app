@@ -198,7 +198,7 @@ class EnterpriseListItem extends ConsumerWidget {
                     icon: Icons.business,
                   ),
                 if (isPointOfSale)
-                  _Badge(
+                  const _Badge(
                     label: 'Point de vente',
                     color: Colors.blue,
                     icon: Icons.store,
@@ -286,7 +286,7 @@ class EnterpriseListItem extends ConsumerWidget {
                         icon: Icons.business,
                       ),
                     if (isPointOfSale)
-                      _Badge(
+                      const _Badge(
                         label: 'Point de vente',
                         color: Colors.blue,
                         icon: Icons.store,

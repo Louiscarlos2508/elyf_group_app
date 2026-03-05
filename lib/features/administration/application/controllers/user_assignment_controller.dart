@@ -77,14 +77,14 @@ class UserAssignmentController {
   Future<List<EnterpriseModuleUser>> getUserEnterpriseModuleUsers(
     String userId,
   ) async {
-    return await _repository.getUserEnterpriseModuleUsers(userId);
+    return _repository.getUserEnterpriseModuleUsers(userId);
   }
 
   /// Récupère les utilisateurs d'une entreprise.
   Future<List<EnterpriseModuleUser>> getEnterpriseUsers(
     String enterpriseId,
   ) async {
-    return await _repository.getEnterpriseUsers(enterpriseId);
+    return _repository.getEnterpriseUsers(enterpriseId);
   }
 
   /// Récupère les accès pour une entreprise et un module spécifiques.
@@ -93,7 +93,7 @@ class UserAssignmentController {
     String enterpriseId,
     String moduleId,
   ) async {
-    return await _repository.getEnterpriseModuleUsersByEnterpriseAndModule(
+    return _repository.getEnterpriseModuleUsersByEnterpriseAndModule(
       enterpriseId,
       moduleId,
     );
@@ -113,7 +113,7 @@ class UserAssignmentController {
         userId: currentUserId,
       );
       if (!hasPermission) {
-        throw AuthorizationException(
+        throw const AuthorizationException(
           'Permission denied: Cannot assign users',
           'PERMISSION_DENIED',
         );
@@ -159,7 +159,7 @@ class UserAssignmentController {
         userId: currentUserId,
       );
       if (!hasPermission) {
-        throw AuthorizationException(
+        throw const AuthorizationException(
           'Permission denied: Cannot assign users',
           'PERMISSION_DENIED',
         );
@@ -167,7 +167,7 @@ class UserAssignmentController {
     }
 
     if (enterpriseIds.isEmpty) {
-      throw ValidationException(
+      throw const ValidationException(
         'At least one enterprise must be selected',
         'NO_ENTERPRISE_SELECTED',
       );
@@ -239,7 +239,7 @@ class UserAssignmentController {
         userId: currentUserId,
       );
       if (!hasPermission) {
-        throw AuthorizationException(
+        throw const AuthorizationException(
           'Permission denied: Cannot assign users',
           'PERMISSION_DENIED',
         );
@@ -247,14 +247,14 @@ class UserAssignmentController {
     }
 
     if (moduleIds.isEmpty) {
-      throw ValidationException(
+      throw const ValidationException(
         'At least one module must be selected',
         'NO_MODULE_SELECTED',
       );
     }
 
     if (enterpriseIds.isEmpty) {
-      throw ValidationException(
+      throw const ValidationException(
         'At least one enterprise must be selected',
         'NO_ENTERPRISE_SELECTED',
       );
@@ -359,7 +359,7 @@ class UserAssignmentController {
     }
 
     if (assignments.isEmpty) {
-      throw ValidationException(
+      throw const ValidationException(
         'Aucune assignation valide: toutes les combinaisons entreprise/module sont incompatibles',
         'NO_VALID_ASSIGNMENT',
       );
@@ -405,7 +405,7 @@ class UserAssignmentController {
         userId: currentUserId,
       );
       if (!hasPermission) {
-        throw AuthorizationException(
+        throw const AuthorizationException(
           'Permission denied: Cannot update roles',
           'PERMISSION_DENIED',
         );
@@ -418,7 +418,7 @@ class UserAssignmentController {
         .getEnterpriseModuleUsersByEnterpriseAndModule(enterpriseId, moduleId);
     final assignment = assignments.firstWhere(
       (a) => a.userId == userId,
-      orElse: () => throw NotFoundException(
+      orElse: () => throw const NotFoundException(
         'Assignment not found',
         'ASSIGNMENT_NOT_FOUND',
       ),
@@ -462,7 +462,7 @@ class UserAssignmentController {
         userId: currentUserId,
       );
       if (!hasPermission) {
-        throw AuthorizationException(
+        throw const AuthorizationException(
           'Permission denied: Cannot update permissions',
           'PERMISSION_DENIED',
         );
@@ -480,7 +480,7 @@ class UserAssignmentController {
         .getEnterpriseModuleUsersByEnterpriseAndModule(enterpriseId, moduleId);
     final assignment = assignments.firstWhere(
       (a) => a.userId == userId,
-      orElse: () => throw NotFoundException(
+      orElse: () => throw const NotFoundException(
         'Assignment not found',
         'ASSIGNMENT_NOT_FOUND',
       ),
@@ -525,7 +525,7 @@ class UserAssignmentController {
         userId: currentUserId,
       );
       if (!hasPermission) {
-        throw AuthorizationException(
+        throw const AuthorizationException(
           'Permission denied: Cannot remove users',
           'PERMISSION_DENIED',
         );
@@ -539,7 +539,7 @@ class UserAssignmentController {
           moduleId,
         )).firstWhere(
           (a) => a.userId == userId,
-          orElse: () => throw NotFoundException(
+          orElse: () => throw const NotFoundException(
         'Assignment not found',
         'ASSIGNMENT_NOT_FOUND',
       ),

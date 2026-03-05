@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 
 import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
-import 'package:elyf_groupe_app/shared.dart';
 
 /// En-tête de la carte de stock d'un point de vente.
 class PosStockHeader extends ConsumerWidget {

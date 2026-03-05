@@ -1,4 +1,3 @@
-import 'dart:math';
 import '../entities/cylinder.dart';
 import '../entities/cylinder_stock.dart';
 import '../entities/gaz_settings.dart';

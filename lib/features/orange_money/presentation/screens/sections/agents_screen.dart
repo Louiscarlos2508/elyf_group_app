@@ -75,7 +75,7 @@ class _AgentsScreenState extends ConsumerState<AgentsScreen> with SingleTickerPr
         // 1. Statistiques
         SliverToBoxAdapter(
           child: Padding(
-            padding: EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.xs),
+            padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.xs),
             child: _buildStatisticsSection(statsAsync),
           ),
         ),
@@ -83,10 +83,10 @@ class _AgentsScreenState extends ConsumerState<AgentsScreen> with SingleTickerPr
         // 2. Filtres & Recherche
         SliverToBoxAdapter(
           child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             child: ElyfCard(
               backgroundColor: theme.colorScheme.surface.withValues(alpha: 0.5),
-              padding: EdgeInsets.all(AppSpacing.sm),
+              padding: const EdgeInsets.all(AppSpacing.sm),
               child: Column(
                 children: [
                    Row(
@@ -100,7 +100,7 @@ class _AgentsScreenState extends ConsumerState<AgentsScreen> with SingleTickerPr
                         size: 20,
                         color: theme.colorScheme.primary,
                       ),
-                      SizedBox(width: AppSpacing.md),
+                      const SizedBox(width: AppSpacing.md),
                       Expanded(
                         child: Text(
                           _tabController.index == 0 
@@ -130,7 +130,7 @@ class _AgentsScreenState extends ConsumerState<AgentsScreen> with SingleTickerPr
                       ),
                     ],
                   ),
-                  Divider(height: AppSpacing.lg),
+                  const Divider(height: AppSpacing.lg),
                   _buildFilters(),
                 ],
               ),
@@ -141,7 +141,7 @@ class _AgentsScreenState extends ConsumerState<AgentsScreen> with SingleTickerPr
         // 3. Liste Grosse (Grid)
         _buildListSection(ref),
         
-        SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xxl)),
+        const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xxl)),
       ],
     );
   }
@@ -149,7 +149,7 @@ class _AgentsScreenState extends ConsumerState<AgentsScreen> with SingleTickerPr
   Widget _buildStatisticsSection(AsyncValue<Map<String, dynamic>> statsAsync) {
     return statsAsync.when(
       data: (stats) => AgentsKpiCards(stats: stats),
-      loading: () => LoadingIndicator(height: 100),
+      loading: () => const LoadingIndicator(height: 100),
       error: (e, s) => ErrorDisplayWidget(error: e),
     );
   }
@@ -176,7 +176,7 @@ class _AgentsScreenState extends ConsumerState<AgentsScreen> with SingleTickerPr
         fontWeight: FontWeight.normal,
         fontFamily: 'Outfit',
       ),
-      tabs: [
+      tabs: const [
         Tab(
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -632,7 +632,7 @@ class _HistoryTile extends StatelessWidget {
     final actuallyIsRecharge = isRechargeStr || (!isRetraitStr && operation.fromAccount == PaymentMethod.cash && operation.toAccount == PaymentMethod.mobileMoney);
 
     return Container(
-      margin: EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.xs),
+      margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.xs),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(16),

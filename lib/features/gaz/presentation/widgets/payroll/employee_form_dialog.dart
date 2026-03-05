@@ -4,7 +4,6 @@ import 'package:uuid/uuid.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/gaz_employee.dart';
-import 'package:elyf_groupe_app/features/administration/application/providers.dart';
 import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 
 class GazEmployeeFormDialog extends ConsumerStatefulWidget {

@@ -297,7 +297,7 @@ mixin OptimisticUIRepositoryMixin<T> {
     required T entity,
     required OptimisticUI<T> optimisticUI,
   }) async {
-    return await optimisticUI.executeWithOptimisticUpdate(
+    return optimisticUI.executeWithOptimisticUpdate(
       entity: entity,
       operation: (e) async {
         await save(e);
@@ -316,7 +316,7 @@ mixin OptimisticUIRepositoryMixin<T> {
   }) async {
     await optimisticUI.executeDeleteWithOptimisticUpdate(
       entity: entity,
-      deleteOperation: (e) => delete(e),
+      deleteOperation: delete,
     );
   }
 }

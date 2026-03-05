@@ -48,7 +48,7 @@ class _AdminHomeScreenState extends ConsumerState<AdminHomeScreen> {
               }) async {
                 final currentUserId = ref.read(currentUserIdProvider);
                 if (currentUserId == null || currentUserId != userId) {
-                  throw AuthenticationException(
+                  throw const AuthenticationException(
                     'Utilisateur non connecté ou ID invalide',
                     'USER_NOT_AUTHENTICATED',
                   );
@@ -58,7 +58,7 @@ class _AdminHomeScreenState extends ConsumerState<AdminHomeScreen> {
                 final List<User> users = await ref.read(usersProvider.future);
                 final currentUser = users.firstWhere(
                   (u) => u.id == currentUserId,
-                  orElse: () => throw NotFoundException(
+                  orElse: () => throw const NotFoundException(
                     'Utilisateur non trouvé',
                     'USER_NOT_FOUND',
                   ),
@@ -149,7 +149,7 @@ class _AdminHomeScreenState extends ConsumerState<AdminHomeScreen> {
                 ),
               ),
             ),
-          EnterpriseSelectorWidget(style: EnterpriseSelectorStyle.appBar),
+          const EnterpriseSelectorWidget(style: EnterpriseSelectorStyle.appBar),
           IconButton(
             icon: const Icon(Icons.person_outline),
             onPressed: () => _navigateToProfile(context),

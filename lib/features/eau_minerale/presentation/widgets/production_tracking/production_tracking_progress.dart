@@ -12,22 +12,22 @@ class ProductionTrackingProgress extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final steps = [
-      _StepInfo(
+      const _StepInfo(
         label: 'Initialisation',
         icon: Icons.create_outlined,
         description: 'Session créée',
       ),
-      _StepInfo(
+      const _StepInfo(
         label: 'Démarrage',
         icon: Icons.play_arrow,
         description: 'Production démarrée',
       ),
-      _StepInfo(
+      const _StepInfo(
         label: 'En cours',
         icon: Icons.settings,
         description: 'Machines et bobines',
       ),
-      _StepInfo(
+      const _StepInfo(
         label: 'Terminée',
         icon: Icons.check_circle,
         description: 'Production finalisée',

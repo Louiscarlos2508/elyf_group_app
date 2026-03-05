@@ -96,12 +96,12 @@ class CategoryOfflineRepository extends OfflineRepository<Category>
 
   @override
   Future<List<Category>> fetchCategories() async {
-    return await getAllForEnterprise(enterpriseId);
+    return getAllForEnterprise(enterpriseId);
   }
 
   @override
   Future<Category?> getCategory(String id) async {
-    return await getByLocalId(id);
+    return getByLocalId(id);
   }
 
   @override

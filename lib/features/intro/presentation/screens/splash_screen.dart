@@ -7,7 +7,6 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import '../../../../core/logging/app_logger.dart';
 
-import '../../../../core/auth/providers.dart';
 import '../../../../core/session/session_manager.dart';
 import '../../../../core/session/session_state.dart';
 import '../../../../core/auth/entities/app_user.dart';

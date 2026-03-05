@@ -17,9 +17,7 @@ class AppLifecycleController {
     AppLogger.info('Initializing AppLifecycleController', name: 'lifecycle.controller');
     
     // Écouter les changements d'état de la session
-    ref.listen<SessionState>(sessionManagerProvider, (previous, next) {
-      _handleStateChange(previous, next);
-    }, fireImmediately: true);
+    ref.listen<SessionState>(sessionManagerProvider, _handleStateChange, fireImmediately: true);
   }
 
   void _handleStateChange(SessionState? previous, SessionState next) {

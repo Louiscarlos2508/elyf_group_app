@@ -6,8 +6,6 @@ import 'package:elyf_groupe_app/features/gaz/application/controllers/cylinder_le
 import 'package:elyf_groupe_app/features/gaz/domain/repositories/cylinder_leak_repository.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/repositories/cylinder_stock_repository.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder_leak.dart';
-import 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder_stock.dart';
-import 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder.dart';
 import '../../../../helpers/test_helpers.dart';
 
 import 'cylinder_leak_controller_test.mocks.dart';

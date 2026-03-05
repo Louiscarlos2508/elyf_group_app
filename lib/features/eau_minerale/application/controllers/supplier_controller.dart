@@ -48,6 +48,6 @@ class SupplierController {
   }
 
   Future<List<Supplier>> searchSuppliers(String query) async {
-    return await _supplierRepository.searchSuppliers(query);
+    return _supplierRepository.searchSuppliers(query);
   }
 }

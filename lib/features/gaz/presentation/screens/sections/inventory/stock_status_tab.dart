@@ -10,8 +10,6 @@ import 'package:elyf_groupe_app/features/administration/application/providers.da
 import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import '../stock/stock_kpi_section.dart';
 import '../stock/stock_pos_list.dart';
-import '../../../widgets/wholesale/independent_collection_dialog.dart';
-import '../../../widgets/bottle_conservation_card.dart';
 import '../../../widgets/pos_stock_movement_dialog.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/services/gaz_stock_calculation_service.dart';
 
@@ -114,7 +112,7 @@ class StockStatusTab extends ConsumerWidget {
 
             SliverToBoxAdapter(
               child: Padding(
-                padding: EdgeInsets.fromLTRB(
+                padding: const EdgeInsets.fromLTRB(
                   AppSpacing.lg,
                   0,
                   AppSpacing.lg,
@@ -159,7 +157,7 @@ class StockStatusTab extends ConsumerWidget {
             if (isPOS)
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: EdgeInsets.fromLTRB(
+                  padding: const EdgeInsets.fromLTRB(
                     AppSpacing.lg,
                     0,
                     AppSpacing.lg,
@@ -243,7 +241,7 @@ class StockStatusTab extends ConsumerWidget {
             if (!isPOS) ...[
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: EdgeInsets.fromLTRB(
+                  padding: const EdgeInsets.fromLTRB(
                     AppSpacing.lg,
                     0,
                     AppSpacing.lg,
@@ -277,7 +275,7 @@ class StockStatusTab extends ConsumerWidget {
               ),
 
               SliverPadding(
-                padding: EdgeInsets.fromLTRB(
+                padding: const EdgeInsets.fromLTRB(
                   AppSpacing.lg,
                   0,
                   AppSpacing.lg,

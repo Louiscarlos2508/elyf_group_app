@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../domain/entities/bobine_usage.dart';
-import '../../../domain/entities/machine.dart';
 import '../../../domain/entities/production_session.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
-import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 import '../bobine_finish_dialog.dart';
 import '../machine_breakdown_dialog.dart';
 import 'package:elyf_groupe_app/shared.dart';

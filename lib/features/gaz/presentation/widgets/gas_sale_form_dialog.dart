@@ -3,10 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
-import 'package:elyf_groupe_app/core/tenant/tenant_switch_manager.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
-import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/gaz_settings.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/gas_sale.dart';

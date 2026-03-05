@@ -59,7 +59,7 @@ class SalesReportCylinderStats extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.inventory_2, size: 16, color: Colors.blue),
+                      const Icon(Icons.inventory_2, size: 16, color: Colors.blue),
                       const SizedBox(width: 8),
                       Text(
                         '${data.weight} kg',

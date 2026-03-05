@@ -83,7 +83,7 @@ class FirebaseAuthIntegrationService {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null || user.uid != userId) {
-        throw AuthenticationException(
+        throw const AuthenticationException(
           'User not authenticated or ID mismatch',
           'USER_AUTH_MISMATCH',
         );
@@ -117,7 +117,7 @@ class FirebaseAuthIntegrationService {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null || user.uid != userId) {
-        throw AuthenticationException(
+        throw const AuthenticationException(
           'User not authenticated or ID mismatch',
           'USER_AUTH_MISMATCH',
         );

@@ -81,7 +81,7 @@ class _FormDialogState extends State<FormDialog> {
     final availableHeight = screenHeight - keyboardHeight - 48;
     final dialogWidth = (screenWidth * 0.95).clamp(320.0, widget.maxWidth);
 
-    Widget dialogBody = Column(
+    final Widget dialogBody = Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [

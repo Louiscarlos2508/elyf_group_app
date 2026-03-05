@@ -31,13 +31,13 @@ final realtimeSyncServiceProvider = Provider<RealtimeSyncService>((ref) {
     firestore: firestore,
     firestoreSync: firestoreSync,
   );
-  ref.onDispose(() => service.dispose());
+  ref.onDispose(service.dispose);
   return service;
 });
 
 /// Provider for ConflictResolver
 final conflictResolverProvider = Provider<SyncConflictResolver>((ref) {
-  return SyncConflictResolver(
+  return const SyncConflictResolver(
     customStrategies: {
       'production_sessions': ConflictResolutionStrategy.merge,
       // Add other complex collections here if needed

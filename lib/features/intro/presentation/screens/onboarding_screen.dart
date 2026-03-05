@@ -292,7 +292,7 @@ class _ConnectedAnimation extends StatelessWidget {
               ...List.generate(4, (index) {
                 final angle =
                     (index * 90 + animation.value * 360) * math.pi / 180;
-                final radius = 100.0;
+                const radius = 100.0;
                 final progress = animation.value * 0.5 + 0.5;
                 final x = radius * progress * math.cos(angle);
                 final y = radius * progress * math.sin(angle);

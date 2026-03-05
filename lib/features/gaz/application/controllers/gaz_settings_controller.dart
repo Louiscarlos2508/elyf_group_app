@@ -12,7 +12,7 @@ class GazSettingsController {
     required String enterpriseId,
     required String moduleId,
   }) async {
-    return await repository.getSettings(
+    return repository.getSettings(
       enterpriseId: enterpriseId,
       moduleId: moduleId,
     );

@@ -17,7 +17,7 @@ class DashboardMonthKpis extends ConsumerWidget {
 
     return summaryAsync.when(
       data: (summary) => _buildKpis(context, summary),
-      loading: () => _buildLoadingState(),
+      loading: _buildLoadingState,
       error: (_, __) => const SizedBox.shrink(),
     );
   }

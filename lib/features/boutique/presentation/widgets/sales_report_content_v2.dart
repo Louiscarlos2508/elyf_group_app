@@ -244,7 +244,7 @@ class SalesReportContentV2 extends ConsumerWidget {
                   color: AppColors.primary.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(Icons.receipt_long, color: AppColors.primary),
+                child: const Icon(Icons.receipt_long, color: AppColors.primary),
               ),
               title: Text(
                 'Vente ${sale.number ?? "#${sale.id.substring(0, 8)}"}',

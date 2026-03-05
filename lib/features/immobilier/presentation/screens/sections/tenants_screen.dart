@@ -132,7 +132,7 @@ class _TenantsScreenState extends ConsumerState<TenantsScreen> {
 
     return Scaffold(
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showTenantForm(),
+        onPressed: _showTenantForm,
         icon: const Icon(Icons.add),
         label: const Text('Nouveau'),
       ),
@@ -202,7 +202,7 @@ class _TenantsScreenState extends ConsumerState<TenantsScreen> {
                   ),
 
                   // Section header
-                  SliverSectionHeader(
+                  const SliverSectionHeader(
                     title: 'LISTE DES LOCATAIRES',
                     top: AppSpacing.lg,
                     bottom: AppSpacing.sm,
@@ -237,7 +237,7 @@ class _TenantsScreenState extends ConsumerState<TenantsScreen> {
                     )
                   else
                     SliverPadding(
-                      padding: EdgeInsets.symmetric(
+                      padding: const EdgeInsets.symmetric(
                         horizontal: AppSpacing.lg,
                         vertical: AppSpacing.sm,
                       ),
@@ -257,7 +257,7 @@ class _TenantsScreenState extends ConsumerState<TenantsScreen> {
                       ),
                     ),
 
-                  SliverToBoxAdapter(
+                  const SliverToBoxAdapter(
                     child: SizedBox(height: AppSpacing.lg),
                   ),
                 ],

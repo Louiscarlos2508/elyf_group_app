@@ -81,13 +81,13 @@ class ExpenseBalancePdfService {
             ),
             pw.Text(
               moduleName,
-              style: pw.TextStyle(fontSize: 14, color: PdfColors.grey700),
+              style: const pw.TextStyle(fontSize: 14, color: PdfColors.grey700),
             ),
           ],
         ),
         pw.Text(
           DateFormat('dd/MM/yyyy').format(DateTime.now()),
-          style: pw.TextStyle(fontSize: 12, color: PdfColors.grey600),
+          style: const pw.TextStyle(fontSize: 12, color: PdfColors.grey600),
         ),
       ],
     );
@@ -103,7 +103,7 @@ class ExpenseBalancePdfService {
   pw.Widget _buildPeriodInfo(String info) {
     return pw.Text(
       info,
-      style: pw.TextStyle(fontSize: 12, color: PdfColors.grey600),
+      style: const pw.TextStyle(fontSize: 12, color: PdfColors.grey600),
     );
   }
 
@@ -122,7 +122,7 @@ class ExpenseBalancePdfService {
             children: [
               pw.Text(
                 'Total des dépenses',
-                style: pw.TextStyle(fontSize: 14, color: PdfColors.grey700),
+                style: const pw.TextStyle(fontSize: 14, color: PdfColors.grey700),
               ),
               pw.SizedBox(height: 4),
               pw.Text(
@@ -139,7 +139,7 @@ class ExpenseBalancePdfService {
             children: [
               pw.Text(
                 'Nombre de dépenses',
-                style: pw.TextStyle(fontSize: 14, color: PdfColors.grey700),
+                style: const pw.TextStyle(fontSize: 14, color: PdfColors.grey700),
               ),
               pw.SizedBox(height: 4),
               pw.Text(
@@ -252,7 +252,7 @@ class ExpenseBalancePdfService {
       children: [
         pw.Text(
           'Document généré le ${DateFormat('dd/MM/yyyy à HH:mm').format(DateTime.now())}',
-          style: pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
+          style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
         ),
       ],
     );

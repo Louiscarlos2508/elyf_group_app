@@ -64,7 +64,7 @@ class StockService {
   /// Ajuste la quantité d'un stock.
   Future<void> adjustStockQuantity(String stockId, int newQuantity) async {
     if (newQuantity < 0) {
-      throw ValidationException(
+      throw const ValidationException(
         'La quantité ne peut pas être négative',
         'NEGATIVE_QUANTITY',
       );

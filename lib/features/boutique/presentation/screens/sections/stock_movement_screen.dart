@@ -105,7 +105,7 @@ class _StockMovementScreenState extends ConsumerState<StockMovementScreen> {
             ],
           ),
           SliverPadding(
-            padding: EdgeInsets.all(AppSpacing.lg),
+            padding: const EdgeInsets.all(AppSpacing.lg),
             sliver: SliverToBoxAdapter(
               child: Card(
                 elevation: 0,
@@ -150,7 +150,7 @@ class _StockMovementScreenState extends ConsumerState<StockMovementScreen> {
               child: Center(child: CircularProgressIndicator()),
             )
           else if (_movements.isEmpty)
-            SliverFillRemaining(
+            const SliverFillRemaining(
               child: EmptyState(
                 icon: Icons.history,
                 title: 'Aucun mouvement',
@@ -159,7 +159,7 @@ class _StockMovementScreenState extends ConsumerState<StockMovementScreen> {
             )
           else
             SliverPadding(
-              padding: EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.lg),
+              padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.lg),
               sliver: SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {

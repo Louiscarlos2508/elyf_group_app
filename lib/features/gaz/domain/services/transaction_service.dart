@@ -499,7 +499,7 @@ class TransactionService {
   }) async {
     final tour = await tourRepository.getTourById(tourId);
     if (tour == null) {
-      throw NotFoundException(
+      throw const NotFoundException(
         'Tour introuvable',
         'TOUR_NOT_FOUND',
       );
@@ -512,7 +512,7 @@ class TransactionService {
 
     // 1. Validation
     if (tour.fullBottlesReceived.isEmpty) {
-      throw ValidationException(
+      throw const ValidationException(
         'Saisissez les bouteilles pleines reçues avant la clôture',
         'NO_FULLS_RECEIVED',
       );
@@ -709,7 +709,7 @@ class TransactionService {
     Map<int, int> newLeakingLoading = const {},
   }) async {
     final tour = await tourRepository.getTourById(tourId);
-    if (tour == null) throw NotFoundException('Tour introuvable', 'TOUR_NOT_FOUND');
+    if (tour == null) throw const NotFoundException('Tour introuvable', 'TOUR_NOT_FOUND');
 
     final oldLoading = tour.emptyBottlesLoaded;
     final oldLeakingLoading = tour.leakingBottlesLoaded;
@@ -786,7 +786,7 @@ class TransactionService {
     required String userId,
   }) async {
     final tour = await tourRepository.getTourById(tourId);
-    if (tour == null) throw NotFoundException('Tour introuvable', 'TOUR_NOT_FOUND');
+    if (tour == null) throw const NotFoundException('Tour introuvable', 'TOUR_NOT_FOUND');
     if (tour.status == TourStatus.cancelled) return;
 
     // 1. Remettre les vides en transit vers le magasin (DÉSACTIVÉ)
@@ -907,7 +907,7 @@ class TransactionService {
   }) async {
     // 0. Validation (Session check removed)
     if (collection.emptyBottles.isEmpty) {
-      throw ValidationException(
+      throw const ValidationException(
         'La collecte ne contient aucune bouteille.',
         'EMPTY_COLLECTION',
       );
@@ -999,7 +999,7 @@ class TransactionService {
     final fullStock = fullStocks.where((s) => s.status == CylinderStatus.full && s.cylinderId == leak.cylinderId).firstOrNull;
     
     if (fullStock == null || fullStock.quantity <= 0) {
-      throw ValidationException('Stock insuffisant pour déclarer une fuite', 'INSUFFICIENT_STOCK');
+      throw const ValidationException('Stock insuffisant pour déclarer une fuite', 'INSUFFICIENT_STOCK');
     }
 
     await stockRepository.updateStock(fullStock.copyWith(
@@ -1065,7 +1065,7 @@ class TransactionService {
     final leakStock = stocks.where((s) => s.status == CylinderStatus.leak && s.cylinderId == leak.cylinderId).firstOrNull;
     
     if (leakStock == null || leakStock.quantity <= 0) {
-      throw ValidationException('Stock "Fuite" insuffisant pour la conversion', 'INSUFFICIENT_STOCK');
+      throw const ValidationException('Stock "Fuite" insuffisant pour la conversion', 'INSUFFICIENT_STOCK');
     }
 
     await stockRepository.updateStockQuantity(leakStock.id, leakStock.quantity - 1);
@@ -1149,14 +1149,14 @@ class TransactionService {
     final toCylinder = await gasRepository.getCylinderById(exchange.toCylinderId);
     
     if (fromCylinder == null || toCylinder == null) {
-      throw NotFoundException('Bouteille introuvable', 'CYLINDER_NOT_FOUND');
+      throw const NotFoundException('Bouteille introuvable', 'CYLINDER_NOT_FOUND');
     }
 
     final fromStocksList = await stockRepository.getStocksByWeight(exchange.enterpriseId, fromCylinder.weight);
     final fromStock = fromStocksList.where((s) => s.cylinderId == exchange.fromCylinderId && s.status == CylinderStatus.emptyAtStore).firstOrNull;
 
     if (fromStock == null || fromStock.quantity < exchange.quantity) {
-      throw ValidationException('Stock insuffisant pour l\'échange', 'INSUFFICIENT_STOCK');
+      throw const ValidationException('Stock insuffisant pour l\'échange', 'INSUFFICIENT_STOCK');
     }
 
     // 2. Transférer stock
@@ -1436,7 +1436,7 @@ class TransactionService {
   }) async {
     final cylinders = await gasRepository.getCylinders();
 
-    Future<void> _processMovement(Map<int, int> quantities, CylinderStatus status, bool isAddition) async {
+    Future<void> processMovement(Map<int, int> quantities, CylinderStatus status, bool isAddition) async {
       for (final entry in quantities.entries) {
         final weight = entry.key;
         final quantity = entry.value;
@@ -1493,16 +1493,16 @@ class TransactionService {
       // 1. Process all movements
       
       // Sortie de vides -> On enlève du Magasin, On met en Transit
-      await _processMovement(emptyExits, CylinderStatus.emptyAtStore, false);
-      await _processMovement(emptyExits, CylinderStatus.emptyInTransit, true);
+      await processMovement(emptyExits, CylinderStatus.emptyAtStore, false);
+      await processMovement(emptyExits, CylinderStatus.emptyInTransit, true);
 
       // Entrée de pleines -> On ajoute aux Pleines, On enlève du Transit
-      await _processMovement(fullEntries, CylinderStatus.full, true);
-      await _processMovement(fullEntries, CylinderStatus.emptyInTransit, false);
+      await processMovement(fullEntries, CylinderStatus.full, true);
+      await processMovement(fullEntries, CylinderStatus.emptyInTransit, false);
 
       // Entrée de vides (retours non-chargés) -> On ajoute au Magasin, On enlève du Transit
-      await _processMovement(emptyEntries, CylinderStatus.emptyAtStore, true);
-      await _processMovement(emptyEntries, CylinderStatus.emptyInTransit, false);
+      await processMovement(emptyEntries, CylinderStatus.emptyAtStore, true);
+      await processMovement(emptyEntries, CylinderStatus.emptyInTransit, false);
 
       // 2. Audit Trail
       await auditTrailRepository.log(AuditRecord(

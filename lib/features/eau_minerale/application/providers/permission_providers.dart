@@ -53,21 +53,21 @@ final eauMineralePermissionAdapterProvider =
 final hasPermissionProvider =
     FutureProvider.family<bool, String>((ref, permissionId) async {
       final adapter = ref.watch(eauMineralePermissionAdapterProvider);
-      return await adapter.hasPermission(permissionId);
+      return adapter.hasPermission(permissionId);
     });
 
 /// Provider to check if user has any of the specified permissions.
 final hasAnyPermissionProvider =
     FutureProvider.family<bool, Set<String>>((ref, permissionIds) async {
       final adapter = ref.watch(eauMineralePermissionAdapterProvider);
-      return await adapter.hasAnyPermission(permissionIds);
+      return adapter.hasAnyPermission(permissionIds);
     });
 
 /// Provider to check if user has all specified permissions.
 final hasAllPermissionsProvider =
     FutureProvider.family<bool, Set<String>>((ref, permissionIds) async {
       final adapter = ref.watch(eauMineralePermissionAdapterProvider);
-      return await adapter.hasAllPermissions(permissionIds);
+      return adapter.hasAllPermissions(permissionIds);
     });
 
 /// Configuration for a section in the module shell.

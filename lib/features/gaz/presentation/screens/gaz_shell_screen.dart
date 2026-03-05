@@ -32,7 +32,7 @@ class _GazShellScreenState extends BaseModuleShellScreenState<GazShellScreen> {
     // Listen to the navigation provider to update the internal state
     ref.listen(gazNavigationIndexProvider, (previous, next) {
       if (next != selectedIndex) {
-        navigateToIndex(next as int);
+        navigateToIndex(next);
       }
     });
 

@@ -30,7 +30,7 @@ class PurchaseController {
   final SupplierRepository _supplierRepository;
 
   Future<List<Purchase>> fetchPurchases() async {
-    return await _purchaseRepository.fetchPurchases();
+    return _purchaseRepository.fetchPurchases();
   }
 
   Stream<List<Purchase>> watchPurchases({String? supplierId}) {

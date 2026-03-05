@@ -51,15 +51,15 @@ class SalaryController {
   }
 
   Future<String> createFixedEmployee(Employee employee) async {
-    return await _repository.createFixedEmployee(employee);
+    return _repository.createFixedEmployee(employee);
   }
 
   Future<void> updateEmployee(Employee employee) async {
-    return await _repository.updateEmployee(employee);
+    return _repository.updateEmployee(employee);
   }
 
   Future<void> deleteEmployee(String employeeId) async {
-    return await _repository.deleteEmployee(employeeId);
+    return _repository.deleteEmployee(employeeId);
   }
 
   Future<String> createProductionPayment(ProductionPayment payment) async {

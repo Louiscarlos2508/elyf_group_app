@@ -219,7 +219,7 @@ class _ConservationRow extends StatelessWidget {
                   ),
                 )
               else
-                Icon(Icons.check_circle_outline, color: Colors.green, size: 18),
+                const Icon(Icons.check_circle_outline, color: Colors.green, size: 18),
             ],
           ),
           if (item.hasDiscrepancy) ...[

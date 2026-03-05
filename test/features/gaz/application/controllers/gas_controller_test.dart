@@ -103,7 +103,7 @@ void main() {
     });
 
     test('throws BusinessException if stock is insufficient', () async {
-      final cylinder = Cylinder(
+      const cylinder = Cylinder(
         id: 'c1',
         weight: 12,
         buyPrice: 1500,
@@ -134,7 +134,7 @@ void main() {
     });
 
     test('allows sale and calls repository if stock is sufficient', () async {
-      final cylinder = Cylinder(
+      const cylinder = Cylinder(
         id: 'c1',
         weight: 12,
         buyPrice: 1500,

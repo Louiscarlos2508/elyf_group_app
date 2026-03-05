@@ -98,14 +98,14 @@ class OrangeMoneyController {
     
     // PRD: Montant minimum 100 FCFA
     if (amount < 100) {
-      throw BusinessException('Le montant minimum est de 100 FCFA.');
+      throw const BusinessException('Le montant minimum est de 100 FCFA.');
     }
 
     // PRD: Montant maximum selon type
     // Cash-In: 1 000 000 FCFA
     // Cash-Out: 500 000 FCFA
     // TODO: Ces limites pourraient être configurables dans settings à l'avenir
-    int maxAmount = type == TransactionType.cashIn ? 1000000 : 500000;
+    final int maxAmount = type == TransactionType.cashIn ? 1000000 : 500000;
     if (amount > maxAmount) {
        // Format amount for display
       throw BusinessException('Le montant maximum pour ${type == TransactionType.cashIn ? 'Cash-In' : 'Cash-Out'} est de $maxAmount FCFA.');
@@ -207,14 +207,14 @@ class OrangeMoneyController {
 
   /// Crée une transaction (méthode directe pour les cas avancés).
   Future<String> createTransaction(Transaction transaction) async {
-    return await _repository.createTransaction(transaction);
+    return _repository.createTransaction(transaction);
   }
 
   Future<void> updateTransactionStatus(
     String transactionId,
     TransactionStatus status,
   ) async {
-    return await _repository.updateTransactionStatus(transactionId, status);
+    return _repository.updateTransactionStatus(transactionId, status);
   }
 
   Future<void> deleteTransaction(String transactionId) async {
@@ -224,7 +224,7 @@ class OrangeMoneyController {
   }
 
   Future<void> restoreTransaction(String transactionId) async {
-    return await _repository.restoreTransaction(transactionId);
+    return _repository.restoreTransaction(transactionId);
   }
 
   Stream<List<Transaction>> watchTransactions({
@@ -331,8 +331,8 @@ class OrangeMoneyController {
     final cashInTransactions = transactions.where((t) => t.isCashIn && t.isCompleted).toList();
     final cashOutTransactions = transactions.where((t) => t.isCashOut && t.isCompleted).toList();
 
-    int totalCashIn = cashInTransactions.fold<int>(0, (sum, t) => sum + t.amount);
-    int totalCashOut = cashOutTransactions.fold<int>(0, (sum, t) => sum + t.amount);
+    final int totalCashIn = cashInTransactions.fold<int>(0, (sum, t) => sum + t.amount);
+    final int totalCashOut = cashOutTransactions.fold<int>(0, (sum, t) => sum + t.amount);
     
     int internalIn = 0;
     int internalOut = 0;

@@ -12,7 +12,7 @@ class PredefinedRoles {
 
   /// Gaz Enterprise Manager (PRD Persona: Enterprise / Module Level)
   /// Full Module Sovereignty: stock, pricing, POS networks, staff, reporting.
-  static final gazEnterpriseManager = UserRole(
+  static const gazEnterpriseManager = UserRole(
     id: 'gaz_enterprise_manager',
     name: 'Responsable Gaz',
     description:
@@ -68,7 +68,7 @@ class PredefinedRoles {
   /// Gas Retail Seller (PRD Persona: Operational Level)
   /// Front-line execution: high-speed sales, local stock, receipt printing.
   /// No access to management, settings, or global reports.
-  static final gazRetailSeller = UserRole(
+  static const gazRetailSeller = UserRole(
     id: 'gaz_retail_seller',
     name: 'Vendeur Gaz',
     description:
@@ -100,7 +100,7 @@ class PredefinedRoles {
 
   /// Water Manager (PRD Persona: Enterprise Level)
   /// Supervision complète: production, stocks, fournisseurs, trésorerie.
-  static final waterManager = UserRole(
+  static const waterManager = UserRole(
     id: 'water_manager',
     name: 'Responsable Eau Minérale',
     description:
@@ -163,7 +163,7 @@ class PredefinedRoles {
 
   /// Water Field Agent / Seller (PRD Persona: Operational Level)
   /// Vente directe, encaissement crédits, petite caisse.
-  static final waterFieldAgent = UserRole(
+  static const waterFieldAgent = UserRole(
     id: 'water_field_agent',
     name: 'Agent Terrain Eau',
     description:
@@ -196,7 +196,7 @@ class PredefinedRoles {
 
   /// Boutique Owner (PRD Persona: Manager / Agent — single-persona model)
   /// Total Ownership: catalogue, inventaire, approvisionnement, vente POS.
-  static final boutiqueOwner = UserRole(
+  static const boutiqueOwner = UserRole(
     id: 'boutique_owner',
     name: 'Propriétaire Boutique',
     description:
@@ -253,7 +253,7 @@ class PredefinedRoles {
 
   /// Immobilier Manager (PRD Persona: Enterprise / Operational)
   /// Full Sovereignty: portfolio, contrats, encaissements, maintenance.
-  static final immobilierManager = UserRole(
+  static const immobilierManager = UserRole(
     id: 'immobilier_manager',
     name: 'Responsable Immobilier',
     description:
@@ -322,7 +322,7 @@ class PredefinedRoles {
 
   /// OM Manager (PRD Persona: Enterprise Level)
   /// Gestion réseau: transactions, float, commissions, sous-agents.
-  static final omManager = UserRole(
+  static const omManager = UserRole(
     id: 'om_manager',
     name: 'Responsable Orange Money',
     description:
@@ -366,7 +366,7 @@ class PredefinedRoles {
 
   /// OM Agent (PRD Persona: Operational Level)
   /// Front-line: transactions, gestion caisse, déclaration commissions.
-  static final omAgent = UserRole(
+  static const omAgent = UserRole(
     id: 'om_agent',
     name: 'Agent Orange Money',
     description: 'Effectue les transactions et gère sa caisse',

@@ -11,8 +11,6 @@ class _GroupedStock {
   _GroupedStock({
     required this.quantity,
     required this.isLowStock,
-    this.seuilAlerte,
-    this.unitsPerLot = 1,
   });
 
   final int quantity;

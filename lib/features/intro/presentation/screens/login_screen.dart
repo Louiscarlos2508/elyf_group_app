@@ -416,7 +416,7 @@ class _AnimatedFormField extends StatelessWidget {
             contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(color: Colors.transparent),
+              borderSide: const BorderSide(color: Colors.transparent),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),

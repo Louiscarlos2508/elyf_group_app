@@ -52,7 +52,7 @@ class SalesController {
     // 1. Vérifier si une session de trésorerie est ouverte
     final currentSession = await _closingRepository.getCurrentSession();
     if (currentSession == null || currentSession.status != ClosingStatus.open) {
-      throw ValidationException(
+      throw const ValidationException(
         'Impossible de réaliser une vente : la session de trésorerie est fermée. '
         'Veuillez ouvrir une session dans la section Trésorerie.',
         'TREASURY_SESSION_CLOSED',
@@ -123,7 +123,7 @@ class SalesController {
     // 1. Vérifier si une session de trésorerie est ouverte
     final currentSession = await _closingRepository.getCurrentSession();
     if (currentSession == null || currentSession.status != ClosingStatus.open) {
-      throw ValidationException(
+      throw const ValidationException(
         'Impossible d\'annuler la vente : la session de trésorerie est fermée. '
         'Veuillez ouvrir une session dans la section Trésorerie.',
         'TREASURY_SESSION_CLOSED',
@@ -137,7 +137,7 @@ class SalesController {
       }
 
       if (sale.status == SaleStatus.voided) {
-        throw ValidationException('La vente est déjà annulée.', 'SALE_ALREADY_VOIDED');
+        throw const ValidationException('La vente est déjà annulée.', 'SALE_ALREADY_VOIDED');
       }
 
       // 2. Mettre à jour le statut de la vente

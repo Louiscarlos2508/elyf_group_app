@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:elyf_groupe_app/core/auth/entities/app_user.dart';
 import 'package:elyf_groupe_app/core/auth/providers.dart';
 import 'package:elyf_groupe_app/core/logging/app_logger.dart';
 import 'package:elyf_groupe_app/core/offline/providers.dart' as offline_providers;

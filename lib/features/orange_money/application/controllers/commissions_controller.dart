@@ -30,7 +30,7 @@ class CommissionsController {
   }) async {
     // If specific enterprise requested, use it
     if (enterpriseId != null) {
-      return await _repository.fetchCommissions(
+      return _repository.fetchCommissions(
         enterpriseId: enterpriseId,
         status: status,
         period: period,
@@ -41,7 +41,7 @@ class CommissionsController {
     final accessibleIds = await _permissionAdapter.getAccessibleEnterpriseIds(_activeEnterpriseId);
 
     if (accessibleIds.length > 1) {
-      return await _repository.fetchCommissionsByEnterprises(
+      return _repository.fetchCommissionsByEnterprises(
         accessibleIds.toList(),
         status: status,
         period: period,
@@ -49,7 +49,7 @@ class CommissionsController {
     }
 
     // Default to active enterprise
-    return await _repository.fetchCommissions(
+    return _repository.fetchCommissions(
       enterpriseId: _activeEnterpriseId,
       status: status,
       period: period,
@@ -57,11 +57,11 @@ class CommissionsController {
   }
 
   Future<Commission?> getCommission(String commissionId) async {
-    return await _repository.getCommission(commissionId);
+    return _repository.getCommission(commissionId);
   }
 
   Future<Commission?> getCurrentMonthCommission(String enterpriseId) async {
-    return await _repository.getCurrentMonthCommission(enterpriseId);
+    return _repository.getCurrentMonthCommission(enterpriseId);
   }
 
   Future<String> createCommission(Commission commission) async {
@@ -129,25 +129,25 @@ class CommissionsController {
   Future<Map<String, dynamic>> getStatistics({String? enterpriseId}) async {
     // If specific enterprise requested, use it
     if (enterpriseId != null) {
-      return await _repository.getStatistics(enterpriseId: enterpriseId);
+      return _repository.getStatistics(enterpriseId: enterpriseId);
     }
 
     final accessibleIds = await _permissionAdapter.getAccessibleEnterpriseIds(_activeEnterpriseId);
     
     if (accessibleIds.length > 1) {
-        return await _repository.fetchNetworkStatistics(accessibleIds.toList());
+        return _repository.fetchNetworkStatistics(accessibleIds.toList());
     }
 
-    return await _repository.getStatistics(enterpriseId: _activeEnterpriseId);
+    return _repository.getStatistics(enterpriseId: _activeEnterpriseId);
   }
 
   Future<Map<String, dynamic>> getNetworkStatistics({String? period}) async {
     final accessibleIds = await _permissionAdapter.getAccessibleEnterpriseIds(_activeEnterpriseId);
-    return await _repository.fetchNetworkStatistics(accessibleIds.toList(), period: period);
+    return _repository.fetchNetworkStatistics(accessibleIds.toList(), period: period);
   }
 
   Future<List<Commission>> fetchNetworkCommissions({String? period, CommissionStatus? status}) async {
     final accessibleIds = await _permissionAdapter.getAccessibleEnterpriseIds(_activeEnterpriseId);
-    return await _repository.fetchCommissionsByEnterprises(accessibleIds.toList(), period: period, status: status);
+    return _repository.fetchCommissionsByEnterprises(accessibleIds.toList(), period: period, status: status);
   }
 }

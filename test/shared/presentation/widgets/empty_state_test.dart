@@ -85,7 +85,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           theme: ThemeData(
-            colorScheme: ColorScheme.light(
+            colorScheme: const ColorScheme.light(
               onSurfaceVariant: Colors.grey,
             ),
           ),

@@ -156,7 +156,7 @@ class _ExpenseFormDialogState extends ConsumerState<ExpenseFormDialog>
             const SizedBox(height: 16),
             ExpenseFormFields.amountField(
               controller: _amountController,
-              validator: (value) => Validators.amount(value),
+              validator: Validators.amount,
             ),
             const SizedBox(height: 16),
             ExpenseFormFields.categoryField(

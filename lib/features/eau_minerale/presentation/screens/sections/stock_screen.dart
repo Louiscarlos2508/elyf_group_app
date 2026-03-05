@@ -28,7 +28,7 @@ class StockScreen extends ConsumerWidget {
           onSave: () async {
             final formState = formKey.currentState;
             if (formState != null) {
-              return await formState.submit();
+              return formState.submit();
             }
             return false;
           },

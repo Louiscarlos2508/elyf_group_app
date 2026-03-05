@@ -4,7 +4,6 @@ import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/gaz_employee.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/gaz_salary_payment.dart';
-import 'package:elyf_groupe_app/features/administration/application/providers.dart';
 import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 import '../../../widgets/payroll/employee_form_dialog.dart';
 import '../../../widgets/payroll/salary_payment_dialog.dart';
@@ -89,7 +88,7 @@ class PayrollTab extends ConsumerWidget {
               Icons.people_outline,
               Colors.blue,
             ),
-            loading: () => ElyfShimmer.card(),
+            loading: ElyfShimmer.card,
             error: (_, __) => const SizedBox.shrink(),
           ),
         ),
@@ -106,7 +105,7 @@ class PayrollTab extends ConsumerWidget {
                 Colors.green,
               );
             },
-            loading: () => ElyfShimmer.card(),
+            loading: ElyfShimmer.card,
             error: (_, __) => const SizedBox.shrink(),
           ),
         ),
@@ -162,7 +161,7 @@ class PayrollTab extends ConsumerWidget {
               );
             },
           ),
-      loading: () => ElyfShimmer.listTile(),
+      loading: ElyfShimmer.listTile,
       error: (e, _) => Text('Erreur: $e'),
     );
   }
@@ -194,7 +193,7 @@ class PayrollTab extends ConsumerWidget {
               );
             },
           ),
-      loading: () => ElyfShimmer.listTile(),
+      loading: ElyfShimmer.listTile,
       error: (e, _) => Text('Erreur: $e'),
     );
   }
@@ -202,14 +201,14 @@ class PayrollTab extends ConsumerWidget {
   void _showEmployeeDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (_) => GazEmployeeFormDialog(),
+      builder: (_) => const GazEmployeeFormDialog(),
     );
   }
 
   void _showPaymentDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (_) => GazSalaryPaymentDialog(),
+      builder: (_) => const GazSalaryPaymentDialog(),
     );
   }
 }

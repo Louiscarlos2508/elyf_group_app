@@ -312,7 +312,7 @@ class SyncConflictResolver {
     DateTime? serverTime,
   ) {
     // If lists are simple types, use the most recent list or favor server if same time
-    bool favorLocal = localTime != null && serverTime != null && localTime.isAfter(serverTime);
+    final bool favorLocal = localTime != null && serverTime != null && localTime.isAfter(serverTime);
     
     // Check if items are maps with an 'id' or 'localId'
     final firstItem = local.isNotEmpty ? local.first : (server.isNotEmpty ? server.first : null);

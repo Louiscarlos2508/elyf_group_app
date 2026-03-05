@@ -81,7 +81,7 @@ class ProductionPeriodFormatter {
         'décembre',
       ];
 
-      final monthIndex = monthNames.indexWhere((name) => parts.contains(name));
+      final monthIndex = monthNames.indexWhere(parts.contains);
       if (monthIndex == -1) return null;
       final month = monthIndex + 1;
 

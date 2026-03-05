@@ -562,7 +562,7 @@ class _AssignEnterpriseDialogState
 
       // 2. Check if role has at least one permission of the module
       final hasModulePermission = role.permissions.any(
-        (permissionId) => modulePermissionIds.contains(permissionId),
+        modulePermissionIds.contains,
       );
 
       // Verify overall compatibility (moduleId OR permissions)

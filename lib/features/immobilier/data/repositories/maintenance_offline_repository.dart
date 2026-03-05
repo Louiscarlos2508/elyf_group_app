@@ -121,7 +121,7 @@ class MaintenanceOfflineRepository extends OfflineRepository<MaintenanceTicket>
 
   @override
   Stream<List<MaintenanceTicket>> watchAllTickets({bool? isDeleted = false}) {
-    var query = driftService.db.select(driftService.db.maintenanceTicketsTable)
+    final query = driftService.db.select(driftService.db.maintenanceTicketsTable)
       ..where((t) => t.enterpriseId.equals(enterpriseId));
 
     if (isDeleted != null) {
@@ -137,7 +137,7 @@ class MaintenanceOfflineRepository extends OfflineRepository<MaintenanceTicket>
 
   @override
   Stream<List<MaintenanceTicket>> watchTicketsByProperty(String propertyId, {bool? isDeleted = false}) {
-    var query = driftService.db.select(driftService.db.maintenanceTicketsTable)
+    final query = driftService.db.select(driftService.db.maintenanceTicketsTable)
       ..where((t) => t.enterpriseId.equals(enterpriseId))
       ..where((t) => t.propertyId.equals(propertyId));
 
@@ -164,7 +164,7 @@ class MaintenanceOfflineRepository extends OfflineRepository<MaintenanceTicket>
 
   @override
   Future<MaintenanceTicket?> getTicketById(String id) async {
-    return await getByLocalId(id);
+    return getByLocalId(id);
   }
 
   @override

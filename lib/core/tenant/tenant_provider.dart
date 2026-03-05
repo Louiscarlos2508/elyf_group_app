@@ -63,7 +63,7 @@ final activeEnterpriseProvider = FutureProvider<Enterprise?>((ref) async {
     data: (enterpriseId) async {
       if (enterpriseId == null) return null;
       final enterpriseRepo = ref.watch(enterpriseRepositoryProvider);
-      return await enterpriseRepo.getEnterpriseById(enterpriseId);
+      return enterpriseRepo.getEnterpriseById(enterpriseId);
     },
     loading: () async => null,
     error: (_, __) async => null,

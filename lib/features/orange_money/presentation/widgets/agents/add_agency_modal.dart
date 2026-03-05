@@ -169,7 +169,7 @@ class _AddAgencyModalState extends ConsumerState<AddAgencyModal> {
       children: [
         _buildSectionHeader('Informations Génerales Agence'),
         SizedBox(height: isKeyboardOpen ? 8 : 16),
-        ElyfField(
+        const ElyfField(
           label: 'Type d\'agence',
           initialValue: 'Sous Agence',
           readOnly: true,

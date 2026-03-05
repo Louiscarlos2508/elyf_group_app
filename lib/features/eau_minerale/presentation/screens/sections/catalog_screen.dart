@@ -55,7 +55,7 @@ class _CatalogContentState extends State<_CatalogContent> {
 
     return CustomScrollView(
       slivers: [
-        ElyfModuleHeader(
+        const ElyfModuleHeader(
           title: "Catalogue",
           subtitle: "Gestion des produits et tarifs",
           module: EnterpriseModule.eau,
@@ -90,10 +90,10 @@ class _CatalogContentState extends State<_CatalogContent> {
                     child: DropdownButton<ProductType?>(
                       value: _filterType,
                       hint: const Text("Tous les types"),
-                      items: [
-                        const DropdownMenuItem(value: null, child: Text("Tous")),
-                        const DropdownMenuItem(value: ProductType.rawMaterial, child: Text("Matières Premières")),
-                        const DropdownMenuItem(value: ProductType.finishedGood, child: Text("Produits Finis")),
+                      items: const [
+                        DropdownMenuItem(value: null, child: Text("Tous")),
+                        DropdownMenuItem(value: ProductType.rawMaterial, child: Text("Matières Premières")),
+                        DropdownMenuItem(value: ProductType.finishedGood, child: Text("Produits Finis")),
                       ],
                       onChanged: (v) => setState(() => _filterType = v),
                     ),

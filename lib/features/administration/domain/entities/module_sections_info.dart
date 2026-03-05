@@ -27,61 +27,61 @@ class ModuleSection {
 class ModuleSectionsRegistry {
   static Map<String, List<ModuleSection>> get _sectionsByModule => {
     'eau_minerale': [
-      ModuleSection(
+      const ModuleSection(
         id: 'activity',
         name: 'Tableau',
         icon: Icons.dashboard_outlined,
         description: 'Vue d\'ensemble avec résumé de la journée',
       ),
-      ModuleSection(
+      const ModuleSection(
         id: 'production',
         name: 'Production',
         icon: Icons.factory_outlined,
         description: 'Gestion des sessions de production',
       ),
-      ModuleSection(
+      const ModuleSection(
         id: 'sales',
         name: 'Ventes',
         icon: Icons.point_of_sale,
         description: 'Gestion des ventes de sachets d\'eau',
       ),
-      ModuleSection(
+      const ModuleSection(
         id: 'stock',
         name: 'Stock',
         icon: Icons.inventory_2_outlined,
         description: 'Gestion des stocks (bobines, emballages, produits finis)',
       ),
-      ModuleSection(
+      const ModuleSection(
         id: 'clients',
         name: 'Crédits',
         icon: Icons.credit_card,
         description: 'Gestion des clients et crédits',
       ),
-      ModuleSection(
+      const ModuleSection(
         id: 'finances',
         name: 'Dépenses',
         icon: Icons.receipt_long,
         description: 'Gestion des dépenses',
       ),
-      ModuleSection(
+      const ModuleSection(
         id: 'salaries',
         name: 'Salaires',
         icon: Icons.people,
         description: 'Gestion des salaires',
       ),
-      ModuleSection(
+      const ModuleSection(
         id: 'reports',
         name: 'Rapports',
         icon: Icons.description,
         description: 'Rapports de production, ventes, dépenses, etc.',
       ),
-      ModuleSection(
+      const ModuleSection(
         id: 'profile',
         name: 'Profil',
         icon: Icons.person,
         description: 'Profil utilisateur',
       ),
-      ModuleSection(
+      const ModuleSection(
         id: 'settings',
         name: 'Paramètres',
         icon: Icons.settings,
@@ -89,37 +89,37 @@ class ModuleSectionsRegistry {
       ),
     ],
     'boutique': [
-      ModuleSection(
+      const ModuleSection(
         id: 'dashboard',
         name: 'Tableau',
         icon: Icons.dashboard_outlined,
         description: 'Vue d\'ensemble avec KPIs',
       ),
-      ModuleSection(
+      const ModuleSection(
         id: 'pos',
         name: 'Caisse (POS)',
         icon: Icons.point_of_sale,
         description: 'Point de vente pour les ventes physiques',
       ),
-      ModuleSection(
+      const ModuleSection(
         id: 'catalog',
         name: 'Produits',
         icon: Icons.inventory_2_outlined,
         description: 'Gestion du catalogue de produits',
       ),
-      ModuleSection(
+      const ModuleSection(
         id: 'expenses',
         name: 'Dépenses',
         icon: Icons.receipt_long_outlined,
         description: 'Gestion des dépenses de la boutique',
       ),
-      ModuleSection(
+      const ModuleSection(
         id: 'reports',
         name: 'Rapports',
         icon: Icons.assessment,
         description: 'Rapports de ventes, achats, dépenses, profits',
       ),
-      ModuleSection(
+      const ModuleSection(
         id: 'profile',
         name: 'Profil',
         icon: Icons.person_outline,
@@ -127,73 +127,73 @@ class ModuleSectionsRegistry {
       ),
     ],
     'immobilier': [
-      ModuleSection(
+      const ModuleSection(
         id: 'dashboard',
         name: 'Tableau',
         icon: Icons.dashboard_outlined,
         description: 'Vue d\'ensemble avec KPIs',
       ),
-      ModuleSection(
+      const ModuleSection(
         id: 'properties',
         name: 'Propriétés',
         icon: Icons.home_outlined,
         description: 'Liste et gestion des propriétés immobilières',
       ),
-      ModuleSection(
+      const ModuleSection(
         id: 'tenants',
         name: 'Locataires',
         icon: Icons.people_outlined,
         description: 'Gestion des locataires',
       ),
-      ModuleSection(
+      const ModuleSection(
         id: 'contracts',
         name: 'Contrats',
         icon: Icons.description_outlined,
         description: 'Gestion des contrats de location',
       ),
-      ModuleSection(
+      const ModuleSection(
         id: 'payments',
         name: 'Paiements',
         icon: Icons.payment_outlined,
         description: 'Gestion des paiements de loyers',
       ),
-      ModuleSection(
+      const ModuleSection(
         id: 'expenses',
         name: 'Dépenses',
         icon: Icons.receipt_long_outlined,
         description: 'Gestion des dépenses liées aux propriétés',
       ),
-      ModuleSection(
+      const ModuleSection(
         id: 'maintenance',
         name: 'Maintenance',
         icon: Icons.build_outlined,
         description: 'Tickets de maintenance des propriétés',
       ),
-      ModuleSection(
+      const ModuleSection(
         id: 'treasury',
         name: 'Trésorerie',
         icon: Icons.account_balance_outlined,
         description: 'Opérations de trésorerie',
       ),
-      ModuleSection(
+      const ModuleSection(
         id: 'reports',
         name: 'Rapports',
         icon: Icons.assessment_outlined,
         description: 'Rapports immobiliers',
       ),
-      ModuleSection(
+      const ModuleSection(
         id: 'trash',
         name: 'Corbeille',
         icon: Icons.delete_outline,
         description: 'Éléments supprimés (restauration)',
       ),
-      ModuleSection(
+      const ModuleSection(
         id: 'settings',
         name: 'Paramètres',
         icon: Icons.settings_outlined,
         description: 'Configuration du module',
       ),
-      ModuleSection(
+      const ModuleSection(
         id: 'profile',
         name: 'Profil',
         icon: Icons.person_outline,
@@ -201,49 +201,49 @@ class ModuleSectionsRegistry {
       ),
     ],
     'orange_money': [
-      ModuleSection(
+      const ModuleSection(
         id: 'transactions',
         name: 'Transactions',
         icon: Icons.swap_horiz,
         description: 'Nouvelle transaction / Historique',
       ),
-      ModuleSection(
+      const ModuleSection(
         id: 'agents',
         name: 'Agents Affiliés',
         icon: Icons.people_outline,
         description: 'Gestion des agents Orange Money',
       ),
-      ModuleSection(
+      const ModuleSection(
         id: 'liquidity',
         name: 'Liquidité',
         icon: Icons.wallet,
         description: 'Gestion de la liquidité',
       ),
-      ModuleSection(
+      const ModuleSection(
         id: 'commissions',
         name: 'Commissions',
         icon: Icons.account_balance_wallet,
         description: 'Gestion des commissions',
       ),
-      ModuleSection(
+      const ModuleSection(
         id: 'reports',
         name: 'Rapports',
         icon: Icons.description,
         description: 'Rapports des transactions et commissions',
       ),
-      ModuleSection(
+      const ModuleSection(
         id: 'settings',
         name: 'Paramètres',
         icon: Icons.settings,
         description: 'Configuration du module',
       ),
-      ModuleSection(
+      const ModuleSection(
         id: 'hierarchy',
         name: 'Réseau & Hiérarchie',
         icon: Icons.account_tree_outlined,
         description: 'Gestion du réseau et des permissions de visibilité multiniveaux',
       ),
-      ModuleSection(
+      const ModuleSection(
         id: 'profile',
         name: 'Profil',
         icon: Icons.person_outline,
@@ -251,61 +251,61 @@ class ModuleSectionsRegistry {
       ),
     ],
     'gaz': [
-      ModuleSection(
+      const ModuleSection(
         id: 'dashboard',
         name: 'Tableau',
         icon: Icons.dashboard_outlined,
         description: 'Vue d\'ensemble avec KPIs',
       ),
-      ModuleSection(
+      const ModuleSection(
         id: 'retail',
         name: 'Vente Détail',
         icon: Icons.store_outlined,
         description: 'Vente au détail de bouteilles de gaz',
       ),
-      ModuleSection(
+      const ModuleSection(
         id: 'wholesale',
         name: 'Vente Gros',
         icon: Icons.local_shipping_outlined,
         description: 'Vente en gros',
       ),
-      ModuleSection(
+      const ModuleSection(
         id: 'stock',
         name: 'Stock',
         icon: Icons.inventory_2_outlined,
         description: 'Gestion des stocks de bouteilles',
       ),
-      ModuleSection(
+      const ModuleSection(
         id: 'approvisionnement',
         name: 'Approvisionnement',
         icon: Icons.inventory_outlined,
         description: 'Gestion des tours d\'approvisionnement',
       ),
-      ModuleSection(
+      const ModuleSection(
         id: 'cylinder_leak',
         name: 'Pertes/Fuites',
         icon: Icons.warning_outlined,
         description: 'Gestion des bouteilles avec fuites/perdus',
       ),
-      ModuleSection(
+      const ModuleSection(
         id: 'expenses',
         name: 'Dépenses',
         icon: Icons.receipt_long_outlined,
         description: 'Gestion des dépenses',
       ),
-      ModuleSection(
+      const ModuleSection(
         id: 'reports',
         name: 'Rapports',
         icon: Icons.description_outlined,
         description: 'Rapports du module gaz',
       ),
-      ModuleSection(
+      const ModuleSection(
         id: 'settings',
         name: 'Paramètres',
         icon: Icons.settings_outlined,
         description: 'Configuration du module',
       ),
-      ModuleSection(
+      const ModuleSection(
         id: 'profile',
         name: 'Profil',
         icon: Icons.person_outline,
@@ -313,37 +313,37 @@ class ModuleSectionsRegistry {
       ),
     ],
     'administration': [
-      ModuleSection(
+      const ModuleSection(
         id: 'enterprises',
         name: 'Entreprises',
         icon: Icons.business,
         description: 'Gestion des entreprises et de la hiérarchie',
       ),
-      ModuleSection(
+      const ModuleSection(
         id: 'users',
         name: 'Utilisateurs',
         icon: Icons.people_alt_outlined,
         description: 'Gestion des utilisateurs et de leurs comptes',
       ),
-      ModuleSection(
+      const ModuleSection(
         id: 'roles',
         name: 'Rôles & Permissions',
         icon: Icons.shield_outlined,
         description: 'Définition des rôles et des droits d\'accès',
       ),
-      ModuleSection(
+      const ModuleSection(
         id: 'modules',
         name: 'Modules',
         icon: Icons.view_module_outlined,
         description: 'Activation et configuration des modules métiers',
       ),
-      ModuleSection(
+      const ModuleSection(
         id: 'audit',
         name: 'Journal d\'Audit',
         icon: Icons.history_edu_outlined,
         description: 'Historique des actions effectuées sur le système',
       ),
-      ModuleSection(
+      const ModuleSection(
         id: 'profile',
         name: 'Profil & Sécurité',
         icon: Icons.manage_accounts_outlined,

@@ -33,5 +33,5 @@ final immobilierPermissionAdapterProvider =
 
 final userHasImmobilierPermissionProvider = FutureProvider.family<bool, String>((ref, permission) async {
   final adapter = ref.watch(immobilierPermissionAdapterProvider);
-  return await adapter.hasPermission(permission);
+  return adapter.hasPermission(permission);
 });

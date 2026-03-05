@@ -1,8 +1,6 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:open_file/open_file.dart';
-import 'package:path_provider/path_provider.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
@@ -19,7 +17,6 @@ import '../../widgets/gaz_header.dart';
 import '../../widgets/stock_summary_content.dart';
 import '../../widgets/stock_history_content.dart';
 import '../../widgets/pos_network_report_tab.dart';
-import '../../../../../shared/presentation/widgets/elyf_ui/atoms/elyf_icon_button.dart';
 import '../../../../../core/tenant/tenant_provider.dart' show activeEnterpriseProvider;
 
 /// Reports screen with professional UI - style boutique.

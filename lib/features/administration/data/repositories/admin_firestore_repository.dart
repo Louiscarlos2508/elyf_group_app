@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rxdart/rxdart.dart';
 
 import '../../../../core/auth/entities/enterprise_module_user.dart';
@@ -43,7 +42,7 @@ class AdminFirestoreRepository implements AdminRepository {
     try {
       final snapshot = await _enterprises.get();
       return snapshot.docs
-          .map((doc) => _enterpriseFromFirestore(doc))
+          .map(_enterpriseFromFirestore)
           .toList();
     } catch (e) {
       return [];
@@ -56,7 +55,7 @@ class AdminFirestoreRepository implements AdminRepository {
         .where('type', isEqualTo: type.id)
         .get();
     return snapshot.docs
-        .map((doc) => _enterpriseFromFirestore(doc))
+        .map(_enterpriseFromFirestore)
         .toList();
   }
 
@@ -89,7 +88,7 @@ class AdminFirestoreRepository implements AdminRepository {
         .where('parentEnterpriseId', isEqualTo: parentId)
         .get();
     return snapshot.docs
-        .map((doc) => _enterpriseFromFirestore(doc))
+        .map(_enterpriseFromFirestore)
         .toList();
   }
 
@@ -99,7 +98,7 @@ class AdminFirestoreRepository implements AdminRepository {
         .where('ancestorIds', arrayContains: enterpriseId)
         .get();
     return snapshot.docs
-        .map((doc) => _enterpriseFromFirestore(doc))
+        .map(_enterpriseFromFirestore)
         .toList();
   }
 

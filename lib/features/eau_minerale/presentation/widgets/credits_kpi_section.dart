@@ -27,7 +27,7 @@ class CreditsKpiSection extends StatelessWidget {
                       label: 'Total Crédit en Cours',
                       value: totalCredit.toString(),
                       unit: 'FCFA',
-                      trend: Icon(
+                      trend: const Icon(
                         Icons.trending_down,
                         color: Colors.red,
                         size: 20,
@@ -50,7 +50,7 @@ class CreditsKpiSection extends StatelessWidget {
                     label: 'Total Crédit en Cours',
                     value: totalCredit.toString(),
                     unit: 'FCFA',
-                    trend: Icon(
+                    trend: const Icon(
                       Icons.trending_down,
                       color: Colors.red,
                       size: 20,

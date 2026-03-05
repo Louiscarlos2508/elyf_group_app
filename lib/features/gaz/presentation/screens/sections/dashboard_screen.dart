@@ -13,7 +13,6 @@ import 'dashboard/dashboard_pos_performance_section.dart';
 import '../../widgets/gaz_header.dart';
 import '../../widgets/dashboard/quick_actions_section.dart';
 import '../../widgets/dashboard/low_stock_alert_section.dart';
-import '../../../../../shared/presentation/widgets/elyf_ui/atoms/elyf_icon_button.dart';
 
 /// Professional dashboard screen for gaz module - matches Figma design.
 class GazDashboardScreen extends ConsumerWidget {
@@ -73,7 +72,7 @@ class GazDashboardScreen extends ConsumerWidget {
           ),
         ),
       ),
-      child: _DashboardContent(),
+      child: const _DashboardContent(),
     );
   }
 }

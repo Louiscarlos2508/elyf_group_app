@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:elyf_groupe_app/shared.dart';
-import '../../../../../shared/utils/notification_service.dart';
 import '../../domain/services/commission_calculation_service.dart';
 
 /// Dialog for recording a manual commission entry.
@@ -48,8 +47,8 @@ class _CommissionFormDialogState extends State<CommissionFormDialog> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            datePickerTheme: DatePickerThemeData(
-              headerHelpStyle: const TextStyle(fontSize: 14),
+            datePickerTheme: const DatePickerThemeData(
+              headerHelpStyle: TextStyle(fontSize: 14),
             ),
           ),
           child: child!,
@@ -348,17 +347,17 @@ class _CommissionFormDialogState extends State<CommissionFormDialog> {
                                 ),
                               ],
                             )
-                          : Center(
+                          : const Center(
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  const Icon(
+                                  Icon(
                                     Icons.cloud_upload_outlined,
                                     size: 32,
                                     color: Color(0xFF4A5565),
                                   ),
-                                  const SizedBox(height: 8),
-                                  const Text(
+                                  SizedBox(height: 8),
+                                  Text(
                                     'Cliquer pour ajouter une photo',
                                     style: TextStyle(
                                       fontSize: 14,

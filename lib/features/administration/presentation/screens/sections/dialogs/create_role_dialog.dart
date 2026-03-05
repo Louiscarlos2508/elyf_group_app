@@ -101,7 +101,7 @@ class _CreateRoleDialogState extends ConsumerState<CreateRoleDialog>
         final currentUserId = ref.read(currentUserIdProvider);
 
         if (currentUserId == null) {
-          throw AuthenticationException(
+          throw const AuthenticationException(
             'Aucun utilisateur connecté. Veuillez vous reconnecter.',
             'USER_NOT_AUTHENTICATED',
           );
@@ -607,8 +607,7 @@ class _CreateRoleDialogState extends ConsumerState<CreateRoleDialog>
                                       .toSet();
                                   final allModuleSelected = modulePermissionIds
                                       .every(
-                                        (id) =>
-                                            _selectedPermissions.contains(id),
+                                        _selectedPermissions.contains,
                                       );
 
                                   return ExpansionTile(
@@ -662,8 +661,7 @@ class _CreateRoleDialogState extends ConsumerState<CreateRoleDialog>
                                               .toSet();
                                       final allSectionSelected =
                                           sectionPermissionIds.every(
-                                            (id) => _selectedPermissions
-                                                .contains(id),
+                                            _selectedPermissions.contains,
                                           );
 
                                       return ExpansionTile(
@@ -764,8 +762,7 @@ class _CreateRoleDialogState extends ConsumerState<CreateRoleDialog>
                                           .toSet();
                                   final allSectionSelected =
                                       sectionPermissionIds.every(
-                                        (id) =>
-                                            _selectedPermissions.contains(id),
+                                        _selectedPermissions.contains,
                                       );
 
                                   return ExpansionTile(

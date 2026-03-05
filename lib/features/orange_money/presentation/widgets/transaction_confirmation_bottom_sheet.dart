@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
@@ -7,7 +6,6 @@ import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
 import 'package:elyf_groupe_app/app/theme/app_theme.dart';
 import '../../domain/entities/customer.dart';
 import '../../domain/entities/transaction.dart';
-import '../../domain/services/customer_service.dart';
 
 class TransactionConfirmationBottomSheet extends StatefulWidget {
   const TransactionConfirmationBottomSheet({
@@ -165,7 +163,7 @@ class _TransactionConfirmationBottomSheetState
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      FormDialogHeader(
+                      const FormDialogHeader(
                         title: 'Confirmer la Transaction',
                         subtitle: 'Vérifiez les informations avant de valider.',
                         icon: Icons.check_circle_outline,
@@ -288,7 +286,7 @@ class _TransactionConfirmationBottomSheetState
                               child: Column(
                                 children: [
                                   DropdownButtonFormField<String>(
-                                    value: _idType,
+                                    initialValue: _idType,
                                     dropdownColor: colorScheme.surface,
                                     decoration: InputDecoration(
                                       labelText: 'Type de pièce',

@@ -9,7 +9,7 @@ class SettingsController {
   final String userId;
 
   Future<OrangeMoneySettings?> getSettings(String enterpriseId) async {
-    return await _repository.getSettings(enterpriseId);
+    return _repository.getSettings(enterpriseId);
   }
 
   Stream<OrangeMoneySettings?> watchSettings(String enterpriseId) {
@@ -17,7 +17,7 @@ class SettingsController {
   }
 
   Future<void> saveSettings(OrangeMoneySettings settings) async {
-    return await _repository.saveSettings(settings);
+    return _repository.saveSettings(settings);
   }
 
   /// Met à jour les notifications
@@ -26,7 +26,7 @@ class SettingsController {
     bool? enableCommissionReminders,
     bool? enableCheckpointReminders,
   }) async {
-    return await _repository.updateNotifications(
+    return _repository.updateNotifications(
       enterpriseId,
       enableCommissionReminders: enableCommissionReminders,
       enableCheckpointReminders: enableCheckpointReminders,

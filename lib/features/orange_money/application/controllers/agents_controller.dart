@@ -1,5 +1,3 @@
-import '../../domain/repositories/transaction_repository.dart';
-import '../../domain/repositories/transaction_repository.dart';
 import '../../domain/entities/agent.dart';
 import '../../domain/repositories/agent_repository.dart';
 import 'package:elyf_groupe_app/features/orange_money/domain/entities/orange_money_enterprise_extensions.dart';
@@ -86,7 +84,7 @@ class AgentsController {
   }
 
   Future<Enterprise?> getAgency(String agencyId) async {
-    return await _enterpriseRepository.getEnterpriseById(agencyId);
+    return _enterpriseRepository.getEnterpriseById(agencyId);
   }
 
   Future<void> createAgency(Enterprise agency) async {
@@ -137,7 +135,7 @@ class AgentsController {
     AgentStatus? status,
     String? searchQuery,
   }) async {
-    return await _agentRepository.fetchAgents(
+    return _agentRepository.fetchAgents(
       enterpriseId: enterpriseId ?? _activeEnterpriseId,
       status: status,
       searchQuery: searchQuery,
@@ -145,7 +143,7 @@ class AgentsController {
   }
 
   Future<Agent?> getAgent(String agentId) async {
-    return await _agentRepository.getAgent(agentId);
+    return _agentRepository.getAgent(agentId);
   }
 
   Future<void> createAgent(Agent agent) async {

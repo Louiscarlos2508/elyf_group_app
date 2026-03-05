@@ -38,7 +38,7 @@ class _JustificationDialogState extends State<JustificationDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            FormDialogHeader(
+            const FormDialogHeader(
               title: 'Justification de l\'écart',
               subtitle: 'Expliquez la raison de la différence détectée.',
               icon: Icons.warning_amber_rounded,

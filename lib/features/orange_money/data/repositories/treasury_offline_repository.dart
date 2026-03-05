@@ -147,9 +147,7 @@ class OrangeMoneyTreasuryOfflineRepository implements OrangeMoneyTreasuryReposit
 
   @override
   Stream<Map<String, int>> watchBalances(String enterpriseId, {List<String>? enterpriseIds}) {
-    return watchOperations(enterpriseId, enterpriseIds: enterpriseIds).map((operations) {
-      return _calculateBalances(operations);
-    });
+    return watchOperations(enterpriseId, enterpriseIds: enterpriseIds).map(_calculateBalances);
   }
 
   @override

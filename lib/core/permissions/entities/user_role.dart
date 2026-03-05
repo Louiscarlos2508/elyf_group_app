@@ -45,12 +45,12 @@ class UserRole {
 
   /// Check if role has any of the specified permissions
   bool hasAnyPermission(Set<String> permissionIds) {
-    return permissionIds.any((id) => permissions.contains(id));
+    return permissionIds.any(permissions.contains);
   }
 
   /// Check if role has all specified permissions
   bool hasAllPermissions(Set<String> permissionIds) {
-    return permissionIds.every((id) => permissions.contains(id));
+    return permissionIds.every(permissions.contains);
   }
 
   /// Vérifie si ce rôle peut être assigné à un type d'entreprise donné

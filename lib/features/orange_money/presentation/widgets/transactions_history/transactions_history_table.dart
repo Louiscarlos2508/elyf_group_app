@@ -26,7 +26,7 @@ class TransactionsHistoryTable extends StatelessWidget {
               _TransactionsTableHeader(),
               // Table Rows
               if (transactions.isEmpty)
-                Center(
+                const Center(
                   child: Padding(
                     padding: EdgeInsets.all(AppSpacing.xxl),
                     child: Text('Aucune transaction trouvée'),
@@ -60,7 +60,7 @@ class _TransactionsTableHeader extends StatelessWidget {
           ),
         ),
       ),
-      child: Row(
+      child: const Row(
         children: [
           _TableHeaderCell('Date & Heure', width: 120),
           _TableHeaderCell('Type', width: 80),
@@ -90,7 +90,7 @@ class _TableHeaderCell extends StatelessWidget {
     
     return Container(
       width: width,
-      padding: EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.md),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.md),
       child: Text(
         text,
         style: theme.textTheme.labelSmall?.copyWith(

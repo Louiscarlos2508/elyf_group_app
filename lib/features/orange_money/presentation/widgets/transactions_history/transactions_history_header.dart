@@ -19,7 +19,7 @@ class TransactionsHistoryHeader extends StatelessWidget {
             color: theme.colorScheme.onSurface,
           ),
         ),
-        SizedBox(height: AppSpacing.xs),
+        const SizedBox(height: AppSpacing.xs),
         Text(
           'Consultez vos dernières transactions',
           style: theme.textTheme.bodyMedium?.copyWith(

@@ -78,12 +78,12 @@ class _GazInventoryScreenState extends ConsumerState<GazInventoryScreen>
     final isPOS = enterprise?.isPointOfSale ?? false;
 
     if (enterpriseId == null) {
-      return Scaffold(
+      return const Scaffold(
         appBar: ElyfAppBar(
           title: 'Stock',
           module: EnterpriseModule.gaz,
         ),
-        body: const Center(child: Text('Aucune entreprise sélectionnée')),
+        body: Center(child: Text('Aucune entreprise sélectionnée')),
       );
     }
 
@@ -97,7 +97,7 @@ class _GazInventoryScreenState extends ConsumerState<GazInventoryScreen>
             subtitle: _getSubtitle(),
             asSliver: true,
             showViewToggle: false, // User requested to only show network view for main depot
-            actions: [
+            actions: const [
 
 
             ],

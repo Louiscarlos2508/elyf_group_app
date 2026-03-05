@@ -77,7 +77,7 @@ void main() {
 
   test('executeIndependentCollectionTransaction updates stock and treasury', () async {
     // Arrange
-    final cylinder12kg = Cylinder(
+    const cylinder12kg = Cylinder(
       id: 'c12',
       weight: 12,
       buyPrice: 5000,

@@ -18,7 +18,7 @@ class SaleProductSelector extends ConsumerWidget {
 
   Future<void> _selectProduct(BuildContext context, WidgetRef ref) async {
     List<Product> list;
-    int packStock = 0;
+    const int packStock = 0;
     try {
       final products = await ref.read(productsProvider.future);
       list = products

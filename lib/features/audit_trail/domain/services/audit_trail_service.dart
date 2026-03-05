@@ -28,7 +28,7 @@ class AuditTrailService {
       timestamp: DateTime.now(),
     );
 
-    return await _repository.log(record);
+    return _repository.log(record);
   }
 
   /// Convenience method for logging transactions.

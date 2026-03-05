@@ -172,7 +172,7 @@ class _DailyClosingDialogState extends ConsumerState<DailyClosingDialog> {
             color: AppColors.primary.withValues(alpha: 0.1),
             shape: BoxShape.circle,
           ),
-          child: Icon(Icons.account_balance_wallet, color: AppColors.primary),
+          child: const Icon(Icons.account_balance_wallet, color: AppColors.primary),
         ),
         const SizedBox(width: 16),
         Expanded(

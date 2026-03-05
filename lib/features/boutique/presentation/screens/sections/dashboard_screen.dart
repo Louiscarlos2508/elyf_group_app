@@ -13,7 +13,6 @@ import '../../widgets/dashboard_today_section.dart';
 import '../../widgets/dashboard_month_section.dart';
 
 import '../../widgets/boutique_stock_alert_banner.dart';
-import '../../widgets/boutique_header.dart';
 import '../../widgets/purchase_entry_dialog.dart';
 import '../../widgets/expense_entry_dialog.dart';
 import '../../widgets/daily_closing_dialog.dart';
@@ -84,7 +83,7 @@ class DashboardScreen extends ConsumerWidget {
           ),
 
           // Today section header
-          SliverSectionHeader(
+          const SliverSectionHeader(
             title: "AUJOURD'HUI",
             top: AppSpacing.sm,
             bottom: AppSpacing.sm,
@@ -240,7 +239,7 @@ class DashboardScreen extends ConsumerWidget {
 
           // Low stock list
           SliverPadding(
-            padding: EdgeInsets.fromLTRB(
+            padding: const EdgeInsets.fromLTRB(
               AppSpacing.lg,
               AppSpacing.sm,
               AppSpacing.lg,

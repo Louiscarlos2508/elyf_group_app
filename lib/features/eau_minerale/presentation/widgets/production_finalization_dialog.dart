@@ -504,7 +504,7 @@ class _ProductionFinalizationDialogState
           labelText: 'Index compteur final *',
           prefixIcon: Icon(Icons.bolt),
         ),
-        keyboardType: TextInputType.numberWithOptions(decimal: true),
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
       ),
     );
   }

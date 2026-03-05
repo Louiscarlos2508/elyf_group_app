@@ -1,11 +1,9 @@
-import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
 import 'package:flutter/material.dart';
 
 import 'package:elyf_groupe_app/features/orange_money/domain/entities/agent.dart' as entity;
 import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
 import 'package:elyf_groupe_app/app/theme/app_radius.dart';
 import 'package:elyf_groupe_app/shared.dart';
-import 'package:elyf_groupe_app/app/theme/app_colors.dart';
 
 /// Type de transaction pour la recharge/retrait d'un agent.
 enum AgentTransactionType { recharge, retrait }

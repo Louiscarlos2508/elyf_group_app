@@ -9,7 +9,7 @@ void main() {
       const error = 'Test error message';
 
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: ErrorDisplayWidget(
               error: error,
@@ -27,7 +27,7 @@ void main() {
       const error = 'Test error';
 
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: ErrorDisplayWidget(
               error: error,
@@ -45,7 +45,7 @@ void main() {
       const error = 'Test error';
 
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: ErrorDisplayWidget(
               error: error,
@@ -84,7 +84,7 @@ void main() {
       const error = 'Test error';
 
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: ErrorDisplayWidget(
               error: error,
@@ -102,11 +102,11 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           theme: ThemeData(
-            colorScheme: ColorScheme.light(
+            colorScheme: const ColorScheme.light(
               error: Colors.red,
             ),
           ),
-          home: Scaffold(
+          home: const Scaffold(
             body: ErrorDisplayWidget(
               error: error,
             ),

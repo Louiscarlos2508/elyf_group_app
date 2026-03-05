@@ -17,7 +17,7 @@ class TourController {
     DateTime? from,
     DateTime? to,
   }) async {
-    return await repository.getTours(
+    return repository.getTours(
       enterpriseId,
       status: status,
       from: from,
@@ -42,12 +42,12 @@ class TourController {
 
   /// Récupère un tour par ID.
   Future<Tour?> getTourById(String id) async {
-    return await repository.getTourById(id);
+    return repository.getTourById(id);
   }
 
   /// Crée un nouveau tour.
   Future<String> createTour(Tour tour) async {
-    return await repository.createTour(tour);
+    return repository.createTour(tour);
   }
 
   /// Met à jour un tour.

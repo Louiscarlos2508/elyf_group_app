@@ -5,7 +5,6 @@ import 'package:elyf_groupe_app/features/administration/domain/entities/enterpri
 import 'package:elyf_groupe_app/features/orange_money/domain/entities/agent.dart' as entity;
 import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
 import 'package:elyf_groupe_app/app/theme/app_radius.dart';
-import 'package:elyf_groupe_app/app/theme/app_colors.dart';
 
 /// A premium, modern card for representing agents or agencies in the network.
 class AgentNetworkCard extends StatelessWidget {
@@ -54,7 +53,7 @@ class AgentNetworkCard extends StatelessWidget {
           children: [
             // Header with Avatar & Menu
             Padding(
-              padding: EdgeInsets.all(AppSpacing.md),
+              padding: const EdgeInsets.all(AppSpacing.md),
               child: Row(
                 children: [
                   // Avatar
@@ -76,7 +75,7 @@ class AgentNetworkCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  SizedBox(width: AppSpacing.md),
+                  const SizedBox(width: AppSpacing.md),
                   
                   // Info
                   Expanded(
@@ -122,7 +121,7 @@ class AgentNetworkCard extends StatelessWidget {
             if (isAgent) ...[
               const Divider(height: 1),
               Padding(
-                padding: EdgeInsets.all(AppSpacing.md),
+                padding: const EdgeInsets.all(AppSpacing.md),
                 child: stats?.when(
                   data: (s) => Column(
                     children: [
@@ -170,11 +169,11 @@ class AgentNetworkCard extends StatelessWidget {
             ] else ...[
               const Divider(height: 1),
               Padding(
-                padding: EdgeInsets.all(AppSpacing.md),
+                padding: const EdgeInsets.all(AppSpacing.md),
                 child: Row(
                   children: [
                     Icon(Icons.location_on_outlined, size: 14, color: theme.colorScheme.primary),
-                    SizedBox(width: AppSpacing.xs),
+                    const SizedBox(width: AppSpacing.xs),
                     Expanded(
                       child: Text(
                         agency!.address ?? 'Aucune adresse',
@@ -208,13 +207,13 @@ class AgentNetworkCard extends StatelessWidget {
                           child: InkWell(
                             onTap: onRecharge,
                             child: Padding(
-                              padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                              padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Icon(Icons.add_circle_outline_rounded, 
                                        size: 16, color: theme.colorScheme.primary),
-                                  SizedBox(width: AppSpacing.xs),
+                                  const SizedBox(width: AppSpacing.xs),
                                   Text(
                                     'Recharger',
                                     style: theme.textTheme.labelMedium?.copyWith(
@@ -242,13 +241,13 @@ class AgentNetworkCard extends StatelessWidget {
                         child: InkWell(
                           onTap: onView,
                           child: Padding(
-                            padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                            padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Icon(Icons.arrow_forward_rounded, 
                                      size: 16, color: theme.colorScheme.onSurfaceVariant),
-                                SizedBox(width: AppSpacing.xs),
+                                const SizedBox(width: AppSpacing.xs),
                                 Text(
                                   'Détails',
                                   style: theme.textTheme.labelMedium?.copyWith(
@@ -351,12 +350,12 @@ class AgentNetworkCard extends StatelessWidget {
           child: Row(
             children: [
               Icon(Icons.edit_outlined, size: 18, color: theme.colorScheme.primary),
-              SizedBox(width: AppSpacing.sm),
+              const SizedBox(width: AppSpacing.sm),
               const Text('Modifier'),
             ],
           ),
         ),
-        PopupMenuItem(
+        const PopupMenuItem(
           value: 'delete',
           child: Row(
             children: [

@@ -43,7 +43,7 @@ void main() {
         createdAt: DateTime.now(),
       );
       
-      final settings = OrangeMoneySettings(
+      const settings = OrangeMoneySettings(
         id: 'ent_1',
         enterpriseId: 'ent_1',
         commissionDiscrepancyMinor: 5.0,

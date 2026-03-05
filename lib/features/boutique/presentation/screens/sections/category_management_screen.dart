@@ -18,9 +18,9 @@ class CategoryManagementScreen extends ConsumerWidget {
           BoutiqueHeader(
             title: "CATÉGORIES",
             subtitle: "Gestion du catalogue",
-            gradientColors: [
-              const Color(0xFF4B5563), // Gray 600
-              const Color(0xFF1F2937), // Gray 800
+            gradientColors: const [
+              Color(0xFF4B5563), // Gray 600
+              Color(0xFF1F2937), // Gray 800
             ],
             shadowColor: const Color(0xFF4B5563),
             actions: [

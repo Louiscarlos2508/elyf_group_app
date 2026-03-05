@@ -243,7 +243,7 @@ class _ParticlePainter extends CustomPainter {
     for (int i = 0; i < 8; i++) {
       final angle1 = (progress * 2 * math.pi) + (i * math.pi / 4);
       final angle2 = (progress * 2 * math.pi) + ((i + 1) * math.pi / 4);
-      final radius = 100.0;
+      const radius = 100.0;
       final x1 = size.width / 2 + math.cos(angle1) * radius;
       final y1 = size.height / 2 + math.sin(angle1) * radius;
       final x2 = size.width / 2 + math.cos(angle2) * radius;

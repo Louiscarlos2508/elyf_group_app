@@ -8,7 +8,7 @@ class ClosingController {
   final ClosingRepository _closingRepository;
 
   Future<Closing?> getCurrentSession() async {
-    return await _closingRepository.getCurrentSession();
+    return _closingRepository.getCurrentSession();
   }
 
   Stream<Closing?> watchCurrentSession() {
@@ -34,6 +34,6 @@ class ClosingController {
   }
 
   Future<List<Closing>> fetchHistory() async {
-    return await _closingRepository.fetchHistory();
+    return _closingRepository.fetchHistory();
   }
 }

@@ -191,7 +191,7 @@ class _PropertiesScreenState extends ConsumerState<PropertiesScreen> {
 
     return Scaffold(
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showPropertyForm(),
+        onPressed: _showPropertyForm,
         icon: const Icon(Icons.add),
         label: const Text('Nouvelle'),
       ),
@@ -259,7 +259,7 @@ class _PropertiesScreenState extends ConsumerState<PropertiesScreen> {
                   ),
 
                   // Search and Filters Section Header
-                  SliverSectionHeader(
+                  const SliverSectionHeader(
                     title: 'LISTE DES PROPRIÉTÉS',
                     top: AppSpacing.lg,
                     bottom: AppSpacing.sm,
@@ -319,7 +319,7 @@ class _PropertiesScreenState extends ConsumerState<PropertiesScreen> {
                       onPropertyTap: _showPropertyDetails,
                     ),
 
-                  SliverToBoxAdapter(
+                  const SliverToBoxAdapter(
                     child: SizedBox(height: AppSpacing.lg),
                   ),
                 ],

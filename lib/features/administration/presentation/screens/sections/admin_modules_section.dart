@@ -63,7 +63,7 @@ class AdminModulesSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final modules = AdminModules.all;
+    const modules = AdminModules.all;
     final enterpriseModuleUsersAsync = ref.watch(enterpriseModuleUsersProvider);
 
     return CustomScrollView(

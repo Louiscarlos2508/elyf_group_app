@@ -151,7 +151,7 @@ class SalesReportRetailStats extends ConsumerWidget {
                 Expanded(
                   child: Row(
                     children: [
-                      Icon(Icons.person, size: 16, color: const Color(0xFFF59E0B)),
+                      const Icon(Icons.person, size: 16, color: Color(0xFFF59E0B)),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(

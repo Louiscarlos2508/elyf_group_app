@@ -5,7 +5,6 @@ import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/gaz_employee.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/gaz_salary_payment.dart';
-import 'package:elyf_groupe_app/features/administration/application/providers.dart';
 import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 
 class GazSalaryPaymentDialog extends ConsumerStatefulWidget {
@@ -55,7 +54,7 @@ class _GazSalaryPaymentDialogState extends ConsumerState<GazSalaryPaymentDialog>
             children: [
               employeesAsync.when(
                 data: (employees) => DropdownButtonFormField<GazEmployee>(
-                  value: _selectedEmployee,
+                  initialValue: _selectedEmployee,
                   items: employees.map((e) => DropdownMenuItem(
                     value: e,
                     child: Text(e.name),

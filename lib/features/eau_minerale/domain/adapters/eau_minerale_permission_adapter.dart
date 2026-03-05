@@ -16,7 +16,7 @@ class EauMineralePermissionAdapter {
 
   /// Check if user has a specific permission
   Future<bool> hasPermission(String permissionId) async {
-    return await permissionService.hasPermission(
+    return permissionService.hasPermission(
       userId,
       moduleId,
       permissionId,
@@ -25,7 +25,7 @@ class EauMineralePermissionAdapter {
 
   /// Check if user has any of the specified permissions
   Future<bool> hasAnyPermission(Set<String> permissionIds) async {
-    return await permissionService.hasAnyPermission(
+    return permissionService.hasAnyPermission(
       userId,
       moduleId,
       permissionIds,
@@ -34,7 +34,7 @@ class EauMineralePermissionAdapter {
 
   /// Check if user has all specified permissions
   Future<bool> hasAllPermissions(Set<String> permissionIds) async {
-    return await permissionService.hasAllPermissions(
+    return permissionService.hasAllPermissions(
       userId,
       moduleId,
       permissionIds,
@@ -59,9 +59,9 @@ class EauMineralePermissionAdapter {
       case EauMineraleSection.purchases:
         return hasPermission(EauMineralePermissions.viewPurchases.id);
       case EauMineraleSection.finances:
-        return await hasPermission(EauMineralePermissions.viewFinances.id);
+        return hasPermission(EauMineralePermissions.viewFinances.id);
       case EauMineraleSection.treasury:
-        return await hasPermission(EauMineralePermissions.viewTreasury.id);
+        return hasPermission(EauMineralePermissions.viewTreasury.id);
       case EauMineraleSection.salaries:
         return hasPermission(EauMineralePermissions.viewSalaries.id);
       case EauMineraleSection.reports:

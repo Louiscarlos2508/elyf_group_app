@@ -9,7 +9,6 @@ import 'package:elyf_groupe_app/features/orange_money/domain/entities/commission
 import 'package:mockito/mockito.dart';
 import 'package:elyf_groupe_app/features/audit_trail/domain/repositories/audit_trail_repository.dart';
 import 'package:elyf_groupe_app/features/audit_trail/domain/entities/audit_record.dart';
-import 'package:elyf_groupe_app/core/offline/sync_operation_processor.dart';
 
 /// Mock connectivity service for testing.
 class MockConnectivityService implements ConnectivityService {

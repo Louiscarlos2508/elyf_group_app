@@ -104,7 +104,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          ElyfModuleHeader(
+          const ElyfModuleHeader(
             title: 'Paramètres du Module',
             subtitle: 'Personnalisez vos rappels et informations système.',
             module: EnterpriseModule.mobileMoney,

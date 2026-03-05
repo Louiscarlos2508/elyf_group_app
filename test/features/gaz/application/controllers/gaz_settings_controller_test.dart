@@ -23,7 +23,7 @@ void main() {
     group('getSettings', () {
       test('should return settings from repository', () async {
         // Arrange
-        final settings = GazSettings(
+        const settings = GazSettings(
           enterpriseId: TestIds.enterprise1,
           moduleId: TestIds.moduleGaz,
         );
@@ -50,7 +50,7 @@ void main() {
     group('saveSettings', () {
       test('should save settings via repository', () async {
         // Arrange
-        final settings = GazSettings(
+        const settings = GazSettings(
           enterpriseId: TestIds.enterprise1,
           moduleId: TestIds.moduleGaz,
         );
@@ -67,7 +67,7 @@ void main() {
     group('setWholesalePrice', () {
       test('should set wholesale price when settings exist', () async {
         // Arrange
-        final existing = GazSettings(
+        const existing = GazSettings(
           enterpriseId: TestIds.enterprise1,
           moduleId: TestIds.moduleGaz,
         );
@@ -117,7 +117,7 @@ void main() {
     group('getWholesalePrice', () {
       test('should return wholesale price from settings', () async {
         // Arrange
-        final settings = GazSettings(
+        final settings = const GazSettings(
           enterpriseId: TestIds.enterprise1,
           moduleId: TestIds.moduleGaz,
         ).setWholesalePrice(12, 5500.0);

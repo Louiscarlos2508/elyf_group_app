@@ -10,7 +10,6 @@ import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import '../../../domain/entities/transaction.dart';
 import '../../../domain/services/transaction_service.dart';
-import '../../widgets/form_field_with_label.dart';
 import '../../widgets/operator_balance_summary.dart';
 import '../../widgets/transaction_type_selector.dart';
 import '../../widgets/transaction_confirmation_bottom_sheet.dart';
@@ -35,7 +34,7 @@ class _TransactionsV2ScreenState extends ConsumerState<TransactionsV2Screen>
 
   // État pour le formulaire d'enregistrement
   Customer? _foundCustomer;
-  bool _isSearching = false;
+  final bool _isSearching = false;
   bool _isClientDetailsExpanded = false;
 
   @override
@@ -199,7 +198,7 @@ class _TransactionsV2ScreenState extends ConsumerState<TransactionsV2Screen>
       color: Colors.transparent,
       child: NestedScrollView(
         headerSliverBuilder: (context, innerBoxIsScrolled) => [
-          ElyfModuleHeader(
+          const ElyfModuleHeader(
             title: 'Flux de Trésorerie',
             subtitle: 'Gérez vos dépôts et retraits avec une traçabilité complète.',
             module: EnterpriseModule.mobileMoney,
@@ -346,10 +345,10 @@ class _TransactionsV2ScreenState extends ConsumerState<TransactionsV2Screen>
   }
 
   Widget _buildHeader() {
-    return Column(
+    return const Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Nouvelle transaction',
           style: TextStyle(
             fontSize: 16,
@@ -358,8 +357,8 @@ class _TransactionsV2ScreenState extends ConsumerState<TransactionsV2Screen>
             height: 1.5,
           ),
         ),
-        const SizedBox(height: 4),
-        const Text(
+        SizedBox(height: 4),
+        Text(
           'Enregistrez rapidement vos dépôts et retraits',
           style: TextStyle(
             fontSize: 14,

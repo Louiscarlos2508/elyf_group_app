@@ -164,7 +164,7 @@ class AuthSessionService {
           'Firebase Core not initialized - this is a critical error',
           name: 'auth.session',
         );
-        throw UnknownException(
+        throw const UnknownException(
           'Firebase n\'est pas initialisé. Veuillez redémarrer l\'application.',
           'FIREBASE_NOT_INITIALIZED',
         );
@@ -300,7 +300,7 @@ class AuthSessionService {
           );
           // Vérifier si Firebase Auth est disponible quand même
           if (Firebase.apps.isEmpty) {
-            throw UnknownException(
+            throw const UnknownException(
               'Firebase n\'est pas initialisé. Veuillez redémarrer l\'application complètement (Stop + Run).',
               'FIREBASE_NOT_INITIALIZED',
             );
@@ -371,7 +371,7 @@ class AuthSessionService {
 
       final firebaseUser = userCredential.user;
       if (firebaseUser == null) {
-        throw AuthenticationException(
+        throw const AuthenticationException(
           'Échec de l\'authentification: Aucun utilisateur retourné',
           'NO_USER_RETURNED',
         );
@@ -495,7 +495,7 @@ class AuthSessionService {
           errorString.contains('no address associated') ||
           errorString.contains('timeout')) {
         // Si pas d'utilisateur Firebase, c'est une vraie erreur réseau
-        throw NetworkException(
+        throw const NetworkException(
           'Problème de connexion réseau. L\'application fonctionnera en mode hors ligne.',
           'NETWORK_ERROR',
         );
@@ -538,7 +538,7 @@ class AuthSessionService {
               !errorString.contains('firestore')); // Exclure les erreurs Firestore
 
       if (isFirebaseInitError) {
-        throw UnknownException(
+        throw const UnknownException(
           'Erreur d\'initialisation : Firebase n\'est pas correctement initialisé. '
           'Veuillez redémarrer l\'application complètement (Stop + Run, pas Hot Reload).',
           'FIREBASE_INIT_ERROR',

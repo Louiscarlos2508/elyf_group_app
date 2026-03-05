@@ -50,7 +50,7 @@ class ZReportScreen extends ConsumerWidget {
           ),
           SliverToBoxAdapter(
             child: Padding(
-              padding: EdgeInsets.all(AppSpacing.lg),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -184,7 +184,7 @@ class ZReportScreen extends ConsumerWidget {
     bool isTotal = false,
   }) {
     return Padding(
-      padding: EdgeInsets.all(AppSpacing.lg),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: Row(
         children: [
           Container(

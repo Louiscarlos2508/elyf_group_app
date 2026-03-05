@@ -48,7 +48,7 @@ void main() {
     test(
       'createProduct should save product locally and return localId',
       () async {
-        final product = Product(
+        const product = Product(
           id: 'test-product-1',
           enterpriseId: 'test-enterprise',
           name: 'Test Product',
@@ -71,7 +71,7 @@ void main() {
     );
 
     test('getProduct should return product by localId', () async {
-      final product = Product(
+      const product = Product(
         id: 'test-product-1',
         enterpriseId: 'test-enterprise',
         name: 'Test Product',
@@ -87,7 +87,7 @@ void main() {
     }, skip: true);
 
     test('updateProduct should update existing product', () async {
-      final product = Product(
+      const product = Product(
         id: 'test-product-1',
         enterpriseId: 'test-enterprise',
         name: 'Test Product',
@@ -114,7 +114,7 @@ void main() {
     }, skip: true);
 
     test('deleteProduct should remove product from local storage', () async {
-      final product = Product(
+      const product = Product(
         id: 'test-product-1',
         enterpriseId: 'test-enterprise',
         name: 'Test Product',
@@ -130,14 +130,14 @@ void main() {
     }, skip: true);
 
     test('fetchProducts should return products for enterprise', () async {
-      final product1 = Product(
+      const product1 = Product(
         id: 'test-product-1',
         enterpriseId: 'test-enterprise',
         name: 'Product 1',
         price: 1000,
         stock: 10,
       );
-      final product2 = Product(
+      const product2 = Product(
         id: 'test-product-2',
         enterpriseId: 'test-enterprise',
         name: 'Product 2',
@@ -158,7 +158,7 @@ void main() {
     test(
       'getProductByBarcode should return product with matching barcode',
       () async {
-        final product = Product(
+        const product = Product(
           id: 'test-product-1',
           enterpriseId: 'test-enterprise',
           name: 'Test Product',

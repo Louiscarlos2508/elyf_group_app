@@ -82,9 +82,9 @@ class _TreasuryOperationDialogState extends State<TreasuryOperationDialog> {
                   key: ValueKey('from_$_fromAccount'),
                   initialValue: _fromAccount,
                   decoration: const InputDecoration(labelText: 'Depuis le compte'),
-                  items: [
-                    DropdownMenuItem(value: PaymentMethod.cash, child: const Text('Caisse (Espèces)')),
-                    DropdownMenuItem(value: PaymentMethod.mobileMoney, child: const Text('Mobile Money')),
+                  items: const [
+                    DropdownMenuItem(value: PaymentMethod.cash, child: Text('Caisse (Espèces)')),
+                    DropdownMenuItem(value: PaymentMethod.mobileMoney, child: Text('Mobile Money')),
                   ],
                   onChanged: (v) => setState(() => _fromAccount = v),
                   validator: (v) => v == null ? 'Requis' : null,
@@ -103,9 +103,9 @@ class _TreasuryOperationDialogState extends State<TreasuryOperationDialog> {
                         ? 'Compte à ajuster' 
                         : 'Vers le compte',
                   ),
-                  items: [
-                    DropdownMenuItem(value: PaymentMethod.cash, child: const Text('Caisse (Espèces)')),
-                    DropdownMenuItem(value: PaymentMethod.mobileMoney, child: const Text('Mobile Money')),
+                  items: const [
+                    DropdownMenuItem(value: PaymentMethod.cash, child: Text('Caisse (Espèces)')),
+                    DropdownMenuItem(value: PaymentMethod.mobileMoney, child: Text('Mobile Money')),
                   ],
                   onChanged: (v) => setState(() => _toAccount = v),
                   validator: (v) {

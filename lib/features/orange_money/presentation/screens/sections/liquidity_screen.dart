@@ -16,7 +16,6 @@ import '../../widgets/liquidity/liquidity_filters_card.dart';
 import '../../widgets/liquidity/liquidity_checkpoints_list.dart';
 import '../../widgets/liquidity/liquidity_empty_state.dart';
 import '../../widgets/liquidity/liquidity_checkpoint_card.dart';
-import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import '../../widgets/liquidity/justification_dialog.dart';
 
 /// Screen for managing liquidity checkpoints.
@@ -268,7 +267,7 @@ class _LiquidityScreenState extends ConsumerState<LiquidityScreen> {
           selectedTab: _selectedTab,
           onTabChanged: (tab) => setState(() => _selectedTab = tab),
         ),
-        SizedBox(height: AppSpacing.xs),
+        const SizedBox(height: AppSpacing.xs),
         _buildHistoryContent(checkpointsAsync, providerKey),
       ],
     );
@@ -309,7 +308,7 @@ class _LiquidityScreenState extends ConsumerState<LiquidityScreen> {
                 });
               },
             ),
-            SizedBox(height: AppSpacing.md),
+            const SizedBox(height: AppSpacing.md),
           ],
           checkpointsAsync.when(
             data: (checkpoints) {

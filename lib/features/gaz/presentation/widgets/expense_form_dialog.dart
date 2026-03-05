@@ -86,7 +86,7 @@ class _GazExpenseFormDialogState extends ConsumerState<GazExpenseFormDialog>
       onSubmit: () async {
         final amount = double.tryParse(_amountController.text);
         if (amount == null || amount <= 0) {
-          throw ValidationException(
+          throw const ValidationException(
             'Montant invalide. Le montant doit être supérieur à 0',
             'INVALID_AMOUNT',
           );

@@ -263,7 +263,7 @@ class ProductionSessionController {
     int bobinesDecrimentees = 0;
     int bobinesReutilisees = 0;
     int bobinesAvecMouvementRecent = 0;
-    int bobinesDejaEnSession = 0;
+    const int bobinesDejaEnSession = 0;
 
     for (final bobineUsage in bobinesUtilisees) {
       AppLogger.debug(

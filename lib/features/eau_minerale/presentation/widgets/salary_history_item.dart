@@ -104,8 +104,8 @@ class SalaryHistoryItem extends StatelessWidget {
           children: [
             Expanded(child: Text(payment.label)),
             if (hasSignature)
-              Padding(
-                padding: const EdgeInsets.only(left: 4),
+              const Padding(
+                padding: EdgeInsets.only(left: 4),
                 child: Icon(
                   Icons.verified,
                   color: Colors.green,

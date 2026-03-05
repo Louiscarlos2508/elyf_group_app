@@ -641,7 +641,7 @@ class FirestoreSyncService {
 
       // Propager les erreurs de permission avec un message clair
       if (e.code == 'permission-denied') {
-        throw AuthorizationException(
+        throw const AuthorizationException(
           'Permission refusée : Vous n\'avez pas les droits pour créer/modifier des rôles dans Firestore. '
           'Vérifiez que :\n'
           '1. Votre utilisateur a le flag isAdmin: true dans Firestore\n'
@@ -758,7 +758,7 @@ class FirestoreSyncService {
   /// Pull users from Firestore
   Future<List<User>> pullUsersFromFirestore({List<String>? enterpriseIds}) async {
     try {
-      Query snapshotQuery = firestore.collection(_usersCollection);
+      final Query snapshotQuery = firestore.collection(_usersCollection);
       
       if (enterpriseIds != null && enterpriseIds.isNotEmpty) {
         // split into chunks of 10 for 'array-contains-any'
@@ -788,7 +788,7 @@ class FirestoreSyncService {
       }
 
       final snapshot = await snapshotQuery.get();
-      return snapshot.docs.map((doc) => _mapFirestoreDocToUser(doc)).toList();
+      return snapshot.docs.map(_mapFirestoreDocToUser).toList();
     } on FirebaseException catch (e, stackTrace) {
       if (e.code == 'permission-denied') {
         AppLogger.info(
@@ -858,7 +858,7 @@ class FirestoreSyncService {
       final Set<String> foundIds = {};
 
       // 1. Pull from root collection
-      Query<Map<String, dynamic>> snapshotQuery = firestore.collection(_enterprisesCollection);
+      final Query<Map<String, dynamic>> snapshotQuery = firestore.collection(_enterprisesCollection);
       
       if (allowedEnterpriseIds != null) {
         if (allowedEnterpriseIds.isEmpty) return [];
@@ -923,7 +923,7 @@ class FirestoreSyncService {
       }
 
       // 2. Search for missing IDs
-      final missingIds = allowedEnterpriseIds!.where((id) => !foundIds.contains(id)).toList();
+      final missingIds = allowedEnterpriseIds.where((id) => !foundIds.contains(id)).toList();
       
       if (missingIds.isNotEmpty) {
         developer.log('Resolving ${missingIds.length} missing enterprise IDs...', name: 'admin.firestore.sync');
@@ -938,8 +938,9 @@ class FirestoreSyncService {
             final parentId = '${parts[1]}_${parts[2]}';
             String? subCollection;
             
-            if (prefix == 'pos') subCollection = 'pointsOfSale';
-            else if (prefix == 'agence' || prefix == 'mm') subCollection = 'agences';
+            if (prefix == 'pos') {
+              subCollection = 'pointsOfSale';
+            } else if (prefix == 'agence' || prefix == 'mm') subCollection = 'agences';
 
             if (subCollection != null) {
               try {
@@ -1035,14 +1036,14 @@ class FirestoreSyncService {
               .where(FieldPath.documentId, whereIn: chunk)
               .get();
               
-          result.addAll(snapshot.docs.map((doc) => _mapFirestoreDocToRole(doc)));
+          result.addAll(snapshot.docs.map(_mapFirestoreDocToRole));
         }
         return result;
       }
 
       final snapshot = await firestore.collection(_rolesCollection).get();
-      return snapshot.docs.map((doc) => _mapFirestoreDocToRole(doc)).toList();
-    } on FirebaseException catch (e, stackTrace) {
+      return snapshot.docs.map(_mapFirestoreDocToRole).toList();
+    } on FirebaseException catch (e) {
       if (e.code == 'permission-denied') {
         AppLogger.info('Note: Global roles pull restricted. Returning empty list.', name: 'admin.firestore.sync');
       } else {

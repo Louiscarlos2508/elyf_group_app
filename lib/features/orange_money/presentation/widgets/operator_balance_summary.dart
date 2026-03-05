@@ -104,7 +104,7 @@ class OperatorBalanceSummary extends ConsumerWidget {
                   ),
                 ),
                 Text(
-                  '${fmt.format(amount)}',
+                  fmt.format(amount),
                   style: (isKeyboardOpen ? theme.textTheme.bodyMedium : theme.textTheme.titleMedium)?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: color,

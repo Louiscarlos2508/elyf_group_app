@@ -13,30 +13,30 @@ class ReportController {
   final ReportRepository _repository;
 
   Future<ReportData> fetchReportData(ReportPeriod period) async {
-    return await _repository.fetchReportData(period);
+    return _repository.fetchReportData(period);
   }
 
   Future<List<Sale>> fetchSalesForPeriod(ReportPeriod period) async {
-    return await _repository.fetchSalesForPeriod(period);
+    return _repository.fetchSalesForPeriod(period);
   }
 
   Future<List<ProductSalesSummary>> fetchProductSalesSummary(
     ReportPeriod period,
   ) async {
-    return await _repository.fetchProductSalesSummary(period);
+    return _repository.fetchProductSalesSummary(period);
   }
 
   Future<ProductionReportData> fetchProductionReport(
     ReportPeriod period,
   ) async {
-    return await _repository.fetchProductionReport(period);
+    return _repository.fetchProductionReport(period);
   }
 
   Future<ExpenseReportData> fetchExpenseReport(ReportPeriod period) async {
-    return await _repository.fetchExpenseReport(period);
+    return _repository.fetchExpenseReport(period);
   }
 
   Future<SalaryReportData> fetchSalaryReport(ReportPeriod period) async {
-    return await _repository.fetchSalaryReport(period);
+    return _repository.fetchSalaryReport(period);
   }
 }

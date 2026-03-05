@@ -10,27 +10,27 @@ class BobineStockQuantityController {
 
   /// Récupère tous les stocks de bobines.
   Future<List<BobineStock>> fetchAll() async {
-    return await _repository.fetchAll();
+    return _repository.fetchAll();
   }
 
   /// Récupère un stock de bobine par son ID.
   Future<BobineStock?> fetchById(String id) async {
-    return await _repository.fetchById(id);
+    return _repository.fetchById(id);
   }
 
   /// Récupère un stock de bobine par son type.
   Future<BobineStock?> fetchByType(String type) async {
-    return await _repository.fetchByType(type);
+    return _repository.fetchByType(type);
   }
 
   /// Crée ou met à jour un stock de bobine.
   Future<BobineStock> save(BobineStock stock) async {
-    return await _repository.save(stock);
+    return _repository.save(stock);
   }
 
   /// Enregistre un mouvement de stock de bobine.
   Future<void> recordMovement(BobineStockMovement movement) async {
-    return await _repository.recordMovement(movement);
+    return _repository.recordMovement(movement);
   }
 
   /// Récupère les mouvements de stock de bobines.
@@ -39,7 +39,7 @@ class BobineStockQuantityController {
     DateTime? startDate,
     DateTime? endDate,
   }) async {
-    return await _repository.fetchMovements(
+    return _repository.fetchMovements(
       bobineStockId: bobineStockId,
       startDate: startDate,
       endDate: endDate,
@@ -48,6 +48,6 @@ class BobineStockQuantityController {
 
   /// Récupère les stocks avec alerte (stock faible).
   Future<List<BobineStock>> fetchLowStockAlerts() async {
-    return await _repository.fetchLowStockAlerts();
+    return _repository.fetchLowStockAlerts();
   }
 }

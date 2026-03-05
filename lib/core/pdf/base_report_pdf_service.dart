@@ -71,7 +71,7 @@ abstract class BaseReportPdfService {
             pw.SizedBox(height: 4),
             pw.Text(
               moduleName,
-              style: pw.TextStyle(fontSize: 14, color: PdfColors.blueGrey600),
+              style: const pw.TextStyle(fontSize: 14, color: PdfColors.blueGrey600),
             ),
           ],
         ),
@@ -102,7 +102,7 @@ abstract class BaseReportPdfService {
         ),
         child: pw.Text(
           periodText,
-          style: pw.TextStyle(fontSize: 12, color: PdfColors.blueGrey700),
+          style: const pw.TextStyle(fontSize: 12, color: PdfColors.blueGrey700),
         ),
       ),
     );
@@ -111,7 +111,7 @@ abstract class BaseReportPdfService {
   pw.Widget _buildFooter({String? footerText}) {
     return pw.Container(
       padding: const pw.EdgeInsets.all(12),
-      decoration: pw.BoxDecoration(
+      decoration: const pw.BoxDecoration(
         border: pw.Border(
           top: pw.BorderSide(color: PdfColors.grey300, width: 1),
         ),
@@ -121,7 +121,7 @@ abstract class BaseReportPdfService {
           if (footerText != null) ...[
             pw.Text(
               footerText,
-              style: pw.TextStyle(fontSize: 10, color: PdfColors.grey700),
+              style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700),
               textAlign: pw.TextAlign.center,
             ),
             pw.SizedBox(height: 8),
@@ -131,7 +131,7 @@ abstract class BaseReportPdfService {
             children: [
               pw.Text(
                 'Généré le ${DateFormat('dd/MM/yyyy à HH:mm').format(DateTime.now())}',
-                style: pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
+                style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
               ),
               pw.Text(
                 'ELYF GROUPE',

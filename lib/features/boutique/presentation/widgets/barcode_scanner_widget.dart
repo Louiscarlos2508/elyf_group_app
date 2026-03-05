@@ -174,7 +174,7 @@ class _ScannerOverlayPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 4;
 
-    final cornerLength = 30.0;
+    const cornerLength = 30.0;
 
     // Coin supérieur gauche
     canvas.drawLine(

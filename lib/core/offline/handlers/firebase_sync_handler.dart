@@ -2,10 +2,8 @@ import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-import '../../errors/error_handler.dart';
 import '../../logging/app_logger.dart';
 
-import '../drift/app_database.dart' show OfflineRecord;
 import '../drift_service.dart';
 import '../sync_manager.dart';
 import '../sync_status.dart';
@@ -267,7 +265,7 @@ class FirebaseSyncHandler implements SyncOperationHandler {
         (key, val) => MapEntry(key as String, _convertToJsonCompatible(val)),
       );
     } else if (value is List) {
-      return value.map((item) => _convertToJsonCompatible(item)).toList();
+      return value.map(_convertToJsonCompatible).toList();
     }
     return value;
   }
@@ -415,13 +413,13 @@ class MockSyncHandler implements SyncOperationHandler {
     await Future<void>.delayed(Duration(milliseconds: delayMs));
 
     if (shouldFail) {
-      throw SyncException('Mock sync failure');
+      throw const SyncException('Mock sync failure');
     }
 
     if (failureRate > 0) {
       final random = DateTime.now().microsecond / 1000000;
       if (random < failureRate) {
-        throw SyncException('Random mock failure');
+        throw const SyncException('Random mock failure');
       }
     }
 

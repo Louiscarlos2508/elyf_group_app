@@ -65,11 +65,11 @@ class StoreController {
   final String _currentUserId;
 
   Future<List<Product>> fetchProducts() async {
-    return await _productRepository.fetchProducts();
+    return _productRepository.fetchProducts();
   }
 
   Future<Product?> getProduct(String id) async {
-    return await _productRepository.getProduct(id);
+    return _productRepository.getProduct(id);
   }
 
   Future<Product?> getProductByBarcode(String barcode) async {
@@ -110,7 +110,7 @@ class StoreController {
   }
 
   Future<void> restoreProduct(String id) async {
-    return await _productRepository.restoreProduct(id);
+    return _productRepository.restoreProduct(id);
   }
 
   Future<void> toggleProductStatus(String id) async {
@@ -129,11 +129,11 @@ class StoreController {
   }
 
   Future<List<Product>> getDeletedProducts() async {
-    return await _productRepository.getDeletedProducts();
+    return _productRepository.getDeletedProducts();
   }
 
   Future<List<Sale>> fetchRecentSales({int limit = 50}) async {
-    return await _saleRepository.fetchRecentSales(limit: limit);
+    return _saleRepository.fetchRecentSales(limit: limit);
   }
 
   Future<Sale> createSale(Sale sale) async {
@@ -308,13 +308,13 @@ class StoreController {
   }
 
   Future<List<Product>> getLowStockProducts({int threshold = 10}) async {
-    return await _stockRepository.getLowStockProducts(threshold: threshold);
+    return _stockRepository.getLowStockProducts(threshold: threshold);
   }
 
   // --- Categories ---
 
   Future<List<Category>> fetchCategories() async {
-    return await _categoryRepository.fetchCategories();
+    return _categoryRepository.fetchCategories();
   }
 
   Future<String> createCategory(Category category) async {
@@ -401,7 +401,7 @@ class StoreController {
 
   // Purchase methods
   Future<List<Purchase>> fetchPurchases({int limit = 50}) async {
-    return await _purchaseRepository.fetchPurchases(limit: limit);
+    return _purchaseRepository.fetchPurchases(limit: limit);
   }
 
   Future<String> createPurchase(Purchase purchase) async {
@@ -553,16 +553,16 @@ class StoreController {
   }
 
   Future<void> restorePurchase(String id) async {
-    return await _purchaseRepository.restorePurchase(id);
+    return _purchaseRepository.restorePurchase(id);
   }
 
   Future<List<Purchase>> getDeletedPurchases() async {
-    return await _purchaseRepository.getDeletedPurchases();
+    return _purchaseRepository.getDeletedPurchases();
   }
 
   // Expense methods
   Future<List<Expense>> fetchExpenses({int limit = 50}) async {
-    return await _expenseRepository.fetchExpenses(limit: limit);
+    return _expenseRepository.fetchExpenses(limit: limit);
   }
 
   Future<String> createExpense(Expense expense) async {
@@ -635,11 +635,11 @@ class StoreController {
   }
 
   Future<void> restoreExpense(String id) async {
-    return await _expenseRepository.restoreExpense(id);
+    return _expenseRepository.restoreExpense(id);
   }
 
   Future<List<Expense>> getDeletedExpenses() async {
-    return await _expenseRepository.getDeletedExpenses();
+    return _expenseRepository.getDeletedExpenses();
   }
 
   // --- Treasury ---
@@ -901,7 +901,7 @@ class StoreController {
     DateTime? startDate,
     DateTime? endDate,
   }) async {
-    return await _reportRepository.getReportData(
+    return _reportRepository.getReportData(
       period,
       startDate: startDate,
       endDate: endDate,
@@ -913,7 +913,7 @@ class StoreController {
     DateTime? startDate,
     DateTime? endDate,
   }) async {
-    return await _reportRepository.getSalesReport(
+    return _reportRepository.getSalesReport(
       period,
       startDate: startDate,
       endDate: endDate,
@@ -925,7 +925,7 @@ class StoreController {
     DateTime? startDate,
     DateTime? endDate,
   }) async {
-    return await _reportRepository.getPurchasesReport(
+    return _reportRepository.getPurchasesReport(
       period,
       startDate: startDate,
       endDate: endDate,
@@ -937,7 +937,7 @@ class StoreController {
     DateTime? startDate,
     DateTime? endDate,
   }) async {
-    return await _reportRepository.getExpensesReport(
+    return _reportRepository.getExpensesReport(
       period,
       startDate: startDate,
       endDate: endDate,
@@ -949,7 +949,7 @@ class StoreController {
     DateTime? startDate,
     DateTime? endDate,
   }) async {
-    return await _reportRepository.getProfitReport(
+    return _reportRepository.getProfitReport(
       period,
       startDate: startDate,
       endDate: endDate,

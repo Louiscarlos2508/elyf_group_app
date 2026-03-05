@@ -34,7 +34,7 @@ class LiquidityController {
   }) async {
     // If specific enterprise requested, use it
     if (enterpriseId != null) {
-      return await _repository.fetchCheckpoints(
+      return _repository.fetchCheckpoints(
         enterpriseId: enterpriseId,
         startDate: startDate,
         endDate: endDate,
@@ -45,7 +45,7 @@ class LiquidityController {
     final accessibleIds = await _permissionAdapter.getAccessibleEnterpriseIds(_activeEnterpriseId);
 
     if (accessibleIds.length > 1) {
-      return await _repository.fetchCheckpointsByEnterprises(
+      return _repository.fetchCheckpointsByEnterprises(
         accessibleIds.toList(),
         startDate: startDate,
         endDate: endDate,
@@ -53,7 +53,7 @@ class LiquidityController {
     }
 
     // Default to active enterprise
-    return await _repository.fetchCheckpoints(
+    return _repository.fetchCheckpoints(
       enterpriseId: _activeEnterpriseId,
       startDate: startDate,
       endDate: endDate,
@@ -61,11 +61,11 @@ class LiquidityController {
   }
 
   Future<LiquidityCheckpoint?> getCheckpoint(String checkpointId) async {
-    return await _repository.getCheckpoint(checkpointId);
+    return _repository.getCheckpoint(checkpointId);
   }
 
   Future<LiquidityCheckpoint?> getTodayCheckpoint(String enterpriseId) async {
-    return await _repository.getTodayCheckpoint(enterpriseId);
+    return _repository.getTodayCheckpoint(enterpriseId);
   }
 
   /// Crée un pointage de liquidité à partir des données du formulaire.
@@ -128,7 +128,7 @@ class LiquidityController {
     required String checkpointId,
     required String justification,
   }) async {
-    return await _liquidityService.validateDiscrepancy(
+    return _liquidityService.validateDiscrepancy(
       checkpointId: checkpointId,
       validatedBy: userId,
       justification: justification,
@@ -136,19 +136,19 @@ class LiquidityController {
   }
 
   Future<String> createCheckpoint(LiquidityCheckpoint checkpoint) async {
-    return await _repository.createCheckpoint(checkpoint);
+    return _repository.createCheckpoint(checkpoint);
   }
 
   Future<void> updateCheckpoint(LiquidityCheckpoint checkpoint) async {
-    return await _repository.updateCheckpoint(checkpoint);
+    return _repository.updateCheckpoint(checkpoint);
   }
 
   Future<void> deleteCheckpoint(String checkpointId) async {
-    return await _repository.deleteCheckpoint(checkpointId, userId);
+    return _repository.deleteCheckpoint(checkpointId, userId);
   }
 
   Future<void> restoreCheckpoint(String checkpointId) async {
-    return await _repository.restoreCheckpoint(checkpointId);
+    return _repository.restoreCheckpoint(checkpointId);
   }
 
   Stream<List<LiquidityCheckpoint>> watchCheckpoints({
@@ -172,7 +172,7 @@ class LiquidityController {
   }) async {
     // If specific enterprise requested, use it
     if (enterpriseId != null) {
-      return await _repository.getStatistics(
+      return _repository.getStatistics(
         enterpriseId: enterpriseId,
         startDate: startDate,
         endDate: endDate,
@@ -203,7 +203,7 @@ class LiquidityController {
       };
     }
 
-    return await _repository.getStatistics(
+    return _repository.getStatistics(
       enterpriseId: _activeEnterpriseId,
       startDate: startDate,
       endDate: endDate,

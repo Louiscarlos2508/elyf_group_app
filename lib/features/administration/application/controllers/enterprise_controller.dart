@@ -73,12 +73,12 @@ class EnterpriseController {
 
   /// Récupère les entreprises par type.
   Future<List<Enterprise>> getEnterprisesByType(String type) async {
-    return await _repository.getEnterprisesByType(type);
+    return _repository.getEnterprisesByType(type);
   }
 
   /// Récupère une entreprise par son ID.
   Future<Enterprise?> getEnterpriseById(String enterpriseId) async {
-    return await _repository.getEnterpriseById(enterpriseId);
+    return _repository.getEnterpriseById(enterpriseId);
   }
 
   /// Crée une nouvelle entreprise.
@@ -95,7 +95,7 @@ class EnterpriseController {
         userId: currentUserId,
       );
       if (!hasPermission) {
-        throw AuthorizationException(
+        throw const AuthorizationException(
           'Permission denied: Cannot create enterprises',
           'PERMISSION_DENIED',
         );
@@ -181,7 +181,7 @@ class EnterpriseController {
         userId: currentUserId,
       );
       if (!hasPermission) {
-        throw AuthorizationException(
+        throw const AuthorizationException(
           'Permission denied: Cannot update enterprises',
           'PERMISSION_DENIED',
         );
@@ -241,7 +241,7 @@ class EnterpriseController {
         userId: currentUserId,
       );
       if (!hasPermission) {
-        throw AuthorizationException(
+        throw const AuthorizationException(
           'Permission denied: Cannot delete enterprises',
           'PERMISSION_DENIED',
         );
@@ -362,7 +362,7 @@ class EnterpriseController {
         userId: currentUserId,
       );
       if (!hasPermission) {
-        throw AuthorizationException(
+        throw const AuthorizationException(
           'Permission denied: Cannot toggle enterprise status',
           'PERMISSION_DENIED',
         );

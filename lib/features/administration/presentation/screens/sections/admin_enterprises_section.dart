@@ -240,7 +240,7 @@ class AdminEnterprisesSection extends ConsumerWidget {
               onSelectionChanged: (Set<_ViewMode> newSelection) {
                 ref.read(_enterprisesViewModeProvider.notifier).setMode(newSelection.first);
               },
-              style: ButtonStyle(
+              style: const ButtonStyle(
                 visualDensity: VisualDensity.compact,
               ),
             ),

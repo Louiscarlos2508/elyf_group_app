@@ -46,7 +46,7 @@ class ElyfAppBar extends StatelessWidget implements PreferredSizeWidget {
     final isDark = theme.brightness == Brightness.dark;
     
     // Determine background
-    Color bg = backgroundColor ?? theme.colorScheme.surface;
+    final Color bg = backgroundColor ?? theme.colorScheme.surface;
     
     // In this premium version, the AppBar uses the surface color to stay clean
     // but we can force a gradient if useGradient is true.

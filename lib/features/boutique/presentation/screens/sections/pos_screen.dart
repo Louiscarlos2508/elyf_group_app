@@ -18,7 +18,6 @@ import 'package:elyf_groupe_app/features/boutique/presentation/widgets/boutique_
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/core/offline/providers.dart';
 import 'dart:convert';
-import '../../widgets/boutique_header.dart';
 import 'package:elyf_groupe_app/features/boutique/domain/entities/category.dart';
 import 'package:elyf_groupe_app/features/boutique/domain/services/product_filter_service.dart';
 import '../../widgets/opening_session_dialog.dart';
@@ -227,9 +226,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
         builder: (context) => CheckoutDialog(
           cartItems: _cartItems,
           total: total,
-          onSuccess: () {
-            _clearCart();
-          },
+          onSuccess: _clearCart,
         ),
       );
     }

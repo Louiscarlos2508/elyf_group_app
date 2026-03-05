@@ -45,10 +45,10 @@ class AdminAuditTrailSection extends ConsumerWidget {
           child: Container(
             margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
+              gradient: const LinearGradient(
                 colors: [
-                  const Color(0xFF374151), // Slate 700
-                  const Color(0xFF1F2937), // Slate 800
+                  Color(0xFF374151), // Slate 700
+                  Color(0xFF1F2937), // Slate 800
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,

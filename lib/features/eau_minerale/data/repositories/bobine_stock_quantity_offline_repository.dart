@@ -182,7 +182,7 @@ class BobineStockQuantityOfflineRepository
   }
 
   Future<BobineStock?> getFromLocal(String localId) async {
-    return await getByLocalId(localId);
+    return getByLocalId(localId);
   }
 
   // Implementation of BobineStockQuantityRepository interface
@@ -291,10 +291,10 @@ class BobineStockQuantityOfflineRepository
     try {
       // Validation du mouvement AVANT toute opération de sauvegarde
       if (movement.bobineReference.trim().isEmpty) {
-        throw ValidationException('La référence de bobine est requise pour le mouvement.');
+        throw const ValidationException('La référence de bobine est requise pour le mouvement.');
       }
       if (movement.quantite <= 0) {
-        throw ValidationException('La quantité du mouvement doit être positive.');
+        throw const ValidationException('La quantité du mouvement doit être positive.');
       }
 
       final localId = movement.id.startsWith('local_')

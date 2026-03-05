@@ -134,9 +134,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             BoutiqueHeader(
               title: "RAPPORTS",
               subtitle: "Statistiques & Analyses",
-              gradientColors: [
-                const Color(0xFF7C3AED), // Violet 600
-                const Color(0xFF6D28D9), // Violet 700
+              gradientColors: const [
+                Color(0xFF7C3AED), // Violet 600
+                Color(0xFF6D28D9), // Violet 700
               ],
               shadowColor: const Color(0xFF7C3AED),
               actions: [

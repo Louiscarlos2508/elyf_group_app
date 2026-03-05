@@ -231,7 +231,7 @@ class DashboardPerformanceChart extends StatelessWidget {
                 _LegendItem(color: theme.colorScheme.primary, label: 'Bénéfice'),
                 _LegendItem(color: theme.colorScheme.error, label: 'Dépenses'),
               ],
-              _LegendItem(color: const Color(0xFF10B981), label: 'Ventes'),
+              const _LegendItem(color: Color(0xFF10B981), label: 'Ventes'),
             ],
           ),
         ],

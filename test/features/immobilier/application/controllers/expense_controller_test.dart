@@ -10,7 +10,6 @@ import 'package:elyf_groupe_app/features/immobilier/domain/entities/expense.dart
 
 import 'expense_controller_test.mocks.dart';
 
-import 'package:elyf_groupe_app/features/audit_trail/domain/services/audit_trail_service.dart';
 
 
 

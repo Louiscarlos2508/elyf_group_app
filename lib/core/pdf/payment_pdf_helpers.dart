@@ -45,9 +45,9 @@ class PaymentPdfHelpers {
   }) {
     return pw.Container(
       padding: const pw.EdgeInsets.all(12),
-      decoration: pw.BoxDecoration(
+      decoration: const pw.BoxDecoration(
         color: PdfColors.blueGrey50,
-        borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
+        borderRadius: pw.BorderRadius.all(pw.Radius.circular(4)),
       ),
       child: pw.Row(
         mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,

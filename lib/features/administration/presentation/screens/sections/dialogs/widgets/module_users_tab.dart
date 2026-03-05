@@ -112,9 +112,9 @@ class ModuleUsersTab extends StatelessWidget {
                   }),
                 Text('Rôle: ${assignment.roleId}'),
                 if (!assignment.isActive)
-                  Chip(
-                    label: const Text('Inactif'),
-                    avatar: const Icon(Icons.block, size: 16),
+                  const Chip(
+                    label: Text('Inactif'),
+                    avatar: Icon(Icons.block, size: 16),
                     padding: EdgeInsets.zero,
                   ),
               ],

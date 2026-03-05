@@ -149,14 +149,14 @@ class WeeklyMonthlyReportContent extends ConsumerWidget {
 
               // Graphique des dépenses par catégorie
               if (expenses.isNotEmpty) ...[
-                _SectionTitle(title: 'Dépenses par Catégorie'),
+                const _SectionTitle(title: 'Dépenses par Catégorie'),
                 const SizedBox(height: 16),
                 _ExpenseCategoryChart(expenses: expenses),
                 const SizedBox(height: 24),
               ],
 
               // Détail des productions
-              _SectionTitle(title: 'Détail des Productions'),
+              const _SectionTitle(title: 'Détail des Productions'),
               const SizedBox(height: 16),
               if (sessions.isEmpty)
                 Center(

@@ -20,7 +20,7 @@ class PropertyController {
   final String _userId;
 
   Future<List<Property>> fetchProperties() async {
-    return await _propertyRepository.getAllProperties();
+    return _propertyRepository.getAllProperties();
   }
 
   Stream<List<Property>> watchProperties({bool? isDeleted = false}) {
@@ -32,15 +32,15 @@ class PropertyController {
   }
 
   Future<Property?> getProperty(String id) async {
-    return await _propertyRepository.getPropertyById(id);
+    return _propertyRepository.getPropertyById(id);
   }
 
   Future<List<Property>> getPropertiesByStatus(PropertyStatus status) async {
-    return await _propertyRepository.getPropertiesByStatus(status);
+    return _propertyRepository.getPropertiesByStatus(status);
   }
 
   Future<List<Property>> getPropertiesByType(PropertyType type) async {
-    return await _propertyRepository.getPropertiesByType(type);
+    return _propertyRepository.getPropertiesByType(type);
   }
 
   Future<Property> createProperty(Property property) async {
@@ -54,7 +54,7 @@ class PropertyController {
     // Récupérer l'ancienne propriété pour comparer les statuts
     final oldProperty = await _propertyRepository.getPropertyById(property.id);
     if (oldProperty == null) {
-      throw NotFoundException(
+      throw const NotFoundException(
         'La propriété à mettre à jour n\'existe pas',
         'PROPERTY_NOT_FOUND',
       );

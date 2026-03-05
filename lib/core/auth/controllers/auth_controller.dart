@@ -63,7 +63,7 @@ class AuthController {
           errorString.contains('network') ||
           errorString.contains('connection') ||
           errorString.contains('no address associated')) {
-        throw NetworkException(
+        throw const NetworkException(
           'Problème de connexion réseau. L\'application fonctionnera en mode hors ligne. '
           'Assurez-vous que votre appareil a accès à Internet pour synchroniser les données.',
           'NETWORK_ERROR',
@@ -74,7 +74,7 @@ class AuthController {
       if (errorString.contains('notinitializederror') ||
           (errorString.contains('not initialized') &&
               errorString.contains('firebaseapp'))) {
-        throw UnknownException(
+        throw const UnknownException(
           'Erreur d\'initialisation : Firebase n\'est pas correctement initialisé. '
           'Veuillez redémarrer l\'application.',
           'FIREBASE_INIT_ERROR',
@@ -89,7 +89,7 @@ class AuthController {
     required String email,
     required String password,
   }) async {
-    return await authService.createFirstAdmin(email: email, password: password);
+    return authService.createFirstAdmin(email: email, password: password);
   }
 
   /// Se déconnecter.

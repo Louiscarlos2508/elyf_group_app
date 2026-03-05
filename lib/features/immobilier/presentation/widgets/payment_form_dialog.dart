@@ -386,7 +386,7 @@ class _PaymentFormDialogState extends ConsumerState<PaymentFormDialog>
             const SizedBox(height: 16),
             PaymentFormFields.amountField(
               controller: _amountController,
-              validator: (value) => Validators.amount(value),
+              validator: Validators.amount,
               label: 'Montant du loyer (FCFA) *',
             ),
             const SizedBox(height: 16),
@@ -434,8 +434,8 @@ class _PaymentFormDialogState extends ConsumerState<PaymentFormDialog>
               PaymentFormFields.splitAmountFields(
                 cashController: _cashAmountController,
                 mobileMoneyController: _mobileMoneyAmountController,
-                cashValidator: (v) => Validators.required(v),
-                mobileMoneyValidator: (v) => Validators.required(v),
+                cashValidator: Validators.required,
+                mobileMoneyValidator: Validators.required,
               ),
             ],
             const SizedBox(height: 16),

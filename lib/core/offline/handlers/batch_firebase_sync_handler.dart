@@ -446,7 +446,7 @@ class BatchFirebaseSyncHandler {
         (key, val) => MapEntry(key as String, _convertToJsonCompatible(val)),
       );
     } else if (value is List) {
-      return value.map((item) => _convertToJsonCompatible(item)).toList();
+      return value.map(_convertToJsonCompatible).toList();
     }
     return value;
   }

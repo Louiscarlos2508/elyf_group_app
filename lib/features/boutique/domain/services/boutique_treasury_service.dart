@@ -30,9 +30,7 @@ class BoutiqueTreasuryService {
       expenseRepository.watchExpenses(limit: 1000),
       purchaseRepository.watchPurchases(limit: 1000),
       treasuryRepository.watchOperations(limit: 1000),
-      (sales, expenses, purchases, operations) {
-        return _calculateBalances(sales, expenses, purchases, operations);
-      },
+      _calculateBalances,
     ).asBroadcastStream();
   }
 

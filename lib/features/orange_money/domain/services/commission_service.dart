@@ -1,5 +1,4 @@
 import '../entities/commission.dart';
-import '../entities/orange_money_settings.dart';
 import '../entities/transaction.dart';
 import '../repositories/commission_repository.dart';
 import '../repositories/settings_repository.dart';
@@ -42,7 +41,7 @@ class CommissionService {
         .toList();
 
     // 4. No more system-calculated estimation (User request)
-    final details = CommissionCalculationDetails(
+    const details = CommissionCalculationDetails(
       transactionsByTranche: {},
       commissionsByTranche: {},
       totalCashIn: 0,

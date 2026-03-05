@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:elyf_groupe_app/core/errors/error_handler.dart';
 import 'package:elyf_groupe_app/core/logging/app_logger.dart';
 import 'package:elyf_groupe_app/core/offline/drift_service.dart';
-import 'package:elyf_groupe_app/core/offline/drift/app_database.dart';
 import 'package:elyf_groupe_app/core/offline/sync_manager.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/gaz_salary_payment.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/repositories/gaz_salary_payment_repository.dart';

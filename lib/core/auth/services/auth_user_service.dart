@@ -47,7 +47,7 @@ class AuthUserService {
 
       final firebaseUser = userCredential.user;
       if (firebaseUser == null) {
-        throw AuthenticationException(
+        throw const AuthenticationException(
           'Échec de la création du compte',
           'ACCOUNT_CREATION_FAILED',
         );
@@ -108,7 +108,7 @@ class AuthUserService {
 
       final firebaseUser = userCredential.user;
       if (firebaseUser == null) {
-        throw AuthenticationException(
+        throw const AuthenticationException(
           'Échec de la création du compte',
           'ACCOUNT_CREATION_FAILED',
         );
@@ -195,14 +195,14 @@ class AuthUserService {
   }) async {
     final firebaseUser = _firebaseAuth.currentUser;
     if (firebaseUser == null) {
-      throw AuthenticationException(
+      throw const AuthenticationException(
         'Aucun utilisateur connecté',
         'NO_USER_CONNECTED',
       );
     }
 
     if (firebaseUser.email == null) {
-      throw ValidationException(
+      throw const ValidationException(
         'L\'email de l\'utilisateur n\'est pas disponible',
         'EMAIL_NOT_AVAILABLE',
       );

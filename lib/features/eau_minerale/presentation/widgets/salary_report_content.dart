@@ -136,7 +136,7 @@ class SalaryReportContent extends ConsumerWidget {
                     margin: const EdgeInsets.only(bottom: 12),
                     child: ListTile(
                       leading: const Icon(Icons.factory, color: Colors.purple),
-                      title: Text('Paiement Production'),
+                      title: const Text('Paiement Production'),
                       subtitle: Text(
                         '${payment.period} • ${payment.persons.length} personne(s) • ${ProductionPeriodFormatter.formatDate(payment.paymentDate)}',
                       ),

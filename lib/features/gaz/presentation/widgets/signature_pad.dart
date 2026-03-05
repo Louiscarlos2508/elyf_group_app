@@ -35,7 +35,7 @@ class _SignaturePadState extends State<SignaturePad> {
           child: GestureDetector(
             onPanUpdate: (details) {
               setState(() {
-                RenderBox renderBox = context.findRenderObject() as RenderBox;
+                final RenderBox renderBox = context.findRenderObject() as RenderBox;
                 _points.add(renderBox.globalToLocal(details.globalPosition));
               });
             },
@@ -59,7 +59,7 @@ class _SignaturePadState extends State<SignaturePad> {
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
             TextButton(
-              onPressed: () => setState(() => _points.clear()),
+              onPressed: () => setState(_points.clear),
               child: const Text('Effacer'),
             ),
             const SizedBox(width: 8),
@@ -101,7 +101,7 @@ class _SignaturePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    Paint paint = Paint()
+    final Paint paint = Paint()
       ..color = Colors.black
       ..strokeCap = StrokeCap.round
       ..strokeWidth = 3.0;

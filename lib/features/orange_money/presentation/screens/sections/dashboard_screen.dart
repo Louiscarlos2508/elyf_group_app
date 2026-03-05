@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
-import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
 import 'package:elyf_groupe_app/features/orange_money/application/providers.dart';
 import 'package:elyf_groupe_app/features/orange_money/application/controllers/orange_money_controller.dart';
 import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
@@ -16,7 +15,7 @@ class DashboardScreen extends ConsumerWidget {
 
     return state.when(
       data: (data) => _buildData(context, ref, data),
-      loading: () => _buildLoading(),
+      loading: _buildLoading,
       error: (error, stackTrace) => _buildError(ref, error),
     );
   }

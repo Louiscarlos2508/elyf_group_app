@@ -12,7 +12,7 @@ class SessionManager extends Notifier<SessionState> {
     // Écouter les changements d'utilisateur via le provider existant
     ref.listen<AsyncValue<AppUser?>>(currentUserProvider, (previous, next) {
       next.when(
-        data: (AppUser? user) => _handleUserChange(user),
+        data: _handleUserChange,
         error: (e, st) => state = SessionError(e.toString()),
         loading: () {},
       );

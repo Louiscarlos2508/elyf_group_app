@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rxdart/rxdart.dart';
@@ -12,13 +11,6 @@ import 'package:elyf_groupe_app/core/firebase/providers.dart' as fb_providers;
 import '../../../core/permissions/services/permission_service.dart'
     show PermissionService;
 import '../../../core/permissions/services/permission_registry.dart';
-import '../data/repositories/enterprise_offline_repository.dart';
-import '../data/repositories/enterprise_firestore_repository.dart';
-import '../domain/repositories/admin_repository.dart';
-import '../domain/repositories/enterprise_repository.dart';
-import '../domain/repositories/user_repository.dart';
-import '../data/repositories/admin_offline_repository.dart';
-import '../data/repositories/user_offline_repository.dart';
 import '../domain/entities/enterprise.dart';
 import '../domain/entities/user.dart';
 import '../../../core/auth/entities/enterprise_module_user.dart';
@@ -37,8 +29,6 @@ import 'controllers/enterprise_controller.dart';
 import 'controllers/audit_controller.dart';
 import 'controllers/user_assignment_controller.dart';
 import '../../../core/auth/services/auth_service.dart';
-import '../data/repositories/admin_firestore_repository.dart';
-import '../data/repositories/user_firestore_repository.dart';
 import 'package:elyf_groupe_app/core/repositories/repository_providers.dart';
 export 'package:elyf_groupe_app/core/repositories/repository_providers.dart';
 import '../../../core/auth/services/firestore_permission_service.dart';

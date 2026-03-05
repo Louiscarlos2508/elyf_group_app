@@ -21,7 +21,6 @@ import '../../widgets/property_search_bar.dart';
 import '../../widgets/tenant_detail_dialog.dart';
 import '../../widgets/payments/payments_kpi_cards.dart';
 import '../../widgets/payments/rent_matrix_view.dart';
-import '../../widgets/immobilier_header.dart';
 
 /// Screen for managing payments.
 class PaymentsScreen extends ConsumerStatefulWidget {
@@ -64,7 +63,7 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
       length: 2,
       child: Scaffold(
         floatingActionButton: FloatingActionButton.extended(
-          onPressed: () => _showPaymentForm(),
+          onPressed: _showPaymentForm,
           icon: const Icon(Icons.add),
           label: const Text('Nouveau'),
         ),
@@ -134,7 +133,7 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
             _buildSearchBar(),
             _buildFilters(),
             _buildPaymentsList(theme, filtered, payments.isEmpty),
-            SliverToBoxAdapter(
+            const SliverToBoxAdapter(
               child: SizedBox(height: AppSpacing.lg),
             ),
           ],
@@ -252,7 +251,7 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
   }
 
   Widget _buildSectionHeader(ThemeData theme) {
-    return SliverSectionHeader(
+    return const SliverSectionHeader(
       title: 'LISTE DES PAIEMENTS',
       top: AppSpacing.lg,
       bottom: AppSpacing.sm,
@@ -305,7 +304,7 @@ class _PaymentsScreenState extends ConsumerState<PaymentsScreen> {
     }
 
     return SliverPadding(
-      padding: EdgeInsets.symmetric(
+      padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.lg,
         vertical: AppSpacing.sm,
       ),

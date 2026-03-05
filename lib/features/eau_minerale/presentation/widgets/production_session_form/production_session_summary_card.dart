@@ -131,9 +131,9 @@ class ProductionSessionSummaryCard extends ConsumerWidget {
           child: Center(child: CircularProgressIndicator()),
         ),
       ),
-      error: (_, __) => Card(
+      error: (_, __) => const Card(
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(16),
           child: Text('Erreur de chargement du type de compteur'),
         ),
       ),

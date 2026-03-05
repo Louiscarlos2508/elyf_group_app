@@ -27,7 +27,7 @@ final accessibleImmobilierSectionsProvider =
   final adapter = ref.watch(immobilierPermissionAdapterProvider);
   final enterpriseId =
       ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
-  final moduleId = 'immobilier';
+  const moduleId = 'immobilier';
 
   // Toutes les sections possibles avec leurs permissions requises
   final allSections =

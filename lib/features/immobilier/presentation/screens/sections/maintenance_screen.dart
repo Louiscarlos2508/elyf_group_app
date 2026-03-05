@@ -159,7 +159,7 @@ class _MaintenanceScreenState extends ConsumerState<MaintenanceScreen> {
                   ),
 
                   SliverPadding(
-                    padding: EdgeInsets.all(AppSpacing.lg),
+                    padding: const EdgeInsets.all(AppSpacing.lg),
                     sliver: filtered.isEmpty
                         ? const SliverFillRemaining(
                             hasScrollBody: false,

@@ -109,7 +109,7 @@ class _OrangeMoneyTreasuryOperationDialogState extends ConsumerState<OrangeMoney
 
     return Dialog(
       backgroundColor: Colors.transparent,
-      insetPadding: EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.xl),
+      insetPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.xl),
       child: Container(
         constraints: const BoxConstraints(maxWidth: 500),
         decoration: BoxDecoration(
@@ -133,7 +133,7 @@ class _OrangeMoneyTreasuryOperationDialogState extends ConsumerState<OrangeMoney
             ),
             Flexible(
               child: SingleChildScrollView(
-                padding: EdgeInsets.all(AppSpacing.lg),
+                padding: const EdgeInsets.all(AppSpacing.lg),
                 child: Form(
                   key: _formKey,
                   child: Column(
@@ -145,7 +145,7 @@ class _OrangeMoneyTreasuryOperationDialogState extends ConsumerState<OrangeMoney
                           value: _fromAccount,
                           onChanged: (v) => setState(() => _fromAccount = v),
                         ),
-                        SizedBox(height: AppSpacing.md),
+                        const SizedBox(height: AppSpacing.md),
                         _buildAccountDropdown(
                           label: 'Destination',
                           value: _toAccount,
@@ -164,7 +164,7 @@ class _OrangeMoneyTreasuryOperationDialogState extends ConsumerState<OrangeMoney
                           onChanged: (v) => setState(() => _toAccount = v),
                         ),
                       ],
-                      SizedBox(height: AppSpacing.md),
+                      const SizedBox(height: AppSpacing.md),
                       ElyfField(
                         label: 'Montant (CFA)',
                         hint: '0',
@@ -179,7 +179,7 @@ class _OrangeMoneyTreasuryOperationDialogState extends ConsumerState<OrangeMoney
                           return null;
                         },
                       ),
-                      SizedBox(height: AppSpacing.md),
+                      const SizedBox(height: AppSpacing.md),
                       ElyfField(
                         label: 'Motif / Raison',
                         hint: 'Ex: Approvisionnement caisse',
@@ -190,14 +190,14 @@ class _OrangeMoneyTreasuryOperationDialogState extends ConsumerState<OrangeMoney
                           return null;
                         },
                       ),
-                      SizedBox(height: AppSpacing.md),
+                      const SizedBox(height: AppSpacing.md),
                       ElyfField(
                         label: 'Bénéficiaire / Provenance',
                         hint: 'Nom ou référence',
                         controller: _recipientController,
                         prefixIcon: Icons.person_rounded,
                       ),
-                      SizedBox(height: AppSpacing.md),
+                      const SizedBox(height: AppSpacing.md),
                       ElyfField(
                         label: 'Notes (Optionnel)',
                         hint: 'Informations complémentaires...',
@@ -211,7 +211,7 @@ class _OrangeMoneyTreasuryOperationDialogState extends ConsumerState<OrangeMoney
               ),
             ),
             Padding(
-              padding: EdgeInsets.all(AppSpacing.lg),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               child: Row(
                 children: [
                   Expanded(
@@ -224,7 +224,7 @@ class _OrangeMoneyTreasuryOperationDialogState extends ConsumerState<OrangeMoney
                       child: const Text('ANNULER'),
                     ),
                   ),
-                  SizedBox(width: AppSpacing.md),
+                  const SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: ElevatedButton(
                       onPressed: _isLoading ? null : _submit,
@@ -263,7 +263,7 @@ class _OrangeMoneyTreasuryOperationDialogState extends ConsumerState<OrangeMoney
   }) {
     final theme = Theme.of(context);
     return DropdownButtonFormField<PaymentMethod>(
-      value: value,
+      initialValue: value,
       dropdownColor: theme.colorScheme.surface,
       elevation: 8,
       style: theme.textTheme.bodyLarge?.copyWith(

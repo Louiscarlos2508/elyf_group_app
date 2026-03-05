@@ -196,9 +196,7 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
                 : null,
           ),
           keyboardType: TextInputType.number,
-          onChanged: (_) => setState(() {
-            _updateTotalAndPayment();
-          }),
+          onChanged: (_) => setState(_updateTotalAndPayment),
           validator: (v) {
             if (v == null || v.isEmpty) return 'Requis';
             final qty = int.tryParse(v);
@@ -253,9 +251,7 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
             : 'Sélectionnez d\'abord un produit',
       ),
       keyboardType: TextInputType.number,
-      onChanged: (_) => setState(() {
-        _updateTotalAndPayment();
-      }),
+      onChanged: (_) => setState(_updateTotalAndPayment),
       readOnly: _selectedProduct == null,
       validator: (v) {
         if (v == null || v.isEmpty) return 'Requis';

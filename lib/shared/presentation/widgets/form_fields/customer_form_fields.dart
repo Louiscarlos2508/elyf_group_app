@@ -50,7 +50,7 @@ class CustomerFormFields {
       ),
       keyboardType: TextInputType.phone,
       enabled: enabled,
-      validator: validator ?? ((value) => Validators.phoneBurkina(value)),
+      validator: validator ?? (Validators.phoneBurkina),
     );
   }
 

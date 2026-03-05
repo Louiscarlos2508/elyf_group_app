@@ -40,7 +40,7 @@ class IndexCompteurFinalField extends ConsumerWidget {
                 prefixIcon: const Icon(Icons.bolt),
                 helperText: meterType.finalHelperText,
               ),
-              keyboardType: TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
               validator: (value) {
                 if (value == null || value.isEmpty) {
                   return 'Requis';
@@ -103,7 +103,7 @@ class IndexCompteurFinalField extends ConsumerWidget {
           labelText: 'Index compteur final *',
           prefixIcon: Icon(Icons.bolt),
         ),
-        keyboardType: TextInputType.numberWithOptions(decimal: true),
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
       ),
     );
   }

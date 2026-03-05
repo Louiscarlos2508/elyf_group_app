@@ -71,7 +71,7 @@ class PermissionValidatorService {
     if (await _isSystemAdmin(userId)) {
       return true;
     }
-    return await permissionService.hasPermission(
+    return permissionService.hasPermission(
       userId,
       moduleId,
       permissionId,
@@ -84,7 +84,7 @@ class PermissionValidatorService {
     required String moduleId,
     required Set<String> permissionIds,
   }) async {
-    return await permissionService.hasAnyPermission(
+    return permissionService.hasAnyPermission(
       userId,
       moduleId,
       permissionIds,
@@ -97,7 +97,7 @@ class PermissionValidatorService {
     required String moduleId,
     required Set<String> permissionIds,
   }) async {
-    return await permissionService.hasAllPermissions(
+    return permissionService.hasAllPermissions(
       userId,
       moduleId,
       permissionIds,
@@ -109,7 +109,7 @@ class PermissionValidatorService {
     required String userId,
     required String moduleId,
   }) async {
-    return await hasPermission(
+    return hasPermission(
       userId: userId,
       moduleId: moduleId,
       permissionId: '*',

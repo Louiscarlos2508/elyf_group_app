@@ -19,7 +19,7 @@ class PropertyExpenseController {
   final String _userId;
 
   Future<List<PropertyExpense>> fetchExpenses({bool? isDeleted = false}) async {
-    return await _expenseRepository.getAllExpenses(isDeleted: isDeleted);
+    return _expenseRepository.getAllExpenses(isDeleted: isDeleted);
   }
 
   Stream<List<PropertyExpense>> watchExpenses({bool? isDeleted = false}) {
@@ -31,24 +31,24 @@ class PropertyExpenseController {
   }
 
   Future<PropertyExpense?> getExpense(String id) async {
-    return await _expenseRepository.getExpenseById(id);
+    return _expenseRepository.getExpenseById(id);
   }
 
   Future<List<PropertyExpense>> getExpensesByProperty(String propertyId) async {
-    return await _expenseRepository.getExpensesByProperty(propertyId);
+    return _expenseRepository.getExpensesByProperty(propertyId);
   }
 
   Future<List<PropertyExpense>> getExpensesByCategory(
     ExpenseCategory category,
   ) async {
-    return await _expenseRepository.getExpensesByCategory(category);
+    return _expenseRepository.getExpensesByCategory(category);
   }
 
   Future<List<PropertyExpense>> getExpensesByPeriod(
     DateTime start,
     DateTime end,
   ) async {
-    return await _expenseRepository.getExpensesByPeriod(start, end);
+    return _expenseRepository.getExpensesByPeriod(start, end);
   }
 
   Future<PropertyExpense> createExpense(PropertyExpense expense) async {

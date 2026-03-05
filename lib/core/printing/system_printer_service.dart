@@ -6,7 +6,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'printer_interface.dart';
 
 /// Format facture 80x210mm (points: 72 pt = 1 inch, 1 inch = 25.4 mm).
-final PdfPageFormat _receipt80x210 = PdfPageFormat(
+const PdfPageFormat _receipt80x210 = PdfPageFormat(
   80 * (72 / 25.4),
   210 * (72 / 25.4),
   marginAll: 4,
@@ -100,16 +100,16 @@ class SystemPrinterService implements PrinterInterface {
   @override
   Future<bool> printRow(List<String> columns, {List<int>? weights, List<int>? alignments}) async {
     // Join with spaces for PDF preview/system printing
-    return await printText(columns.join('   '));
+    return printText(columns.join('   '));
   }
 
   @override
   Future<bool> printBarCode(String data, {int? width, int? height}) async {
-    return await printText('[BARCODE: $data]');
+    return printText('[BARCODE: $data]');
   }
 
   @override
   Future<bool> printQrCode(String data, {int? size}) async {
-    return await printText('[QRCODE: $data]');
+    return printText('[QRCODE: $data]');
   }
 }

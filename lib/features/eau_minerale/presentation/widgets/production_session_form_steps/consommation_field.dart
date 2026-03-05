@@ -22,7 +22,7 @@ class ConsommationField extends ConsumerWidget {
             prefixIcon: const Icon(Icons.bolt),
             helperText: 'Consommation électrique totale de la session',
           ),
-          keyboardType: TextInputType.numberWithOptions(decimal: true),
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
           validator: (value) {
             if (value == null || value.isEmpty) {
               return 'Requis';
@@ -52,7 +52,7 @@ class ConsommationField extends ConsumerWidget {
           labelText: 'Consommation électrique *',
           prefixIcon: Icon(Icons.bolt),
         ),
-        keyboardType: TextInputType.numberWithOptions(decimal: true),
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
       ),
     );
   }

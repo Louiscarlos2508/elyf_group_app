@@ -14,8 +14,9 @@ class TreasuryTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final activeEnterprise = ref.watch(activeEnterpriseProvider).value;
-    if (activeEnterprise == null)
+    if (activeEnterprise == null) {
       return const Center(child: CircularProgressIndicator());
+    }
 
     final isPOS = activeEnterprise.isPointOfSale;
     final balancesAsync = ref.watch(

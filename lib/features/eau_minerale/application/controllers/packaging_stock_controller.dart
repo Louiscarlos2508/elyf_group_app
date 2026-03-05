@@ -10,27 +10,27 @@ class PackagingStockController {
 
   /// Récupère tous les stocks d'emballages.
   Future<List<PackagingStock>> fetchAll() async {
-    return await _repository.fetchAll();
+    return _repository.fetchAll();
   }
 
   /// Récupère un stock d'emballage par son ID.
   Future<PackagingStock?> fetchById(String id) async {
-    return await _repository.fetchById(id);
+    return _repository.fetchById(id);
   }
 
   /// Récupère un stock d'emballage par son type.
   Future<PackagingStock?> fetchByType(String type) async {
-    return await _repository.fetchByType(type);
+    return _repository.fetchByType(type);
   }
 
   /// Crée ou met à jour un stock d'emballage.
   Future<PackagingStock> save(PackagingStock stock) async {
-    return await _repository.save(stock);
+    return _repository.save(stock);
   }
 
   /// Enregistre un mouvement de stock d'emballage.
   Future<void> recordMovement(PackagingStockMovement movement) async {
-    return await _repository.recordMovement(movement);
+    return _repository.recordMovement(movement);
   }
 
   /// Récupère les mouvements de stock d'emballages.
@@ -39,7 +39,7 @@ class PackagingStockController {
     DateTime? startDate,
     DateTime? endDate,
   }) async {
-    return await _repository.fetchMovements(
+    return _repository.fetchMovements(
       packagingId: packagingId,
       startDate: startDate,
       endDate: endDate,
@@ -48,6 +48,6 @@ class PackagingStockController {
 
   /// Récupère les stocks avec alerte (stock faible).
   Future<List<PackagingStock>> fetchLowStockAlerts() async {
-    return await _repository.fetchLowStockAlerts();
+    return _repository.fetchLowStockAlerts();
   }
 }

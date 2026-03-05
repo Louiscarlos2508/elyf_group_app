@@ -135,7 +135,7 @@ class _PosStockMovementDialogState extends ConsumerState<PosStockMovementDialog>
         final stocks = ref.read(gazStocksProvider).value ?? [];
         final inTransit = stocks.where((s) => s.status == CylinderStatus.emptyInTransit).toList();
         
-        List<String> mismatches = [];
+        final List<String> mismatches = [];
         for (final item in inTransit) {
           final received = (_fullBottles[item.weight] ?? 0) + (_emptyBottles[item.weight] ?? 0);
           if (received != item.quantity) {
@@ -248,7 +248,7 @@ class _PosStockMovementDialogState extends ConsumerState<PosStockMovementDialog>
 
                       // Section Pleins (Entrée uniquement)
                       if (widget.movementType == PosMovementType.entry) ...[
-                        _SectionTitle(
+                        const _SectionTitle(
                           icon: Icons.inventory_2_rounded,
                           color: AppColors.success,
                           label: 'Bouteilles Pleines reçues',
@@ -301,7 +301,7 @@ class _PosStockMovementDialogState extends ConsumerState<PosStockMovementDialog>
 
                       // Section Sortie Vides
                       if (widget.movementType == PosMovementType.emptyExit) ...[
-                        _SectionTitle(
+                        const _SectionTitle(
                           icon: Icons.upload_rounded,
                           color: AppColors.warning,
                           label: 'Bouteilles Vides à envoyer',
@@ -511,7 +511,7 @@ class _BottleInputRow extends StatelessWidget {
       children: [
         Expanded(
           child: DropdownButtonFormField<int>(
-            value: selectedWeight,
+            initialValue: selectedWeight,
             decoration: const InputDecoration(
               labelText: 'Poids',
               isDense: true,

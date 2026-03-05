@@ -7,7 +7,7 @@ import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
 
 void main() {
   group('Gaz Reconciliation Tests', () {
-    final cylinder12kg = Cylinder(
+    const cylinder12kg = Cylinder(
       id: 'c12',
       weight: 12,
       buyPrice: 5000,

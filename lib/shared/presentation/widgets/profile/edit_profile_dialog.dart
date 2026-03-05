@@ -106,7 +106,7 @@ class _EditProfileDialogState extends ConsumerState<EditProfileDialog> {
     try {
       final currentUserId = ref.read(currentUserIdProvider);
       if (currentUserId == null) {
-        throw AuthenticationException(
+        throw const AuthenticationException(
           'Utilisateur non connecté',
           'USER_NOT_AUTHENTICATED',
         );
@@ -175,7 +175,7 @@ class _EditProfileDialogState extends ConsumerState<EditProfileDialog> {
     final screenHeight = MediaQuery.of(context).size.height;
     final availableHeight =
         screenHeight - 100;
-    final maxWidth = 500.0;
+    const maxWidth = 500.0;
     final hasData = _currentUserData != null;
     final hasError = _loadError != null;
 

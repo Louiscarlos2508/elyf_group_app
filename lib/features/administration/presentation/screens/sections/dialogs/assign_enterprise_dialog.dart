@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -104,7 +103,7 @@ class _AssignEnterpriseDialogState
   /// Tous les modules sélectionnés ont un rôle assigné
   bool get _allModulesHaveRole =>
       _selectedModuleIds.isNotEmpty &&
-      _selectedModuleIds.every((m) => _selectedRolePerModule.containsKey(m));
+      _selectedModuleIds.every(_selectedRolePerModule.containsKey);
 
   /// Collecte tous les roleIds sélectionnés (1 par module)
   List<String> get _allSelectedRoleIds =>
@@ -399,14 +398,14 @@ class _AssignEnterpriseDialogState
                                     color: Colors.white,
                                   ),
                                 )
-                              : FittedBox(
+                              : const FittedBox(
                                   fit: BoxFit.scaleDown,
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      const Icon(Icons.save_outlined,
+                                      Icon(Icons.save_outlined,
                                           size: 18),
-                                      const SizedBox(width: 8),
+                                      SizedBox(width: 8),
                                       Text(
                                         'Enregistrer',
                                       ),

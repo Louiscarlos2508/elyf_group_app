@@ -3,12 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:elyf_groupe_app/features/orange_money/application/providers.dart';
 import 'package:elyf_groupe_app/features/orange_money/domain/entities/agent.dart' as entity;
-import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/shared/domain/entities/treasury_operation.dart';
 import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
 import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
-import 'package:elyf_groupe_app/app/theme/app_radius.dart';
-import 'package:elyf_groupe_app/app/theme/app_colors.dart';
 
 class AgentDetailModal extends ConsumerWidget {
   final entity.Agent agent;
@@ -45,7 +42,7 @@ class AgentDetailModal extends ConsumerWidget {
 
           // Header
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             child: Row(
               children: [
                 CircleAvatar(
@@ -53,7 +50,7 @@ class AgentDetailModal extends ConsumerWidget {
                   backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
                   child: Icon(Icons.person_rounded, color: theme.colorScheme.primary, size: 32),
                 ),
-                SizedBox(width: AppSpacing.md),
+                const SizedBox(width: AppSpacing.md),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -93,7 +90,7 @@ class AgentDetailModal extends ConsumerWidget {
             ),
           ),
 
-          SizedBox(height: AppSpacing.lg),
+          const SizedBox(height: AppSpacing.lg),
 
           // Content
           Flexible(
@@ -103,7 +100,7 @@ class AgentDetailModal extends ConsumerWidget {
               children: [
                 // Stats Section
                 Padding(
-                  padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                   child: statsAsync.when(
                     data: (stats) => GridView.count(
                       crossAxisCount: 2,
@@ -145,11 +142,11 @@ class AgentDetailModal extends ConsumerWidget {
                   ),
                 ),
 
-                SizedBox(height: AppSpacing.xl),
+                const SizedBox(height: AppSpacing.xl),
 
                 // History Section
                 Padding(
-                  padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -171,12 +168,12 @@ class AgentDetailModal extends ConsumerWidget {
                 historyAsync.when(
                   data: (history) => history.isEmpty
                       ? Padding(
-                          padding: EdgeInsets.all(AppSpacing.xl),
+                          padding: const EdgeInsets.all(AppSpacing.xl),
                           child: Center(
                             child: Column(
                               children: [
                                 Icon(Icons.history_rounded, size: 48, color: theme.colorScheme.outlineVariant),
-                                SizedBox(height: AppSpacing.sm),
+                                const SizedBox(height: AppSpacing.sm),
                                 Text(
                                   'Aucun historique disponible',
                                   style: TextStyle(color: theme.colorScheme.outline),
@@ -224,7 +221,7 @@ class _StatCard extends StatelessWidget {
     final fmt = NumberFormat('#,###');
 
     return Container(
-      padding: EdgeInsets.all(AppSpacing.md),
+      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
@@ -237,7 +234,7 @@ class _StatCard extends StatelessWidget {
           Row(
             children: [
               Icon(icon, color: color, size: 18),
-              SizedBox(width: AppSpacing.xs),
+              const SizedBox(width: AppSpacing.xs),
               Expanded(
                 child: Text(
                   label,
@@ -251,7 +248,7 @@ class _StatCard extends StatelessWidget {
               ),
             ],
           ),
-          SizedBox(height: AppSpacing.xs),
+          const SizedBox(height: AppSpacing.xs),
           Text(
             isCount ? amount.toString() : '${fmt.format(amount)} CFA',
             style: theme.textTheme.titleMedium?.copyWith(
@@ -278,7 +275,7 @@ class _HistoryTile extends StatelessWidget {
     final isRecharge = operation.fromAccount == PaymentMethod.cash;
 
     return Container(
-      margin: EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.xs),
+      margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.xs),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(12),

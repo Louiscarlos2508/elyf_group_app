@@ -22,7 +22,7 @@ class IndexCompteurInitialField extends ConsumerWidget {
             prefixIcon: const Icon(Icons.bolt),
             helperText: meterType.initialHelperText,
           ),
-          keyboardType: TextInputType.numberWithOptions(decimal: true),
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
           validator: (value) {
             if (value == null || value.isEmpty) {
               return 'Requis';
@@ -52,7 +52,7 @@ class IndexCompteurInitialField extends ConsumerWidget {
           labelText: 'Index compteur initial *',
           prefixIcon: Icon(Icons.bolt),
         ),
-        keyboardType: TextInputType.numberWithOptions(decimal: true),
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
       ),
     );
   }

@@ -23,7 +23,7 @@ final accessibleOrangeMoneySectionsProvider =
       final adapter = ref.watch(orangeMoneyPermissionAdapterProvider);
       final enterpriseId =
           ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
-      final moduleId = 'orange_money';
+      const moduleId = 'orange_money';
 
       // Toutes les sections possibles avec leurs permissions requises
       final allSections =

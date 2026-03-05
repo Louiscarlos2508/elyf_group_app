@@ -175,7 +175,7 @@ class _ContractsScreenState extends ConsumerState<ContractsScreen> {
 
     return Scaffold(
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showContractForm(),
+        onPressed: _showContractForm,
         icon: const Icon(Icons.add),
         label: const Text('Nouveau'),
       ),
@@ -228,7 +228,7 @@ class _ContractsScreenState extends ConsumerState<ContractsScreen> {
                   ),
 
                   // Section header
-                  SliverSectionHeader(
+                  const SliverSectionHeader(
                     title: 'LISTE DES CONTRATS',
                     top: AppSpacing.lg,
                     bottom: AppSpacing.sm,
@@ -269,7 +269,7 @@ class _ContractsScreenState extends ConsumerState<ContractsScreen> {
                     )
                   else
                     SliverPadding(
-                      padding: EdgeInsets.symmetric(
+                      padding: const EdgeInsets.symmetric(
                         horizontal: AppSpacing.lg,
                         vertical: AppSpacing.sm,
                       ),
@@ -284,7 +284,7 @@ class _ContractsScreenState extends ConsumerState<ContractsScreen> {
                       ),
                     ),
 
-                  SliverToBoxAdapter(
+                  const SliverToBoxAdapter(
                     child: SizedBox(height: AppSpacing.lg),
                   ),
                 ],

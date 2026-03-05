@@ -22,7 +22,7 @@ class SettingsScreen extends ConsumerWidget {
       slivers: [
         // Titre de la page
         // Premium Header
-        ElyfModuleHeader(
+        const ElyfModuleHeader(
           title: "Paramètres",
           subtitle: "Configuration du module Eau Minérale",
           module: EnterpriseModule.eau,

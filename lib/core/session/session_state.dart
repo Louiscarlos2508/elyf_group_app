@@ -1,4 +1,3 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../auth/entities/app_user.dart';
 
 /// Les différents états d'une session applicative.

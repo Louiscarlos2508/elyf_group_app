@@ -13,7 +13,6 @@ import '../../../domain/entities/tenant.dart';
 import '../../../domain/entities/maintenance_ticket.dart';
 import '../../../domain/services/dashboard_calculation_service.dart';
 import '../../widgets/dashboard_alerts_section.dart';
-import '../../widgets/immobilier_header.dart';
 import '../../widgets/dashboard_month_section_v2.dart';
 import '../../widgets/dashboard_today_section_v2.dart';
 import '../../widgets/dashboard_charts_section.dart';
@@ -73,7 +72,7 @@ class DashboardScreen extends ConsumerWidget {
           ),
 
           // Today section header
-          SliverSectionHeader(
+          const SliverSectionHeader(
             title: "AUJOURD'HUI",
             top: AppSpacing.sm,
             bottom: AppSpacing.sm,
@@ -165,7 +164,7 @@ class DashboardScreen extends ConsumerWidget {
 
           // Alerts
           SliverPadding(
-            padding: EdgeInsets.fromLTRB(
+            padding: const EdgeInsets.fromLTRB(
               AppSpacing.lg,
               AppSpacing.sm,
               AppSpacing.lg,

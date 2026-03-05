@@ -25,7 +25,7 @@ class GazDashboardKpiGrid extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Récupérer le stock total (pleines) depuis CylinderStock
-    String? enterpriseId = cylinders.isNotEmpty
+    final String enterpriseId = cylinders.isNotEmpty
         ? cylinders.first.enterpriseId
         : 'default_enterprise';
 

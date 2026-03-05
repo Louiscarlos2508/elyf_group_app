@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../application/providers.dart';
-import 'agents_dialogs.dart';
 
 import '../../../domain/entities/agent.dart';
 import 'agents_format_helpers.dart';

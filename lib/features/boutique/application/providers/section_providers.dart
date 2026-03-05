@@ -26,7 +26,7 @@ final accessibleBoutiqueSectionsProvider =
       final adapter = ref.watch(boutiquePermissionAdapterProvider);
       final enterpriseId =
           ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
-      final moduleId = 'boutique';
+      const moduleId = 'boutique';
 
       // Toutes les sections possibles avec leurs permissions requises
       final allSections =
