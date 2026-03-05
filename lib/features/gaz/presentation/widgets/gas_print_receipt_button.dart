@@ -11,13 +11,15 @@ import '../../domain/entities/gas_sale.dart';
 class GasPrintReceiptButton extends ConsumerStatefulWidget {
   const GasPrintReceiptButton({
     super.key,
-    required this.sale,
+    this.sale,
+    this.sales,
     this.cylinderLabel,
     this.onPrintSuccess,
     this.onPrintError,
   });
 
-  final GasSale sale;
+  final GasSale? sale;
+  final List<GasSale>? sales;
   final String? cylinderLabel;
   final VoidCallback? onPrintSuccess;
   final void Function(String error)? onPrintError;
@@ -100,12 +102,20 @@ class _GasPrintReceiptButtonState extends ConsumerState<GasPrintReceiptButton> {
 
     try {
       final enterpriseName = ref.read(activeEnterpriseProvider).value?.name;
+      bool success = false;
       
-      final success = await printingService.printSaleReceipt(
-        sale: widget.sale,
-        cylinderLabel: widget.cylinderLabel,
-        enterpriseName: enterpriseName,
-      );
+      if (widget.sales != null && widget.sales!.isNotEmpty) {
+        success = await printingService.printBatchSaleReceipt(
+          sales: widget.sales!,
+          enterpriseName: enterpriseName,
+        );
+      } else if (widget.sale != null) {
+        success = await printingService.printSaleReceipt(
+          sale: widget.sale!,
+          cylinderLabel: widget.cylinderLabel,
+          enterpriseName: enterpriseName,
+        );
+      }
 
       if (!mounted) return;
       Navigator.of(context).pop(); // Close overlay

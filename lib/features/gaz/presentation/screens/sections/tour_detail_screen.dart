@@ -181,7 +181,7 @@ class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
 
   Widget _buildBottomBar(BuildContext context, Tour tour) {
     final theme = Theme.of(context);
-    final isReadyToClose = tour.fullBottlesReceived.isNotEmpty;
+    final isReadyToClose = tour.fullBottlesReceived.isNotEmpty || tour.receptionCompletedDate != null;
 
     return Container(
       padding: const EdgeInsets.all(20),

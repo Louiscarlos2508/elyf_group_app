@@ -506,17 +506,25 @@ class TransactionService {
       );
     }
 
-    // 1. Validation
-    if (tour.fullBottlesReceived.isEmpty) {
+    // 1. Validation : Autorisée si reception saisie OU si distributions effectuées
+    final hasDistributions = tour.wholesaleDistributions.isNotEmpty || tour.posDistributions.isNotEmpty;
+    if (tour.fullBottlesReceived.isEmpty && !hasDistributions) {
       throw const ValidationException(
-        'Saisissez les bouteilles pleines reçues avant la clôture',
+        'Veuillez enregistrer la réception ou les distributions avant la clôture',
         'NO_FULLS_RECEIVED',
       );
     }
 
     // 2. Mettre à jour le tour
+    // Si la réception n'a pas été saisie manuellement, on déduit qu'on a reçu ce qu'on a chargé (Échange Standard)
+    Map<int, int> fullReceived = tour.fullBottlesReceived;
+    if (fullReceived.isEmpty) {
+      fullReceived = tour.emptyBottlesLoaded;
+    }
+
     final updatedTour = tour.copyWith(
       status: TourStatus.closed,
+      fullBottlesReceived: fullReceived,
       closureDate: DateTime.now(),
       updatedAt: DateTime.now(),
     );
@@ -524,9 +532,18 @@ class TransactionService {
     await tourRepository.updateTour(updatedTour);
 
     // 3. Traiter les distributions aux grossistes (Ventes + Trésorerie)
-    // On utilise les distributions enregistrées dans l'entité tour lors de l'étape Réception
     for (final dist in tour.wholesaleDistributions) {
-      // Pour chaque poids distribué, créer une vente
+      if (dist.isProcessed) continue;
+
+      final distSessionId = 'whl_${tour.id}_${dist.wholesalerId}_${DateTime.now().millisecondsSinceEpoch}';
+      
+      // Calculer le prix au kg pour une répartition équitable
+      double totalKg = 0;
+      for (final entry in dist.quantities.entries) {
+        totalKg += entry.key * entry.value;
+      }
+      final pricePerKg = totalKg > 0 ? dist.totalAmount / totalKg : 0.0;
+
       for (final entry in dist.quantities.entries) {
         final weight = entry.key;
         final qty = entry.value;
@@ -535,11 +552,10 @@ class TransactionService {
         final cylinderId = weightToCylinderId[weight];
         if (cylinderId == null) continue;
 
-        final unitPrice = dist.totalAmount / dist.quantities.values.fold(0, (a, b) => a + b);
+        final unitPrice = weight * pricePerKg; // Prix proportionnel au poids
 
-        final saleId = LocalIdGenerator.generate();
-        final sale = GasSale(
-          id: saleId,
+        await gasRepository.addSale(GasSale(
+          id: LocalIdGenerator.generate(),
           enterpriseId: tour.enterpriseId,
           cylinderId: cylinderId,
           quantity: qty,
@@ -552,14 +568,12 @@ class TransactionService {
           wholesalerName: dist.wholesalerName,
           sellerId: userId,
           paymentMethod: dist.paymentMethod,
+          sessionId: distSessionId, // Unified for history grouping
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
-        );
-
-        await gasRepository.addSale(sale);
+        ));
       }
 
-      // Enregistrer l'encaissement global pour ce grossiste
       if (dist.totalAmount > 0) {
         await treasuryRepository.saveOperation(TreasuryOperation(
           id: LocalIdGenerator.generate(),
@@ -578,9 +592,6 @@ class TransactionService {
     }
 
     // 4. Traiter les distributions aux POS (Mise à jour stock info / Audit)
-    // Note: Pour les POS, on n'impacte pas le stock réel de la société car 
-    // l'approche utilisateur est déclarative sans gestion de stock automatique.
-    // Mais on peut loguer pour l'audit.
     for (final posDist in tour.posDistributions) {
        await auditTrailRepository.log(AuditRecord(
         id: '',
@@ -659,6 +670,106 @@ class TransactionService {
     );
 
     return (tour: updatedTour, alerts: const <StockAlert>[]);
+  }
+
+  /// Exécute l'encaissement d'un grossiste individuellement lors de Step 3.
+  Future<void> executeWholesaleCollection({
+    required String tourId,
+    required String wholesalerId,
+    required String userId,
+    required Map<int, String> weightToCylinderId,
+  }) async {
+    final tour = await tourRepository.getTourById(tourId);
+    if (tour == null) throw const NotFoundException('Tour introuvable', 'TOUR_NOT_FOUND');
+
+    final distIndex = tour.wholesaleDistributions.indexWhere((d) => d.wholesalerId == wholesalerId);
+    if (distIndex == -1) throw const NotFoundException('Distribution grossiste introuvable', 'DISTRIBUTION_NOT_FOUND');
+
+    final dist = tour.wholesaleDistributions[distIndex];
+    if (dist.isProcessed) return; // Déjà encaissé
+
+    final distSessionId = 'whl_${tour.id}_${dist.wholesalerId}_${DateTime.now().millisecondsSinceEpoch}';
+
+    // 1. Enregistrer les ventes avec prix proportionnel au poids
+    double totalKg = 0;
+    for (final entry in dist.quantities.entries) {
+      totalKg += entry.key * entry.value;
+    }
+    final pricePerKg = totalKg > 0 ? dist.totalAmount / totalKg : 0.0;
+
+    for (final entry in dist.quantities.entries) {
+      final weight = entry.key;
+      final qty = entry.value;
+      if (qty <= 0) continue;
+
+      final cylinderId = weightToCylinderId[weight];
+      if (cylinderId == null) continue;
+
+      final unitPrice = weight * pricePerKg;
+
+      await gasRepository.addSale(GasSale(
+        id: LocalIdGenerator.generate(),
+        enterpriseId: tour.enterpriseId,
+        cylinderId: cylinderId,
+        quantity: qty,
+        unitPrice: unitPrice,
+        totalAmount: unitPrice * qty,
+        saleDate: DateTime.now(),
+        saleType: SaleType.wholesale,
+        tourId: tour.id,
+        wholesalerId: dist.wholesalerId,
+        wholesalerName: dist.wholesalerName,
+        sellerId: userId,
+        paymentMethod: dist.paymentMethod,
+        sessionId: distSessionId, // Unified for history grouping
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      ));
+    }
+
+    // 2. Enregistrer l'opération de trésorerie
+    if (dist.totalAmount > 0) {
+      await treasuryRepository.saveOperation(TreasuryOperation(
+        id: LocalIdGenerator.generate(),
+        enterpriseId: tour.enterpriseId,
+        userId: userId,
+        amount: dist.totalAmount.toInt(),
+        type: TreasuryOperationType.supply,
+        toAccount: dist.paymentMethod,
+        date: DateTime.now(),
+        reason: 'Encaissement Grossiste : ${dist.wholesalerName} (Tour ${tour.id})',
+        referenceEntityId: tour.id,
+        referenceEntityType: 'tour_wholesaler_sale',
+        createdAt: DateTime.now(),
+      ));
+    }
+
+    // 3. Marquer comme traité dans le tour
+    final updatedDistributions = List<WholesaleDistribution>.from(tour.wholesaleDistributions);
+    updatedDistributions[distIndex] = dist.copyWith(isProcessed: true);
+
+    await tourRepository.updateTour(tour.copyWith(
+      wholesaleDistributions: updatedDistributions,
+      updatedAt: DateTime.now(),
+    ));
+
+    // 4. Audit Log
+    await auditTrailRepository.log(AuditRecord(
+      id: '',
+      enterpriseId: tour.enterpriseId,
+      userId: userId,
+      module: 'gaz',
+      action: 'WHOLESALE_COLLECTION',
+      entityId: tour.id,
+      entityType: 'tour',
+      timestamp: DateTime.now(),
+      metadata: {
+        'wholesalerId': wholesalerId,
+        'wholesalerName': dist.wholesalerName,
+        'amount': dist.totalAmount,
+        'paymentMethod': dist.paymentMethod.name,
+      },
+    ));
   }
 
   /// Met à jour les sources de chargement d'un tour.

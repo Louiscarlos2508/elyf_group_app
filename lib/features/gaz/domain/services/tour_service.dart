@@ -75,9 +75,10 @@ class TourService {
     final tour = await tourRepository.getTourById(tourId);
     if (tour == null) throw const NotFoundException('Tour introuvable', 'TOUR_NOT_FOUND');
     
-    if (tour.fullBottlesReceived.isEmpty) {
+    final hasDistributions = tour.wholesaleDistributions.isNotEmpty || tour.posDistributions.isNotEmpty;
+    if (tour.fullBottlesReceived.isEmpty && !hasDistributions) {
       throw const ValidationException(
-        'Saisissez les bouteilles pleines reçues avant la clôture',
+        'Saisissez les bouteilles pleines reçues ou distributions avant la clôture',
         'NO_FULLS_RECEIVED',
       );
     }
@@ -88,6 +89,21 @@ class TourService {
       weightToCylinderId: weightToCylinderId,
     );
     return result.alerts;
+  }
+
+  /// Exécute l'encaissement d'un grossiste individuellement.
+  Future<void> executeWholesaleCollection({
+    required String tourId,
+    required String wholesalerId,
+    required String userId,
+    required Map<int, String> weightToCylinderId,
+  }) async {
+    await transactionService.executeWholesaleCollection(
+      tourId: tourId,
+      wholesalerId: wholesalerId,
+      userId: userId,
+      weightToCylinderId: weightToCylinderId,
+    );
   }
 
   /// Calcule le total des frais de chargement/déchargement/échange.

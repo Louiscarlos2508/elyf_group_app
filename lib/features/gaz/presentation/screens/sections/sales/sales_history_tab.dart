@@ -322,16 +322,28 @@ class _WholesaleKpiGrid extends StatelessWidget {
 class _WholesaleSalesList extends StatelessWidget {
   const _WholesaleSalesList({required this.sales, required this.theme});
 
-  final List<dynamic> sales;
+  final List<GasSale> sales;
   final ThemeData theme;
 
   @override
   Widget build(BuildContext context) {
+    // Group sales by sessionId (priority) or wholesalerId + Date
+    final Map<String, List<GasSale>> grouped = {};
+    for (final sale in sales) {
+      final key = sale.sessionId ?? 
+          '${sale.wholesalerId}_${sale.saleDate.year}${sale.saleDate.month}${sale.saleDate.day}${sale.saleDate.hour}${sale.saleDate.minute}';
+      grouped.putIfAbsent(key, () => []).add(sale);
+    }
+
+    final groups = grouped.values.toList();
+    // Sort groups by date descending
+    groups.sort((a, b) => b.first.saleDate.compareTo(a.first.saleDate));
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Ventes enregistrées (${sales.length})',
+          'Transactions enregistrées (${groups.length})',
           style: theme.textTheme.titleMedium?.copyWith(
             fontSize: 16,
             fontWeight: FontWeight.w600,
@@ -339,10 +351,10 @@ class _WholesaleSalesList extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        ...sales.map(
-          (sale) => Padding(
+        ...groups.map(
+          (group) => Padding(
             padding: const EdgeInsets.only(bottom: 12),
-            child: WholesaleSaleCard(sale: sale),
+            child: WholesaleSaleCard(sales: group),
           ),
         ),
       ],

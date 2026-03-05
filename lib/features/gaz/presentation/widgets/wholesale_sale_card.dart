@@ -3,21 +3,32 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/gas_sale.dart';
 import 'gas_print_receipt_button.dart';
+import '../../domain/services/gaz_sale_pdf_service.dart';
+import 'package:open_filex/open_filex.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 
 class WholesaleSaleCard extends ConsumerWidget {
-  const WholesaleSaleCard({super.key, required this.sale});
+  const WholesaleSaleCard({super.key, required this.sales});
 
-  final GasSale sale;
+  final List<GasSale> sales;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    if (sales.isEmpty) return const SizedBox.shrink();
+    
+    final mainSale = sales.first;
     final theme = Theme.of(context);
     final dateFormat = DateFormat('dd/MM/yyyy à HH:mm');
     final cylinders = ref.watch(cylindersProvider).value ?? [];
-    final cylinder = cylinders.where((c) => c.id == sale.cylinderId).firstOrNull;
-    final cylinderLabel = cylinder?.label ?? 'Bouteille';
+    
+    final totalAmount = sales.fold<double>(0, (sum, s) => sum + s.totalAmount);
+    final totalQty = sales.fold<int>(0, (sum, s) => sum + s.quantity);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -39,7 +50,7 @@ class WholesaleSaleCard extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // En-tête avec date et montant
+          // En-tête avec date et montant global
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -50,21 +61,21 @@ class WholesaleSaleCard extends ConsumerWidget {
                     Row(
                       children: [
                         Text(
-                          dateFormat.format(sale.saleDate),
+                          dateFormat.format(mainSale.saleDate),
                           style: theme.textTheme.bodyMedium?.copyWith(
                             fontSize: 14,
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
                         ),
                         const SizedBox(width: 8),
-                         Container(
+                        Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
                             color: theme.colorScheme.surfaceContainerHighest,
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
-                            cylinderLabel,
+                            'GROUPE',
                             style: theme.textTheme.labelSmall?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: theme.colorScheme.onSurfaceVariant,
@@ -73,42 +84,22 @@ class WholesaleSaleCard extends ConsumerWidget {
                         ),
                       ],
                     ),
-                    if (sale.wholesalerName != null) ...[
+                    if (mainSale.wholesalerName != null) ...[
                       const SizedBox(height: 4),
                       Row(
                         children: [
                           const Icon(
                             Icons.business,
                             size: 16,
-                            color: Color(0xFF3B82F6), // Blue
+                            color: Color(0xFF3B82F6),
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            sale.wholesalerName!,
+                            mainSale.wholesalerName!,
                             style: theme.textTheme.titleMedium?.copyWith(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                               color: theme.colorScheme.onSurface,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                    if (sale.tourId != null) ...[
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.local_shipping,
-                            size: 16,
-                            color: Color(0xFF10B981), // Emerald
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Approvisionnement',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              fontSize: 12,
-                              color: theme.colorScheme.onSurfaceVariant,
                             ),
                           ),
                         ],
@@ -119,42 +110,13 @@ class WholesaleSaleCard extends ConsumerWidget {
               ),
               Row(
                 children: [
-                   IconButton(
+                  IconButton(
                     icon: Icon(
                       Icons.print_outlined,
                       size: 20,
                       color: theme.colorScheme.primary.withValues(alpha: 0.7),
                     ),
-                    onPressed: () {
-                      showDialog(
-                        context: context,
-                        builder: (context) => Dialog(
-                          child: Padding(
-                            padding: const EdgeInsets.all(24),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  'Imprimer le reçu',
-                                  style: theme.textTheme.titleLarge,
-                                ),
-                                const SizedBox(height: 24),
-                                GasPrintReceiptButton(
-                                  sale: sale,
-                                  cylinderLabel: cylinderLabel,
-                                  onPrintSuccess: () => Navigator.pop(context),
-                                ),
-                                const SizedBox(height: 12),
-                                TextButton(
-                                  onPressed: () => Navigator.pop(context),
-                                  child: const Text('Annuler'),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      );
-                    },
+                    onPressed: () => _showPrintOptions(context, ref),
                   ),
                   Container(
                     padding: const EdgeInsets.symmetric(
@@ -162,18 +124,18 @@ class WholesaleSaleCard extends ConsumerWidget {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: (sale.saleType == SaleType.wholesale ? theme.colorScheme.secondary : theme.colorScheme.primary).withAlpha(20),
+                      color: theme.colorScheme.secondary.withAlpha(20),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: (sale.saleType == SaleType.wholesale ? theme.colorScheme.secondary : theme.colorScheme.primary).withAlpha(40),
+                        color: theme.colorScheme.secondary.withAlpha(40),
                       ),
                     ),
                     child: Text(
-                      CurrencyFormatter.formatDouble(sale.totalAmount),
+                      CurrencyFormatter.formatDouble(totalAmount),
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
-                        color: sale.saleType == SaleType.wholesale ? theme.colorScheme.secondary : theme.colorScheme.primary,
+                        color: theme.colorScheme.secondary,
                       ),
                     ),
                   ),
@@ -182,7 +144,8 @@ class WholesaleSaleCard extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 12),
-          // Détails de la vente
+          
+          // Tableau des Détails par poids
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -192,101 +155,108 @@ class WholesaleSaleCard extends ConsumerWidget {
                 color: theme.colorScheme.outline.withValues(alpha: 0.05),
               ),
             ),
-            child: Row(
+            child: Column(
               children: [
-                Expanded(
-                  child: _DetailItem(
-                    icon: Icons.inventory_2,
-                    label: 'Quantité',
-                    value: '${sale.quantity}',
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _DetailItem(
-                    icon: Icons.attach_money,
-                    label: 'Prix unitaire',
-                    value: CurrencyFormatter.formatDouble(sale.unitPrice),
-                  ),
+                ...sales.map((item) {
+                  final cyl = cylinders.where((c) => c.id == item.cylinderId).firstOrNull;
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '${cyl?.label ?? "${cyl?.weight}kg"}',
+                          style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
+                        ),
+                        Text(
+                          '${item.quantity} x ${CurrencyFormatter.formatDouble(item.unitPrice)}',
+                          style: theme.textTheme.bodySmall,
+                        ),
+                        Text(
+                          CurrencyFormatter.formatDouble(item.totalAmount),
+                          style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+                const Divider(),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('TOTAL BTL', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                    Text('$totalQty', style: const TextStyle(fontWeight: FontWeight.bold)),
+                    const SizedBox(width: 40),
+                    Text(CurrencyFormatter.formatDouble(totalAmount), style: const TextStyle(fontWeight: FontWeight.bold)),
+                  ],
                 ),
               ],
             ),
           ),
-          if (sale.notes != null && sale.notes!.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFF3B82F6).withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: const Color(0xFF3B82F6).withValues(alpha: 0.2),
-                ),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Icon(Icons.note, size: 16, color: Color(0xFF3B82F6)),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      sale.notes!,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        fontSize: 12,
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
         ],
       ),
     );
   }
-}
 
-class _DetailItem extends StatelessWidget {
-  const _DetailItem({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
-
-  final IconData icon;
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
+  void _showPrintOptions(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Icon(icon, size: 14, color: theme.colorScheme.onSurfaceVariant),
-            const SizedBox(width: 4),
             Text(
-              label,
-              style: theme.textTheme.bodySmall?.copyWith(
-                fontSize: 12,
-                color: theme.colorScheme.onSurfaceVariant,
+              'Options d\'impression (Groupe)',
+              style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            GasPrintReceiptButton(
+              sales: sales, // Passez la liste ici
+              onPrintSuccess: () => Navigator.pop(context),
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: () => _generateAndOpenPdf(context, ref),
+              icon: const Icon(Icons.picture_as_pdf_outlined),
+              label: const Text('Générer PDF (Facture Groupée)'),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: theme.colorScheme.onSurface,
-          ),
-        ),
-      ],
+      ),
     );
   }
+
+  Future<void> _generateAndOpenPdf(BuildContext context, WidgetRef ref) async {
+     try {
+      final enterprise = ref.read(activeEnterpriseProvider).value;
+      // Note: GazSalePdfService will need an update to handle list of sales
+      final file = await GazSalePdfService.instance.generateBatchSaleReceipt(
+        sales: sales,
+        enterpriseName: enterprise?.name,
+      );
+      
+      if (context.mounted) {
+        Navigator.pop(context); 
+        OpenFilex.open(file.path);
+      }
+    } catch (e) {
+      if (context.mounted) {
+        NotificationService.showError(context, 'Erreur PDF: $e');
+      }
+    }
+  }
+}
+
+  /* Cleanup: Removed old methods and unused _DetailItem */
 }

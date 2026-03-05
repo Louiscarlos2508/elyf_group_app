@@ -90,6 +90,21 @@ class TourController {
     await service.cancelTour(id, userId);
   }
 
+  /// Exécute l'encaissement d'un grossiste individuellement.
+  Future<void> executeWholesaleCollection({
+    required String tourId,
+    required String wholesalerId,
+    required String userId,
+    required Map<int, String> weightToCylinderId,
+  }) async {
+    await service.executeWholesaleCollection(
+      tourId: tourId,
+      wholesalerId: wholesalerId,
+      userId: userId,
+      weightToCylinderId: weightToCylinderId,
+    );
+  }
+
   /// Supprime un tour.
   Future<void> deleteTour(String id) async {
     await repository.deleteTour(id);

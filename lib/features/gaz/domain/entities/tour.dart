@@ -60,23 +60,28 @@ class TourLoadingSource {
       quantities: quantities ?? this.quantities,
     );
   }
+
+  bool get isPos => type == TourLoadingSourceType.pos;
+  String get sourceId => id;
 }
 
 /// Représente une distribution/vente à un grossiste lors de la clôture.
 class WholesaleDistribution {
+  final String wholesalerId;
+  final String wholesalerName;
+  final Map<int, int> quantities;
+  final double totalAmount;
+  final PaymentMethod paymentMethod;
+  final bool isProcessed;
+
   const WholesaleDistribution({
     required this.wholesalerId,
     required this.wholesalerName,
     required this.quantities,
     required this.totalAmount,
     this.paymentMethod = PaymentMethod.cash,
+    this.isProcessed = false,
   });
-
-  final String wholesalerId;
-  final String wholesalerName;
-  final Map<int, int> quantities;
-  final double totalAmount;
-  final PaymentMethod paymentMethod;
 
   Map<String, dynamic> toMap() {
     return {
@@ -85,7 +90,42 @@ class WholesaleDistribution {
       'quantities': quantities.map((k, v) => MapEntry(k.toString(), v)),
       'totalAmount': totalAmount,
       'paymentMethod': paymentMethod.name,
+      'isProcessed': isProcessed,
     };
+  }
+
+  factory WholesaleDistribution.fromMap(Map<String, dynamic> map) {
+    return WholesaleDistribution(
+      wholesalerId: map['wholesalerId'] as String? ?? '',
+      wholesalerName: map['wholesalerName'] as String? ?? '',
+      quantities: (map['quantities'] as Map<String, dynamic>?)?.map(
+            (k, v) => MapEntry(int.parse(k), (v as num).toInt()),
+          ) ??
+          const <int, int>{},
+      totalAmount: (map['totalAmount'] as num?)?.toDouble() ?? 0.0,
+      paymentMethod: map['paymentMethod'] != null 
+          ? PaymentMethod.values.byName(map['paymentMethod'] as String)
+          : PaymentMethod.cash,
+      isProcessed: map['isProcessed'] as bool? ?? false,
+    );
+  }
+
+  WholesaleDistribution copyWith({
+    String? wholesalerId,
+    String? wholesalerName,
+    Map<int, int>? quantities,
+    double? totalAmount,
+    PaymentMethod? paymentMethod,
+    bool? isProcessed,
+  }) {
+    return WholesaleDistribution(
+      wholesalerId: wholesalerId ?? this.wholesalerId,
+      wholesalerName: wholesalerName ?? this.wholesalerName,
+      quantities: quantities ?? this.quantities,
+      totalAmount: totalAmount ?? this.totalAmount,
+      paymentMethod: paymentMethod ?? this.paymentMethod,
+      isProcessed: isProcessed ?? this.isProcessed,
+    );
   }
 }
 
@@ -110,6 +150,20 @@ class PosDistribution {
       'quantities': quantities.map((k, v) => MapEntry(k.toString(), v)),
       'receivedDate': receivedDate?.toIso8601String(),
     };
+  }
+
+  PosDistribution copyWith({
+    String? posId,
+    String? posName,
+    Map<int, int>? quantities,
+    DateTime? receivedDate,
+  }) {
+    return PosDistribution(
+      posId: posId ?? this.posId,
+      posName: posName ?? this.posName,
+      quantities: quantities ?? this.quantities,
+      receivedDate: receivedDate ?? this.receivedDate,
+    );
   }
 
   factory PosDistribution.fromMap(Map<String, dynamic> map) {
@@ -279,6 +333,8 @@ class Tour {
     bool? applyLoadingFees,
     String? sessionId,
     double? additionalInvoiceFees,
+    List<WholesaleDistribution>? wholesaleDistributions,
+    List<PosDistribution>? posDistributions,
     DateTime? updatedAt,
     DateTime? createdAt,
     DateTime? deletedAt,
@@ -299,6 +355,8 @@ class Tour {
       purchasePricesUsed: purchasePricesUsed ?? _purchasePricesUsed,
       emptyBottlesLoaded: emptyBottlesLoaded ?? _emptyBottlesLoaded,
       loadingSources: loadingSources ?? _loadingSources,
+      wholesaleDistributions: wholesaleDistributions ?? _wholesaleDistributions,
+      posDistributions: posDistributions ?? _posDistributions,
       transportExpenses: transportExpenses ?? _transportExpenses,
       fullBottlesReceived: fullBottlesReceived ?? _fullBottlesReceived,
       emptyBottlesReturned: emptyBottlesReturned ?? _emptyBottlesReturned,

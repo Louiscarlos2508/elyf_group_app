@@ -61,6 +61,59 @@ class GazPrintingService {
   // printDailySummary was removed during session infrastructure cleanup.
   // It can be re-implemented later using a non-session based approach if needed.
 
+  /// Imprime un reçu pour une vente de gaz groupée (plusieurs poids).
+  Future<bool> printBatchSaleReceipt({
+    required List<GasSale> sales,
+    String? enterpriseName,
+  }) async {
+    if (sales.isEmpty) return false;
+    try {
+      final width = await printerService.getLineWidth();
+      final builder = ThermalReceiptBuilder(width: width);
+      final mainSale = sales.first;
+
+      // Header
+      builder.header(enterpriseName?.toUpperCase() ?? 'ELYF GROUP - GAZ', subtitle: 'RECU DE VENTE (GROUPE)');
+      
+      builder.row('Date', _formatDate(mainSale.saleDate));
+      builder.row('Type Vente', mainSale.saleType.label);
+      if (mainSale.wholesalerName != null) {
+        builder.row('Grossiste', mainSale.wholesalerName!);
+      }
+      builder.space();
+
+      // Items
+      builder.section('DETAILS DES ARTICLES');
+      
+      double totalAmount = 0;
+      for (final sale in sales) {
+        totalAmount += sale.totalAmount;
+        // We don't have cylinder label here easily, but we can assume "BTL Xkg"
+        // In a real app, labels should be passed or fetched.
+        // For now, let's use a generic format.
+        builder.itemRow(
+          'Gaz BTL', 
+          '${sale.quantity}x ${sale.unitPrice.toStringAsFixed(0)}', 
+          '${sale.totalAmount.toStringAsFixed(0)}'
+        );
+      }
+      
+      builder.separator();
+      
+      // Total
+      builder.total('TOTAL GENERAL', '${totalAmount.toStringAsFixed(0)} FCFA');
+      builder.row('Paiement', mainSale.paymentMethod.label);
+      
+      builder.space();
+      builder.footer('Merci de votre confiance !');
+
+      return await printerService.printText(builder.toString());
+    } catch (e) {
+      debugPrint('GazPrintingService: Error printing batch receipt: $e');
+      return false;
+    }
+  }
+
   String _formatDate(DateTime date) {
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
   }

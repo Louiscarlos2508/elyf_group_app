@@ -147,7 +147,14 @@ class _ClosureDetailsCardState extends ConsumerState<ClosureDetailsCard> {
           // Section Distribution aux Grossistes
           _WholesaleDistributionSection(
             tour: widget.tour,
-            enterpriseId: widget.enterpriseId,
+            theme: theme,
+          ),
+          
+          const SizedBox(height: 24),
+          
+          // Section Distribution Points de Vente
+          _PosDistributionSection(
+            tour: widget.tour,
             theme: theme,
           ),
           
@@ -249,7 +256,6 @@ class _ClosureDetailsCardState extends ConsumerState<ClosureDetailsCard> {
         await controller.closeTour(
           widget.tour.id, 
           userId,
-          distributions: distributions,
           weightToCylinderId: weightToCylinderId,
         );
         if (mounted) {
@@ -376,26 +382,19 @@ class _ExpensesDetailSection extends StatelessWidget {
   }
 }
 
-class _WholesaleDistributionSection extends ConsumerWidget {
+class _WholesaleDistributionSection extends StatelessWidget {
   const _WholesaleDistributionSection({
     required this.tour,
-    required this.enterpriseId,
     required this.theme,
   });
 
   final Tour tour;
-  final String enterpriseId;
   final ThemeData theme;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final params = (enterpriseId: enterpriseId, moduleId: 'gaz');
-    final settingsAsync = ref.watch(gazSettingsProvider(params));
-    final wholesalerSources = tour.loadingSources
-        .where((s) => s.type == TourLoadingSourceType.wholesaler)
-        .toList();
-
-    if (wholesalerSources.isEmpty) return const SizedBox.shrink();
+  Widget build(BuildContext context) {
+    final distributions = tour.wholesaleDistributions;
+    if (distributions.isEmpty) return const SizedBox.shrink();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -409,61 +408,111 @@ class _WholesaleDistributionSection extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: 12),
-        ...wholesalerSources.map((source) {
-          return settingsAsync.when(
-            data: (settings) {
-              double totalAmount = 0;
-              if (settings != null) {
-                for (final entry in source.quantities.entries) {
-                  final price = settings.getWholesalePrice(entry.key) ?? 0;
-                  totalAmount += price * entry.value;
-                }
-              }
-
-              return Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+        ...distributions.map((dist) {
+          return Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          source.sourceName,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        Text(
-                          CurrencyFormatter.formatDouble(totalAmount),
-                          style: TextStyle(
-                            color: theme.colorScheme.primary,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                      ],
+                    Text(
+                      dist.wholesalerName,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      children: source.quantities.entries.map((e) {
-                        return Chip(
-                          labelPadding: const EdgeInsets.symmetric(horizontal: 4),
-                          label: Text('${e.key}kg x${e.value}'),
-                          visualDensity: VisualDensity.compact,
-                          backgroundColor: theme.colorScheme.surface,
-                        );
-                      }).toList(),
+                    Text(
+                      CurrencyFormatter.formatDouble(dist.totalAmount),
+                      style: TextStyle(
+                        color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
                   ],
                 ),
-              );
-            },
-            loading: () => const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-            error: (e, s) => Text('Erreur: $e'),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  children: dist.quantities.entries.map((e) {
+                    if (e.value <= 0) return const SizedBox.shrink();
+                    return Chip(
+                      labelPadding: const EdgeInsets.symmetric(horizontal: 4),
+                      label: Text('${e.key}kg x${e.value}'),
+                      visualDensity: VisualDensity.compact,
+                      backgroundColor: theme.colorScheme.surface,
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+          );
+        }),
+      ],
+    );
+  }
+}
+
+class _PosDistributionSection extends StatelessWidget {
+  const _PosDistributionSection({
+    required this.tour,
+    required this.theme,
+  });
+
+  final Tour tour;
+  final ThemeData theme;
+
+  @override
+  Widget build(BuildContext context) {
+    final distributions = tour.posDistributions;
+    if (distributions.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Distribution Points de Vente',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 12),
+        ...distributions.map((dist) {
+          return Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  dist.posName,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  children: dist.quantities.entries.map((e) {
+                    if (e.value <= 0) return const SizedBox.shrink();
+                    return Chip(
+                      labelPadding: const EdgeInsets.symmetric(horizontal: 4),
+                      label: Text('${e.key}kg x${e.value}'),
+                      visualDensity: VisualDensity.compact,
+                      backgroundColor: theme.colorScheme.surface,
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
           );
         }),
       ],
