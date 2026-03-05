@@ -4,19 +4,27 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/boutique/application/providers.dart';
 import '../../../core/printing/printer_provider.dart';
-import '../../../features/boutique/domain/entities/sale.dart';
+import 'package:elyf_groupe_app/features/boutique/domain/entities/sale.dart';
+import 'package:elyf_groupe_app/features/immobilier/domain/entities/payment.dart';
+import 'package:elyf_groupe_app/core/printing/templates/payment_receipt_template.dart';
+import 'package:elyf_groupe_app/features/immobilier/presentation/widgets/payment_card_helpers.dart';
+import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
+import 'package:elyf_groupe_app/shared/utils/date_formatter.dart';
+import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
 
 /// Bouton d'impression de facture supportant plusieurs types d'imprimantes via activePrinterProvider.
 class PrintReceiptButton extends ConsumerStatefulWidget {
   const PrintReceiptButton({
     super.key,
-    required this.sale,
+    this.sale,
+    this.payment,
     this.onPrintSuccess,
     this.onPrintError,
     this.iconOnly = false,
-  });
+  }) : assert(sale != null || payment != null, 'Either sale or payment must be provided');
 
-  final Sale sale;
+  final Sale? sale;
+  final Payment? payment;
   final VoidCallback? onPrintSuccess;
   final void Function(String error)? onPrintError;
   final bool iconOnly;
@@ -62,20 +70,34 @@ class _PrintReceiptButtonState extends ConsumerState<PrintReceiptButton> {
 
     try {
       final width = await printer.getLineWidth();
-      
-      // Get settings
-      final settings = ref.read(boutiqueSettingsServiceProvider);
-      
-      final template = SalesReceiptTemplate(
-        widget.sale,
-        width: width,
-        headerText: settings.receiptHeader,
-        footerText: settings.receiptFooter,
-        showLogo: settings.showLogo,
-      );
-      
-      final content = template.generate();
+      String content = '';
 
+      if (widget.sale != null) {
+        final template = SalesReceiptTemplate(
+          widget.sale!,
+          width: width,
+          headerText: 'BOUTIQUE ELYF',
+          footerText: 'Merci de votre visite !',
+          showLogo: true,
+        );
+        content = template.generate();
+      } else if (widget.payment != null) {
+        final payment = widget.payment!;
+        content = PaymentReceiptTemplate.generateReceipt(
+          receiptNumber: payment.receiptNumber ?? payment.id.substring(0, 8),
+          paymentDate: DateFormatter.formatDate(payment.paymentDate),
+          amount: CurrencyFormatter.format(payment.amount),
+          paymentMethod: payment.paymentMethod.label,
+          tenantName: payment.contract?.tenant?.fullName ?? 'Locataire',
+          propertyAddress: payment.contract?.property?.address ?? 'Propriété',
+          period: payment.month != null && payment.year != null 
+              ? '${PaymentCardHelpers.getMonthName(payment.month!)} ${payment.year}'
+              : null,
+          header: 'ELYF IMMOBILIER',
+          footer: 'Merci de votre confiance !',
+        );
+      }
+      
       final success = await printer.printReceipt(content);
 
       if (!mounted) return;

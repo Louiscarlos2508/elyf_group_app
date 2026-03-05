@@ -5,6 +5,7 @@ import 'package:open_file/open_file.dart';
 import '../../../../core/pdf/unified_payment_pdf_service.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/payment.dart';
+import 'package:elyf_groupe_app/shared/presentation/widgets/print_receipt_button.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../../../shared/utils/notification_service.dart';
 
@@ -19,41 +20,7 @@ class PaymentActionsDialog extends ConsumerStatefulWidget {
 }
 
 class _PaymentActionsDialogState extends ConsumerState<PaymentActionsDialog> {
-  bool _isPrinting = false;
   bool _isGeneratingPdf = false;
-
-  Future<void> _printReceipt() async {
-    if (_isPrinting) return;
-    setState(() => _isPrinting = true);
-
-    try {
-      final controller = ref.read(paymentControllerProvider);
-      final success = await controller.printReceipt(widget.payment.id);
-      
-      if (mounted) {
-        if (success) {
-          Navigator.of(context).pop();
-          NotificationService.showSuccess(
-            context,
-            'Reçu imprimé avec succès',
-          );
-        } else {
-          NotificationService.showError(
-            context,
-            'Erreur lors de l\'impression. Vérifiez que l\'imprimante est connectée.',
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        NotificationService.showError(context, 'Erreur: $e');
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isPrinting = false);
-      }
-    }
-  }
 
   Future<void> _downloadPdf() async {
     if (_isGeneratingPdf) return;
@@ -95,19 +62,9 @@ class _PaymentActionsDialogState extends ConsumerState<PaymentActionsDialog> {
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          FilledButton.icon(
-            onPressed: _isPrinting ? null : _printReceipt,
-            icon: _isPrinting
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.print),
-            label: const Text('Imprimer le reçu'),
-            style: FilledButton.styleFrom(
-              minimumSize: const Size(double.infinity, 48),
-            ),
+          PrintReceiptButton(
+            payment: widget.payment,
+            onPrintSuccess: () => Navigator.of(context).pop(),
           ),
           const SizedBox(height: 12),
           OutlinedButton.icon(

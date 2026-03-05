@@ -5,7 +5,6 @@ import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import '../../../domain/entities/tour.dart';
 import '../../../domain/entities/gaz_settings.dart';
-import 'transport/loading_unloading_fees_section.dart';
 import 'transport/other_expenses_section.dart';
 import 'transport/transport_step_header.dart';
 
@@ -27,11 +26,9 @@ class TransportStepContent extends ConsumerStatefulWidget {
 }
 
 class _TransportStepContentState extends ConsumerState<TransportStepContent> {
-  late bool _applyLoadingFees;
   @override
   void initState() {
     super.initState();
-    _applyLoadingFees = widget.tour.applyLoadingFees;
   }
 
   @override
@@ -80,44 +77,20 @@ class _TransportStepContentState extends ConsumerState<TransportStepContent> {
           TransportStepHeader(tour: widget.tour, enterpriseId: widget.enterpriseId),
           const SizedBox(height: 30),
           
-          // Loading fees toggle
-          SwitchListTile(
-            value: _applyLoadingFees,
-            onChanged: (val) => setState(() => _applyLoadingFees = val),
-            title: Text('Appliquer les frais de chargement', 
-              style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold)),
-            subtitle: Text('Désactiver si le chargement est gratuit ou fait en interne',
-              style: theme.textTheme.bodySmall),
-            contentPadding: EdgeInsets.zero,
-            activeThumbColor: theme.colorScheme.primary,
-          ),
-         
-          const SizedBox(height: 24),
-          const Divider(),
-          const SizedBox(height: 24),
-
-          // Total Calculation Summary
+          // Expenses Section
           Text(
-            'Récapitulatif des Frais (Manutention)',
+            'Dépenses',
             style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 4),
           Text(
-            'Calculé selon les réglages globaux.',
+            'Frais de route, repas et autres dépenses liées au tour.',
             style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
           ),
           const SizedBox(height: 16),
           
-          LoadingUnloadingFeesSection(
-            tour: widget.tour.copyWith(
-              applyLoadingFees: _applyLoadingFees,
-            ),
-          ),
-          const SizedBox(height: 16),
           OtherExpensesSection(
-            tour: widget.tour.copyWith(
-              applyLoadingFees: _applyLoadingFees,
-            ),
+            tour: widget.tour,
           ),
          
           if (widget.onSaved != null) ...[
@@ -128,14 +101,7 @@ class _TransportStepContentState extends ConsumerState<TransportStepContent> {
                 onPressed: () async {
                   try {
                     // Pull current settings to snapshot them into the tour
-                    final loadingFees = settings?.loadingFees ?? {};
-                    final unloadingFees = settings?.unloadingFees ?? {};
-
                     final updatedTour = widget.tour.copyWith(
-                      // We snapshot the global settings into the tour record
-                      loadingFees: loadingFees,
-                      unloadingFees: unloadingFees,
-                      applyLoadingFees: _applyLoadingFees,
                       updatedAt: DateTime.now(),
                     );
                     await ref.read(tourControllerProvider).updateTour(updatedTour);

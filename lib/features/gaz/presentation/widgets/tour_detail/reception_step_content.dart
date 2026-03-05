@@ -8,7 +8,7 @@ import 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder_stock.dart';
 import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/gaz_settings.dart';
-import 'package:elyf_groupe_app/features/gaz/domain/entities/collection.dart';
+import 'package:elyf_groupe_app/core/utils/local_id_generator.dart';
 
 /// Contenu de l'étape Réception du tour.
 ///
@@ -36,45 +36,25 @@ class _ReceptionStepContentState extends ConsumerState<ReceptionStepContent> {
   final Map<int, TextEditingController> _returnedControllers = {}; // Qté Vides ramenés
   final Map<int, TextEditingController> _purchasePriceControllers = {}; // Prix achat Unitaire
   final Map<int, TextEditingController> _exchangeFeeControllers = {}; // Frais échange
-  final Map<String, Map<int, TextEditingController>> _distributionControllers = {}; // collectionId -> weight -> controller
   
-  late final TextEditingController _supplierController;
-  late final TextEditingController _gasPurchaseCostController;
-  late final TextEditingController _additionalFeesController;
+  // Wholesaler Distribution state
+  final List<WholesaleDistribution> _wholesaleDistributions = [];
+  final Map<String, Map<int, TextEditingController>> _wholesalerQtyControllers = {};
+  final Map<String, TextEditingController> _wholesalerAmountControllers = {};
+
+  // POS Distribution state
+  final List<PosDistribution> _posDistributions = [];
+  final Map<String, Map<int, TextEditingController>> _posQtyControllers = {};
+
   final Set<int> _expandedWeights = {};
   bool _isInitialized = false;
 
   @override
   void initState() {
     super.initState();
-    _supplierController = TextEditingController(
-      text: widget.tour.supplierName ?? '',
-    );
-    _gasPurchaseCostController = TextEditingController(
-      text: widget.tour.gasPurchaseCost?.toStringAsFixed(0) ?? '0',
-    );
-    _additionalFeesController = TextEditingController(
-      text: widget.tour.additionalInvoiceFees.toStringAsFixed(0),
-    );
-    // Refresh UI on changes
-    _gasPurchaseCostController.addListener(() => setState(() {}));
-    _additionalFeesController.addListener(() => setState(() {}));
-    _supplierController.addListener(() => setState(() {}));
   }
 
-  void _initializeDistributionControllers(List<Collection> collections) {
-    for (final collection in collections) {
-      if (collection.type != CollectionType.wholesaler && collection.type != CollectionType.pointOfSale) continue;
-      if (!_distributionControllers.containsKey(collection.id)) {
-        _distributionControllers[collection.id] = {};
-        for (final weight in collection.emptyBottles.keys) {
-          _distributionControllers[collection.id]![weight] = TextEditingController(
-            text: (collection.fullBottlesReceived[weight] ?? 0).toString(),
-          );
-        }
-      }
-    }
-  }
+
 
   void _initializeControllers(GazSettings? settings) {
     if (_isInitialized) return;
@@ -83,8 +63,8 @@ class _ReceptionStepContentState extends ConsumerState<ReceptionStepContent> {
       ..addAll(widget.tour.fullBottlesReceived.keys)
       ..addAll(widget.tour.emptyBottlesReturned.keys);
 
+    // Initialize Reception fields
     for (final weight in weights) {
-      final loaded = widget.tour.emptyBottlesLoaded[weight] ?? 0;
       final received = widget.tour.fullBottlesReceived[weight] ?? 0;
       final returned = widget.tour.emptyBottlesReturned[weight] ?? 0;
 
@@ -101,14 +81,76 @@ class _ReceptionStepContentState extends ConsumerState<ReceptionStepContent> {
         text: (widget.tour.exchangeFees[weight] ?? defaultExchange).toStringAsFixed(0),
       );
     }
-    
-    // _nominalStocks = settings.nominalStocks; (removed)
+
+    // Initialize Wholesaler Distributions
+    if (widget.tour.wholesaleDistributions.isNotEmpty) {
+      _wholesaleDistributions.addAll(widget.tour.wholesaleDistributions);
+    } else {
+      // Pre-fill from loading sources if it's the first time
+      for (final source in widget.tour.loadingSources) {
+        if (!source.isPos) {
+          _wholesaleDistributions.add(WholesaleDistribution(
+            wholesalerId: source.sourceId,
+            wholesalerName: source.sourceName,
+            quantities: Map.from(source.quantities),
+            totalAmount: 0,
+            paymentMethod: PaymentMethod.cash,
+          ));
+        }
+      }
+    }
+
+    // Initialize POS Distributions
+    if (widget.tour.posDistributions.isNotEmpty) {
+      _posDistributions.addAll(widget.tour.posDistributions);
+    } else {
+      for (final source in widget.tour.loadingSources) {
+        if (source.isPos) {
+          _posDistributions.add(PosDistribution(
+            posId: source.sourceId,
+            posName: source.sourceName,
+            quantities: Map.from(source.quantities),
+          ));
+        }
+      }
+    }
+
+    // Setup controllers for distributions
+    _setupDistributionControllers(settings);
 
     if (_expandedWeights.isEmpty && weights.isNotEmpty) {
       _expandedWeights.add(weights.first);
     }
     
     _isInitialized = true;
+  }
+
+  void _setupDistributionControllers(GazSettings? settings) {
+    for (final dist in _wholesaleDistributions) {
+      final qControllers = <int, TextEditingController>{};
+      double total = 0;
+      for (final weight in dist.quantities.keys) {
+        final qty = dist.quantities[weight] ?? 0;
+        qControllers[weight] = TextEditingController(text: qty.toString());
+        
+        final price = settings?.wholesalePrices[weight] ?? 0.0;
+        total += qty * price;
+      }
+      _wholesalerQtyControllers[dist.wholesalerId] = qControllers;
+      
+      final currentAmount = dist.totalAmount > 0 ? dist.totalAmount : total;
+      _wholesalerAmountControllers[dist.wholesalerId] = TextEditingController(
+        text: currentAmount.toStringAsFixed(0),
+      );
+    }
+
+    for (final dist in _posDistributions) {
+      final qControllers = <int, TextEditingController>{};
+      for (final weight in dist.quantities.keys) {
+        qControllers[weight] = TextEditingController(text: (dist.quantities[weight] ?? 0).toString());
+      }
+      _posQtyControllers[dist.posId] = qControllers;
+    }
   }
 
   Future<void> _loadSettings(List<int> weights) async {
@@ -146,14 +188,6 @@ class _ReceptionStepContentState extends ConsumerState<ReceptionStepContent> {
     for (final c in _exchangeFeeControllers.values) {
       c.dispose();
     }
-    _supplierController.dispose();
-    _gasPurchaseCostController.dispose();
-    _additionalFeesController.dispose();
-    for (final map in _distributionControllers.values) {
-      for (final c in map.values) {
-        c.dispose();
-      }
-    }
     super.dispose();
   }
 
@@ -177,19 +211,18 @@ class _ReceptionStepContentState extends ConsumerState<ReceptionStepContent> {
         _initializeControllers(settings);
         final activeEnterprise = ref.watch(activeEnterpriseProvider).value;
         final isPos = activeEnterprise?.id == widget.enterpriseId && (activeEnterprise?.isPointOfSale ?? false);
-        final collectionsAsync = ref.watch(tourCollectionsProvider(widget.tour.id));
-
-        return collectionsAsync.when(
-          data: (collections) {
-            _initializeDistributionControllers(collections);
-            return cylindersAsync.when(
-              data: (cylinders) => _buildContent(context, theme, isDark, cylinders, allStocksAsync.value ?? [], settings, isPos, collections),
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(child: Text('Erreur Cylindres: $e')),
-            );
-          },
+        return cylindersAsync.when(
+          data: (cylinders) => _buildContent(
+            context,
+            theme,
+            isDark,
+            cylinders,
+            allStocksAsync.value ?? [],
+            settings,
+            isPos,
+          ),
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(child: Text('Erreur Collectes: $e')),
+          error: (e, _) => Center(child: Text('Erreur Cylindres: $e')),
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -205,7 +238,6 @@ class _ReceptionStepContentState extends ConsumerState<ReceptionStepContent> {
     List<CylinderStock> allStocks,
     GazSettings? settings,
     bool isPos,
-    List<Collection> collections,
   ) {
     final weights = widget.tour.emptyBottlesLoaded.keys.toSet().toList()..sort();
     
@@ -224,409 +256,467 @@ class _ReceptionStepContentState extends ConsumerState<ReceptionStepContent> {
       );
     }
 
-    double totalGasCost = 0;
-    for (final weight in weights) {
-      final received = int.tryParse(_receivedControllers[weight]?.text ?? '0') ?? 0;
-      final price = double.tryParse(_purchasePriceControllers[weight]?.text ?? '0') ?? 0;
-      totalGasCost += received * price;
-    }
-    final additionalFees = double.tryParse(_additionalFeesController.text) ?? 0;
-    final theoreticalTotal = totalGasCost + additionalFees;
-    final invoiceAmount = double.tryParse(_gasPurchaseCostController.text) ?? 0;
-    final gap = theoreticalTotal - invoiceAmount;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-            // Supplier & Gas Info Section
-            Row(
-              children: [
-                Icon(Icons.business_outlined, size: 16, color: theme.colorScheme.primary),
-                const SizedBox(width: 8),
-                Text(
-                  'Informations Fournisseur & Facturation',
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.onSurface,
-                  ),
-                ),
-              ],
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // 1. Réception fournisseur (Existing)
+          _buildReceptionSection(theme, isDark, cylinders, allStocks),
+          
+          const SizedBox(height: 24),
+          
+          // 2. Encaissement Grossistes
+          _buildWholesaleSection(theme, isDark, settings),
+          
+          const SizedBox(height: 24),
+          
+          // 3. Distribution Points de Vente
+          _buildPosSection(theme, isDark),
+          
+          const SizedBox(height: 32),
+          
+          FilledButton.icon(
+            onPressed: () => _saveReception(weights),
+            icon: const Icon(Icons.check_circle_outlined, size: 20),
+            label: const Text('Valider le retour & les encaissements'),
+            style: FilledButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  flex: 2,
-                  child: TextFormField(
-                    controller: _supplierController,
-                    decoration: InputDecoration(
-                      labelText: 'Nom du Fournisseur',
-                      hintText: 'Ex: SODIGAZ, Shell...',
-                      prefixIcon: const Icon(Icons.business, size: 20),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      isDense: true,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  flex: 1,
-                  child: TextFormField(
-                    controller: _gasPurchaseCostController,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      labelText: 'Total Facture',
-                      suffixText: 'F',
-                      prefixIcon: const Icon(Icons.receipt_long, size: 20),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      isDense: true,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  flex: 1,
-                  child: TextFormField(
-                    controller: _additionalFeesController,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      labelText: 'Frais Supp.',
-                      hintText: 'TVA, péage...',
-                      suffixText: 'F',
-                      prefixIcon: const Icon(Icons.add_shopping_cart, size: 20),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      isDense: true,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-           const SizedBox(height: 16),
-            
-            // Financial Summary Bar
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primaryContainer.withOpacity(isDark ? 0.2 : 0.5),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: theme.colorScheme.primary.withOpacity(0.2)),
-              ),
-              child: IntrinsicHeight(
-                child: Row(
-                  children: [
-                    Expanded(
-                      flex: 3,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Calculé (Détails + Frais)', style: theme.textTheme.labelSmall),
-                          Text(
-                            '${CurrencyFormatter.formatDouble(theoreticalTotal)} F',
-                            style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
-                          ),
-                        ],
-                      ),
-                    ),
-                    VerticalDivider(color: theme.colorScheme.primary.withOpacity(0.2)),
-                    Expanded(
-                      flex: 3,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Text('Montant Facture', style: theme.textTheme.labelSmall),
-                          Text(
-                            '${CurrencyFormatter.formatDouble(invoiceAmount)} F',
-                            style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
-                          ),
-                        ],
-                      ),
-                    ),
-                    VerticalDivider(color: theme.colorScheme.primary.withOpacity(0.2)),
-                    Expanded(
-                      flex: 2,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text('ÉCART', style: theme.textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold)),
-                          Text(
-                            '${gap == 0 ? "OK" : CurrencyFormatter.formatDouble(gap)} ${gap == 0 ? "" : "F"}',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w900,
-                              color: gap == 0 ? Colors.green : theme.colorScheme.error,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                 ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-           
-            // Quantities and Fees Title
-            Row(
-              children: [
-                Icon(Icons.inventory_2_outlined, size: 16, color: theme.colorScheme.primary),
-                const SizedBox(width: 8),
-                Text(
-                  'Réconciliation & Acquisition',
-                  style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            
-            // Compact table/list
-            ...weights.map((weight) {
-              final loaded = widget.tour.emptyBottlesLoaded[weight] ?? 0;
-              final leakingLoaded = widget.tour.leakingBottlesLoaded[weight] ?? 0;
-              final totalLoaded = loaded + leakingLoaded;
-              final cylinderId = cylinders.any((c) => c.weight == weight) 
-                  ? cylinders.firstWhere((c) => c.weight == weight).id 
-                  : '';
-              
-              final currentFull = allStocks
-                  .where((CylinderStock s) => s.cylinderId == cylinderId && s.status == CylinderStatus.full)
-                  .fold<int>(0, (int sum, CylinderStock s) => sum + s.quantity);
-              
-              final currentEmpty = allStocks
-                  .where((CylinderStock s) => s.cylinderId == cylinderId && s.status == CylinderStatus.emptyAtStore)
-                  .fold<int>(0, (int sum, CylinderStock s) => sum + s.quantity);
-
-              final received = int.tryParse(_receivedControllers[weight]?.text ?? '0') ?? 0;
-              final returned = int.tryParse(_returnedControllers[weight]?.text ?? '0') ?? 0;
-              final totalWithReception = currentFull + currentEmpty + received + returned;
-              final isExpanded = _expandedWeights.contains(weight);
-
-              return Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                decoration: BoxDecoration(
-                  color: isDark ? theme.colorScheme.surfaceContainerHighest.withOpacity(0.3) : theme.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: isExpanded
-                        ? theme.colorScheme.primary.withOpacity(0.5)
-                        : (isDark ? theme.colorScheme.outline.withOpacity(0.1) : theme.colorScheme.outlineVariant),
-                  ),
-                ),
-                child: Theme(
-                  data: theme.copyWith(dividerColor: Colors.transparent),
-                  child: ExpansionTile(
-                    initiallyExpanded: isExpanded,
-                    onExpansionChanged: (expanded) {
-                      setState(() {
-                        if (expanded) {
-                          _expandedWeights.add(weight);
-                        } else {
-                          _expandedWeights.remove(weight);
-                        }
-                      });
-                    },
-                    leading: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.primary.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        '$weight kg',
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.primary,
-                        ),
-                      ),
-                    ),
-                    title: Text(
-                      'Chargé: $loaded vides + $leakingLoaded fuites',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    subtitle: Text(
-                      'Reçu: $received | Ramenés: $returned',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: (received + returned) == totalLoaded 
-                            ? (isDark ? Colors.greenAccent : Colors.green)
-                            : (received + returned > totalLoaded ? theme.colorScheme.error : theme.colorScheme.onSurfaceVariant),
-                        fontWeight: (received + returned) == totalLoaded ? FontWeight.bold : null,
-                      ),
-                    ),
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                        child: Column(
-                          children: [
-                            const Divider(height: 1),
-                            const SizedBox(height: 16),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: TextFormField(
-                                    controller: _receivedControllers[weight],
-                                    keyboardType: TextInputType.number,
-                                    decoration: InputDecoration(
-                                      labelText: 'Reçu Plein',
-                                      suffixText: 'btl',
-                                      isDense: true,
-                                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                                    ),
-                                    onChanged: (val) {
-                                      final r = int.tryParse(val) ?? 0;
-                                      final suggeredReturn = (totalLoaded - r).clamp(0, 1000).toInt();
-                                      _returnedControllers[weight]?.text = suggeredReturn.toString();
-                                      setState(() {});
-                                    },
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: TextFormField(
-                                    controller: _returnedControllers[weight],
-                                    keyboardType: TextInputType.number,
-                                    decoration: InputDecoration(
-                                      labelText: 'Vide Ramené',
-                                      suffixText: 'btl',
-                                      isDense: true,
-                                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                                    ),
-                                    onChanged: (_) => setState(() {}),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: TextFormField(
-                                    controller: _purchasePriceControllers[weight],
-                                    keyboardType: TextInputType.number,
-                                    decoration: InputDecoration(
-                                      labelText: 'Prix Achat Unitaire',
-                                      suffixText: 'F',
-                                      isDense: true,
-                                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                                    ),
-                                    onChanged: (_) => setState(() {}),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            // Local Subtotal
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                Text(
-                                  'Sous-total: ${CurrencyFormatter.formatDouble(received * (double.tryParse(_purchasePriceControllers[weight]?.text ?? '0') ?? 0))} F',
-                                  style: theme.textTheme.labelSmall?.copyWith(
-                                    fontStyle: FontStyle.italic,
-                                    color: theme.colorScheme.onSurfaceVariant,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            
-                            // Distribution aux grossistes
-                            _buildDistributionSection(context, theme, weight, collections),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }),
-                
-            const SizedBox(height: 24),
-            
-            FilledButton.icon(
-              onPressed: () => _saveReception(weights, collections),
-              icon: const Icon(Icons.check_circle_outlined, size: 18),
-              label: const Text('Valider la réception'),
-              style: FilledButton.styleFrom(
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-          ],
-        );
+          ),
+          const SizedBox(height: 40),
+        ],
+      ),
+    );
   }
 
-  Widget _buildDistributionSection(
-    BuildContext context, 
-    ThemeData theme, 
-    int weight, 
-    List<Collection> collections,
-  ) {
-    final externalCollections = collections.where((c) => (c.type == CollectionType.wholesaler || c.type == CollectionType.pointOfSale) && c.emptyBottles.containsKey(weight)).toList();
-    if (externalCollections.isEmpty) return const SizedBox.shrink();
-
+  Widget _buildReceptionSection(ThemeData theme, bool isDark, List<Cylinder> cylinders, List<CylinderStock> allStocks) {
+    final weights = widget.tour.emptyBottlesLoaded.keys.toSet().toList()..sort();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Divider(height: 32),
         Row(
           children: [
-            Icon(Icons.share_outlined, size: 14, color: theme.colorScheme.secondary),
+            Icon(Icons.inventory_2_outlined, size: 18, color: theme.colorScheme.primary),
             const SizedBox(width: 8),
             Text(
-              'Répartition Grossistes & POS',
-              style: theme.textTheme.labelSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: theme.colorScheme.secondary,
-              ),
+              'Réconciliation Fournisseur',
+              style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
             ),
           ],
         ),
-        const SizedBox(height: 8),
-        ...externalCollections.map((col) {
-          final controller = _distributionControllers[col.id]?[weight];
-          final empties = col.emptyBottles[weight] ?? 0;
-          final isWholesaler = col.type == CollectionType.wholesaler;
-          
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 8.0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    col.clientName + (isWholesaler ? '' : ' (POS)'),
-                    style: theme.textTheme.bodySmall?.copyWith(
-                       color: isWholesaler ? null : theme.colorScheme.tertiary,
-                       fontWeight: isWholesaler ? null : FontWeight.bold,
-                    ),
-                  ),
-                ),
-                Text(
-                  '($empties vides chargés)',
-                  style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                ),
-                const SizedBox(width: 12),
-                SizedBox(
-                  width: 80,
-                  child: TextFormField(
-                    controller: controller,
-                    keyboardType: TextInputType.number,
-                    textAlign: TextAlign.center,
-                    decoration: InputDecoration(
-                      labelText: 'Plein',
-                      isDense: true,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                      contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          );
-        }),
+        const SizedBox(height: 12),
+        ...weights.map((weight) => _buildWeightItem(weight, theme, isDark, cylinders, allStocks)),
       ],
     );
   }
 
-  Future<void> _saveReception(List<int> weights, List<Collection> collections) async {
+  Widget _buildWeightItem(int weight, ThemeData theme, bool isDark, List<Cylinder> cylinders, List<CylinderStock> allStocks) {
+    final loaded = widget.tour.emptyBottlesLoaded[weight] ?? 0;
+    final totalLoaded = loaded;
+    final isExpanded = _expandedWeights.contains(weight);
+    final received = int.tryParse(_receivedControllers[weight]?.text ?? '0') ?? 0;
+    final returned = int.tryParse(_returnedControllers[weight]?.text ?? '0') ?? 0;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: isDark ? theme.colorScheme.surfaceContainerHighest.withOpacity(0.3) : theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isExpanded
+              ? theme.colorScheme.primary.withOpacity(0.5)
+              : (isDark ? theme.colorScheme.outline.withOpacity(0.1) : theme.colorScheme.outlineVariant),
+        ),
+      ),
+      child: Theme(
+        data: theme.copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          initiallyExpanded: isExpanded,
+          onExpansionChanged: (expanded) {
+            setState(() {
+              if (expanded) {
+                _expandedWeights.add(weight);
+              } else {
+                _expandedWeights.remove(weight);
+              }
+            });
+          },
+          leading: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              '$weight kg',
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          ),
+          title: Text(
+            'Chargé: $loaded vides',
+            style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
+          ),
+          subtitle: Text(
+            'Reçu: $received | Ramenés: $returned',
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: (received + returned) == totalLoaded 
+                  ? (isDark ? Colors.greenAccent : Colors.green)
+                  : (received + returned > totalLoaded ? theme.colorScheme.error : theme.colorScheme.onSurfaceVariant),
+              fontWeight: (received + returned) == totalLoaded ? FontWeight.bold : null,
+            ),
+          ),
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: Column(
+                children: [
+                  const Divider(height: 1),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _receivedControllers[weight],
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                            labelText: 'Reçu Plein',
+                            suffixText: 'btl',
+                            isDense: true,
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          onChanged: (val) {
+                            final r = int.tryParse(val) ?? 0;
+                            final suggeredReturn = (totalLoaded - r).clamp(0, 1000).toInt();
+                            _returnedControllers[weight]?.text = suggeredReturn.toString();
+                            setState(() {});
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: TextFormField(
+                          controller: _returnedControllers[weight],
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                            labelText: 'Vide Ramené',
+                            suffixText: 'btl',
+                            isDense: true,
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          onChanged: (_) => setState(() {}),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _purchasePriceControllers[weight],
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                            labelText: 'Prix Achat Unitaire',
+                            suffixText: 'F',
+                            isDense: true,
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          onChanged: (_) => setState(() {}),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Text(
+                        'Sous-total: ${CurrencyFormatter.formatDouble(received * (double.tryParse(_purchasePriceControllers[weight]?.text ?? '0') ?? 0))} F',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          fontStyle: FontStyle.italic,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWholesaleSection(ThemeData theme, bool isDark, GazSettings? settings) {
+    if (_wholesaleDistributions.isEmpty) return const SizedBox.shrink();
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.payments_outlined, size: 18, color: theme.colorScheme.primary),
+            const SizedBox(width: 8),
+            Text(
+              'Encaissements Grossistes',
+              style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        ..._wholesaleDistributions.map((dist) => _buildWholesalerCard(dist, theme, isDark, settings)),
+      ],
+    );
+  }
+
+  Widget _buildWholesalerCard(WholesaleDistribution dist, ThemeData theme, bool isDark, GazSettings? settings) {
+    final controllers = _wholesalerQtyControllers[dist.wholesalerId] ?? {};
+    final amountController = _wholesalerAmountControllers[dist.wholesalerId];
+
+    return Card(
+      elevation: 0,
+      margin: const EdgeInsets.only(bottom: 16),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 14,
+                  backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
+                  child: Icon(Icons.person_outline, size: 16, color: theme.colorScheme.primary),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  dist.wholesalerName,
+                  style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            
+            // Quantities
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: dist.quantities.keys.map((weight) {
+                return SizedBox(
+                  width: 100,
+                  child: TextFormField(
+                    controller: controllers[weight],
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: '$weight kg',
+                      suffixText: 'btl',
+                      isDense: true,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    onChanged: (val) {
+                      final qty = int.tryParse(val) ?? 0;
+                      _updateWholesaleAmount(dist.wholesalerId, settings);
+                      setState(() {});
+                    },
+                  ),
+                );
+              }).toList(),
+            ),
+            
+            const SizedBox(height: 16),
+            const Divider(),
+            const SizedBox(height: 12),
+            
+            Row(
+              children: [
+                Expanded(
+                  flex: 3,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Méthode de Paiement', style: theme.textTheme.labelSmall),
+                      DropdownButton<PaymentMethod>(
+                        value: dist.paymentMethod,
+                        isExpanded: true,
+                        underline: const SizedBox(),
+                        items: PaymentMethod.values.map((method) {
+                          return DropdownMenuItem(
+                            value: method,
+                            child: Text(method.displayName),
+                          );
+                        }).toList(),
+                        onChanged: (val) {
+                          if (val != null) {
+                            setState(() {
+                              final index = _wholesaleDistributions.indexOf(dist);
+                              _wholesaleDistributions[index] = WholesaleDistribution(
+                                wholesalerId: dist.wholesalerId,
+                                wholesalerName: dist.wholesalerName,
+                                quantities: dist.quantities,
+                                totalAmount: dist.totalAmount,
+                                paymentMethod: val,
+                              );
+                            });
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  flex: 2,
+                  child: TextFormField(
+                    controller: amountController,
+                    keyboardType: TextInputType.number,
+                    textAlign: TextAlign.end,
+                    decoration: InputDecoration(
+                      labelText: 'Montant Reçu',
+                      suffixText: 'F',
+                      isDense: true,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      filled: true,
+                      fillColor: theme.colorScheme.primary.withOpacity(0.05),
+                    ),
+                    onChanged: (val) {
+                       final amount = double.tryParse(val) ?? 0;
+                       final index = _wholesaleDistributions.indexOf(dist);
+                       _wholesaleDistributions[index] = WholesaleDistribution(
+                          wholesalerId: dist.wholesalerId,
+                          wholesalerName: dist.wholesalerName,
+                          quantities: dist.quantities,
+                          totalAmount: amount,
+                          paymentMethod: dist.paymentMethod,
+                        );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _updateWholesaleAmount(String wholesalerId, GazSettings? settings) {
+    final controllers = _wholesalerQtyControllers[wholesalerId] ?? {};
+    final amountController = _wholesalerAmountControllers[wholesalerId];
+    if (amountController == null) return;
+
+    double total = 0;
+    controllers.forEach((weight, controller) {
+      final qty = int.tryParse(controller.text) ?? 0;
+      final price = settings?.wholesalePrices[weight] ?? 0.0;
+      total += qty * price;
+    });
+
+    amountController.text = total.toStringAsFixed(0);
+    
+    // Update the record in the list as well
+    final index = _wholesaleDistributions.indexWhere((d) => d.wholesalerId == wholesalerId);
+    if (index != -1) {
+      final dist = _wholesaleDistributions[index];
+      _wholesaleDistributions[index] = WholesaleDistribution(
+        wholesalerId: dist.wholesalerId,
+        wholesalerName: dist.wholesalerName,
+        quantities: controllers.map((k, v) => MapEntry(k, int.tryParse(v.text) ?? 0)),
+        totalAmount: total,
+        paymentMethod: dist.paymentMethod,
+      );
+    }
+  }
+
+  Widget _buildPosSection(ThemeData theme, bool isDark) {
+    if (_posDistributions.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.storefront_outlined, size: 18, color: theme.colorScheme.primary),
+            const SizedBox(width: 8),
+            Text(
+              'Distribution Points de Vente',
+              style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        ..._posDistributions.map((dist) => _buildPosCard(dist, theme, isDark)),
+      ],
+    );
+  }
+
+  Widget _buildPosCard(PosDistribution dist, ThemeData theme, bool isDark) {
+    final controllers = _posQtyControllers[dist.posId] ?? {};
+
+    return Card(
+      elevation: 0,
+      margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              dist.posName,
+              style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: dist.quantities.keys.map((weight) {
+                return SizedBox(
+                  width: 90,
+                  child: TextFormField(
+                    controller: controllers[weight],
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: '$weight kg',
+                      suffixText: 'btl',
+                      isDense: true,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    onChanged: (val) {
+                      setState(() {
+                         final index = _posDistributions.indexOf(dist);
+                         _posDistributions[index] = PosDistribution(
+                           posId: dist.posId,
+                           posName: dist.posName,
+                           quantities: controllers.map((k, v) => MapEntry(k, int.tryParse(v.text) ?? 0)),
+                           receivedDate: dist.receivedDate,
+                         );
+                      });
+                    },
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+
+
+  Future<void> _saveReception(List<int> weights) async {
     final fullBottles = <int, int>{};
     final returnedEmpties = <int, int>{};
     final purchasePrices = <int, double>{};
@@ -645,53 +735,29 @@ class _ReceptionStepContentState extends ConsumerState<ReceptionStepContent> {
       final fee = double.tryParse(_exchangeFeeControllers[weight]?.text ?? '') ?? 0.0;
       if (fee >= 0) exchangeFees[weight] = fee;
       
-      // Validation de la distribution
-      int totalDistributed = 0;
-      for (final col in collections) {
-        if (col.type != CollectionType.wholesaler && col.type != CollectionType.pointOfSale) continue;
-        final distQty = int.tryParse(_distributionControllers[col.id]?[weight]?.text ?? '0') ?? 0;
-        totalDistributed += distQty;
-      }
-      if (totalDistributed > received) {
-        NotificationService.showError(context, 'Poids $weight kg : La somme distribuée ($totalDistributed) dépasse le total reçu ($received)');
-        return;
-      }
+
     }
 
     try {
       final controller = ref.read(tourControllerProvider);
       
       final updatedTour = widget.tour.copyWith(
-        supplierName: _supplierController.text.trim().isNotEmpty ? _supplierController.text.trim() : null,
-        gasPurchaseCost: double.tryParse(_gasPurchaseCostController.text) ?? 0,
-        additionalInvoiceFees: double.tryParse(_additionalFeesController.text) ?? 0,
         fullBottlesReceived: fullBottles,
         emptyBottlesReturned: returnedEmpties,
         purchasePricesUsed: purchasePrices,
+        wholesaleDistributions: _wholesaleDistributions,
+        posDistributions: _posDistributions,
+        receptionCompletedDate: DateTime.now(),
         updatedAt: DateTime.now(),
       );
       
       await controller.updateTour(updatedTour);
 
-      // Mettre à jour les collectes
-      final transactionService = ref.read(transactionServiceProvider);
-      for (final col in collections) {
-        if (col.type != CollectionType.wholesaler && col.type != CollectionType.pointOfSale) continue;
-        final fulfillment = <int, int>{};
-        for (final weight in weights) {
-          final qty = int.tryParse(_distributionControllers[col.id]?[weight]?.text ?? '0') ?? 0;
-          if (qty > 0) fulfillment[weight] = qty;
-        }
-        
-        if (fulfillment.isNotEmpty || col.fullBottlesReceived.isNotEmpty) {
-           await transactionService.updateCollectionFullBottles(col.id, widget.enterpriseId, fulfillment);
-        }
-      }
+
 
       if (mounted) {
-        NotificationService.showSuccess(context, 'Réception et Répartitions enregistrées');
+        NotificationService.showSuccess(context, 'Réception enregistrée');
         ref.invalidate(tourProvider(widget.tour.id));
-        ref.invalidate(tourCollectionsProvider(widget.tour.id));
         widget.onSaved?.call();
       }
     } catch (e) {

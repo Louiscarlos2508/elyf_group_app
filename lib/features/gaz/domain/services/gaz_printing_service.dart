@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/printing/printer_interface.dart';
+import '../../../../core/printing/thermal_receipt_builder.dart';
 import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
 import '../../domain/entities/gas_sale.dart';
 // import '../services/gaz_session_calculation_service.dart'; // Removed during session cleanup
@@ -17,43 +18,40 @@ class GazPrintingService {
     String? enterpriseName,
   }) async {
     try {
-      final buffer = StringBuffer();
-      
+      final width = await printerService.getLineWidth();
+      final builder = ThermalReceiptBuilder(width: width);
+
       // Header
-      buffer.writeln('--------------------------------');
-      final name = enterpriseName?.toUpperCase() ?? 'ELYF GROUP - GAZ';
-      buffer.writeln(name);
-      buffer.writeln('--------------------------------');
-      buffer.writeln('RECU DE VENTE');
-      buffer.writeln('Date: ${_formatDate(sale.saleDate)}');
-      buffer.writeln('No: ${sale.id.split('-').last}');
-      buffer.writeln('Type: ${sale.saleType.label}');
-      buffer.writeln('--------------------------------');
+      builder.header(enterpriseName?.toUpperCase() ?? 'ELYF GROUP - GAZ', subtitle: 'RECU DE VENTE');
+      
+      builder.row('Date', _formatDate(sale.saleDate));
+      builder.row('No Ticket', sale.id.split('-').last.toUpperCase());
+      builder.row('Type Vente', sale.saleType.label);
+      builder.space();
 
       // Client
-      if (sale.customerName != null) {
-        buffer.writeln('Client: ${sale.customerName}');
+      if (sale.customerName != null || sale.wholesalerName != null) {
+        builder.row('Client', sale.wholesalerName ?? sale.customerName ?? 'Client Divers');
+        builder.space();
       }
-      if (sale.wholesalerName != null) {
-        buffer.writeln('Grossiste: ${sale.wholesalerName}');
-      }
-      buffer.writeln('--------------------------------');
 
       // Items
-      buffer.writeln('Article | ${cylinderLabel ?? 'Bouteille'}');
-      buffer.writeln('Transaction | ${sale.dealType.label}');
-      buffer.writeln('Qté | ${sale.quantity}');
-      buffer.writeln('Prix Unitaire | ${sale.unitPrice.toStringAsFixed(0)} FCFA');
-      buffer.writeln('--------------------------------');
+      builder.section('Détail Achat');
+      
+      final priceDetail = '${sale.quantity}x ${sale.unitPrice.toStringAsFixed(0)}';
+      final totalDetail = '${sale.totalAmount.toStringAsFixed(0)} FCFA';
+      builder.itemRow(cylinderLabel ?? 'Bouteille Gaz', priceDetail, totalDetail);
+      builder.row('Transaction', sale.dealType.label);
+      builder.separator();
       
       // Total
-      buffer.writeln('TOTAL | ${sale.totalAmount.toStringAsFixed(0)} FCFA');
-      buffer.writeln('Mode: ${sale.paymentMethod.label}');
-      buffer.writeln('--------------------------------');
-      buffer.writeln('Merci de votre confiance !');
-      buffer.writeln('\n\n\n'); // Espace pour la découpe
+      builder.total('TOTAL', '${sale.totalAmount.toStringAsFixed(0)} FCFA');
+      builder.row('Paiement', sale.paymentMethod.label);
+      
+      builder.space();
+      builder.footer('Merci de votre confiance !');
 
-      return await printerService.printText(buffer.toString());
+      return await printerService.printText(builder.toString());
     } catch (e) {
       debugPrint('GazPrintingService: Error printing receipt: $e');
       return false;

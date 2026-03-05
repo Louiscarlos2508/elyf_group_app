@@ -5,6 +5,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../auth/entities/app_user.dart';
+import '../../auth/entities/enterprise_module_user.dart';
+import '../../auth/providers.dart' as auth_providers;
 import '../../logging/app_logger.dart';
 import '../drift_service.dart';
 import '../module_data_sync_service.dart';
@@ -83,25 +85,57 @@ class SyncOrchestrator {
 
     final globalModuleSync = ref.read(offline_providers.globalModuleRealtimeSyncServiceProvider);
     
-    // Vérifier si déjà en train d'écouter pour éviter des appels inutiles
-    if (globalModuleSync.isListeningTo(activeEnterpriseId, moduleId)) {
-      return;
-    }
-
     AppLogger.info('SyncOrchestrator: Ensuring realtime sync for module $moduleId in enterprise $activeEnterpriseId', name: 'sync.orchestrator');
 
     try {
       final adminController = ref.read(admin_providers.adminControllerProvider);
+      
+      // Get the enterprise and its hierarchy info
       final enterprise = await adminController.getEnterpriseById(activeEnterpriseId);
       final parentEnterpriseId = enterprise?.parentEnterpriseId;
 
       if (_isStopping) return;
 
-      await globalModuleSync.startRealtimeSync(
-        enterpriseId: activeEnterpriseId,
-        moduleId: moduleId,
-        parentEnterpriseId: parentEnterpriseId,
-      );
+      // Start realtime sync for the main enterprise
+      if (!globalModuleSync.isListeningTo(activeEnterpriseId, moduleId)) {
+        await globalModuleSync.startRealtimeSync(
+          enterpriseId: activeEnterpriseId,
+          moduleId: moduleId,
+          parentEnterpriseId: parentEnterpriseId,
+        );
+      }
+
+      // Check if we should also sync children for this user/module combo
+      final authService = ref.read(auth_providers.authServiceProvider);
+      final currentUser = authService.currentUser;
+      if (currentUser != null) {
+        final assignments = await adminController.getUserEnterpriseModuleUsers(currentUser.id);
+        final activeAssignment = assignments.firstWhere(
+          (a) => a.enterpriseId == activeEnterpriseId && a.moduleId == moduleId && a.isActive,
+          orElse: () => assignments.firstWhere(
+            (a) => a.enterpriseId == activeEnterpriseId && a.isActive,
+            orElse: () => EnterpriseModuleUser(userId: currentUser.id, enterpriseId: activeEnterpriseId, moduleId: moduleId, roleIds: []),
+          ),
+        );
+
+        if (activeAssignment.includesChildren) {
+          AppLogger.info('SyncOrchestrator: Parent access detected, synchronizing child enterprises for module $moduleId', name: 'sync.orchestrator');
+          final enterpriseController = ref.read(admin_providers.enterpriseControllerProvider);
+          final allEnterprises = await enterpriseController.getAllEnterprises();
+          final children = allEnterprises.where((e) => e.parentEnterpriseId == activeEnterpriseId).toList();
+          
+          for (final child in children) {
+            if (_isStopping) break;
+            if (!globalModuleSync.isListeningTo(child.id, moduleId)) {
+              await globalModuleSync.startRealtimeSync(
+                enterpriseId: child.id,
+                moduleId: moduleId,
+                parentEnterpriseId: activeEnterpriseId, // Active parent
+              );
+            }
+          }
+        }
+      }
     } catch (e) {
       AppLogger.error('SyncOrchestrator: Failed to ensure module sync for $moduleId', error: e, name: 'sync.orchestrator');
     }
@@ -145,47 +179,69 @@ class SyncOrchestrator {
         driftService: DriftService.instance,
         collectionPaths: collectionPaths,
       );
+
+      final firestoreSync = ref.read(offline_providers.firestoreSyncServiceProvider);
       
+      // Ensure all children are discovered if user is a parent
       for (final access in activeAccesses) {
+        if (access.includesChildren) {
+          AppLogger.info('SyncOrchestrator: Discovering sub-tenants for parent enterprise ${access.enterpriseId}', name: 'sync.orchestrator');
+          await firestoreSync.discoverSubTenants(access.enterpriseId);
+        }
+      }
+
+      // Expand accesses to include children if necessary
+      final List<({String enterpriseId, String moduleId, String? parentEnterpriseId})> syncQueue = [];
+      final enterpriseController = ref.read(admin_providers.enterpriseControllerProvider);
+      
+      // Refresh enterprises list after discovery
+      final allEnterprises = await enterpriseController.getAllEnterprises();
+
+      for (final access in activeAccesses) {
+        syncQueue.add((
+          enterpriseId: access.enterpriseId,
+          moduleId: access.moduleId,
+          parentEnterpriseId: access.parentEnterpriseId,
+        ));
+
+        if (access.includesChildren) {
+          final children = allEnterprises.where((e) => e.parentEnterpriseId == access.enterpriseId);
+          for (final child in children) {
+            syncQueue.add((
+              enterpriseId: child.id,
+              moduleId: access.moduleId,
+              parentEnterpriseId: access.enterpriseId,
+            ));
+          }
+        }
+      }
+      
+      for (final target in syncQueue) {
         if (_isStopping || sessionId != _currentSessionId || FirebaseAuth.instance.currentUser == null) {
           return;
         }
 
         try {
-          // Sync metadata for enterprise and parent
-          await ref.read(offline_providers.firestoreSyncServiceProvider).syncSpecificEnterprise(access.enterpriseId);
+          // Sync metadata for enterprise
+          await ref.read(offline_providers.firestoreSyncServiceProvider).syncSpecificEnterprise(target.enterpriseId);
           
           if (_isStopping || sessionId != _currentSessionId) return;
 
-          String? parentEnterpriseId;
-          try {
-            final enterprise = await adminController.getEnterpriseById(access.enterpriseId);
-            if (enterprise != null && enterprise.parentEnterpriseId != null) {
-              parentEnterpriseId = enterprise.parentEnterpriseId;
-              
-              if (_isStopping || sessionId != _currentSessionId || FirebaseAuth.instance.currentUser == null) return;
-              await ref.read(offline_providers.firestoreSyncServiceProvider).syncSpecificEnterprise(parentEnterpriseId!);
-            }
-          } catch (e) {
-            AppLogger.warning('Could not check for parent enterprise: $e', name: 'sync.orchestrator');
-          }
-
-          if (_isStopping || sessionId != _currentSessionId || FirebaseAuth.instance.currentUser == null) return;
-
-          // Perform one-time data sync for the module
+          // If we reach here, we've already synced target.enterpriseId metadata.
+          // Now perform one-time data sync for the module
           await syncService.syncModuleData(
-            enterpriseId: access.enterpriseId,
-            moduleId: access.moduleId,
-            parentEnterpriseId: parentEnterpriseId,
+            enterpriseId: target.enterpriseId,
+            moduleId: target.moduleId,
+            parentEnterpriseId: target.parentEnterpriseId,
           );
           
           if (_isStopping || sessionId != _currentSessionId || FirebaseAuth.instance.currentUser == null) return;
 
           // Start realtime sync through the consolidated authority
-          await ensureModuleSync(access.moduleId);
+          await ensureModuleSync(target.moduleId);
           
         } catch (e) {
-          AppLogger.warning('Failed to sync module ${access.moduleId}: $e', name: 'sync.orchestrator');
+          AppLogger.warning('Failed to sync module ${target.moduleId} for enterprise ${target.enterpriseId}: $e', name: 'sync.orchestrator');
         }
       }
     } catch (e, st) {

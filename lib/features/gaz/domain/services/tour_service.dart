@@ -1,7 +1,7 @@
 import '../../../../core/errors/app_exceptions.dart';
 import '../entities/tour.dart';
 import '../repositories/tour_repository.dart';
-import '../repositories/collection_repository.dart';
+
 
 import 'transaction_service.dart';
 
@@ -10,17 +10,14 @@ class TourService {
   const TourService({
     required this.tourRepository,
     required this.transactionService,
-    required this.collectionRepository,
   });
 
   final TourRepository tourRepository;
   final TransactionService transactionService;
-  final CollectionRepository collectionRepository;
 
-  /// Met à jour les bouteilles vides chargées avec gestion du stock transit.
+  /// Met à jour les sources de chargement (Multi-sources).
   Future<void> updateEmptyBottlesLoaded(
-      String tourId, Map<int, int> quantities, String userId,
-      {Map<int, int> leakingQuantities = const {}}) async {
+      String tourId, List<TourLoadingSource> loadingSources, String userId) async {
     final tour = await tourRepository.getTourById(tourId);
     if (tour == null) throw const NotFoundException('Tour introuvable', 'TOUR_NOT_FOUND');
     if (tour.status != TourStatus.open) throw const ValidationException('Le tour est clôturé', 'TOUR_CLOSED');
@@ -28,8 +25,7 @@ class TourService {
     await transactionService.executeTourLoadingTransaction(
       tourId: tourId,
       userId: userId,
-      newLoading: quantities,
-      newLeakingLoading: leakingQuantities,
+      loadingSources: loadingSources,
     );
   }
 
@@ -71,7 +67,11 @@ class TourService {
   }
 
   /// Clôture un tour avec mise à jour des stocks.
-  Future<List<dynamic>> closeTour(String tourId, String userId) async {
+  Future<List<dynamic>> closeTour(
+    String tourId,
+    String userId, {
+    Map<int, String> weightToCylinderId = const {},
+  }) async {
     final tour = await tourRepository.getTourById(tourId);
     if (tour == null) throw const NotFoundException('Tour introuvable', 'TOUR_NOT_FOUND');
     
@@ -82,13 +82,10 @@ class TourService {
       );
     }
 
-    // Récupérer les collectes liées au tour (Grossistes)
-    final collections = await collectionRepository.getCollectionsByTourId(tourId, tour.enterpriseId);
-
     final result = await transactionService.executeTourClosureTransaction(
       tourId: tourId,
       userId: userId,
-      wholesalerCollections: collections,
+      weightToCylinderId: weightToCylinderId,
     );
     return result.alerts;
   }

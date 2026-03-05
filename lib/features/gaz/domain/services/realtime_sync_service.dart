@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import '../entities/collection.dart';
+
 import '../entities/cylinder.dart';
 import '../entities/cylinder_stock.dart';
 import '../entities/gas_sale.dart';
@@ -23,7 +23,7 @@ class RealtimeSyncService {
   final Map<String, StreamController<Tour>> _tourControllers = {};
   final Map<String, StreamController<GasSale>> _saleControllers = {};
   final Map<String, StreamController<CylinderStock>> _stockControllers = {};
-  final Map<String, StreamController<Collection>> _collectionControllers = {};
+
 
   /// Écoute les changements d'un tour en temps réel.
   ///
@@ -53,11 +53,7 @@ class RealtimeSyncService {
     return Stream.value([]);
   }
 
-  /// Écoute les changements de collections d'un tour en temps réel.
-  Stream<List<Collection>> watchTourCollections(String tourId) {
-    // TODO: Implémenter avec Firestore
-    return Stream.value([]);
-  }
+
 
   /// Synchronise une entité avec Firestore.
   ///
@@ -119,12 +115,10 @@ class RealtimeSyncService {
     for (final controller in _stockControllers.values) {
       controller.close();
     }
-    for (final controller in _collectionControllers.values) {
-      controller.close();
-    }
+
     _tourControllers.clear();
     _saleControllers.clear();
     _stockControllers.clear();
-    _collectionControllers.clear();
+
   }
 }

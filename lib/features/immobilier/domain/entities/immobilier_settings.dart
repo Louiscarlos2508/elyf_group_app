@@ -3,9 +3,6 @@
 class ImmobilierSettings {
   const ImmobilierSettings({
     required this.enterpriseId,
-    this.receiptHeader = 'ELYF IMMOBILIER',
-    this.receiptFooter = 'Merci de votre confiance !',
-    this.showLogo = true,
     this.overdueGracePeriod = 5,
     this.autoBillingEnabled = true,
     this.penaltyRate = 0.0,
@@ -16,9 +13,6 @@ class ImmobilierSettings {
   });
 
   final String enterpriseId;
-  final String receiptHeader;
-  final String receiptFooter;
-  final bool showLogo;
   final int overdueGracePeriod;
   final bool autoBillingEnabled;
   final double penaltyRate;
@@ -31,9 +25,6 @@ class ImmobilierSettings {
 
   ImmobilierSettings copyWith({
     String? enterpriseId,
-    String? receiptHeader,
-    String? receiptFooter,
-    bool? showLogo,
     int? overdueGracePeriod,
     bool? autoBillingEnabled,
     double? penaltyRate,
@@ -44,9 +35,6 @@ class ImmobilierSettings {
   }) {
     return ImmobilierSettings(
       enterpriseId: enterpriseId ?? this.enterpriseId,
-      receiptHeader: receiptHeader ?? this.receiptHeader,
-      receiptFooter: receiptFooter ?? this.receiptFooter,
-      showLogo: showLogo ?? this.showLogo,
       overdueGracePeriod: overdueGracePeriod ?? this.overdueGracePeriod,
       autoBillingEnabled: autoBillingEnabled ?? this.autoBillingEnabled,
       penaltyRate: penaltyRate ?? this.penaltyRate,
@@ -60,9 +48,6 @@ class ImmobilierSettings {
   factory ImmobilierSettings.fromMap(Map<String, dynamic> map) {
     return ImmobilierSettings(
       enterpriseId: map['enterpriseId'] as String? ?? 'default',
-      receiptHeader: map['receiptHeader'] as String? ?? 'ELYF IMMOBILIER',
-      receiptFooter: map['receiptFooter'] as String? ?? 'Merci de votre confiance !',
-      showLogo: map['showLogo'] as bool? ?? true,
       overdueGracePeriod: (map['overdueGracePeriod'] as num?)?.toInt() ?? 5,
       autoBillingEnabled: map['autoBillingEnabled'] as bool? ?? true,
       penaltyRate: (map['penaltyRate'] as num?)?.toDouble() ?? 0.0,
@@ -76,9 +61,6 @@ class ImmobilierSettings {
   Map<String, dynamic> toMap() {
     return {
       'enterpriseId': enterpriseId,
-      'receiptHeader': receiptHeader,
-      'receiptFooter': receiptFooter,
-      'showLogo': showLogo,
       'overdueGracePeriod': overdueGracePeriod,
       'autoBillingEnabled': autoBillingEnabled,
       'penaltyRate': penaltyRate,

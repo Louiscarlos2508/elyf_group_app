@@ -27,7 +27,7 @@ Ce document décrit l'architecture mise en place pour assurer la cohérence des 
 **Solutions :**
 - ✅ `TransactionService` : Service de transactions atomiques
 - ✅ Rollback automatique en cas d'erreur
-- ✅ Opérations critiques : Vente, Clôture tour, Paiement collection
+- ✅ Opérations critiques : Vente, Clôture tour
 
 ### 3. Écoute en temps réel
 
@@ -66,10 +66,8 @@ final errors = await consistencyService.validateGlobalConsistency(
 
 **Validations effectuées :**
 - ✅ Stock disponible avant vente
-- ✅ Quantités cohérentes (fuites ≤ bouteilles collectées)
-- ✅ Montants cohérents (paiement ≤ montant dû)
-- ✅ Dates logiques (collection → transport → retour → clôture)
-- ✅ Collections appartenant au bon tour
+- ✅ Stock disponible avant vente
+- ✅ Dates logiques (transport → retour → clôture)
 
 ### TransactionService
 
@@ -85,14 +83,6 @@ final sale = await transactionService.executeSaleTransaction(
 // Clôture tour atomique
 final tour = await transactionService.executeTourClosureTransaction(
   tourId: tourId,
-);
-
-// Paiement collection atomique
-final collection = await transactionService.executeCollectionPaymentTransaction(
-  tourId: tourId,
-  collectionId: collectionId,
-  amount: amount,
-  paymentDate: DateTime.now(),
 );
 ```
 
@@ -133,10 +123,6 @@ enterprises/{enterpriseId}/modules/{moduleId}/
 │   └── {cylinderId}
 ├── cylinder_stocks/
 │   └── {stockId}
-├── tours/
-│   └── {tourId}
-│       └── collections/
-│           └── {collectionId}
 ├── gas_sales/
 │   └── {saleId}
 ├── expenses/
@@ -288,7 +274,6 @@ class TourController {
 - [ ] FirestoreTourRepository avec Stream
 - [ ] FirestoreGasSaleRepository avec Stream
 - [ ] FirestoreCylinderStockRepository avec Stream
-- [ ] FirestoreCollectionRepository avec Stream
 
 ### Phase 3 : Synchronisation Drift (⏳ À faire)
 - [ ] Tables/DAO Drift pour les entités (ou stockage générique renforcé)

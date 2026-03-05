@@ -3,20 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart' hide currentUserIdProvider;
 import 'package:elyf_groupe_app/core/auth/providers.dart';
-import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/tour.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder.dart';
-import 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder_stock.dart';
-import 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder_leak.dart';
-import 'package:elyf_groupe_app/features/gaz/domain/services/gaz_stock_calculation_service.dart';
-import 'package:elyf_groupe_app/features/gaz/presentation/widgets/wholesale/independent_collection_dialog.dart';
-import 'package:elyf_groupe_app/features/gaz/domain/entities/collection.dart';
+import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
+import 'package:elyf_groupe_app/features/gaz/domain/entities/wholesaler.dart';
+import 'package:elyf_groupe_app/features/administration/application/providers.dart' as admin_providers;
+import 'package:elyf_groupe_app/features/gaz/presentation/widgets/wholesaler_form_dialog.dart';
 
-/// Contenu de l'étape Chargement du tour.
-///
-/// Permet de saisir les quantités de bouteilles vides à charger
-/// pour les échanger chez le fournisseur.
+/// Contenu de l'étape Chargement du tour (Vides uniquement).
 class LoadingStepContent extends ConsumerStatefulWidget {
   const LoadingStepContent({
     super.key,
@@ -34,19 +29,151 @@ class LoadingStepContent extends ConsumerStatefulWidget {
 }
 
 class _LoadingStepContentState extends ConsumerState<LoadingStepContent> {
-  final Map<int, TextEditingController> _emptyControllers = {};
-  final Map<int, TextEditingController> _leakingControllers = {};
-  final bool _loadingSettings = false;
+  late List<TourLoadingSource> _loadingSources;
+  bool _initialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadingSources = List.from(widget.tour.loadingSources);
+    if (_loadingSources.isEmpty) {
+      // Add a default entry if empty? Or just let user add.
+    }
+    _initialized = true;
+  }
+
+  @override
+  void didUpdateWidget(LoadingStepContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.tour.id != oldWidget.tour.id) {
+      setState(() {
+        _loadingSources = List.from(widget.tour.loadingSources);
+      });
+    }
+  }
 
   @override
   void dispose() {
-    for (final controller in _emptyControllers.values) {
-      controller.dispose();
-    }
-    for (final controller in _leakingControllers.values) {
-      controller.dispose();
-    }
     super.dispose();
+  }
+
+  void _addSource(TourLoadingSourceType type) {
+    showDialog(
+      context: context,
+      builder: (context) => Consumer(
+        builder: (context, ref, child) {
+          if (type == TourLoadingSourceType.pos) {
+            final posAsync = ref.watch(admin_providers.enterprisesByParentAndTypeProvider((
+              parentId: widget.enterpriseId,
+              type: EnterpriseType.gasPointOfSale,
+            )));
+            return posAsync.when(
+              data: (posList) => _buildSelectionDialog(
+                context,
+                title: 'Choisir un Point de Vente',
+                items: posList.map((e) => (id: e.id, name: e.name)).toList(),
+                type: type,
+              ),
+              loading: () => const AlertDialog(
+                content: SizedBox(height: 100, child: Center(child: CircularProgressIndicator())),
+              ),
+              error: (e, _) => AlertDialog(title: const Text('Erreur'), content: Text('$e')),
+            );
+          } else {
+            final wholesalersAsync = ref.watch(wholesalersProvider);
+            return wholesalersAsync.when(
+              data: (wholesalers) => _buildSelectionDialog(
+                context,
+                title: 'Choisir un Grossiste',
+                items: wholesalers.map((w) => (id: w.id, name: w.name)).toList(),
+                type: type,
+              ),
+              loading: () => const AlertDialog(
+                content: SizedBox(height: 100, child: Center(child: CircularProgressIndicator())),
+              ),
+              error: (e, _) => AlertDialog(title: const Text('Erreur'), content: Text('$e')),
+            );
+          }
+        },
+      ),
+    );
+  }
+
+  Widget _buildSelectionDialog(
+    BuildContext context, {
+    required String title,
+    required List<({String id, String name})> items,
+    required TourLoadingSourceType type,
+  }) {
+    return AlertDialog(
+      title: Text(title),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (type == TourLoadingSourceType.wholesaler) ...[
+              ListTile(
+                leading: const Icon(Icons.add_circle_outline, color: Colors.blue),
+                title: const Text('Créer un nouveau grossiste', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
+                onTap: () async {
+                  final result = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => WholesalerFormDialog(enterpriseId: widget.enterpriseId),
+                  );
+                  if (result == true && mounted) {
+                    ref.invalidate(wholesalersProvider);
+                    Navigator.pop(context);
+                    // Re-open dialog to see the new one? Or automatically add it?
+                    // Let's re-open by calling _addSource again on next frame or just let user re-click.
+                    // Better: just Navigator.pop and let them re-click.
+                  }
+                },
+              ),
+              const Divider(),
+            ],
+            if (items.isEmpty)
+              const Padding(
+                padding: EdgeInsets.all(24),
+                child: Text('Aucun élément trouvé', textAlign: TextAlign.center),
+              )
+            else
+              Flexible(
+                child: Scrollbar(
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    itemCount: items.length,
+                    separatorBuilder: (_, __) => const Divider(height: 1),
+                    itemBuilder: (context, index) {
+                      final item = items[index];
+                      return ListTile(
+                        title: Text(item.name),
+                        trailing: const Icon(Icons.chevron_right, size: 18),
+                        onTap: () {
+                          setState(() {
+                            if (!_loadingSources.any((s) => s.id == item.id)) {
+                              _loadingSources.add(TourLoadingSource(
+                                id: item.id,
+                                type: type,
+                                sourceName: item.name,
+                                quantities: {},
+                              ));
+                            }
+                          });
+                          Navigator.pop(context);
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Annuler')),
+      ],
+    );
   }
 
   @override
@@ -54,194 +181,164 @@ class _LoadingStepContentState extends ConsumerState<LoadingStepContent> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final cylindersAsync = ref.watch(cylindersProvider);
-    final emptyStocksAsync = ref.watch(gazStocksProvider);
-    final reportedLeaksAsync = ref.watch(cylinderLeaksProvider((
-      enterpriseId: widget.enterpriseId,
-      status: LeakStatus.reported,
-    )));
-
-    final activeEnterprise = ref.watch(activeEnterpriseProvider).value;
-    final isPos = activeEnterprise?.id == widget.enterpriseId && (activeEnterprise?.isPointOfSale ?? false);
-    final collectionsAsync = ref.watch(tourCollectionsProvider(widget.tour.id));
 
     return cylindersAsync.when(
       data: (cylinders) {
         final weights = cylinders.map((c) => c.weight).toSet().toList()..sort();
-        final allStocks = (emptyStocksAsync.value ?? [])
-            .where((s) => s.enterpriseId == widget.enterpriseId && s.siteId == null)
-            .toList();
-        final emptyStocks = GazStockCalculationService.filterEmptyStocks(allStocks);
-        
-        // Initialize controllers for weights if not already present
-        bool neededSettingsLoad = false;
-        for (final weight in weights) {
-          if (!_emptyControllers.containsKey(weight)) {
-            _emptyControllers[weight] = TextEditingController(
-              text: (widget.tour.emptyBottlesLoaded[weight] ?? 0).toString(),
-            );
-            _leakingControllers[weight] = TextEditingController(
-              text: (widget.tour.leakingBottlesLoaded[weight] ?? 0).toString(),
-            );
-            neededSettingsLoad = true;
-          }
-        }
 
-        if (neededSettingsLoad) {
-          // Additional logic if required, skipped nominal stocks
-        }
+        return Column(
+          children: [
+            // Header & Actions
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Icon(Icons.inventory_2_outlined, size: 20, color: theme.colorScheme.primary),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Multi-Sources : Chargement Vides',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                  const Spacer(),
+                  PopupMenuButton<TourLoadingSourceType>(
+                    icon: const Icon(Icons.add_circle_outline),
+                    tooltip: 'Ajouter une source',
+                    onSelected: _addSource,
+                    itemBuilder: (context) => [
+                      const PopupMenuItem(
+                        value: TourLoadingSourceType.pos,
+                        child: Text('Ajouter Point de Vente'),
+                      ),
+                      const PopupMenuItem(
+                        value: TourLoadingSourceType.wholesaler,
+                        child: Text('Ajouter Grossiste'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
 
-        return Container(
-          decoration: BoxDecoration(
-            color: isDark ? theme.colorScheme.surfaceContainerLow : Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
-            boxShadow: [
-              if (!isDark)
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
+            if (_loadingSources.isEmpty)
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                child: Row(
+                padding: const EdgeInsets.symmetric(vertical: 32),
+                child: Center(
+                  child: Column(
+                    children: [
+                      Icon(Icons.add_business_outlined, size: 48, color: theme.colorScheme.outline),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Aucune source de chargement ajoutée',
+                        style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.outline),
+                      ),
+                      const SizedBox(height: 16),
+                      TextButton.icon(
+                        onPressed: () => _addSource(TourLoadingSourceType.pos),
+                        icon: const Icon(Icons.add),
+                        label: const Text('Ajouter un Point de Vente'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+            // Source Cards
+            ...List.generate(_loadingSources.length, (sourceIndex) {
+              final source = _loadingSources[sourceIndex];
+              return Card(
+                margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  side: BorderSide(color: theme.colorScheme.outlineVariant),
+                ),
+                child: Column(
                   children: [
-                    Icon(Icons.inventory_2_outlined, size: 20, color: theme.colorScheme.primary),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Chargement des bouteilles vides',
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.primary,
+                    ListTile(
+                      dense: true,
+                      leading: Icon(
+                        source.type == TourLoadingSourceType.pos ? Icons.storefront : Icons.factory_outlined,
+                        color: theme.colorScheme.secondary,
+                      ),
+                      title: Text(
+                        source.sourceName,
+                        style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: Text(source.type == TourLoadingSourceType.pos ? 'Point de Vente' : 'Grossiste'),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.delete_outline, color: Colors.red),
+                        onPressed: () => setState(() => _loadingSources.removeAt(sourceIndex)),
+                      ),
+                    ),
+                    const Divider(height: 1),
+                    Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Wrap(
+                        spacing: 12,
+                        runSpacing: 12,
+                        children: weights.map((weight) {
+                          final qty = source.quantities[weight] ?? 0;
+                          return IntrinsicWidth(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    '${weight}kg',
+                                    style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.bold),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  _buildQtyActions(
+                                    context: context,
+                                    qty: qty,
+                                    onChanged: (newQty) {
+                                      setState(() {
+                                        final updatedQuantities = Map<int, int>.from(source.quantities);
+                                        if (newQty > 0) {
+                                          updatedQuantities[weight] = newQty;
+                                        } else {
+                                          updatedQuantities.remove(weight);
+                                        }
+                                        _loadingSources[sourceIndex] = source.copyWith(quantities: updatedQuantities);
+                                      });
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }).toList(),
                       ),
                     ),
                   ],
                 ),
-              ),
-              const Divider(height: 1),
-              ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: weights.length,
-                separatorBuilder: (context, index) => const Divider(height: 1, indent: 16, endIndent: 16),
-                itemBuilder: (context, index) {
-                  final weight = weights[index];
-                  final cylinderId = cylinders.any((Cylinder c) => c.weight == weight) 
-                      ? cylinders.firstWhere((Cylinder c) => c.weight == weight).id 
-                      : '';
-                  final atStoreQty = allStocks
-                      .where((s) => s.cylinderId == cylinderId && s.status == CylinderStatus.emptyAtStore)
-                      .fold<int>(0, (sum, s) => sum + s.quantity);
-                  final inTransitQty = allStocks
-                      .where((s) => s.cylinderId == cylinderId && s.status == CylinderStatus.emptyInTransit)
-                      .fold<int>(0, (sum, s) => sum + s.quantity);
-                  final availableEmpty = atStoreQty + inTransitQty;
+              );
+            }),
 
-                  final leakQty = allStocks
-                      .where((s) => s.cylinderId == cylinderId && s.status == CylinderStatus.leak)
-                      .fold<int>(0, (sum, s) => sum + s.quantity);
-                  final leakInTransitQty = allStocks
-                      .where((s) => s.cylinderId == cylinderId && s.status == CylinderStatus.leakInTransit)
-                      .fold<int>(0, (sum, s) => sum + s.quantity);
-                  final availableLeak = leakQty + leakInTransitQty;
-                  
-                  final emptyController = _emptyControllers[weight];
-                  final emptyTyped = int.tryParse(emptyController?.text ?? '0') ?? 0;
-
-                  final leakingController = _leakingControllers[weight];
-                  final leakingTyped = int.tryParse(leakingController?.text ?? '0') ?? 0;
-
-                  // Calcul du max pour les fuites basé sur les signalements réels
-                  final reportedLeaks = reportedLeaksAsync.value ?? [];
-                  final reportedForWeight = reportedLeaks
-                      .where((l) => l.weight == weight && l.cylinderId == cylinderId)
-                      .length;
-                  final maxLeakAvailable = reportedForWeight + (widget.tour.leakingBottlesLoaded[weight] ?? 0);
-
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    child: Row(
-                      children: [
-                        // Left: Weight info
-                        SizedBox(
-                          width: 60,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '$weight',
-                                style: theme.textTheme.headlineSmall?.copyWith(
-                                  fontWeight: FontWeight.w900,
-                                  color: theme.colorScheme.onSurface,
-                                ),
-                              ),
-                              Text(
-                                'kg',
-                                style: theme.textTheme.labelSmall?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        
-                        // Right: Interactive Entry (Empty & Leaking)
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              // Empty Row
-                              _buildInputRow(
-                                context: context,
-                                label: 'Vides',
-                                controller: emptyController,
-                                typedQty: emptyTyped,
-                                accentColor: theme.colorScheme.primary,
-                              ),
-                              const SizedBox(height: 8),
-                              // Leaking Row
-                              _buildInputRow(
-                                context: context,
-                                label: 'Fuites',
-                                controller: leakingController,
-                                typedQty: leakingTyped,
-                                accentColor: Colors.redAccent,
-                                isLeak: true,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-              const Divider(height: 1),
-              
-              // Wholesaler (Grossistes) Section
-              _buildWholesalerSection(context, theme, collectionsAsync),
-
-              const Divider(height: 1),
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: FilledButton.icon(
-                  onPressed: () => _saveLoading(cylinders, emptyStocks),
-                  icon: const Icon(Icons.local_shipping_outlined, size: 20),
-                  label: const Text('Valider le chargement'),
-                  style: FilledButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 54),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
+            const SizedBox(height: 32),
+            
+            // Validation button
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: FilledButton.icon(
+                onPressed: _loadingSources.isEmpty ? null : _saveLoading,
+                icon: const Icon(Icons.local_shipping_outlined, size: 20),
+                label: const Text('Valider le chargement'),
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 54),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         );
       },
       loading: () => const Center(
@@ -251,71 +348,102 @@ class _LoadingStepContentState extends ConsumerState<LoadingStepContent> {
         ),
       ),
       error: (e, _) => Center(
-        child: Text('Erreur lors du chargement des types de bouteilles: $e'),
+        child: Text('Erreur: $e'),
       ),
     );
   }
 
-  Future<void> _saveLoading(List<Cylinder> cylinders, List<CylinderStock> allStocks) async {
-    final emptyBottles = <int, int>{};
-    final leakingBottles = <int, int>{};
-    final errors = <String>[];
+  Widget _buildQtyActions({
+    required BuildContext context,
+    required int qty,
+    required ValueChanged<int> onChanged,
+  }) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        GestureDetector(
+          onTap: qty > 0 ? () => onChanged(qty - 1) : null,
+          child: Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: qty > 0 ? Colors.grey.withOpacity(0.2) : Colors.transparent,
+            ),
+            child: Icon(Icons.remove, size: 16, color: qty > 0 ? null : Colors.grey),
+          ),
+        ),
+        GestureDetector(
+          onTap: () => _showManualQtyDialog(context, qty, onChanged),
+          child: Container(
+            width: 48,
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey.withOpacity(0.3)),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              qty.toString(),
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+          ),
+        ),
+        GestureDetector(
+          onTap: () => onChanged(qty + 1),
+          child: Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.grey.withOpacity(0.2),
+            ),
+            child: const Icon(Icons.add, size: 16),
+          ),
+        ),
+      ],
+    );
+  }
 
-    // 1. Validation Bouteilles Vides
-    for (final entry in _emptyControllers.entries) {
-      final weight = entry.key;
-      final qty = int.tryParse(entry.value.text) ?? 0;
-      final oldQty = widget.tour.emptyBottlesLoaded[weight] ?? 0;
-      final delta = qty - oldQty;
+  Future<void> _showManualQtyDialog(BuildContext context, int initialValue, ValueChanged<int> onChanged) async {
+    final controller = TextEditingController(text: initialValue.toString());
+    final result = await showDialog<int?>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Saisir la quantité'),
+        content: TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: 'Nombre de bouteilles',
+            border: OutlineInputBorder(),
+          ),
+          onSubmitted: (val) {
+            final parsed = int.tryParse(val);
+            Navigator.pop(context, parsed);
+          },
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Annuler')),
+          FilledButton(
+            onPressed: () {
+              final parsed = int.tryParse(controller.text);
+              Navigator.pop(context, parsed);
+            },
+            child: const Text('Valider'),
+          ),
+        ],
+      ),
+    );
 
-      if (delta > 0) {
-        final cylinderId = cylinders.firstWhere((Cylinder c) => c.weight == weight).id;
-        final emptyAtStore = allStocks
-            .where((s) => s.cylinderId == cylinderId && s.status == CylinderStatus.emptyAtStore)
-            .fold<int>(0, (sum, s) => sum + s.quantity);
-
-        if (delta > emptyAtStore) {
-          errors.add('Vides $weight kg : +$delta demandés, mais seulement $emptyAtStore au magasin');
-        }
-      }
-      if (qty > 0) emptyBottles[weight] = qty;
+    if (result != null && result >= 0) {
+      onChanged(result);
     }
+  }
 
-    // 2. Validation Bouteilles avec Fuite
-    for (final entry in _leakingControllers.entries) {
-      final weight = entry.key;
-      final qty = int.tryParse(entry.value.text) ?? 0;
-      final oldQty = widget.tour.leakingBottlesLoaded[weight] ?? 0;
-      final delta = qty - oldQty;
-
-      if (delta > 0) {
-        final cylinderId = cylinders.firstWhere((Cylinder c) => c.weight == weight).id;
-        
-        // 1. Check physical stock
-        final leaksAtStore = allStocks
-            .where((s) => s.cylinderId == cylinderId && s.status == CylinderStatus.leak)
-            .fold<int>(0, (sum, s) => sum + s.quantity);
-
-        if (delta > leaksAtStore) {
-          errors.add('Fuites $weight kg : +$delta demandés, mais seulement $leaksAtStore en stock physique');
-        }
-
-      // Checking reported records can be kept if desired, but we removed it to keep UI simple
-      // and match the pure declarative nature requested.
-      }
-      if (qty > 0) leakingBottles[weight] = qty;
-    }
-
-    if (errors.isNotEmpty) {
-      if (mounted) {
-        NotificationService.showError(context, 'Stock insuffisant :\n${errors.join('\n')}');
-      }
-      return;
-    }
-
-    if (emptyBottles.isEmpty && leakingBottles.isEmpty) {
-      if (mounted) NotificationService.showError(context, 'Saisissez au moins une quantité');
-      return;
+  Future<void> _saveLoading() async {
+    if (_loadingSources.isEmpty) {
+       NotificationService.showError(context, 'Ajoutez au moins une source de chargement');
+       return;
     }
 
     try {
@@ -323,257 +451,23 @@ class _LoadingStepContentState extends ConsumerState<LoadingStepContent> {
       final userId = ref.read(currentUserIdProvider);
 
       if (userId == null) {
-        if (mounted) NotificationService.showError(context, 'Utilisateur non identifié');
+        NotificationService.showError(context, 'Utilisateur non identifié');
         return;
       }
 
       await controller.updateEmptyBottlesLoaded(
         widget.tour.id,
-        emptyBottles,
+        _loadingSources,
         userId,
-        leakingQuantities: leakingBottles,
       );
 
       if (mounted) {
-        NotificationService.showSuccess(context, 'Chargement enregistré');
+        NotificationService.showSuccess(context, 'Chargement multi-sources enregistré');
         ref.invalidate(tourProvider(widget.tour.id));
         widget.onSaved?.call();
       }
     } catch (e) {
       if (mounted) NotificationService.showError(context, 'Erreur: $e');
     }
-  }
-
-  Widget _buildStockMini(BuildContext context, String label, int value, Color color, {bool isItalic = false}) {
-    final theme = Theme.of(context);
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label.toUpperCase(),
-          style: theme.textTheme.labelSmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
-            fontSize: 9,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 0.5,
-            fontStyle: isItalic ? FontStyle.italic : null,
-          ),
-        ),
-        Text(
-          value.toString(),
-          style: theme.textTheme.labelMedium?.copyWith(
-            color: color,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCircleButton({
-    required IconData icon,
-    VoidCallback? onPressed,
-    Color? color,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(
-          color: (color ?? Colors.grey).withValues(alpha: 0.2),
-        ),
-      ),
-      child: IconButton(
-        onPressed: onPressed,
-        icon: Icon(icon, size: 18),
-        color: color,
-        visualDensity: VisualDensity.compact,
-        padding: EdgeInsets.zero,
-        constraints: BoxConstraints.tight(const Size(32, 32)),
-      ),
-    );
-  }
-
-  Widget _buildInputRow({
-    required BuildContext context,
-    required String label,
-    required TextEditingController? controller,
-    required int typedQty,
-    required Color accentColor,
-    bool isLeak = false,
-  }) {
-    final theme = Theme.of(context);
-    return Row(
-      children: [
-        // Stock labels (Removed)
-        const Expanded(child: SizedBox()),
-        const SizedBox(width: 16),
-        // Interactions
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildCircleButton(
-              icon: Icons.remove,
-              onPressed: typedQty > 0 ? () {
-                setState(() {
-                  controller?.text = (typedQty - 1).toString();
-                });
-              } : null,
-            ),
-            Container(
-              width: 40,
-              margin: const EdgeInsets.symmetric(horizontal: 4),
-              child: TextField(
-                controller: controller,
-                keyboardType: TextInputType.number,
-                textAlign: TextAlign.center,
-                style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
-                decoration: const InputDecoration(
-                  isDense: true,
-                  contentPadding: EdgeInsets.zero,
-                  border: InputBorder.none,
-                ),
-                onChanged: (v) {
-                  setState(() {});
-                },
-              ),
-            ),
-            _buildCircleButton(
-              icon: Icons.add,
-              onPressed: () {
-                setState(() {
-                  controller?.text = (typedQty + 1).toString();
-                });
-              },
-              color: accentColor,
-            ),
-            const SizedBox(width: 8),
-            // Removed MAX button since there is no limit
-            const SizedBox(width: 28),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildWholesalerSection(
-    BuildContext context, 
-    ThemeData theme, 
-    AsyncValue<List<Collection>> collectionsAsync,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Icon(Icons.business_outlined, size: 20, color: theme.colorScheme.secondary),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Détenteurs Externes (Grossistes & POS)',
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.secondary,
-                    ),
-                  ),
-                ],
-              ),
-              TextButton.icon(
-                onPressed: () => _addWholesalerCollection(context),
-                icon: const Icon(Icons.add, size: 18),
-                label: const Text('Ajouter'),
-                style: TextButton.styleFrom(
-                  visualDensity: VisualDensity.compact,
-                  foregroundColor: theme.colorScheme.secondary,
-                ),
-              ),
-            ],
-          ),
-        ),
-        collectionsAsync.when(
-          data: (collections) {
-            final externalCollections = collections.where((c) => c.type == CollectionType.wholesaler || c.type == CollectionType.pointOfSale).toList();
-            if (externalCollections.isEmpty) {
-              return Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Text(
-                  'Aucune collecte externe (POS/Grossiste) ajoutée',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    fontStyle: FontStyle.italic,
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              );
-            }
-            return ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: externalCollections.length,
-              separatorBuilder: (context, index) => const Divider(height: 1, indent: 40),
-              itemBuilder: (context, index) {
-                final collection = externalCollections[index];
-                final isWholesaler = collection.type == CollectionType.wholesaler;
-                return ListTile(
-                  dense: true,
-                  leading: CircleAvatar(
-                    radius: 12,
-                    backgroundColor: isWholesaler ? theme.colorScheme.secondaryContainer : theme.colorScheme.tertiaryContainer,
-                    child: Text(
-                      collection.clientName.characters.first.toUpperCase(),
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        color: isWholesaler ? theme.colorScheme.onSecondaryContainer : theme.colorScheme.onTertiaryContainer,
-                      ),
-                    ),
-                  ),
-                  title: Text(
-                    collection.clientName,
-                    style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                  subtitle: Text(
-                    collection.emptyBottles.entries
-                        .map((e) => '${e.value} x ${e.key}kg')
-                        .join(', '),
-                    style: theme.textTheme.bodySmall,
-                  ),
-                  trailing: Text(
-                    '${collection.totalEmptyBottles} btl',
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      color: isWholesaler ? theme.colorScheme.secondary : theme.colorScheme.tertiary,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                );
-              },
-            );
-          },
-          loading: () => const Padding(
-            padding: EdgeInsets.all(8.0),
-            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-          ),
-          error: (e, _) => Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Text('Erreur: $e', style: const TextStyle(color: Colors.red, fontSize: 10)),
-          ),
-        ),
-      ],
-    );
-  }
-
-  void _addWholesalerCollection(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => IndependentCollectionDialog(
-        enterpriseId: widget.enterpriseId,
-        tourId: widget.tour.id,
-        // No initialType, let user choose between POS and Wholesaler
-      ),
-    );
   }
 }

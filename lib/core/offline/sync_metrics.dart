@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import '../logging/app_logger.dart';
+import '../monitoring/monitoring_service.dart';
 
 /// Métriques de synchronisation pour monitoring et analytics.
 ///
@@ -246,27 +247,30 @@ class SyncMetrics {
 
 /// Service pour exporter les métriques vers Firebase Analytics ou autres services.
 class SyncMetricsExporter {
-  /// Exporte les métriques vers Firebase Analytics (si disponible).
-  ///
-  /// Nécessite le package firebase_analytics.
-  static Future<void> exportToFirebaseAnalytics(SyncMetrics metrics) async {
+  /// Exporte les métriques vers l'outil d'analytics configuré.
+  static Future<void> exportToAnalytics(
+    SyncMetrics metrics,
+    MonitoringService monitoring, {
+    String? module,
+  }) async {
     try {
-      // Import conditionnel pour éviter la dépendance si non utilisée
-      // final analytics = FirebaseAnalytics.instance;
-      // await analytics.logEvent(
-      //   name: 'sync_metrics',
-      //   parameters: metrics.toJson(),
-      // );
+      // We log the detailed sync metrics. We convert the complex maps to strings 
+      // since logEvent only accepts simple types.
+      final payload = metrics.toJson();
+      final safePayload = payload.map((k, v) => MapEntry(k, v.toString()));
 
+      await monitoring.logEvent('detailed_sync_metrics', safePayload);
+      
       AppLogger.info(
-        'Metrics export to Firebase Analytics (not implemented - requires firebase_analytics package)',
+        'Metrics exported to Analytics backend.',
         name: 'sync.metrics.export',
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
       AppLogger.error(
-        'Error exporting metrics to Firebase Analytics: $e',
+        'Error exporting metrics to Analytics: $e',
         name: 'sync.metrics.export',
         error: e,
+        stackTrace: stackTrace,
       );
     }
   }

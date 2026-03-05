@@ -28,7 +28,14 @@ class PosStockDialog extends ConsumerWidget {
       )),
     );
 
-    final cylindersAsync = ref.watch(cylindersProvider);
+    final cylindersAsync = ref.watch(
+      pointOfSaleCylindersProvider((
+        pointOfSaleId: enterprise.id,
+        enterpriseId: enterpriseId,
+        moduleId: 'gaz',
+      )),
+    );
+
     final settingsAsync = ref.watch(gazSettingsProvider((
       enterpriseId: enterprise.id,
       moduleId: 'gaz',
@@ -53,141 +60,154 @@ class PosStockDialog extends ConsumerWidget {
         ),
         child: stocksAsync.when(
           data: (allStocks) {
-            // Filtrer les stocks pour ce point de vente
-            final posStocks = allStocks
-                .where((s) => s.enterpriseId == enterprise.id)
-                .toList();
+            return cylindersAsync.when(
+              data: (cylinders) {
+                // Filtrer les stocks pour ce point de vente
+                final posStocks = allStocks
+                    .where((s) => s.enterpriseId == enterprise.id)
+                    .toList();
 
-            final cylinders = cylindersAsync.value ?? [];
-            final settings = settingsAsync.value;
+                final settings = settingsAsync.value;
 
-            final metrics = GazStockCalculationService.calculatePosStockMetrics(
-              enterpriseId: enterprise.id,
-              siteId: null,
-              allStocks: allStocks,
-              cylinders: cylinders,
-            );
+                final metrics = GazStockCalculationService.calculatePosStockMetrics(
+                  enterpriseId: enterprise.id,
+                  siteId: null,
+                  allStocks: allStocks,
+                  cylinders: cylinders,
+                );
 
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Expanded(
-                      child: Text(
-                        'Stock - ${enterprise.name}',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Stock - ${enterprise.name}',
+                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        ElyfIconButton(
+                          icon: Icons.close,
+                          onPressed: () => Navigator.of(context).pop(),
+                          useGlassEffect: false,
+                          size: 32,
+                          iconSize: 20,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Flexible(
+                      child: SingleChildScrollView(
+                        child: PointOfSaleStockCard(
+                          enterprise: enterprise,
+                          fullBottles: metrics.totalFull,
+                          emptyBottles: metrics.totalEmpty,
+                          totalInTransit: metrics.totalInTransit,
+                          issueBottles: metrics.totalIssues,
+                          stockByCapacity: metrics.stockByCapacity,
                         ),
                       ),
                     ),
-                    ElyfIconButton(
-                      icon: Icons.close,
-                      onPressed: () => Navigator.of(context).pop(),
-                      useGlassEffect: false,
-                      size: 32,
-                      iconSize: 20,
-                    ),
                   ],
-                ),
-                const SizedBox(height: 16),
-                Flexible(
-                  child: SingleChildScrollView(
-                    child: PointOfSaleStockCard(
-                      enterprise: enterprise,
-                      fullBottles: metrics.totalFull,
-                      emptyBottles: metrics.totalEmpty,
-                      totalInTransit: metrics.totalInTransit,
-                      issueBottles: metrics.totalIssues,
-                      stockByCapacity: metrics.stockByCapacity,
-                    ),
-                  ),
-                ),
-              ],
+                );
+              },
+              loading: () => _buildLoadingState(context),
+              error: (error, _) => _buildErrorState(context, error),
             );
           },
-          loading: () => Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Stock - ${enterprise.name}',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.of(context).pop(),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(
-                      minWidth: 32,
-                      minHeight: 32,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(24),
-                  child: CircularProgressIndicator(),
+          loading: () => _buildLoadingState(context),
+          error: (error, _) => _buildErrorState(context, error),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoadingState(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Text(
+                'Stock - ${enterprise.name}',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
                 ),
               ),
-            ],
+            ),
+            IconButton(
+              icon: const Icon(Icons.close),
+              onPressed: () => Navigator.of(context).pop(),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(
+                minWidth: 32,
+                minHeight: 32,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        const Center(
+          child: Padding(
+            padding: EdgeInsets.all(24),
+            child: CircularProgressIndicator(),
           ),
-          error: (error, _) => Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Stock - ${enterprise.name}',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.of(context).pop(),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(
-                      minWidth: 32,
-                      minHeight: 32,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Center(
-                child: Column(
-                  children: [
-                    Icon(
-                      Icons.error_outline,
-                      size: 48,
-                      color: Theme.of(context).colorScheme.error,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      error.toString(),
-                      style: Theme.of(context).textTheme.bodySmall,
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildErrorState(BuildContext context, Object error) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Text(
+                'Stock - ${enterprise.name}',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
                 ),
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.close),
+              onPressed: () => Navigator.of(context).pop(),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(
+                minWidth: 32,
+                minHeight: 32,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Center(
+          child: Column(
+            children: [
+              Icon(
+                Icons.error_outline,
+                size: 48,
+                color: Theme.of(context).colorScheme.error,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                error.toString(),
+                style: Theme.of(context).textTheme.bodySmall,
+                textAlign: TextAlign.center,
               ),
             ],
           ),
         ),
-      ),
+      ],
     );
   }
 }

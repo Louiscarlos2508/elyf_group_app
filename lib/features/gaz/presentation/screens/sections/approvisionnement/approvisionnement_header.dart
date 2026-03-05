@@ -18,7 +18,7 @@ class ApprovisionnementHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return GazHeader(
       title: 'APPROVISIONNEMENT',
-      subtitle: 'Cycles de collecte',
+      subtitle: 'Gestion des Tours',
       asSliver: false,
       actions: [
         ElyfButton(

@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:developer' as developer;
 
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -61,6 +63,16 @@ Future<ProviderContainer> bootstrap() async {
     } catch (_) {
       // Really failed to initialize
     }
+  }
+
+  // Enable Crashlytics collection (off in debug to avoid noise).
+  try {
+    await FirebaseCrashlytics.instance
+        .setCrashlyticsCollectionEnabled(!kDebugMode);
+    developer.log('Crashlytics collection enabled: ${!kDebugMode}',
+        name: 'bootstrap');
+  } catch (e) {
+    developer.log('Crashlytics setup error: $e', name: 'bootstrap');
   }
   
   // Secondary Management App

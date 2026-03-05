@@ -9,15 +9,20 @@ import '../tenant/tenant_provider.dart';
 import 'sync/sync_conflict_resolver.dart';
 export 'base_providers.dart';
 
+import '../monitoring/monitoring_providers.dart';
+
 /// Provider for sync metadata for a specific entity (stub returns null).
 
 /// Provider for FirestoreSyncService (Admin module)
 final firestoreSyncServiceProvider = Provider<FirestoreSyncService>((ref) {
   final driftService = ref.watch(driftServiceProvider);
   final firestore = ref.watch(firestoreProvider);
+  final monitoring = ref.watch(monitoringServiceProvider);
+  
   return FirestoreSyncService(
     driftService: driftService,
     firestore: firestore,
+    monitoring: monitoring,
   );
 });
 

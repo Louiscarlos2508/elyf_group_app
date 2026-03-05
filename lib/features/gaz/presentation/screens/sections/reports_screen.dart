@@ -78,26 +78,19 @@ class _GazReportsScreenState extends ConsumerState<GazReportsScreen> {
         builder: (context) => const Center(child: CircularProgressIndicator()),
       );
 
-      // Récupérer les données du rapport
-      final reportDataAsync = ref.read(
+      // Récupérer les données du rapport de manière asynchrone pour éviter les race conditions
+      final reportData = await ref.read(
         gazReportDataProvider(
           (
             period: GazReportPeriod.custom,
             startDate: _startDate,
             endDate: _endDate,
-          )
-              as ({
+          ) as ({
             GazReportPeriod period,
             DateTime? startDate,
             DateTime? endDate,
           }),
-        ),
-      );
-
-      final reportData = reportDataAsync.when(
-        data: (data) => data,
-        loading: () => throw Exception('Chargement des données en cours'),
-        error: (error, _) => throw Exception('Erreur: $error'),
+        ).future,
       );
 
       // Générer le PDF

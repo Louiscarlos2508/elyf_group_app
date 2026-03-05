@@ -60,15 +60,14 @@ class _PrintZReportButtonState extends ConsumerState<PrintZReportButton> {
 
     try {
       final printer = ref.read(activePrinterProvider);
-      final settings = ref.read(boutiqueSettingsServiceProvider);
-      
       final width = await printer.getLineWidth();
+      
       final template = ZReportTemplate(
         widget.closing, 
         width: width,
-        headerText: settings.receiptHeader,
-        footerText: settings.receiptFooter,
-        showLogo: settings.showLogo,
+        headerText: 'BOUTIQUE ELYF',
+        footerText: 'Merci de votre visite !',
+        showLogo: true,
       );
       final content = template.generate();
 

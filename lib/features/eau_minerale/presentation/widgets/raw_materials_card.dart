@@ -6,24 +6,6 @@ import '../../domain/entities/packaging_stock.dart';
 import '../../domain/entities/product.dart';
 import '../../domain/entities/stock_item.dart';
 
-/// Helper class pour regrouper les stocks de même type.
-class _GroupedStock {
-  _GroupedStock({
-    required this.quantity,
-    required this.isLowStock,
-  });
-
-  final int quantity;
-  final bool isLowStock;
-  final int? seuilAlerte;
-  final int unitsPerLot;
-
-  String get quantityLabel {
-    if (unitsPerLot <= 1) return '$quantity unités';
-    final lots = quantity / unitsPerLot;
-    return '${lots.toStringAsFixed(1)} lots ($quantity unités)';
-  }
-}
 
 class RawMaterialsCard extends StatelessWidget {
   final List<StockItem> items;

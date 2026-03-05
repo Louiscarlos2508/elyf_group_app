@@ -551,14 +551,6 @@ final boutiqueSettingsServiceProvider = Provider<BoutiqueSettingsService>((ref) 
   return BoutiqueSettingsService(prefs, repository, enterpriseId);
 });
 
-final boutiquePrinterConfigProvider = Provider<PrinterConfig>((ref) {
-  final settings = ref.watch(boutiqueSettingsServiceProvider);
-  return PrinterConfig(
-    type: settings.printerType,
-    address: settings.printerConnection,
-  );
-});
-
 final stockMovementsProvider = FutureProvider.family<List<StockMovement>, String?>((ref, productId) async {
   return ref.read(storeControllerProvider).fetchStockMovements(productId: productId);
 });

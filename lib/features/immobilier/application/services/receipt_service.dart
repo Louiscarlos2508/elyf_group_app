@@ -47,8 +47,6 @@ class ReceiptService {
       period = '${monthName[0].toUpperCase()}${monthName.substring(1)} ${payment.year}';
     }
 
-    final settings = _ref.read(immobilierSettingsServiceProvider);
-
     return PaymentReceiptTemplate.generateReceipt(
       receiptNumber: payment.receiptNumber ?? payment.id.substring(0, 8),
       paymentDate: dateFormat.format(payment.paymentDate),
@@ -58,9 +56,9 @@ class ReceiptService {
       propertyAddress: '${property.address}, ${property.city}',
       period: period.isNotEmpty ? period : null,
       notes: payment.notes,
-      header: settings.receiptHeader,
-      footer: settings.receiptFooter,
-      showLogo: settings.showLogo,
+      header: 'ELYF IMMOBILIER',
+      footer: 'Merci de votre confiance !',
+      showLogo: true,
     );
   }
 
@@ -94,7 +92,6 @@ class ReceiptService {
   }) async {
     final dateFormat = DateFormat('dd/MM/yyyy HH:mm');
     final amountFormat = NumberFormat('#,###', 'fr_FR');
-    final settings = _ref.read(immobilierSettingsServiceProvider);
 
     String period = '';
     if (payment.paymentType == PaymentType.deposit) {
@@ -115,7 +112,7 @@ class ReceiptService {
           children: [
             pw.Center(
               child: pw.Text(
-                settings.receiptHeader,
+                'ELYF IMMOBILIER',
                 style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold),
               ),
             ),
@@ -161,7 +158,7 @@ class ReceiptService {
               ],
             ),
             pw.Spacer(),
-            pw.Center(child: pw.Text(settings.receiptFooter, style: const pw.TextStyle(fontSize: 10))),
+            pw.Center(child: pw.Text('Merci pour votre confiance !', style: const pw.TextStyle(fontSize: 10))),
           ],
         ),
       ),

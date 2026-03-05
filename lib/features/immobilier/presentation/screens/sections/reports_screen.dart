@@ -95,8 +95,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         expenses: expenses,
         periodPayments: periodPayments,
         periodExpenses: periodExpenses,
-        enterpriseName: activeEnterprise?.name ?? settings.receiptHeader,
-        footerText: settings.receiptFooter,
+        enterpriseName: activeEnterprise?.name ?? 'ELYF IMMOBILIER',
+        footerText: 'Merci de votre confiance !',
       );
 
       if (mounted) {

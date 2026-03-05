@@ -53,6 +53,9 @@ dependencies:
   firebase_auth: ^5.3.4
   firebase_core: ^3.8.1
   cloud_firestore: ^5.6.8
+  firebase_crashlytics: ^4.1.0
+  firebase_analytics: ^11.3.0
+  firebase_performance: ^0.10.0+4
 
   # Offline-first with Drift
   drift: ^2.26.0

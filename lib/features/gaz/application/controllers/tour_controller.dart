@@ -55,12 +55,10 @@ class TourController {
     await repository.updateTour(tour);
   }
 
-  /// Met à jour les bouteilles vides chargées.
+  /// Met à jour les sources de chargement (Multi-sources).
   Future<void> updateEmptyBottlesLoaded(
-      String tourId, Map<int, int> quantities, String userId,
-      {Map<int, int> leakingQuantities = const {}}) async {
-    await service.updateEmptyBottlesLoaded(tourId, quantities, userId,
-        leakingQuantities: leakingQuantities);
+      String tourId, List<TourLoadingSource> loadingSources, String userId) async {
+    await service.updateEmptyBottlesLoaded(tourId, loadingSources, userId);
   }
 
   /// Valide l'étape de transport et frais.
@@ -74,8 +72,16 @@ class TourController {
   }
 
   /// Clôture un tour avec mise à jour des stocks et enregistrement financier.
-  Future<List<StockAlert>> closeTour(String tourId, String userId) async {
-    final alerts = await service.closeTour(tourId, userId);
+  Future<List<StockAlert>> closeTour(
+    String tourId,
+    String userId, {
+    Map<int, String> weightToCylinderId = const {},
+  }) async {
+    final alerts = await service.closeTour(
+      tourId,
+      userId,
+      weightToCylinderId: weightToCylinderId,
+    );
     return alerts.cast<StockAlert>();
   }
 

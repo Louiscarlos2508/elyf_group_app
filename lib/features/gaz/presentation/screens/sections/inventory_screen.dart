@@ -10,7 +10,6 @@ import 'inventory/inventory_tab_bar.dart';
 import 'inventory/stock_status_tab.dart';
 import 'inventory/leak_tracking_tab.dart';
 import 'inventory/stock_history_tab.dart';
-import 'sales/collection_history_tab.dart';
 import '../../../application/providers/permission_providers.dart';
 
 /// Unified Inventory & Stock management screen for the Gaz module.
@@ -34,12 +33,11 @@ class _GazInventoryScreenState extends ConsumerState<GazInventoryScreen>
   }
 
   void _initTabs(Enterprise? enterprise, bool isManager) {
-    final isPOS = enterprise?.type.isPointOfSale == true;
+    final isPOS = enterprise?.isPointOfSale ?? false;
     final List<String> newTabs = ['Stock'];
-    if (!isPOS) {
-      newTabs.add('Collectes');
+    if (isPOS) {
+      newTabs.add('Fuites');
     }
-    newTabs.add('Fuites');
     newTabs.add('Historique');
 
     // If tabs are already initialized and length matches, we are good
@@ -114,12 +112,11 @@ class _GazInventoryScreenState extends ConsumerState<GazInventoryScreen>
               enterpriseId: enterpriseId,
               moduleId: 'gaz',
             ),
-            if (!isPOS)
-              const CollectionHistoryTab(),
-            LeakTrackingTab(
-              enterpriseId: enterpriseId,
-              moduleId: 'gaz',
-            ),
+            if (isPOS)
+              LeakTrackingTab(
+                enterpriseId: enterpriseId,
+                moduleId: 'gaz',
+              ),
             StockHistoryTab(enterpriseId: enterpriseId),
           ],
         ),

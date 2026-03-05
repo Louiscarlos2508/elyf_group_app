@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
-import 'package:elyf_groupe_app/features/gaz/domain/entities/collection.dart';
+
 import '../../../domain/entities/tour.dart';
 import 'closure_expense_item.dart';
 
@@ -143,62 +144,17 @@ class _ClosureDetailsCardState extends ConsumerState<ClosureDetailsCard> {
           Divider(color: theme.colorScheme.outline.withValues(alpha: 0.1)),
           const SizedBox(height: 24),
           
-          // Section Recettes Grossistes
-          ref.watch(tourCollectionsProvider(widget.tour.id)).when(
-                data: (collections) {
-                  final wholesalers = collections.where((c) => c.type == CollectionType.wholesaler).toList();
-                  if (wholesalers.isEmpty) return const SizedBox.shrink();
-                  
-                  final totalWholesaleRevenue = wholesalers.fold<double>(0, (sum, c) => sum + c.amountDue);
-                  
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Recettes Grossistes',
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.primary,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      ...wholesalers.map((col) => Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(child: Text(col.clientName)),
-                            Text(
-                              CurrencyFormatter.formatDouble(col.amountDue),
-                              style: const TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                          ],
-                        ),
-                      )),
-                      const SizedBox(height: 8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text('TOTAL RÉCOLTE GROSSISTES', style: TextStyle(fontWeight: FontWeight.bold)),
-                          Text(
-                            CurrencyFormatter.formatDouble(totalWholesaleRevenue),
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: theme.colorScheme.primary,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-                      Divider(color: theme.colorScheme.outline.withValues(alpha: 0.1)),
-                      const SizedBox(height: 24),
-                    ],
-                  );
-                },
-                loading: () => const CircularProgressIndicator(),
-                error: (e, _) => Text('Erreur: $e'),
-              ),
+          // Section Distribution aux Grossistes
+          _WholesaleDistributionSection(
+            tour: widget.tour,
+            enterpriseId: widget.enterpriseId,
+            theme: theme,
+          ),
+          
           const SizedBox(height: 24),
+          Divider(color: theme.colorScheme.outline.withValues(alpha: 0.1)),
+          const SizedBox(height: 24),
+
           // Boutons
           Row(
             children: [
@@ -252,7 +208,50 @@ class _ClosureDetailsCardState extends ConsumerState<ClosureDetailsCard> {
       try {
         final controller = ref.read(tourControllerProvider);
         final userId = ref.read(currentUserIdProvider);
-        await controller.closeTour(widget.tour.id, userId);
+        
+        // Calculer les distributions à passer au service
+        final params = (enterpriseId: widget.enterpriseId, moduleId: 'gaz');
+        final settingsAsync = ref.read(gazSettingsProvider(params));
+        final cylindersAsync = ref.read(cylindersProvider);
+        
+        final settings = settingsAsync.value;
+        final cylinders = cylindersAsync.value ?? [];
+        
+        final distributions = <WholesaleDistribution>[];
+        final weightToCylinderId = <int, String>{};
+        
+        for (final cyl in cylinders) {
+          weightToCylinderId[cyl.weight] = cyl.id;
+        }
+        
+        if (settings != null) {
+          final wholesalerSources = widget.tour.loadingSources
+              .where((s) => s.type == TourLoadingSourceType.wholesaler)
+              .toList();
+              
+          for (final source in wholesalerSources) {
+            double totalAmount = 0;
+            for (final entry in source.quantities.entries) {
+              final price = settings.getWholesalePrice(entry.key) ?? 0;
+              totalAmount += price * entry.value;
+            }
+            
+            distributions.add(WholesaleDistribution(
+              wholesalerId: source.id,
+              wholesalerName: source.sourceName,
+              quantities: source.quantities,
+              totalAmount: totalAmount,
+              paymentMethod: PaymentMethod.cash,
+            ));
+          }
+        }
+
+        await controller.closeTour(
+          widget.tour.id, 
+          userId,
+          distributions: distributions,
+          weightToCylinderId: weightToCylinderId,
+        );
         if (mounted) {
           NotificationService.showSuccess(context, 'Tour clôturé avec succès');
           Navigator.of(context).pop();
@@ -377,4 +376,97 @@ class _ExpensesDetailSection extends StatelessWidget {
   }
 }
 
+class _WholesaleDistributionSection extends ConsumerWidget {
+  const _WholesaleDistributionSection({
+    required this.tour,
+    required this.enterpriseId,
+    required this.theme,
+  });
 
+  final Tour tour;
+  final String enterpriseId;
+  final ThemeData theme;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final params = (enterpriseId: enterpriseId, moduleId: 'gaz');
+    final settingsAsync = ref.watch(gazSettingsProvider(params));
+    final wholesalerSources = tour.loadingSources
+        .where((s) => s.type == TourLoadingSourceType.wholesaler)
+        .toList();
+
+    if (wholesalerSources.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Distribution aux Grossistes',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 12),
+        ...wholesalerSources.map((source) {
+          return settingsAsync.when(
+            data: (settings) {
+              double totalAmount = 0;
+              if (settings != null) {
+                for (final entry in source.quantities.entries) {
+                  final price = settings.getWholesalePrice(entry.key) ?? 0;
+                  totalAmount += price * entry.value;
+                }
+              }
+
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          source.sourceName,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        Text(
+                          CurrencyFormatter.formatDouble(totalAmount),
+                          style: TextStyle(
+                            color: theme.colorScheme.primary,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      children: source.quantities.entries.map((e) {
+                        return Chip(
+                          labelPadding: const EdgeInsets.symmetric(horizontal: 4),
+                          label: Text('${e.key}kg x${e.value}'),
+                          visualDensity: VisualDensity.compact,
+                          backgroundColor: theme.colorScheme.surface,
+                        );
+                      }).toList(),
+                    ),
+                  ],
+                ),
+              );
+            },
+            loading: () => const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+            error: (e, s) => Text('Erreur: $e'),
+          );
+        }),
+      ],
+    );
+  }
+}

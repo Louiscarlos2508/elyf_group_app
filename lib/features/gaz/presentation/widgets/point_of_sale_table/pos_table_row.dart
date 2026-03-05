@@ -178,15 +178,6 @@ class PosTableRow extends ConsumerWidget {
             case 'stock':
               _showStockDialog(context, ref);
               break;
-            case 'types':
-              _showTypesDialog(context, ref);
-              break;
-            case 'edit':
-              _editPointOfSale(context);
-              break;
-            case 'delete':
-              _deletePointOfSale(context, ref);
-              break;
           }
         },
         itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
@@ -197,37 +188,6 @@ class PosTableRow extends ConsumerWidget {
                 Icon(Icons.inventory_2_outlined, size: 20),
                 SizedBox(width: 12),
                 Text('Stock'),
-              ],
-            ),
-          ),
-          const PopupMenuItem<String>(
-            value: 'types',
-            child: Row(
-              children: [
-                Icon(Icons.settings_outlined, size: 20),
-                SizedBox(width: 12),
-                Text('Types Bouteilles'),
-              ],
-            ),
-          ),
-          const PopupMenuDivider(),
-          const PopupMenuItem<String>(
-            value: 'edit',
-            child: Row(
-              children: [
-                Icon(Icons.edit_outlined, size: 20),
-                SizedBox(width: 12),
-                Text('Modifier'),
-              ],
-            ),
-          ),
-          PopupMenuItem<String>(
-            value: 'delete',
-            child: Row(
-              children: [
-                Icon(Icons.delete_outline, size: 20, color: theme.colorScheme.error),
-                const SizedBox(width: 12),
-                Text('Supprimer', style: TextStyle(color: theme.colorScheme.error)),
               ],
             ),
           ),

@@ -244,6 +244,8 @@ class SunmiV3Service implements PrinterInterface {
                        trimmedLine.contains('RECU') ||
                        trimmedLine.contains('RESUME') ||
                        trimmedLine.contains('BOUTIQUE') ||
+                       trimmedLine.contains('GAZ') ||
+                       trimmedLine.contains('IMMOBILIER') ||
                        trimmedLine.contains('MERCI') ||
                        trimmedLine.contains('CONFIANCE') ||
                        trimmedLine.contains('SIGNATURE') ||
@@ -264,9 +266,9 @@ class SunmiV3Service implements PrinterInterface {
         if (isTitle) {
           await lineApi.printText(trimmedLine, titleTextStyle.setAlign(sunmi.Align.CENTER));
         } else if (isSeparator) {
-          // Régularise les séparateurs à 48 caractères (largeur standard 80mm) et centre
+          // Régularise les séparateurs à la largeur détectée (32 ou 48)
           final char = trimmedLine[0];
-          final regulatedSeparator = char * 48;
+          final regulatedSeparator = char * _paperWidthChars;
           await lineApi.printText(regulatedSeparator, defaultTextStyle.setAlign(sunmi.Align.CENTER));
         } else if (isTotal) {
           await lineApi.printText(trimmedLine, totalTextStyle);

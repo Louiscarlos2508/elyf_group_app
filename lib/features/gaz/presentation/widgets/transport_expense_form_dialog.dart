@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/providers.dart';
 import '../../domain/entities/tour.dart';
-import '../../domain/entities/transport_expense.dart';
 import 'package:elyf_groupe_app/shared.dart';
 
 /// Formulaire d'ajout d'une dépense de transport selon le design Figma.

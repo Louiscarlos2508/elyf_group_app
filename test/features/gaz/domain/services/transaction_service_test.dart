@@ -19,9 +19,6 @@ import 'package:elyf_groupe_app/features/gaz/domain/repositories/exchange_reposi
 import 'package:elyf_groupe_app/features/gaz/domain/repositories/gaz_settings_repository.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/repositories/inventory_audit_repository.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/repositories/expense_repository.dart';
-import 'package:elyf_groupe_app/features/gaz/domain/repositories/collection_repository.dart';
-import 'package:elyf_groupe_app/shared/domain/entities/treasury_operation.dart';
-
 @GenerateNiceMocks([
   MockSpec<CylinderStockRepository>(),
   MockSpec<GasRepository>(),
@@ -36,7 +33,6 @@ import 'package:elyf_groupe_app/shared/domain/entities/treasury_operation.dart';
   MockSpec<GazExpenseRepository>(),
   MockSpec<GazSessionRepository>(),
   MockSpec<GazTreasuryRepository>(),
-  MockSpec<CollectionRepository>(),
 ])
 import 'transaction_service_test.mocks.dart';
 
@@ -46,24 +42,28 @@ void main() {
   late MockGasRepository mockGasRepo;
   late MockGazSessionRepository mockSessionRepo;
   late MockGazTreasuryRepository mockTreasuryRepo;
-  late MockCollectionRepository mockCollectionRepo;
-  late MockDataConsistencyService mockConsistencyService; // Added mock for DataConsistencyService
+  late MockTourRepository mockTourRepo;
+  late MockAuditTrailRepository mockAuditRepo;
+  late MockGasAlertService mockAlertService;
+  late MockDataConsistencyService mockConsistencyService;
 
   setUp(() {
     mockStockRepo = MockCylinderStockRepository();
     mockGasRepo = MockGasRepository();
     mockSessionRepo = MockGazSessionRepository();
     mockTreasuryRepo = MockGazTreasuryRepository();
-    mockCollectionRepo = MockCollectionRepository();
-    mockConsistencyService = MockDataConsistencyService(); // Initialize mock
+    mockConsistencyService = MockDataConsistencyService();
+    mockTourRepo = MockTourRepository();
+    mockAuditRepo = MockAuditTrailRepository();
+    mockAlertService = MockGasAlertService();
 
     service = TransactionService(
       stockRepository: mockStockRepo,
       gasRepository: mockGasRepo,
-      tourRepository: MockTourRepository(),
-      consistencyService: mockConsistencyService, // Inject mock
-      auditTrailRepository: MockAuditTrailRepository(),
-      alertService: MockGasAlertService(),
+      tourRepository: mockTourRepo,
+      consistencyService: mockConsistencyService,
+      auditTrailRepository: mockAuditRepo,
+      alertService: mockAlertService,
       leakRepository: MockCylinderLeakRepository(),
       exchangeRepository: MockExchangeRepository(),
       settingsRepository: MockGazSettingsRepository(),
@@ -71,84 +71,112 @@ void main() {
       expenseRepository: MockGazExpenseRepository(),
       sessionRepository: mockSessionRepo,
       treasuryRepository: mockTreasuryRepo,
-      collectionRepository: mockCollectionRepo,
     );
   });
 
-  test('executeIndependentCollectionTransaction updates stock and treasury', () async {
-    // Arrange
-    const cylinder12kg = Cylinder(
-      id: 'c12',
-      weight: 12,
-      buyPrice: 5000,
-      sellPrice: 6000,
-      enterpriseId: 'ent1',
-      moduleId: 'gaz',
-    );
+  group('Tour Transactions (Manual Workflow)', () {
+    const tourId = 'tour1';
+    const userId = 'user1';
+    const entId = 'ent1';
 
-    final collection = Collection(
-      id: 'col1',
-      type: CollectionType.wholesaler,
-      clientId: 'w1',
-      clientName: 'Wholesaler 1',
-      clientPhone: '12345678',
-      emptyBottles: {12: 10},
-      unitPrice: 0,
-      amountPaid: 5000, // We pay 5000 FCFA for return
-      paymentDate: DateTime.now(),
-    );
+    test('executeTourLoadingTransaction updates tour without moving stock', () async {
+      // Arrange
+      final tour = Tour(
+        id: tourId,
+        enterpriseId: entId,
+        supplierName: 'SODIGAZ',
+        tourDate: DateTime.now(),
+        status: TourStatus.open,
+        loadingSources: [],
+      );
 
-    // Mocks behavior
-    when(mockSessionRepo.getActiveSession('ent1')).thenAnswer((_) async => GazSession(
-      id: 'sess1',
-      enterpriseId: 'ent1',
-      status: GazSessionStatus.open,
-      openedAt: DateTime.now(),
-      openedBy: 'user1',
-      date: DateTime.now(),
-      theoreticalCash: 0,
-      physicalCash: 0,
-      discrepancy: 0,
-      theoreticalStock: {},
-      theoreticalEmptyStock: {},
-      totalExpenses: 0,
-      totalSales: 0,
-    ));
+      final loadingSources = <TourLoadingSource>[
+        TourLoadingSource(
+          type: TourLoadingSourceType.pos,
+          sourceName: 'POS A',
+          quantities: {12: 10},
+        ),
+      ];
 
-    when(mockGasRepo.getCylinders()).thenAnswer((_) async => [cylinder12kg]);
-    
-    // Mock stock retrieval for sale transaction
-    when(mockStockRepo.getStocksByWeight(any, any, siteId: anyNamed('siteId'))).thenAnswer((_) async => []);
+      when(mockTourRepo.getTourById(tourId)).thenAnswer((_) async => tour);
 
-    // Mock validation success
-     when(mockConsistencyService.validateSaleConsistency(
-      sale: anyNamed('sale'),
-      enterpriseId: anyNamed('enterpriseId'),
-      siteId: anyNamed('siteId'),
-      weight: anyNamed('weight'),
-    )).thenAnswer((_) async => null);
+      // Act
+      await service.executeTourLoadingTransaction(
+        tourId: tourId,
+        userId: userId,
+        loadingSources: loadingSources,
+      );
 
-    // Act
-    await service.executeIndependentCollectionTransaction(
-      collection: collection,
-      enterpriseId: 'ent1',
-      userId: 'user1',
-    );
+      // Assert
+      // Verify tour update
+      verify(mockTourRepo.updateTour(argThat(
+        predicate<Tour>((Tour t) => t.loadingSources.length == 1 && t.loadingSources.first.sourceName == 'POS A')
+      ))).called(1);
 
-    // Assert
-    // 1. Check stock update (Empty stock created/updated)
-    verify(mockStockRepo.addStock(argThat(
-      predicate<CylinderStock>((s) => s.status == CylinderStatus.emptyAtStore && s.quantity == 10 && s.weight == 12)
-    ))).called(1);
+      // Verify NO stock movement
+      verifyNever(mockStockRepo.addStock(any));
+      verifyNever(mockStockRepo.removeStock(any, any));
+      verifyNever(mockStockRepo.updateStockQuantity(any, any));
+    });
 
-    // 2. Check Collection saving
-    verify(mockCollectionRepo.saveCollection(argThat(
-      predicate<Collection>((c) => c.id == 'col1' && c.emptyBottles[12] == 10)
-    ), 'ent1')).called(1);
+    test('executeTourClosureTransaction closes tour without moving stock', () async {
+      // Arrange
+      final tour = Tour(
+        id: tourId,
+        enterpriseId: entId,
+        supplierName: 'SODIGAZ',
+        tourDate: DateTime.now(),
+        status: TourStatus.open,
+        fullBottlesReceived: {12: 10},
+        loadingSources: [
+          TourLoadingSource(type: TourLoadingSourceType.pos, sourceName: 'POS A', quantities: {12: 10}),
+        ],
+      );
 
-    // 3. Check Treasury update (Expense)
-    verify(mockTreasuryRepo.saveOperation(argThat(
-      predicate<TreasuryOperation>((t) => t.amount == 5000 && t.type == TreasuryOperationType.removal)
-    ))).called(1);
+      when(mockTourRepo.getTourById(tourId)).thenAnswer((_) async => tour);
+
+      // Act
+      final result = await service.executeTourClosureTransaction(
+        tourId: tourId,
+        userId: userId,
+      );
+
+      // Assert
+      expect(result.tour.status, TourStatus.closed);
+      verify(mockTourRepo.updateTour(argThat(
+        predicate<Tour>((Tour t) => t.status == TourStatus.closed)
+      ))).called(1);
+
+      // Verify NO stock movement
+      verifyNever(mockStockRepo.addStock(any));
+      verifyNever(mockStockRepo.removeStock(any, any));
+    });
+
+    test('executeTourCancellationTransaction cancels tour without reverting stock', () async {
+      // Arrange
+      final tour = Tour(
+        id: tourId,
+        enterpriseId: entId,
+        supplierName: 'SODIGAZ',
+        tourDate: DateTime.now(),
+        status: TourStatus.open,
+      );
+
+      when(mockTourRepo.getTourById(tourId)).thenAnswer((_) async => tour);
+
+      // Act
+      await service.executeTourCancellationTransaction(
+        tourId: tourId,
+        userId: userId,
+      );
+
+      // Assert
+      verify(mockTourRepo.updateTour(argThat(
+        predicate<Tour>((Tour t) => t.status == TourStatus.cancelled)
+      ))).called(1);
+
+      // Verify NO stock movement
+      verifyNever(mockStockRepo.addStock(any));
+    });
   });
 }

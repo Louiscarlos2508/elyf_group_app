@@ -54,21 +54,7 @@ class StockStatusTab extends ConsumerWidget {
                   runSpacing: 8,
                   alignment: WrapAlignment.end,
                   children: [
-                    // if (!isPOS)
-                    //   ElyfButton(
-                    //     onPressed: () {
-                    //       showDialog(
-                    //         context: context,
-                    //         builder: (context) => IndependentCollectionDialog(
-                    //           enterpriseId: enterpriseId,
-                    //         ),
-                    //       );
-                    //     },
-                    //     icon: Icons.add_circle_outline,
-                    //     variant: ElyfButtonVariant.filled,
-                    //     size: ElyfButtonSize.small,
-                    //     child: const Text('Collecte (POS)'),
-                    //   ),
+
                     if (isPOS) ...[
                       // 1. Entrée (Pleins + Vides retour non-rechargés fusionnés)
                       ElyfButton(

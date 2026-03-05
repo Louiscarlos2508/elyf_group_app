@@ -48,7 +48,7 @@ import '../data/repositories/wholesaler_offline_repository.dart';
 import '../data/repositories/treasury_offline_repository.dart';
 import '../data/repositories/gaz_employee_offline_repository.dart';
 import '../data/repositories/gaz_salary_payment_offline_repository.dart';
-import '../data/repositories/collection_offline_repository.dart';
+
 import '../domain/repositories/inventory_audit_repository.dart';
 import '../data/repositories/inventory_audit_offline_repository.dart';
 import '../domain/entities/gaz_inventory_audit.dart';
@@ -66,7 +66,7 @@ import '../domain/entities/tour.dart';
 import '../domain/entities/wholesaler.dart';
 import '../domain/entities/gaz_employee.dart';
 import '../domain/entities/gaz_salary_payment.dart';
-import '../domain/entities/collection.dart';
+
 import 'package:elyf_groupe_app/shared/domain/entities/treasury_operation.dart';
 import '../domain/services/leak_report_service.dart';
 import '../domain/services/wholesaler_service.dart';
@@ -84,7 +84,7 @@ import '../domain/repositories/wholesaler_repository.dart';
 import '../domain/repositories/treasury_repository.dart';
 import '../domain/repositories/gaz_employee_repository.dart';
 import '../domain/repositories/gaz_salary_payment_repository.dart';
-import '../domain/repositories/collection_repository.dart';
+
 import '../domain/services/data_consistency_service.dart';
 import '../domain/services/financial_calculation_service.dart';
 
@@ -396,14 +396,7 @@ final wholesalerRepositoryProvider = Provider<WholesalerRepository>((ref) {
   );
 });
 
-final collectionRepositoryProvider = Provider<CollectionRepository>((ref) {
-  final driftService = ref.watch(driftServiceProvider);
-  final syncManager = ref.watch(syncManagerProvider);
-  return CollectionOfflineRepository(
-    driftService: driftService,
-    syncManager: syncManager,
-  );
-});
+
 
 final gazSettingsRepositoryProvider =
     Provider.family<GazSettingsRepository, String>((ref, enterpriseId) {
@@ -453,11 +446,9 @@ final stockServiceProvider = Provider<StockService>((ref) {
 final tourServiceProvider = Provider<TourService>((ref) {
   final tourRepo = ref.watch(tourRepositoryProvider);
   final transactionService = ref.watch(transactionServiceProvider);
-  final collectionRepo = ref.watch(collectionRepositoryProvider);
   return TourService(
     tourRepository: tourRepo,
     transactionService: transactionService,
-    collectionRepository: collectionRepo,
   );
 });
 
@@ -492,23 +483,18 @@ final auditHistoryProvider =
 
 final transactionServiceProvider = Provider<TransactionService>((ref) {
   final stockRepo = ref.watch(cylinderStockRepositoryProvider);
-  // Use gasCylinderRepositoryProvider so cylinder lookups use the parent enterprise ID for POS
   final gasRepo = ref.watch(gasCylinderRepositoryProvider);
   final tourRepo = ref.watch(tourRepositoryProvider);
   final consistencyService = ref.watch(dataConsistencyServiceProvider);
   final auditRepo = ref.watch(auditTrailRepositoryProvider);
   final alertService = ref.watch(gasAlertServiceProvider);
-  final enterpriseId =
-      ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+  final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
   final leakRepo = ref.watch(cylinderLeakRepositoryProvider(enterpriseId));
   final exchangeRepo = ref.watch(exchangeRepositoryProvider(enterpriseId));
   final settingsRepo = ref.watch(gazSettingsRepositoryProvider(enterpriseId));
-  final inventoryAuditRepo = ref.watch(
-    inventoryAuditRepositoryProvider(enterpriseId),
-  );
+  final inventoryAuditRepo = ref.watch(inventoryAuditRepositoryProvider(enterpriseId));
   final expenseRepo = ref.watch(gazExpenseRepositoryProvider);
   final treasuryRepo = ref.watch(gazTreasuryRepositoryProvider);
-  final collectionRepo = ref.watch(collectionRepositoryProvider);
 
   return TransactionService(
     stockRepository: stockRepo,
@@ -523,7 +509,6 @@ final transactionServiceProvider = Provider<TransactionService>((ref) {
     inventoryAuditRepository: inventoryAuditRepo,
     expenseRepository: expenseRepo,
     treasuryRepository: treasuryRepo,
-    collectionRepository: collectionRepo,
   );
 });
 
@@ -615,6 +600,14 @@ final leakReportSummaryProvider =
       final controller = ref.watch(leakReportControllerProvider);
       return controller.getPendingLeaksSummary(enterpriseId);
     });
+
+final wholesalersProvider = FutureProvider<List<Wholesaler>>((ref) async {
+  final activeEnterprise = ref.watch(activeEnterpriseProvider).value;
+  if (activeEnterprise == null) return [];
+  final enterpriseId = activeEnterprise.id;
+  final controller = ref.watch(wholesalerControllerProvider);
+  return controller.getWholesalers(enterpriseId);
+});
 
 final gazSettingsControllerProvider = Provider.family<GazSettingsController, String>((ref, enterpriseId) {
   final repo = ref.watch(gazSettingsRepositoryProvider(enterpriseId));
@@ -1035,28 +1028,9 @@ final gazReportDataProvider = FutureProvider.family
       );
     });
 
-// Collections
-final gazCollectionsProvider = StreamProvider<List<Collection>>((ref) {
-  final repo = ref.watch(collectionRepositoryProvider);
-  final viewType = ref.watch(gazDashboardViewTypeProvider);
-  final activeId = ref.watch(activeEnterpriseIdProvider).value ?? 'default';
 
-  if (viewType == GazDashboardViewType.local) {
-    return repo.watchCollections(activeId);
-  }
 
-  final scopedIds =
-      ref.watch(gazScopedEnterpriseIdsProvider).value ?? [activeId];
-  return repo.watchCollections(activeId, enterpriseIds: scopedIds);
-});
 
-// History filtering for specific enterprise
-final collectionsProvider = StreamProvider.family<List<Collection>, String>((
-  ref,
-  enterpriseId,
-) {
-  return ref.watch(collectionRepositoryProvider).watchCollections(enterpriseId);
-});
 
 // Cylinder Stocks
 final cylinderStocksProvider =
@@ -1201,15 +1175,7 @@ final allWholesalersProvider = StreamProvider.family<List<Wholesaler>, String>((
 });
 
 
-/// Provider pour récupérer les collectes liées à un tour spécifique.
-final tourCollectionsProvider = StreamProvider.family<List<Collection>, String>((ref, tourId) {
-  final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? '';
-  return ref.watch(collectionsProvider(enterpriseId)).when(
-    data: (collections) => Stream.value(collections.where((c) => c.tourId == tourId).toList()),
-    loading: () => const Stream.empty(),
-    error: Stream.error,
-  );
-});
+
 
 /// Provider pour récupérer un tour spécifique par son ID.
 final tourProvider = StreamProvider.autoDispose.family<Tour?, String>((

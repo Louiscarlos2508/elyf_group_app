@@ -4,6 +4,7 @@ import '../../domain/entities/contract.dart';
 import '../../domain/entities/payment.dart';
 import '../../domain/entities/property.dart';
 import '../../domain/entities/tenant.dart';
+import 'package:elyf_groupe_app/shared/presentation/widgets/print_receipt_button.dart';
 import 'payment_card_helpers.dart';
 import 'payment_form_dialog.dart';
 
@@ -289,26 +290,23 @@ class PaymentDetailDialog extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           // Actions secondaires
-          if (onPrint != null || onDownloadPdf != null)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (onPrint != null)
-                  TextButton.icon(
-                    onPressed: onPrint,
-                    icon: const Icon(Icons.print, size: 20),
-                    label: const Text('Imprimer'),
-                  ),
-                if (onDownloadPdf != null) ...[
-                  const SizedBox(width: 8),
-                  TextButton.icon(
-                    onPressed: onDownloadPdf,
-                    icon: const Icon(Icons.picture_as_pdf, size: 20),
-                    label: const Text('PDF'),
-                  ),
-                ],
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              PrintReceiptButton(
+                payment: payment,
+                onPrintSuccess: () => Navigator.of(context).pop(),
+              ),
+              if (onDownloadPdf != null) ...[
+                const SizedBox(width: 8),
+                TextButton.icon(
+                  onPressed: onDownloadPdf,
+                  icon: const Icon(Icons.picture_as_pdf, size: 20),
+                  label: const Text('PDF'),
+                ),
               ],
-            ),
+            ],
+          ),
           const SizedBox(height: 8),
           // Actions principales
           Row(

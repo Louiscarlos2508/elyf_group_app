@@ -15,15 +15,21 @@ import '../../domain/entities/enterprise.dart';
 import '../../domain/entities/audit_log.dart';
 import '../../../../core/permissions/entities/user_role.dart';
 import '../../../../core/auth/entities/enterprise_module_user.dart';
+import '../../../../core/monitoring/monitoring_service.dart';
 
 /// Service for syncing administration data with Firestore.
 ///
 /// Handles bidirectional sync between Drift (offline) and Firestore (cloud).
 class FirestoreSyncService {
-  FirestoreSyncService({required this.driftService, required this.firestore});
+  FirestoreSyncService({
+    required this.driftService,
+    required this.firestore,
+    required this.monitoring,
+  });
 
   final DriftService driftService;
   final FirebaseFirestore firestore;
+  final MonitoringService monitoring;
   String? _currentUserId;
 
   // Collection paths
@@ -66,6 +72,8 @@ class FirestoreSyncService {
         name: 'admin.firestore.sync',
       );
 
+      final trace = await monitoring.startTrace('critical_sync_redirection');
+
       // PHASE 1: CRITICAL METADATA
       // 1. D'abord, récupérer l'utilisateur courant pour obtenir ses enterpriseIds
       User? currentUser;
@@ -79,17 +87,60 @@ class FirestoreSyncService {
       };
       final bool isAdmin = (currentUser != null && currentUser.isAdmin);
 
+      final Set<String> rolesToPull = {};
+
       // 2. Récupérer les assignations de l'utilisateur pour découvrir d'autres entreprises
       if (userId != null && !isAdmin) {
         developer.log('Fetching personal assignments for $userId...', name: 'admin.firestore.sync');
         final personalAssignments = await pullEnterpriseModuleUsersFromFirestore(userId: userId);
+        
         for (final assignment in personalAssignments) {
+          developer.log('Discovered assignment: ${assignment.enterpriseId} (module: ${assignment.moduleId}, parent: ${assignment.parentEnterpriseId})', name: 'admin.firestore.sync');
           effectiveAllowedEnterpriseIds.add(assignment.enterpriseId);
+          if (assignment.parentEnterpriseId != null && assignment.parentEnterpriseId!.isNotEmpty) {
+            effectiveAllowedEnterpriseIds.add(assignment.parentEnterpriseId!);
+          }
           await _saveEnterpriseModuleUserToDrift(assignment);
+          rolesToPull.addAll(assignment.roleIds);
         }
+
+        developer.log('Phase 1: Found ${personalAssignments.length} personal assignments. Total unique enterprises to pull: ${effectiveAllowedEnterpriseIds.length}', name: 'admin.firestore.sync');
+
+        // PRIORITÉ : Télécharger les entreprises assignées immédiatement (Phase 1)
+        if (effectiveAllowedEnterpriseIds.isNotEmpty) {
+          developer.log('PRIORITY: Pulling enterprises for Phase 1...', name: 'admin.firestore.sync');
+          final enterprises = await pullEnterprisesFromFirestore(
+            allowedEnterpriseIds: effectiveAllowedEnterpriseIds.toList(),
+          );
+          for (final enterprise in enterprises) {
+            await _saveEnterpriseToDrift(enterprise);
+          }
+        }
+
+        // PRIORITÉ : Télécharger les rôles assignés immédiatement (Phase 1)
+        if (rolesToPull.isNotEmpty) {
+          developer.log('PRIORITY: Pulling roles for Phase 1...', name: 'admin.firestore.sync');
+          await _pullAndSaveRoles(roleIds: rolesToPull.toList());
+        }
+      } else if (isAdmin) {
+          // Pour un admin, on tire au moins les entreprises de base en Phase 1
+          final enterprises = await pullEnterprisesFromFirestore(
+            allowedEnterpriseIds: effectiveAllowedEnterpriseIds.isEmpty ? null : effectiveAllowedEnterpriseIds.toList(),
+          );
+          for (final enterprise in enterprises) {
+            await _saveEnterpriseToDrift(enterprise);
+          }
       }
 
       developer.log('Phase 1 (Critical) finished. Redirection now possible.', name: 'admin.firestore.sync');
+      
+      await trace.stop();
+      
+      monitoring.logEvent('login_redirection_ready', {
+        'userId': userId ?? 'unknown',
+        'enterprises_count': effectiveAllowedEnterpriseIds.length,
+        'roles_count': rolesToPull.length,
+      });
 
       // PHASE 2: BACKGROUND SYNC
       // On lance le reste en arrière-plan sans attendre (unawaited)
@@ -112,6 +163,31 @@ class FirestoreSyncService {
     }
   }
 
+  /// Discover and sync sub-tenants for a specific parent enterprise.
+  Future<void> discoverSubTenants(String parentId) async {
+    for (final subCollection in ['pointsOfSale', 'agences']) {
+      try {
+        final subSnapshot = await firestore
+            .collection(_enterprisesCollection)
+            .doc(parentId)
+            .collection(subCollection)
+            .get();
+        
+        for (final doc in subSnapshot.docs) {
+          final data = Map<String, dynamic>.from(doc.data());
+          final subTenant = Enterprise.fromMap({
+            ...data, 
+            'id': doc.id, 
+            'parentEnterpriseId': parentId,
+          });
+          await _saveSubTenantToDrift(subTenant, parentId);
+        }
+      } catch (e) {
+        AppLogger.warning('Failed to discover sub-tenants for $parentId/$subCollection: $e', name: 'admin.firestore.sync');
+      }
+    }
+  }
+
   Future<void> _runBackgroundSync({
     String? userId, 
     required bool isAdmin, 
@@ -127,28 +203,7 @@ class FirestoreSyncService {
       if (effectiveAllowedEnterpriseIds.isNotEmpty) {
         developer.log('Discovering sub-tenants for ${effectiveAllowedEnterpriseIds.length} enterprises...', name: 'admin.firestore.sync');
         for (final parentId in effectiveAllowedEnterpriseIds.toList()) {
-          for (final subCollection in ['pointsOfSale', 'agences']) {
-            try {
-              final subSnapshot = await firestore
-                  .collection(_enterprisesCollection)
-                  .doc(parentId)
-                  .collection(subCollection)
-                  .get();
-              
-              for (final doc in subSnapshot.docs) {
-                if (!effectiveAllowedEnterpriseIds.contains(doc.id)) {
-                  effectiveAllowedEnterpriseIds.add(doc.id);
-                  final data = Map<String, dynamic>.from(doc.data());
-                  final subTenant = Enterprise.fromMap({
-                    ...data, 
-                    'id': doc.id, 
-                    'parentEnterpriseId': parentId,
-                  });
-                  await _saveSubTenantToDrift(subTenant, parentId);
-                }
-              }
-            } catch (_) {}
-          }
+          await discoverSubTenants(parentId);
         }
       }
 
@@ -219,16 +274,6 @@ class FirestoreSyncService {
     }
   }
 
-  Future<void> _pullAndSaveUsers({List<String>? enterpriseIds}) async {
-    try {
-      final users = await pullUsersFromFirestore(enterpriseIds: enterpriseIds);
-      for (final user in users) {
-        await _saveUserToDrift(user);
-      }
-    } catch (e) {
-      AppLogger.warning('Failed to pull users: $e', name: 'admin.firestore.sync');
-    }
-  }
 
   Future<User?> _pullAndSaveSpecificUser(String userId) async {
     try {
@@ -268,16 +313,6 @@ class FirestoreSyncService {
     );
   }
 
-  Future<void> _pullAndSaveEnterprises({List<String>? allowedEnterpriseIds}) async {
-    try {
-      final enterprises = await pullEnterprisesFromFirestore(allowedEnterpriseIds: allowedEnterpriseIds);
-      for (final enterprise in enterprises) {
-        await _saveEnterpriseToDrift(enterprise);
-      }
-    } catch (e) {
-      AppLogger.warning('Failed to pull enterprises: $e', name: 'admin.firestore.sync');
-    }
-  }
 
   /// Helper unifié pour sauvegarder une entreprise au bon endroit (Root vs POS vs Agence)
   Future<void> _saveEnterpriseToDrift(Enterprise enterprise) async {
@@ -930,33 +965,55 @@ class FirestoreSyncService {
         
         final List<String> stillMissing = [];
         
-        // Strategy A: Try direct paths via ID pattern (pos_parentId_uid)
+        // Strategy A: Try direct paths via ID pattern (pos_parentId_uid or type_timestamp_parentId)
         for (final id in missingIds) {
           final parts = id.split('_');
+          String? subCollection;
+
           if (parts.length >= 3) {
             final prefix = parts[0];
-            final parentId = '${parts[1]}_${parts[2]}';
-            String? subCollection;
             
-            if (prefix == 'pos') {
+            // Pattern 1: type_parentId_uid or type_timestamp_parentId
+            // We check several possible parentId positions based on common project patterns
+            final List<String> possibleParentIds = [
+              '${parts[1]}_${parts[2]}', // Original pattern (parts 1 & 2)
+              parts.last,                // Potential suffix pattern
+            ];
+
+            if (parts.length >= 4) {
+              possibleParentIds.add('${parts[2]}_${parts[3]}');
+            }
+
+            if (prefix == 'pos' || prefix == 'gas') {
               subCollection = 'pointsOfSale';
-            } else if (prefix == 'agence' || prefix == 'mm') subCollection = 'agences';
+            } else if (prefix == 'agence' || prefix == 'mm') {
+              subCollection = 'agences';
+            }
 
             if (subCollection != null) {
-              try {
-                final doc = await firestore
-                    .collection(_enterprisesCollection)
-                    .doc(parentId)
-                    .collection(subCollection)
-                    .doc(id)
-                    .get();
-                if (doc.exists) {
-                   final data = Map<String, dynamic>.from(doc.data()!);
-                   result.add(Enterprise.fromMap({...data, 'id': id, 'parentEnterpriseId': parentId}));
-                   foundIds.add(id);
-                   continue;
-                }
-              } catch (_) {}
+              bool resolved = false;
+              for (final pid in possibleParentIds) {
+                if (pid.contains('.') || pid.length < 5) continue; // Skip unlikely IDs
+                
+                developer.log('Resolution Strategy A: Trying direct path for $id via parent $pid in $subCollection', name: 'admin.firestore.sync');
+                try {
+                  final doc = await firestore
+                      .collection(_enterprisesCollection)
+                      .doc(pid)
+                      .collection(subCollection)
+                      .doc(id)
+                      .get();
+                  if (doc.exists) {
+                    final data = Map<String, dynamic>.from(doc.data()!);
+                    result.add(Enterprise.fromMap({...data, 'id': id, 'parentEnterpriseId': pid}));
+                    foundIds.add(id);
+                    developer.log('Resolution Strategy A: SUCCESS for $id with parent $pid', name: 'admin.firestore.sync');
+                    resolved = true;
+                    break;
+                  }
+                } catch (_) {}
+              }
+              if (resolved) continue;
             }
           }
           stillMissing.add(id);

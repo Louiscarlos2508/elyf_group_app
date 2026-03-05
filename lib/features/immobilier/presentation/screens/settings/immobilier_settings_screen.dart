@@ -24,37 +24,19 @@ class _ImmobilierSettingsScreenState extends ConsumerState<ImmobilierSettingsScr
   String _penaltyType = 'fixed'; // fixed, daily
   String? _enterpriseId;
  
-  final _headerController = TextEditingController();
-  final _footerController = TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-    // Initial load will happen when build watches the enterprise & settings
-  }
-
   @override
   void dispose() {
-    _headerController.dispose();
-    _footerController.dispose();
     _gracePeriodController.dispose();
     _penaltyRateController.dispose();
     super.dispose();
   }
 
-
-
-
-  Future<void> _saveReceiptConfig() async {
+  Future<void> _saveSettings() async {
     if (_enterpriseId == null) {
        NotificationService.showError(context, 'Aucune entreprise sélectionnée');
        return;
     }
 
-    final localSettings = ref.read(immobilierSettingsServiceProvider);
-    await localSettings.setReceiptHeader(_headerController.text);
-    await localSettings.setReceiptFooter(_footerController.text);
-    
     final repoSettings = await ref.read(immobilierSettingsRepositoryProvider).getSettings(_enterpriseId!) ?? 
                         ImmobilierSettings(enterpriseId: _enterpriseId!);
     
@@ -72,8 +54,6 @@ class _ImmobilierSettingsScreenState extends ConsumerState<ImmobilierSettingsScr
     }
   }
 
-
-
   @override
   Widget build(BuildContext context) {
     final activeEnterpriseAsync = ref.watch(activeEnterpriseProvider);
@@ -88,7 +68,6 @@ class _ImmobilierSettingsScreenState extends ConsumerState<ImmobilierSettingsScr
           );
         }
 
-        // 1. Permissions (using stable provider)
         final hasAccessAsync = ref.watch(userHasImmobilierPermissionProvider('manage_settings'));
         
         return hasAccessAsync.when(
@@ -101,7 +80,6 @@ class _ImmobilierSettingsScreenState extends ConsumerState<ImmobilierSettingsScr
               );
             }
 
-            // 2. Listen for settings changes and update local state
             ref.listen<AsyncValue<ImmobilierSettings?>>(
               immobilierSettingsProvider(enterprise.id),
               (previous, next) {
@@ -110,14 +88,13 @@ class _ImmobilierSettingsScreenState extends ConsumerState<ImmobilierSettingsScr
                   if (_isLoading || _enterpriseId != enterprise.id) {
                     _isLoading = false;
                     _enterpriseId = enterprise.id;
-                    _loadLocalAndRepoSettings(settings);
+                    _loadRepoSettings(settings);
                     setState(() {});
                   }
                 }
               },
             );
 
-            // 3. Watch settings for UI rendering (nested when is ok if logic is clean)
             final repoSettingsAsync = ref.watch(immobilierSettingsProvider(enterprise.id));
 
             return repoSettingsAsync.when(
@@ -135,11 +112,7 @@ class _ImmobilierSettingsScreenState extends ConsumerState<ImmobilierSettingsScr
     );
   }
 
-  void _loadLocalAndRepoSettings(ImmobilierSettings? settings) {
-    final localSettings = ref.read(immobilierSettingsServiceProvider);
-    _headerController.text = localSettings.receiptHeader;
-    _footerController.text = localSettings.receiptFooter;
-
+  void _loadRepoSettings(ImmobilierSettings? settings) {
     if (settings != null) {
       _autoBillingEnabled = settings.autoBillingEnabled;
       _gracePeriodController.text = settings.overdueGracePeriod.toString();
@@ -204,7 +177,7 @@ class _ImmobilierSettingsScreenState extends ConsumerState<ImmobilierSettingsScr
                       const SizedBox(width: 16),
                       Expanded(
                         child: DropdownButtonFormField<String>(
-                          initialValue: _penaltyType,
+                          value: _penaltyType,
                           decoration: const InputDecoration(
                             labelText: 'Type de pénalité',
                             border: OutlineInputBorder(),
@@ -222,34 +195,10 @@ class _ImmobilierSettingsScreenState extends ConsumerState<ImmobilierSettingsScr
                     ],
                   ),
                   const SizedBox(height: 32),
-                  const Divider(),
-                  const SizedBox(height: 24),
-                  const Text("Personnalisation du reçu :", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                  const SizedBox(height: 16),
-
-                  TextField(
-                    controller: _headerController,
-                    decoration: const InputDecoration(
-                      labelText: 'En-tête du reçu',
-                      hintText: 'Ex: ELYF IMMOBILIER',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: _footerController,
-                    decoration: const InputDecoration(
-                      labelText: 'Pied de page du reçu',
-                      hintText: 'Ex: Merci de votre confiance !',
-                      border: OutlineInputBorder(),
-                    ),
-                    maxLines: 2,
-                  ),
-                  const SizedBox(height: 24),
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: _saveReceiptConfig,
+                      onPressed: _saveSettings,
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
@@ -266,5 +215,4 @@ class _ImmobilierSettingsScreenState extends ConsumerState<ImmobilierSettingsScr
       ),
     );
   }
-
 }

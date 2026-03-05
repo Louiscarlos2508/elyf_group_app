@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../../domain/entities/tour.dart';
-import '../../../../domain/entities/transport_expense.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../application/providers.dart';
@@ -30,7 +29,7 @@ class OtherExpensesSection extends ConsumerWidget {
                 Icon(Icons.receipt_long_outlined, size: 16, color: theme.colorScheme.primary),
                 const SizedBox(width: 8),
                 Text(
-                  'Autres dépenses du trajet',
+                  'Dépenses',
                   style: theme.textTheme.labelMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: theme.colorScheme.onSurface,

@@ -52,13 +52,6 @@ class _BoutiqueShellScreenState
 
   @override
   Widget build(BuildContext context) {
-    return ProviderScope(
-      overrides: [
-        printerConfigProvider.overrideWith(
-          (ref) => ref.watch(boutiquePrinterConfigProvider),
-        ),
-      ],
-      child: super.build(context),
-    );
+    return super.build(context);
   }
 }

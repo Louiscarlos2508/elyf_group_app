@@ -1,7 +1,7 @@
 import '../../../../core/errors/app_exceptions.dart';
 import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/offline_repository.dart' show LocalIdGenerator;
-import '../entities/collection.dart';
+
 import '../entities/cylinder.dart';
 import '../entities/cylinder_stock.dart';
 import '../entities/gas_sale.dart';
@@ -23,7 +23,7 @@ import '../entities/expense.dart';
 import '../repositories/expense_repository.dart';
 import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
 import 'package:elyf_groupe_app/shared/domain/entities/treasury_operation.dart';
-import '../repositories/collection_repository.dart';
+
 import '../repositories/treasury_repository.dart';
 import '../../../audit_trail/domain/repositories/audit_trail_repository.dart';
 import '../../../audit_trail/domain/entities/audit_record.dart';
@@ -49,7 +49,6 @@ class TransactionService {
     required this.inventoryAuditRepository,
     required this.expenseRepository,
     required this.treasuryRepository,
-    required this.collectionRepository,
   });
 
   final CylinderStockRepository stockRepository;
@@ -64,7 +63,6 @@ class TransactionService {
   final GazInventoryAuditRepository inventoryAuditRepository;
   final GazExpenseRepository expenseRepository;
   final GazTreasuryRepository treasuryRepository;
-  final CollectionRepository collectionRepository;
 
   /// Exécute un approvisionnement (Réception Plein) de manière atomique.
   /// 
@@ -492,10 +490,13 @@ class TransactionService {
   /// 3. Déduit les vides chargées (emptyBottlesLoaded) du stock société
   /// 4. Ajoute les pleines reçues (fullBottlesReceived) au stock société
   /// 5. Enregistre l'impact financier dans AuditTrail
+  /// Exécute la clôture d'un tour d'approvisionnement fournisseur.
+  ///
+  /// Le tour est désormais purement administratif.
   Future<({Tour tour, List<StockAlert> alerts})> executeTourClosureTransaction({
     required String tourId,
     required String userId,
-    List<Collection> wholesalerCollections = const [],
+    Map<int, String> weightToCylinderId = const {},
   }) async {
     final tour = await tourRepository.getTourById(tourId);
     if (tour == null) {
@@ -504,11 +505,6 @@ class TransactionService {
         'TOUR_NOT_FOUND',
       );
     }
-
-    final cylinders = await gasRepository.getCylinders();
-    final tourCollections = await collectionRepository.getCollectionsByTourId(tourId, tour.enterpriseId);
-    final wholesalerCollections = tourCollections.where((c) => c.type == CollectionType.wholesaler).toList();
-    final posCollections = tourCollections.where((c) => c.type == CollectionType.pointOfSale).toList();
 
     // 1. Validation
     if (tour.fullBottlesReceived.isEmpty) {
@@ -522,242 +518,172 @@ class TransactionService {
     final updatedTour = tour.copyWith(
       status: TourStatus.closed,
       closureDate: DateTime.now(),
+      updatedAt: DateTime.now(),
     );
 
     await tourRepository.updateTour(updatedTour);
 
-    // 3. Mise à jour des stocks (DÉSACTIVÉ)
-    // Le tour est désormais purement administratif. 
-    // Les mouvements de stock physique ne sont plus gérés ici.
-    try {
-      // Phase 3.1, 3.2, 3.3 : SUPPRIMÉES.
-      // Le stock "Magasin Mère" ne change pas lors d'un tour.
-      // Les POS gèrent leur propre réception de stock.
+    // 3. Traiter les distributions aux grossistes (Ventes + Trésorerie)
+    // On utilise les distributions enregistrées dans l'entité tour lors de l'étape Réception
+    for (final dist in tour.wholesaleDistributions) {
+      // Pour chaque poids distribué, créer une vente
+      for (final entry in dist.quantities.entries) {
+        final weight = entry.key;
+        final qty = entry.value;
+        if (qty <= 0) continue;
 
-      // 4. Audit Log
+        final cylinderId = weightToCylinderId[weight];
+        if (cylinderId == null) continue;
+
+        final unitPrice = dist.totalAmount / dist.quantities.values.fold(0, (a, b) => a + b);
+
+        final saleId = LocalIdGenerator.generate();
+        final sale = GasSale(
+          id: saleId,
+          enterpriseId: tour.enterpriseId,
+          cylinderId: cylinderId,
+          quantity: qty,
+          unitPrice: unitPrice,
+          totalAmount: unitPrice * qty,
+          saleDate: DateTime.now(),
+          saleType: SaleType.wholesale,
+          tourId: tour.id,
+          wholesalerId: dist.wholesalerId,
+          wholesalerName: dist.wholesalerName,
+          sellerId: userId,
+          paymentMethod: dist.paymentMethod,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+
+        await gasRepository.addSale(sale);
+      }
+
+      // Enregistrer l'encaissement global pour ce grossiste
+      if (dist.totalAmount > 0) {
+        await treasuryRepository.saveOperation(TreasuryOperation(
+          id: LocalIdGenerator.generate(),
+          enterpriseId: tour.enterpriseId,
+          userId: userId,
+          amount: dist.totalAmount.toInt(),
+          type: TreasuryOperationType.supply,
+          toAccount: dist.paymentMethod,
+          date: DateTime.now(),
+          reason: 'Vente en Gros : ${dist.wholesalerName} (Tour ${tour.id})',
+          referenceEntityId: tour.id,
+          referenceEntityType: 'tour_wholesaler_sale',
+          createdAt: DateTime.now(),
+        ));
+      }
+    }
+
+    // 4. Traiter les distributions aux POS (Mise à jour stock info / Audit)
+    // Note: Pour les POS, on n'impacte pas le stock réel de la société car 
+    // l'approche utilisateur est déclarative sans gestion de stock automatique.
+    // Mais on peut loguer pour l'audit.
+    for (final posDist in tour.posDistributions) {
+       await auditTrailRepository.log(AuditRecord(
+        id: '',
+        enterpriseId: updatedTour.enterpriseId,
+        userId: userId,
+        module: 'gaz',
+        action: 'POS_DISTRIBUTION',
+        entityId: updatedTour.id,
+        entityType: 'tour',
+        timestamp: DateTime.now(),
+        metadata: {
+          'posId': posDist.posId,
+          'posName': posDist.posName,
+          'quantities': posDist.quantities.map((k, v) => MapEntry(k.toString(), v)),
+          'receivedDate': posDist.receivedDate?.toIso8601String(),
+        },
+      ));
+    }
+
+    // 5. Audit Log Global
+    await auditTrailRepository.log(AuditRecord(
+      id: '',
+      enterpriseId: updatedTour.enterpriseId,
+      userId: userId,
+      module: 'gaz',
+      action: 'STOCK_REPLENISHMENT_TOUR',
+      entityId: updatedTour.id,
+      entityType: 'tour',
+      timestamp: DateTime.now(),
+      metadata: {
+        'operation': 'supplier_exchange',
+        'tourId': updatedTour.id,
+        'supplierName': updatedTour.supplierName,
+        'loadingSources': updatedTour.loadingSources.map((s) => s.toMap()).toList(),
+        'wholesaleDistributions': tour.wholesaleDistributions.map((d) => d.toMap()).toList(),
+        'posDistributions': tour.posDistributions.map((d) => d.toMap()).toList(),
+        'fullBottlesReceived': updatedTour.fullBottlesReceived
+            .map((k, v) => MapEntry(k.toString(), v)),
+        'emptyBottlesReturned': updatedTour.emptyBottlesReturned
+            .map((k, v) => MapEntry(k.toString(), v)),
+        'totalExchangeFees': updatedTour.totalExchangeFees,
+      },
+    ));
+
+    // 6. Enregistrement de l'impact financier (Dépenses)
+    final totalExpenses = updatedTour.totalExpenses;
+
+    if (totalExpenses > 0) {
       await auditTrailRepository.log(AuditRecord(
         id: '',
         enterpriseId: updatedTour.enterpriseId,
         userId: userId,
         module: 'gaz',
-        action: 'STOCK_REPLENISHMENT_TOUR',
+        action: 'TOUR_CLOSURE_EXPENSE',
         entityId: updatedTour.id,
         entityType: 'tour',
         timestamp: DateTime.now(),
         metadata: {
-          'operation': 'supplier_exchange',
-          'tourId': updatedTour.id,
-          'supplierName': updatedTour.supplierName,
-          'emptyBottlesLoaded': updatedTour.emptyBottlesLoaded
+          'totalExpenses': totalExpenses,
+          'transportExpenses': updatedTour.totalTransportExpenses,
+          'exchangeFees': updatedTour.totalExchangeFees,
+          'gasPurchaseCost': updatedTour.totalGasPurchaseCost,
+          'purchasePricesUsed': updatedTour.purchasePricesUsed
               .map((k, v) => MapEntry(k.toString(), v)),
-          'leakingBottlesLoaded': updatedTour.leakingBottlesLoaded
-              .map((k, v) => MapEntry(k.toString(), v)),
-          'fullBottlesReceived': updatedTour.fullBottlesReceived
-              .map((k, v) => MapEntry(k.toString(), v)),
-          'emptyBottlesReturned': updatedTour.emptyBottlesReturned
-              .map((k, v) => MapEntry(k.toString(), v)),
-          'totalExchangeFees': updatedTour.totalExchangeFees,
+          'tourDate': updatedTour.tourDate.toIso8601String(),
         },
       ));
-
-      // 5. Enregistrement de l'impact financier
-      final totalExpenses = updatedTour.totalExpenses;
-
-      if (totalExpenses > 0) {
-        await auditTrailRepository.log(AuditRecord(
-          id: '',
-          enterpriseId: updatedTour.enterpriseId,
-          userId: userId,
-          module: 'gaz',
-          action: 'TOUR_CLOSURE_EXPENSE',
-          entityId: updatedTour.id,
-          entityType: 'tour',
-          timestamp: DateTime.now(),
-          metadata: {
-            'totalExpenses': totalExpenses,
-            'transportExpenses': updatedTour.totalTransportExpenses,
-            'loadingFees': updatedTour.totalLoadingFees,
-            'unloadingFees': updatedTour.totalUnloadingFees,
-            'exchangeFees': updatedTour.totalExchangeFees,
-            'gasPurchaseCost': updatedTour.totalGasPurchaseCost,
-            'purchasePricesUsed': updatedTour.purchasePricesUsed
-                .map((k, v) => MapEntry(k.toString(), v)),
-            'tourDate': updatedTour.tourDate.toIso8601String(),
-          },
-        ));
-      }
-
-      AppLogger.info(
-        'TourClosure: Clôture réussie du tour ${updatedTour.id}. '
-        'Vides chargées: ${updatedTour.totalBottlesToLoad}, '
-        'Pleines reçues: ${updatedTour.totalBottlesReceived}',
-        name: 'transaction.tour_closure',
-      );
-
-      // Phase 5.5: Enregistrement des ventes en gros pour les grossistes
-      for (final col in wholesalerCollections) {
-        if (col.totalFullBottlesReceived <= 0) continue;
-        
-        // On crée une vente pour chaque type de bouteille attribuée
-        for (final entry in col.fullBottlesReceived.entries) {
-          final weight = entry.key;
-          final qty = entry.value;
-          if (qty <= 0) continue;
-
-          final saleId = LocalIdGenerator.generate();
-          final unitPrice = col.getUnitPriceForWeight(weight);
-          final weightTotal = qty * unitPrice;
-
-          final cylinders = await gasRepository.getCylinders();
-          final cylinder = cylinders.firstWhere(
-            (c) => c.weight == weight && c.enterpriseId == updatedTour.enterpriseId,
-            orElse: () => cylinders.firstWhere((c) => c.weight == weight),
-          );
-
-          await gasRepository.addSale(GasSale(
-            id: saleId,
-            enterpriseId: updatedTour.enterpriseId,
-            cylinderId: cylinder.id,
-            quantity: qty,
-            unitPrice: unitPrice,
-            totalAmount: weightTotal,
-            saleDate: DateTime.now(),
-            sellerId: userId,
-            paymentMethod: PaymentMethod.cash,
-            saleType: SaleType.wholesale,
-            wholesalerId: col.clientId,
-            wholesalerName: col.clientName,
-            notes: 'Vente $weight kg via clôture tour ${updatedTour.id}',
-            dealType: GasSaleDealType.exchange,
-            emptyReturnedQuantity: col.emptyBottles[weight] ?? 0,
-            sessionId: tour.sessionId,
-            tourId: updatedTour.id,
-          ));
-        }
-
-        final totalAmount = col.amountDue;
-        // Enregistrer l'encaissement global dans la trésorerie pour cette collecte
-        if (totalAmount > 0) {
-          await treasuryRepository.saveOperation(TreasuryOperation(
-            id: LocalIdGenerator.generate(),
-            enterpriseId: updatedTour.enterpriseId,
-            userId: userId,
-            amount: totalAmount.toInt(),
-            type: TreasuryOperationType.supply,
-            toAccount: PaymentMethod.cash,
-            date: DateTime.now(),
-            reason: 'Encaissement Grossiste: ${col.clientName} (Tour ${updatedTour.id})',
-            referenceEntityId: col.id,
-            referenceEntityType: 'gas_collection',
-            createdAt: DateTime.now(),
-          ));
-          
-          await collectionRepository.saveCollection(col.copyWith(
-            amountPaid: totalAmount,
-            paymentDate: DateTime.now(),
-          ), updatedTour.enterpriseId);
-        }
-      }
-      // Phase 5.6: Enregistrer les collections POS (sans mise à jour de stock encore)
-      for (final col in posCollections) {
-        if (col.totalFullBottlesReceived <= 0) continue;
-        
-        // On sauvegarde juste la collection liée au tour, elle sera "reçue" manuellement par le POS
-        await collectionRepository.saveCollection(col, updatedTour.enterpriseId);
-        
-        AppLogger.info(
-          'TourClosure: Distribution POS enregistrée pour ${col.clientName} : ${col.totalFullBottlesReceived} bouteilles.',
-          name: 'transaction.tour_closure',
-        );
-      }
-
-      // 6. Vérifier les seuils d'alerte
-      final alerts = <StockAlert>[];
-      final affectedWeights = {
-        ...updatedTour.emptyBottlesLoaded.keys,
-        ...updatedTour.fullBottlesReceived.keys,
-      };
-
-      for (final weight in affectedWeights) {
-        final alert = await alertService.checkStockLevel(
-          enterpriseId: updatedTour.enterpriseId,
-          cylinderId: null,
-          weight: weight,
-          status: CylinderStatus.full,
-        );
-        if (alert != null) alerts.add(alert);
-      }
-
-      return (tour: updatedTour, alerts: alerts);
-    } catch (e, stackTrace) {
-      AppLogger.error(
-        'TourClosure Error: $tourId: $e',
-        name: 'transaction.tour_closure',
-        error: e,
-        stackTrace: stackTrace,
-      );
-      rethrow;
     }
+
+    AppLogger.info(
+      'TourClosure: Clôture réussie du tour ${updatedTour.id}. '
+      'Vides chargées: ${updatedTour.totalBottlesToLoad}, '
+      'Pleines reçues: ${updatedTour.totalBottlesReceived}, '
+      'Distributions grossistes: ${tour.wholesaleDistributions.length}',
+      name: 'transaction.tour_closure',
+    );
+
+    return (tour: updatedTour, alerts: const <StockAlert>[]);
   }
 
-  /// Déplace des bouteilles du stock "Magasin" vers "Transit" lors du chargement.
-  /// Gère les mises à jour en calculant la différence avec le chargement précédent.
+  /// Met à jour les sources de chargement d'un tour.
   Future<void> executeTourLoadingTransaction({
     required String tourId,
     required String userId,
-    required Map<int, int> newLoading,
-    Map<int, int> newLeakingLoading = const {},
+    required List<TourLoadingSource> loadingSources,
   }) async {
     final tour = await tourRepository.getTourById(tourId);
     if (tour == null) throw const NotFoundException('Tour introuvable', 'TOUR_NOT_FOUND');
 
-    final oldLoading = tour.emptyBottlesLoaded;
-    final oldLeakingLoading = tour.leakingBottlesLoaded;
+    final oldLoadingSources = tour.loadingSources;
 
-    // 1. Gérer les bouteilles vides classiques
-    // SUPPRIMÉ : Les mouvements de stock (Store -> Transit) sont désactivés pour le gérant.
-    // Le tour est purement déclaratif.
-
-    // 2. Gérer les bouteilles avec fuite (Remplacement gratuit)
-    // SUPPRIMÉ : Les mouvements de stock (Leak -> LeakInTransit) sont désactivés.
-    // On garde uniquement la synchronisation des signalements de fuite si nécessaire, 
-    // mais sans impact sur l'inventaire physique du magasin mère.
-    final leakWeights = <int>{...oldLeakingLoading.keys, ...newLeakingLoading.keys};
-    for (final weight in leakWeights) {
-      final oldQty = oldLeakingLoading[weight] ?? 0;
-      final newQty = newLeakingLoading[weight] ?? 0;
-      final delta = newQty - oldQty;
-      if (delta <= 0) continue;
-
-      final cylinders = await gasRepository.getCylinders();
-      final cylinder = cylinders.firstWhere(
-        (c) => c.weight == weight && c.enterpriseId == tour.enterpriseId,
-        orElse: () => cylinders.firstWhere((c) => c.weight == weight),
-      );
-
-      // Synchroniser les signalements de fuite : passer en 'sentForExchange'
-      final pendingLeaks = await leakRepository.getLeaks(
-        tour.enterpriseId,
-        status: LeakStatus.reported,
-      );
-      final leaksToUpdate = pendingLeaks
-          .where((l) => l.weight == weight && l.cylinderId == cylinder.id)
-          .take(delta)
-          .toList();
-
-      for (final leak in leaksToUpdate) {
-        await leakRepository.updateLeak(leak.copyWith(
-          status: LeakStatus.sentForExchange,
-          tourId: tour.id,
-          updatedAt: DateTime.now(),
-        ));
+    // Agréger les chargements par poids pour la compatibilité descendante
+    final aggregatedLoading = <int, int>{};
+    for (final source in loadingSources) {
+      for (final entry in source.quantities.entries) {
+        aggregatedLoading[entry.key] = (aggregatedLoading[entry.key] ?? 0) + entry.value;
       }
     }
 
-    // Mettre à jour le tour
+    // Mettre à jour le tour (Purement déclaratif)
     await tourRepository.updateTour(tour.copyWith(
-      emptyBottlesLoaded: newLoading,
-      leakingBottlesLoaded: newLeakingLoading,
+      loadingSources: loadingSources,
+      emptyBottlesLoaded: aggregatedLoading,
       updatedAt: DateTime.now(),
     ));
 
@@ -772,15 +698,13 @@ class TransactionService {
       entityType: 'tour',
       timestamp: DateTime.now(),
       metadata: {
-        'oldLoading': oldLoading.map((k, v) => MapEntry(k.toString(), v)),
-        'newLoading': newLoading.map((k, v) => MapEntry(k.toString(), v)),
-        'oldLeakingLoading': oldLeakingLoading.map((k, v) => MapEntry(k.toString(), v)),
-        'newLeakingLoading': newLeakingLoading.map((k, v) => MapEntry(k.toString(), v)),
+        'oldLoadingSources': oldLoadingSources.map((s) => s.toMap()).toList(),
+        'newLoadingSources': loadingSources.map((s) => s.toMap()).toList(),
       },
     ));
   }
 
-  /// Annule un tour et remonte les bouteilles de Transit vers Magasin.
+  /// Annule un tour.
   Future<void> executeTourCancellationTransaction({
     required String tourId,
     required String userId,
@@ -789,49 +713,14 @@ class TransactionService {
     if (tour == null) throw const NotFoundException('Tour introuvable', 'TOUR_NOT_FOUND');
     if (tour.status == TourStatus.cancelled) return;
 
-    // 1. Remettre les vides en transit vers le magasin (DÉSACTIVÉ)
-    // 1.bis Remettre les fuites en transit vers le stock fuite (DÉSACTIVÉ)
-    // On conserve uniquement la réinitialisation des statuts de fuite si nécessaire
-    for (final entry in tour.leakingBottlesLoaded.entries) {
-      final weight = entry.key;
-      final quantity = entry.value;
-      if (quantity <= 0) continue;
-
-      final cylinders = await gasRepository.getCylinders();
-      final cylinder = cylinders.firstWhere(
-        (c) => c.weight == weight && c.enterpriseId == tour.enterpriseId,
-        orElse: () => cylinders.firstWhere((c) => c.weight == weight),
-      );
-
-      // Synchroniser les signalements de fuite : remettre en 'reported'
-      final sentLeaks = await leakRepository.getLeaks(
-        tour.enterpriseId,
-        status: LeakStatus.sentForExchange,
-      );
-      final leaksToRevert = sentLeaks
-          .where((l) =>
-              l.weight == weight &&
-              l.cylinderId == cylinder.id &&
-              l.tourId == tour.id)
-          .toList();
-
-      for (final leak in leaksToRevert) {
-        await leakRepository.updateLeak(leak.copyWith(
-          status: LeakStatus.reported,
-          tourId: null,
-          updatedAt: DateTime.now(),
-        ));
-      }
-    }
-
-    // 2. Annuler le tour
+    // Annuler le tour (Purement administratif)
     await tourRepository.updateTour(tour.copyWith(
       status: TourStatus.cancelled,
       cancelledDate: DateTime.now(),
       updatedAt: DateTime.now(),
     ));
 
-    // 3. Audit Trail
+    // Audit Trail
     await auditTrailRepository.log(AuditRecord(
       id: '',
       enterpriseId: tour.enterpriseId,
@@ -896,91 +785,7 @@ class TransactionService {
     }
   }
 
-  /// Exécute une collecte indépendante (Hors Tour) de manière atomique.
-  /// 
-  /// Cette méthode décompose la collecte en plusieurs transactions de vente (Type retour)
-  /// pour assurer la traçabilité et gérer le stock/trésorerie via les mécanismes existants.
-  Future<void> executeIndependentCollectionTransaction({
-    required Collection collection,
-    required String enterpriseId,
-    required String userId,
-  }) async {
-    // 0. Validation (Session check removed)
-    if (collection.emptyBottles.isEmpty) {
-      throw const ValidationException(
-        'La collecte ne contient aucune bouteille.',
-        'EMPTY_COLLECTION',
-      );
-    }
 
-    // 1. Récupérer les bouteilles pour mapping ID
-    final cylinders = await gasRepository.getCylinders();
-
-    // 2. Pour chaque type de bouteille, traiter le stock
-    for (final entry in collection.emptyBottles.entries) {
-      final weight = entry.key;
-      final quantity = entry.value;
-      if (quantity <= 0) continue;
-
-      final cylinder = cylinders.firstWhere(
-        (c) => c.weight == weight && c.enterpriseId == enterpriseId,
-        orElse: () => cylinders.firstWhere(
-          (c) => c.weight == weight,
-          orElse: () => throw NotFoundException('Cylindre $weight kg introuvable', 'CYLINDER_NOT_FOUND'),
-        ),
-      );
-
-      // 2a. Si c'est un POS, déduire les vides du stock du POS source (DÉSACTIVÉ)
-      // Désactivé : La collecte administrative ne vérifie plus le stock du POS.
-
-      // 2b. Ajouter les vides au stock de la société (entreprise courante) (DÉSACTIVÉ)
-      // Désactivé : La collecte administrative ne gère plus de stock physique pour la société mère.
-    }
-
-    // 2.5 Traiter le stock des fuites (leaks) (DÉSACTIVÉ)
-    // Désactivé : La collecte administrative ne gère plus de stock physique pour la société mère.
-
-    // 2.7 Enregistrer la collecte de manière permanente
-    await collectionRepository.saveCollection(collection, enterpriseId);
-
-    // 3. Gérer l'aspect financier (Trésorerie / Dépense)
-    if (collection.amountPaid > 0) {
-       // C'est une sortie d'argent (on paye le client pour les bouteilles / ou retour consigne)
-       // On enregistre une dépense OU une opération de trésorerie SORTIE
-       
-       await treasuryRepository.saveOperation(TreasuryOperation(
-        id: LocalIdGenerator.generate(),
-        enterpriseId: enterpriseId,
-        userId: userId,
-        amount: collection.amountPaid.toInt(),
-        type: TreasuryOperationType.removal, // Sortie d'argent
-        date: DateTime.now(),
-        reason: 'Paiement Collecte Indépendante (${collection.clientName})',
-        referenceEntityId: collection.id, // On réfère à l'ID de collection même si virtuelle
-        referenceEntityType: 'gas_collection', // Nouveau type
-        createdAt: DateTime.now(),
-      ));
-    }
-
-    // 4. Audit global
-    await auditTrailRepository.log(AuditRecord(
-        id: '',
-        enterpriseId: enterpriseId,
-        userId: userId,
-        module: 'gaz',
-        action: 'INDEPENDENT_COLLECTION',
-        entityId: collection.id, // ID virtuel
-        entityType: 'collection',
-        timestamp: DateTime.now(),
-        metadata: {
-          'clientName': collection.clientName,
-          'bottles': collection.emptyBottles.entries
-              .map((e) => {'weight': e.key, 'qty': e.value})
-              .toList(),
-          'amountPaid': collection.amountPaid,
-        },
-      ));
-  }
 
 
   /// Déclare une fuite de manière atomique et la convertit immédiatement en vide.
@@ -1411,17 +1216,7 @@ class TransactionService {
     ));
   }
 
-  /// Met à jour les bouteilles pleines attribuées à une collecte (via tour).
-  Future<void> updateCollectionFullBottles(String collectionId, String enterpriseId, Map<int, int> fulfillment) async {
-    final collection = await collectionRepository.getCollectionById(collectionId);
-    if (collection == null) return;
-    
-    final updatedCollection = collection.copyWith(
-      fullBottlesReceived: fulfillment,
-    );
-    
-    await collectionRepository.saveCollection(updatedCollection, enterpriseId);
-  }
+
 
   /// Exécute un mouvement de stock manuel pour un POS (Entrées Pleins/Vides, Sortie Vides).
   /// Cela permet au POS de gérer son stock indépendamment du tour parental.

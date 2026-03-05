@@ -825,7 +825,6 @@ class RealtimeSyncService {
     );
 
     try {
-      // 1. Récupérer les IDs d'entreprises de l'utilisateur depuis le local
       final userRecord = await driftService.records.findByRemoteId(
         collectionName: _usersCollection,
         remoteId: _currentUserId!,
@@ -833,18 +832,22 @@ class RealtimeSyncService {
         moduleType: 'administration',
       );
 
+      bool isAdmin = false;
       final Set<String> targetEnterpriseIds = {};
       if (userRecord != null) {
         try {
           final userData = jsonDecode(userRecord.dataJson);
+          isAdmin = userData['isAdmin'] as bool? ?? false;
           final ids = (userData['enterpriseIds'] as List?)?.map((e) => e.toString()).toList();
           if (ids != null) {
             targetEnterpriseIds.addAll(ids);
           }
         } catch (e) {
-          developer.log('Error parsing user enterpriseIds for sync: $e', name: 'admin.realtime.sync');
+          developer.log('Error parsing user data for sync: $e', name: 'admin.realtime.sync');
         }
       }
+
+      // 1.5 Découverte locale des sous-tenants (POS/Agences) pour les enterprises déjà connues
 
       // 1.5 Découverte locale des sous-tenants (POS/Agences) pour les enterprises déjà connues
       // On cherche localement les entités dont le parent est dans targetEnterpriseIds
@@ -878,15 +881,26 @@ class RealtimeSyncService {
           .snapshots());
 
       // Écouter toutes les assignations des entreprises auxquelles on appartient (+ sous-tenants découverts)
-      if (targetEnterpriseIds.isNotEmpty) {
+      // UNIQUEMENT pour les admins, car les règles Firestore (Query Isolation) bloquent cette requête pour les autres
+      if (isAdmin && targetEnterpriseIds.isNotEmpty) {
         final idsList = targetEnterpriseIds.toList();
         // Chunk par 30 pour respecter les limites Firestore
         for (var i = 0; i < idsList.length; i += 30) {
-          final chunk = idsList.sublist(i, i + 30 > idsList.length ? idsList.length : i + 30);
-          streams.add(firestore
+          final chunk = idsList.sublist(
+            i,
+            i + 30 > idsList.length ? idsList.length : i + 30,
+          );
+          
+          final stream = firestore
               .collection(_enterpriseModuleUsersCollection)
               .where('enterpriseId', whereIn: chunk)
-              .snapshots());
+              .snapshots()
+              .handleError((error) {
+                // Double sécurité : on logue mais on ne bloque pas
+                developer.log('Admin-only assignment query failed: $error', name: 'admin.realtime.sync');
+              });
+              
+          streams.add(stream);
         }
       }
 
@@ -894,6 +908,8 @@ class RealtimeSyncService {
       _enterpriseModuleUsersSubscription = Rx.merge(streams).listen(
             (snapshot) => onSnapshot(snapshot),
             onError: (error, stackTrace) {
+              if (error is FirebaseException && error.code == 'permission-denied') return;
+              
               final appException =
                   ErrorHandler.instance.handleError(error, stackTrace);
               AppLogger.error(

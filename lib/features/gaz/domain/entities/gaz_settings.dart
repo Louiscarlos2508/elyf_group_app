@@ -9,8 +9,6 @@ class GazSettings {
     Map<int, double>? supplierExchangeFees,
     Map<int, int>? lowStockThresholds,
     Map<int, double>? depositRates,
-    Map<int, double>? loadingFees,
-    Map<int, double>? unloadingFees,
     this.updatedAt,
     this.createdAt,
     this.deletedAt,
@@ -21,9 +19,7 @@ class GazSettings {
         _purchasePrices = purchasePrices,
         _supplierExchangeFees = supplierExchangeFees,
         _lowStockThresholds = lowStockThresholds,
-        _depositRates = depositRates,
-        _loadingFees = loadingFees,
-        _unloadingFees = unloadingFees;
+        _depositRates = depositRates;
 
   final String enterpriseId;
   final String moduleId;
@@ -46,12 +42,6 @@ class GazSettings {
   final Map<int, double>? _depositRates;
   Map<int, double> get depositRates => _depositRates ?? const <int, double>{};
 
-  final Map<int, double>? _loadingFees;
-  Map<int, double> get loadingFees => _loadingFees ?? const <int, double>{};
-
-  final Map<int, double>? _unloadingFees;
-  Map<int, double> get unloadingFees => _unloadingFees ?? const <int, double>{};
-
   final DateTime? updatedAt;
   final DateTime? createdAt;
   final DateTime? deletedAt;
@@ -67,8 +57,6 @@ class GazSettings {
     Map<int, double>? supplierExchangeFees,
     Map<int, int>? lowStockThresholds,
     Map<int, double>? depositRates,
-    Map<int, double>? loadingFees,
-    Map<int, double>? unloadingFees,
     DateTime? updatedAt,
     DateTime? createdAt,
     DateTime? deletedAt,
@@ -84,8 +72,6 @@ class GazSettings {
       supplierExchangeFees: supplierExchangeFees ?? _supplierExchangeFees,
       lowStockThresholds: lowStockThresholds ?? _lowStockThresholds,
       depositRates: depositRates ?? _depositRates,
-      loadingFees: loadingFees ?? _loadingFees,
-      unloadingFees: unloadingFees ?? _unloadingFees,
       updatedAt: updatedAt ?? this.updatedAt,
       createdAt: createdAt ?? this.createdAt,
       deletedAt: deletedAt ?? this.deletedAt,
@@ -135,16 +121,6 @@ class GazSettings {
         ) ??
         const <int, double>{};
 
-    final loadingFees = (map['loadingFees'] as Map<String, dynamic>?)?.map(
-          (k, v) => MapEntry(int.parse(k), (v as num).toDouble()),
-        ) ??
-        const <int, double>{};
-
-    final unloadingFees = (map['unloadingFees'] as Map<String, dynamic>?)?.map(
-          (k, v) => MapEntry(int.parse(k), (v as num).toDouble()),
-        ) ??
-        const <int, double>{};
-
     return GazSettings(
       enterpriseId: map['enterpriseId'] as String? ?? defaultEnterpriseId,
       moduleId: map['moduleId'] as String? ?? '',
@@ -154,8 +130,6 @@ class GazSettings {
       supplierExchangeFees: exchangeFees,
       lowStockThresholds: lowStockThresholds,
       depositRates: depositRates,
-      loadingFees: loadingFees,
-      unloadingFees: unloadingFees,
       autoPrintReceipt: map['autoPrintReceipt'] as bool? ?? false,
       updatedAt: map['updatedAt'] != null
           ? DateTime.parse(map['updatedAt'] as String)
@@ -190,12 +164,6 @@ class GazSettings {
         (k, v) => MapEntry(k.toString(), v),
       ),
       'depositRates': depositRates.map(
-        (k, v) => MapEntry(k.toString(), v),
-      ),
-      'loadingFees': loadingFees.map(
-        (k, v) => MapEntry(k.toString(), v),
-      ),
-      'unloadingFees': unloadingFees.map(
         (k, v) => MapEntry(k.toString(), v),
       ),
       'autoPrintReceipt': autoPrintReceipt,
@@ -254,17 +222,5 @@ class GazSettings {
     final updatedRates = Map<int, double>.from(depositRates);
     updatedRates[weight] = rate;
     return copyWith(depositRates: updatedRates, updatedAt: DateTime.now());
-  }
-
-  GazSettings setLoadingFee(int weight, double fee) {
-    final updated = Map<int, double>.from(loadingFees);
-    updated[weight] = fee;
-    return copyWith(loadingFees: updated, updatedAt: DateTime.now());
-  }
-
-  GazSettings setUnloadingFee(int weight, double fee) {
-    final updated = Map<int, double>.from(unloadingFees);
-    updated[weight] = fee;
-    return copyWith(unloadingFees: updated, updatedAt: DateTime.now());
   }
 }

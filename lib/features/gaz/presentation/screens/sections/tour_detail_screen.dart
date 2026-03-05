@@ -144,7 +144,7 @@ class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
         const SizedBox(height: 16),
         _StepCard(
           title: '2. Transport & Frais',
-          subtitle: 'Gérer les frais de route et de manutention',
+          subtitle: 'Gérer les frais de route et dépenses liées au tour',
           icon: Icons.local_shipping_outlined,
           isCompleted: tour.transportCompletedDate != null,
           isEnabled: tour.totalBottlesToLoad > 0,
@@ -160,10 +160,10 @@ class _TourDetailScreenState extends ConsumerState<TourDetailScreen> {
         ),
         const SizedBox(height: 16),
         _StepCard(
-          title: '3. Réception des pleines',
-          subtitle: 'Enregistrer les bouteilles reçues et le coût gaz',
-          icon: Icons.download_rounded,
-          isCompleted: tour.fullBottlesReceived.isNotEmpty,
+          title: '3. Retour & Encaissement',
+          subtitle: 'Réception fournisseur et distribution aux grossistes/points de vente',
+          icon: Icons.assignment_turned_in_outlined,
+          isCompleted: tour.receptionCompletedDate != null || tour.fullBottlesReceived.isNotEmpty,
           isEnabled: tour.transportCompletedDate != null,
           isEditing: _editingStepIndex == 2,
           canEdit: tour.status == TourStatus.open,
