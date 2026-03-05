@@ -158,34 +158,18 @@ child: LayoutBuilder(
                               children: [
                                 ElyfButton(
                                   onPressed: onEdit,
-                                  variant: ElyfButtonVariant.text,
+                                  variant: ElyfButtonVariant.outlined,
                                   size: ElyfButtonSize.small,
-                                  icon: Icons.edit,
+                                  icon: Icons.edit_outlined,
                                   child: const Text('Modifier'),
-                                ),
-                                const SizedBox(width: 8),
-                                ElyfButton(
-                                  onPressed: () {
-                                    showDialog(
-                                      context: context,
-                                      builder: (context) => StockAlertThresholdDialog(
-                                        cylinder: cylinder,
-                                      ),
-                                    );
-                                  },
-                                  variant: ElyfButtonVariant.text,
-                                  size: ElyfButtonSize.small,
-                                  icon: Icons.notification_important_outlined,
-                                  child: const Text('Alerte'),
                                 ),
                                 const SizedBox(width: 8),
                                 ElyfButton(
                                   onPressed: onDelete,
                                   variant: ElyfButtonVariant.text,
-                                  backgroundColor: theme.colorScheme.error.withValues(alpha: 0.1),
-                                  textColor: theme.colorScheme.error,
                                   size: ElyfButtonSize.small,
-                                  icon: Icons.delete,
+                                  textColor: theme.colorScheme.error,
+                                  icon: Icons.delete_outline,
                                   child: const Text('Supprimer'),
                                 ),
                               ],
@@ -261,40 +245,23 @@ child: LayoutBuilder(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               ElyfIconButton(
-                                icon: Icons.notification_important_outlined,
-                                onPressed: () {
-                                  showDialog(
-                                    context: context,
-                                    builder: (context) => StockAlertThresholdDialog(
-                                      cylinder: cylinder,
-                                    ),
-                                  );
-                                },
-                                tooltip: 'Alerte stock',
-                                iconColor: theme.colorScheme.secondary,
-                                size: 36,
-                                iconSize: 20,
-                                useGlassEffect: false,
-                              ),
-                              const SizedBox(width: 4),
-                              ElyfIconButton(
-                                icon: Icons.edit,
+                                icon: Icons.edit_outlined,
                                 onPressed: onEdit,
                                 tooltip: 'Modifier',
                                 iconColor: theme.colorScheme.primary,
+                                backgroundColor: theme.colorScheme.primaryContainer,
                                 size: 36,
                                 iconSize: 20,
-                                useGlassEffect: false,
                               ),
-                              const SizedBox(width: 4),
+                              const SizedBox(width: 8),
                               ElyfIconButton(
-                                icon: Icons.delete,
+                                icon: Icons.delete_outline,
                                 onPressed: onDelete,
                                 tooltip: 'Supprimer',
                                 iconColor: theme.colorScheme.error,
+                                backgroundColor: theme.colorScheme.errorContainer,
                                 size: 36,
                                 iconSize: 20,
-                                useGlassEffect: false,
                               ),
                             ],
                           ),

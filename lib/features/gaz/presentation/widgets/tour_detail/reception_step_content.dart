@@ -113,7 +113,7 @@ class _ReceptionStepContentState extends ConsumerState<ReceptionStepContent> {
   }
 
   Future<void> _loadSettings(List<int> weights) async {
-    final settingsAsync = await ref.read(gazSettingsControllerProvider).getSettings(
+    final settingsAsync = await ref.read(gazSettingsControllerProvider(widget.enterpriseId)).getSettings(
           enterpriseId: widget.enterpriseId,
           moduleId: 'gaz',
         );

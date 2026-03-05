@@ -29,7 +29,7 @@ class _StockAlertThresholdDialogState extends ConsumerState<StockAlertThresholdD
   }
 
   Future<void> _loadCurrentThreshold() async {
-    final settings = await ref.read(gazSettingsControllerProvider).getSettings(
+    final settings = await ref.read(gazSettingsControllerProvider(widget.cylinder.enterpriseId)).getSettings(
       enterpriseId: widget.cylinder.enterpriseId,
       moduleId: 'gaz',
     );
@@ -54,7 +54,7 @@ class _StockAlertThresholdDialogState extends ConsumerState<StockAlertThresholdD
 
     try {
       final threshold = int.tryParse(_thresholdController.text) ?? 0;
-      await ref.read(gazSettingsControllerProvider).setLowStockThreshold(
+      await ref.read(gazSettingsControllerProvider(widget.cylinder.enterpriseId)).setLowStockThreshold(
         enterpriseId: widget.cylinder.enterpriseId,
         moduleId: 'gaz',
         weight: widget.cylinder.weight,

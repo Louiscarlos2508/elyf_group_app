@@ -430,7 +430,7 @@ class GazSettingsScreen extends ConsumerWidget {
           ElevatedButton(
             onPressed: () async {
               final newThreshold = int.tryParse(controller.text) ?? 0;
-              await ref.read(gazSettingsControllerProvider).setLowStockThreshold(
+              await ref.read(gazSettingsControllerProvider(enterpriseId)).setLowStockThreshold(
                 enterpriseId: enterpriseId,
                 moduleId: 'gaz',
                 weight: weight,
@@ -612,7 +612,7 @@ class GazSettingsScreen extends ConsumerWidget {
               final newLoading = double.tryParse(loadingController.text) ?? 0.0;
               final newUnloading = double.tryParse(unloadingController.text) ?? 0.0;
               
-              final controller = ref.read(gazSettingsControllerProvider);
+              final controller = ref.read(gazSettingsControllerProvider(enterpriseId));
               await controller.setLoadingFee(
                 enterpriseId: enterpriseId,
                 moduleId: 'gaz',

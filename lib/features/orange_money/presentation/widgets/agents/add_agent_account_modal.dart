@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../domain/entities/agent.dart' as entity;
@@ -233,7 +232,7 @@ class _AddAgentAccountModalState extends ConsumerState<AddAgentAccountModal> {
         _buildSectionHeader('État & Documents'),
         SizedBox(height: isKeyboardOpen ? 8 : 16),
         DropdownButtonFormField<entity.AgentStatus>(
-          value: _agentStatus,
+          initialValue: _agentStatus,
           decoration: InputDecoration(
             labelText: 'Statut du compte',
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),

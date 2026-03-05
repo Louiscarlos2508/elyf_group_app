@@ -620,9 +620,7 @@ final leakReportSummaryProvider =
       return controller.getPendingLeaksSummary(enterpriseId);
     });
 
-final gazSettingsControllerProvider = Provider<GazSettingsController>((ref) {
-  final enterpriseId =
-      ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
+final gazSettingsControllerProvider = Provider.family<GazSettingsController, String>((ref, enterpriseId) {
   final repo = ref.watch(gazSettingsRepositoryProvider(enterpriseId));
   return GazSettingsController(repository: repo);
 });
@@ -1247,16 +1245,9 @@ final gazSettingsProvider =
       GazSettings?,
       ({String enterpriseId, String moduleId})
     >((ref, params) {
-      final activeEnterprise = ref.watch(activeEnterpriseProvider).value;
-      final effectiveEnterpriseId = activeEnterprise != null &&
-              activeEnterprise.isPointOfSale &&
-              activeEnterprise.type.module == EnterpriseModule.gaz &&
-              activeEnterprise.id == params.enterpriseId
-          ? (activeEnterprise.parentEnterpriseId ?? params.enterpriseId)
-          : params.enterpriseId;
-      final controller = ref.watch(gazSettingsControllerProvider);
+      final controller = ref.watch(gazSettingsControllerProvider(params.enterpriseId));
       return controller.watchSettings(
-        enterpriseId: effectiveEnterpriseId,
+        enterpriseId: params.enterpriseId,
         moduleId: params.moduleId,
       );
     });

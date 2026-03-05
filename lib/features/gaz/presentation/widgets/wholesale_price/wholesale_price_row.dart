@@ -75,7 +75,7 @@ class _WholesalePriceRowState extends ConsumerState<WholesalePriceRow> {
     }
 
     try {
-      final settingsController = ref.read(gazSettingsControllerProvider);
+      final settingsController = ref.read(gazSettingsControllerProvider(widget.enterpriseId));
       await settingsController.setWholesalePrice(
         enterpriseId: widget.enterpriseId,
         moduleId: widget.moduleId,

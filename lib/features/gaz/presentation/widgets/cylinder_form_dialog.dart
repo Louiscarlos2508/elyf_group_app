@@ -94,7 +94,7 @@ class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
     final weight = widget.cylinder?.weight ?? widget.initialWeight;
     if (weight == null || _enterpriseId == null) return;
     
-    final settings = await ref.read(gazSettingsControllerProvider).getSettings(
+    final settings = await ref.read(gazSettingsControllerProvider(_enterpriseId!)).getSettings(
       enterpriseId: _enterpriseId!,
       moduleId: 'gaz',
     );
@@ -341,7 +341,7 @@ class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
                       },
                     ),
                     const SizedBox(height: 32),
-
+                  ],
                   
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
