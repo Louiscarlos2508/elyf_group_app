@@ -6,10 +6,10 @@ import 'package:elyf_groupe_app/features/administration/domain/entities/enterpri
 import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 
 import '../../widgets/gaz_header.dart';
-import '../../widgets/deposit_refund_dialog.dart';
 import 'inventory/inventory_tab_bar.dart';
 import 'inventory/stock_status_tab.dart';
 import 'inventory/leak_tracking_tab.dart';
+import 'inventory/stock_history_tab.dart';
 import 'sales/collection_history_tab.dart';
 import '../../../application/providers/permission_providers.dart';
 
@@ -40,6 +40,7 @@ class _GazInventoryScreenState extends ConsumerState<GazInventoryScreen>
       newTabs.add('Collectes');
     }
     newTabs.add('Fuites');
+    newTabs.add('Historique');
 
     // If tabs are already initialized and length matches, we are good
     if (_tabs.isNotEmpty && _tabs.length == newTabs.length) return;
@@ -98,11 +99,7 @@ class _GazInventoryScreenState extends ConsumerState<GazInventoryScreen>
             showViewToggle: false, // User requested to only show network view for main depot
             actions: [
 
-              IconButton(
-                onPressed: () => DepositRefundDialog.show(context),
-                icon: const Icon(Icons.keyboard_return, color: Colors.white),
-                tooltip: 'Retour Bouteille',
-              ),
+
             ],
             bottom: InventoryTabBar(
               tabController: _tabController!,
@@ -123,6 +120,7 @@ class _GazInventoryScreenState extends ConsumerState<GazInventoryScreen>
               enterpriseId: enterpriseId,
               moduleId: 'gaz',
             ),
+            StockHistoryTab(enterpriseId: enterpriseId),
           ],
         ),
       ),

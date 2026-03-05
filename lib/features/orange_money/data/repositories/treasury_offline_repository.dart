@@ -32,11 +32,15 @@ class OrangeMoneyTreasuryOfflineRepository implements OrangeMoneyTreasuryReposit
     }
 
     final results = await query.get();
+    
+    final startOfDay = from != null ? DateTime(from.year, from.month, from.day) : null;
+    final endOfDay = to != null ? DateTime(to.year, to.month, to.day, 23, 59, 59, 999) : null;
+
     return results
         .map((r) => TreasuryOperation.fromMap(jsonDecode(r.dataJson), r.enterpriseId))
         .where((op) {
-      if (from != null && op.date.isBefore(from)) return false;
-      if (to != null && op.date.isAfter(to)) return false;
+      if (startOfDay != null && (op.date.isBefore(startOfDay) && !op.date.isAtSameMomentAs(startOfDay))) return false;
+      if (endOfDay != null && (op.date.isAfter(endOfDay) && !op.date.isAtSameMomentAs(endOfDay))) return false;
       if (referenceEntityId != null && op.referenceEntityId != referenceEntityId) return false;
       if (referenceEntityType != null && op.referenceEntityType != referenceEntityType) return false;
       return true;
@@ -62,13 +66,16 @@ class OrangeMoneyTreasuryOfflineRepository implements OrangeMoneyTreasuryReposit
       query.where((t) => t.enterpriseId.equals(enterpriseId));
     }
 
+    final startOfDay = from != null ? DateTime(from.year, from.month, from.day) : null;
+    final endOfDay = to != null ? DateTime(to.year, to.month, to.day, 23, 59, 59, 999) : null;
+
     return query.watch()
         .map((results) {
       return results
           .map((r) => TreasuryOperation.fromMap(jsonDecode(r.dataJson), r.enterpriseId))
           .where((op) {
-        if (from != null && op.date.isBefore(from)) return false;
-        if (to != null && op.date.isAfter(to)) return false;
+        if (startOfDay != null && (op.date.isBefore(startOfDay) && !op.date.isAtSameMomentAs(startOfDay))) return false;
+        if (endOfDay != null && (op.date.isAfter(endOfDay) && !op.date.isAtSameMomentAs(endOfDay))) return false;
         if (referenceEntityId != null && op.referenceEntityId != referenceEntityId) return false;
         if (referenceEntityType != null && op.referenceEntityType != referenceEntityType) return false;
         return true;

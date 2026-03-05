@@ -217,13 +217,35 @@ class _AutoSynthesisSection extends ConsumerWidget {
     final agents = agentsAsync.value ?? [];
     final dailyStats = dailyStatsAsync.value ?? {};
 
+    final operationsAsync = ref.watch(orangeMoneyTreasuryOperationsStreamProvider(enterpriseId));
+    final operations = operationsAsync.value ?? [];
+
+    int treasuryDeposits = 0;
+    int treasuryWithdrawals = 0;
+
+    for (final op in operations) {
+      if (op.date.year == today.year && op.date.month == today.month && op.date.day == today.day) {
+        if (op.type == TreasuryOperationType.supply) {
+          treasuryDeposits += op.amount;
+        } else if (op.type == TreasuryOperationType.removal) {
+          treasuryWithdrawals += op.amount;
+        } else if (op.type == TreasuryOperationType.transfer && op.referenceEntityType == 'agent_account') {
+          if (op.fromAccount == PaymentMethod.mobileMoney && op.toAccount == PaymentMethod.cash) {
+            treasuryDeposits += op.amount;
+          } else if (op.fromAccount == PaymentMethod.cash && op.toAccount == PaymentMethod.mobileMoney) {
+            treasuryWithdrawals += op.amount;
+          }
+        }
+      }
+    }
+
     final totalFloatWithAgents = agents.fold<int>(
       0,
       (sum, agent) => sum + agent.liquidity,
     );
 
-    final totalDepositsToday = dailyStats['deposits'] as int? ?? 0;
-    final totalWithdrawalsToday = dailyStats['withdrawals'] as int? ?? 0;
+    final totalDepositsToday = (dailyStats['deposits'] as int? ?? 0) + treasuryDeposits;
+    final totalWithdrawalsToday = (dailyStats['withdrawals'] as int? ?? 0) + treasuryWithdrawals;
     final netImpact = totalDepositsToday - totalWithdrawalsToday;
 
     return Padding(

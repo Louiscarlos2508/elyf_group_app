@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import 'package:elyf_groupe_app/features/orange_money/domain/entities/agent.dart' as entity;
-import 'package:elyf_groupe_app/app/theme/app_colors.dart';
 import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
 import 'package:elyf_groupe_app/app/theme/app_radius.dart';
 import 'package:elyf_groupe_app/app/theme/app_colors.dart';
-import 'package:elyf_groupe_app/features/orange_money/presentation/widgets/agents/agents_dialogs.dart';
 
 /// A premium, modern card for representing agents or agencies in the network.
 class AgentNetworkCard extends StatelessWidget {
@@ -18,6 +17,7 @@ class AgentNetworkCard extends StatelessWidget {
     this.onEdit,
     this.onDelete,
     this.onRecharge,
+    this.stats,
   });
 
   final entity.Agent? agent;
@@ -26,6 +26,7 @@ class AgentNetworkCard extends StatelessWidget {
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
   final VoidCallback? onRecharge;
+  final AsyncValue<Map<String, dynamic>>? stats;
 
   @override
   Widget build(BuildContext context) {
@@ -117,36 +118,52 @@ class AgentNetworkCard extends StatelessWidget {
               ),
             ),
             
-            // Middle Section (Liquidity/Indicator)
+            // Middle Section (Flux/Performance Today)
             if (isAgent) ...[
               const Divider(height: 1),
               Padding(
                 padding: EdgeInsets.all(AppSpacing.md),
-                child: Column(
+                child: stats?.when(
+                  data: (s) => Column(
+                    children: [
+                      _buildFluxRow(
+                        context,
+                        label: 'Dépôts',
+                        amount: s['totalCashIn'] as int? ?? 0,
+                        count: s['transactionCount'] as int? ?? 0, // Simplified count for today
+                        icon: Icons.arrow_downward_rounded,
+                        color: const Color(0xFFFF6B00),
+                      ),
+                      const SizedBox(height: 8),
+                      _buildFluxRow(
+                        context,
+                        label: 'Retraits',
+                        amount: s['totalCashOut'] as int? ?? 0,
+                        count: 0, // Placeholder if count per type not available
+                        icon: Icons.arrow_upward_rounded,
+                        color: AppColors.danger,
+                      ),
+                    ],
+                  ),
+                  loading: () => const LoadingIndicator(height: 40),
+                  error: (_, __) => const Text('Flux non disponible'),
+                ) ?? Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Solde SIM',
+                          'Performance du Jour',
                           style: theme.textTheme.labelMedium?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
-                        Text(
-                          CurrencyFormatter.formatFCFA(agent!.liquidity),
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w900,
-                            color: theme.colorScheme.primary,
-                            fontFamily: 'Outfit',
-                          ),
-                        ),
                       ],
                     ),
-                    SizedBox(height: AppSpacing.sm),
-                    _buildLiquidityProgress(agent!.liquidity, theme),
+                    const SizedBox(height: 4),
+                    Text('Chargement...', style: theme.textTheme.labelSmall),
                   ],
                 ),
               ),
@@ -273,36 +290,42 @@ class AgentNetworkCard extends StatelessWidget {
     );
   }
 
-  Widget _buildLiquidityProgress(int current, ThemeData theme) {
-    // Thresholds for color coding
-    const lowThreshold = 100000;
-    const warningThreshold = 300000;
-    const targetMax = 1000000; // Reference for progress bar
 
-    final progress = (current / targetMax).clamp(0.0, 1.0);
-    final color = current < lowThreshold 
-        ? AppColors.danger 
-        : (current < warningThreshold ? AppColors.warning : AppColors.success);
-    
+  Widget _buildFluxRow(
+    BuildContext context, {
+    required String label,
+    required int amount,
+    required int count,
+    required IconData icon,
+    required Color color,
+  }) {
+    final theme = Theme.of(context);
     return Row(
       children: [
+        Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Icon(icon, size: 12, color: color),
+        ),
+        const SizedBox(width: 8),
         Expanded(
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(AppRadius.sm),
-            child: LinearProgressIndicator(
-              value: progress,
-              backgroundColor: theme.colorScheme.outline.withValues(alpha: 0.05),
-              valueColor: AlwaysStoppedAnimation<Color>(color),
-              minHeight: 6,
+          child: Text(
+            label,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),
-        SizedBox(width: AppSpacing.sm),
         Text(
-          '${(progress * 100).toInt()}%',
-          style: theme.textTheme.labelSmall?.copyWith(
-            fontWeight: FontWeight.w800,
-            color: color,
+          CurrencyFormatter.formatFCFA(amount),
+          style: theme.textTheme.labelMedium?.copyWith(
+            fontWeight: FontWeight.w900,
+            fontFamily: 'Outfit',
+            color: theme.colorScheme.onSurface,
           ),
         ),
       ],

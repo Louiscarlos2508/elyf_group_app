@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
-import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
-import '../../../../../core/errors/app_exceptions.dart';
 import 'package:elyf_groupe_app/features/orange_money/application/providers.dart';
 import 'package:elyf_groupe_app/features/orange_money/domain/entities/orange_money_settings.dart';
 import '../../widgets/settings_notifications_card.dart';
@@ -22,7 +20,6 @@ class SettingsScreen extends ConsumerStatefulWidget {
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   OrangeMoneySettings? _settings;
   bool _isLoading = false;
-  bool _hasChanges = false;
 
   @override
   void initState() {
@@ -44,7 +41,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       if (settings != null && mounted) {
         setState(() {
           _settings = settings;
-          _hasChanges = false;
         });
       } else if (mounted) {
         // Initialize default if not found
@@ -66,46 +62,24 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
   }
 
-  Future<void> _saveSettings() async {
-    if (widget.enterpriseId == null || !_hasChanges || _settings == null) {
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-    });
+  Future<void> _autoSaveSettings(OrangeMoneySettings newSettings) async {
+    if (widget.enterpriseId == null) return;
 
     try {
       final controller = ref.read(settingsControllerProvider);
-
-      // Update notifications
-      await controller.updateNotifications(
-        widget.enterpriseId!,
-        enableLiquidityAlerts: _settings!.enableLiquidityAlerts,
-        enableCommissionReminders: _settings!.enableCommissionReminders,
-        enableCheckpointReminders: _settings!.enableCheckpointReminders,
-        enableTransactionAlerts: _settings!.enableTransactionAlerts,
-      );
+      await controller.saveSettings(newSettings);
 
       if (mounted) {
-        setState(() {
-          _hasChanges = false;
-        });
-
         NotificationService.showSuccess(
           context,
-          'Paramètres enregistrés avec succès',
+          'Paramètres enregistrés automatiquement',
         );
       }
     } catch (e) {
       if (mounted) {
-        NotificationService.showError(context, 'Erreur: $e');
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+        NotificationService.showError(context, 'Erreur lors de l\'enregistrement: $e');
+        // Revert UI state if save fails
+        _loadSettings();
       }
     }
   }
@@ -113,8 +87,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   void _handleSettingsChanged(OrangeMoneySettings settings) {
     setState(() {
       _settings = settings;
-      _hasChanges = true;
     });
+    _autoSaveSettings(settings);
   }
 
   @override
@@ -122,8 +96,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     if (_isLoading && _settings == null) {
       return const Center(child: CircularProgressIndicator());
     }
-
-    final theme = Theme.of(context);
 
     if (_settings == null) {
       return const Center(child: Text('Aucun paramètre trouvé'));
@@ -134,7 +106,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         slivers: [
           ElyfModuleHeader(
             title: 'Paramètres du Module',
-            subtitle: 'Personnalisez vos alertes, seuils de liquidité et informations système.',
+            subtitle: 'Personnalisez vos rappels et informations système.',
             module: EnterpriseModule.mobileMoney,
           ),
           SliverPadding(
@@ -147,8 +119,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     settings: _settings!,
                     onSettingsChanged: _handleSettingsChanged,
                   ),
-                  const SizedBox(height: 48),
-                  _buildActionButtons(theme),
                   const SizedBox(height: 40),
                 ],
               ),
@@ -156,69 +126,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildActionButtons(ThemeData theme) {
-    return Wrap(
-      spacing: 16,
-      runSpacing: 16,
-      children: [
-        SizedBox(
-          height: 48,
-          child: OutlinedButton(
-            onPressed: _isLoading ? null : () => _loadSettings(),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              side: BorderSide(color: theme.colorScheme.outline.withValues(alpha: 0.5)),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
-              ),
-            ),
-            child: Text(
-              'Annuler',
-              style: theme.textTheme.labelLarge?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: theme.colorScheme.onSurface,
-                fontFamily: 'Outfit',
-              ),
-            ),
-          ),
-        ),
-        SizedBox(
-          height: 48,
-          child: ElevatedButton.icon(
-            onPressed: _isLoading || !_hasChanges ? null : _saveSettings,
-            icon: _isLoading
-                ? SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(theme.colorScheme.onPrimary),
-                    ),
-                  )
-                : const Icon(Icons.save_rounded, size: 20),
-            label: Text(
-              _isLoading ? 'Enregistrement...' : 'Enregistrer les paramètres',
-              style: theme.textTheme.labelLarge?.copyWith(
-                fontWeight: FontWeight.w800,
-                color: Colors.white,
-                fontFamily: 'Outfit',
-              ),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: theme.colorScheme.primary,
-              foregroundColor: Colors.white,
-              elevation: 2,
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
-              ),
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

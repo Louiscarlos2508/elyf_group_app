@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import 'package:elyf_groupe_app/features/orange_money/domain/entities/agent.dart' show AgentStatus;
 import 'agents_name_filter.dart';
@@ -7,24 +8,30 @@ import 'agents_status_filter.dart';
 
 /// Barre de filtres pour les agents.
 class AgentsFilters extends StatelessWidget {
+  final String searchQuery;
+  final AgentStatus? statusFilter;
+  final String? sortBy;
+  final DateTime startDate;
+  final DateTime endDate;
+  final ValueChanged<String> onSearchChanged;
+  final ValueChanged<AgentStatus?> onStatusChanged;
+  final ValueChanged<String?> onSortChanged;
+  final VoidCallback onDateRangeSelected;
+  final VoidCallback onReset;
+
   const AgentsFilters({
     super.key,
     required this.searchQuery,
     required this.statusFilter,
     required this.sortBy,
+    required this.startDate,
+    required this.endDate,
     required this.onSearchChanged,
     required this.onStatusChanged,
     required this.onSortChanged,
+    required this.onDateRangeSelected,
     required this.onReset,
   });
-
-  final String searchQuery;
-  final AgentStatus? statusFilter;
-  final String? sortBy;
-  final ValueChanged<String> onSearchChanged;
-  final ValueChanged<AgentStatus?> onStatusChanged;
-  final ValueChanged<String?> onSortChanged;
-  final VoidCallback onReset;
 
   @override
   Widget build(BuildContext context) {
@@ -42,6 +49,21 @@ class AgentsFilters extends StatelessWidget {
         ),
         AgentsStatusFilter(value: statusFilter, onChanged: onStatusChanged),
         AgentsNameFilter(value: sortBy, onChanged: onSortChanged),
+        
+        // Date Range Picker Button
+        OutlinedButton.icon(
+          onPressed: onDateRangeSelected,
+          icon: const Icon(Icons.calendar_today_rounded, size: 18),
+          label: Text(
+            '${DateFormat('dd/MM/yy').format(startDate)} - ${DateFormat('dd/MM/yy').format(endDate)}',
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
+
         SizedBox(
           height: 44, // Taller button for easier touch
           child: OutlinedButton.icon(

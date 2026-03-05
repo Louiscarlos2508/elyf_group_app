@@ -3,14 +3,10 @@ class OrangeMoneySettings {
   const OrangeMoneySettings({
     required this.id,
     required this.enterpriseId,
-    this.enableLiquidityAlerts = true,
     this.enableCommissionReminders = true,
     this.enableCheckpointReminders = true,
-    this.enableTransactionAlerts = true,
-    this.criticalLiquidityThreshold = 50000,
     this.checkpointDiscrepancyThreshold = 2.0,
     this.commissionReminderDays = 7,
-    this.largeTransactionThreshold = 500000,
     this.cashInTiers = const [],
     this.cashOutTiers = const [],
     this.commissionDiscrepancyMinor = 5.0,
@@ -24,16 +20,12 @@ class OrangeMoneySettings {
   final String enterpriseId;
 
   // NOTIFICATIONS
-  final bool enableLiquidityAlerts; // Alertes de liquidité faible
   final bool enableCommissionReminders; // Rappels de déclaration commission
   final bool enableCheckpointReminders; // Rappels de pointage
-  final bool enableTransactionAlerts; // Alertes transactions importantes
 
   // SEUILS
-  final int criticalLiquidityThreshold; // Seuil critique liquidité (FCFA)
   final double checkpointDiscrepancyThreshold; // Seuil écart pointage (%)
   final int commissionReminderDays; // Jours avant rappel commission
-  final int largeTransactionThreshold; // Seuil transaction importante (FCFA)
 
   // BARÈMES DE COMMISSION (Configurables)
   final List<CommissionTier> cashInTiers; // Barème Cash-In
@@ -50,15 +42,10 @@ class OrangeMoneySettings {
   OrangeMoneySettings copyWith({
     String? id,
     String? enterpriseId,
-    String? simNumber,
-    bool? enableLiquidityAlerts,
     bool? enableCommissionReminders,
     bool? enableCheckpointReminders,
-    bool? enableTransactionAlerts,
-    int? criticalLiquidityThreshold,
     double? checkpointDiscrepancyThreshold,
     int? commissionReminderDays,
-    int? largeTransactionThreshold,
     List<CommissionTier>? cashInTiers,
     List<CommissionTier>? cashOutTiers,
     double? commissionDiscrepancyMinor,
@@ -70,22 +57,14 @@ class OrangeMoneySettings {
     return OrangeMoneySettings(
       id: id ?? this.id,
       enterpriseId: enterpriseId ?? this.enterpriseId,
-      enableLiquidityAlerts:
-          enableLiquidityAlerts ?? this.enableLiquidityAlerts,
       enableCommissionReminders:
           enableCommissionReminders ?? this.enableCommissionReminders,
       enableCheckpointReminders:
           enableCheckpointReminders ?? this.enableCheckpointReminders,
-      enableTransactionAlerts:
-          enableTransactionAlerts ?? this.enableTransactionAlerts,
-      criticalLiquidityThreshold:
-          criticalLiquidityThreshold ?? this.criticalLiquidityThreshold,
       checkpointDiscrepancyThreshold:
           checkpointDiscrepancyThreshold ?? this.checkpointDiscrepancyThreshold,
       commissionReminderDays:
           commissionReminderDays ?? this.commissionReminderDays,
-      largeTransactionThreshold:
-          largeTransactionThreshold ?? this.largeTransactionThreshold,
       cashInTiers: cashInTiers ?? this.cashInTiers,
       cashOutTiers: cashOutTiers ?? this.cashOutTiers,
       commissionDiscrepancyMinor:
@@ -106,20 +85,14 @@ class OrangeMoneySettings {
     return OrangeMoneySettings(
       id: map['id'] as String? ?? defaultEnterpriseId,
       enterpriseId: map['enterpriseId'] as String? ?? defaultEnterpriseId,
-      enableLiquidityAlerts: map['enableLiquidityAlerts'] as bool? ?? true,
       enableCommissionReminders:
           map['enableCommissionReminders'] as bool? ?? true,
       enableCheckpointReminders:
           map['enableCheckpointReminders'] as bool? ?? true,
-      enableTransactionAlerts: map['enableTransactionAlerts'] as bool? ?? true,
-      criticalLiquidityThreshold:
-          (map['criticalLiquidityThreshold'] as num?)?.toInt() ?? 50000,
       checkpointDiscrepancyThreshold:
           (map['checkpointDiscrepancyThreshold'] as num?)?.toDouble() ?? 2.0,
       commissionReminderDays:
           (map['commissionReminderDays'] as num?)?.toInt() ?? 7,
-      largeTransactionThreshold:
-          (map['largeTransactionThreshold'] as num?)?.toInt() ?? 500000,
       cashInTiers: (map['cashInTiers'] as List<dynamic>?)
               ?.map((e) => CommissionTier.fromMap(e as Map<String, dynamic>))
               .toList() ??
@@ -147,14 +120,10 @@ class OrangeMoneySettings {
     return {
       'id': id,
       'enterpriseId': enterpriseId,
-      'enableLiquidityAlerts': enableLiquidityAlerts,
       'enableCommissionReminders': enableCommissionReminders,
       'enableCheckpointReminders': enableCheckpointReminders,
-      'enableTransactionAlerts': enableTransactionAlerts,
-      'criticalLiquidityThreshold': criticalLiquidityThreshold,
       'checkpointDiscrepancyThreshold': checkpointDiscrepancyThreshold,
       'commissionReminderDays': commissionReminderDays,
-      'largeTransactionThreshold': largeTransactionThreshold,
       'cashInTiers': cashInTiers.map((e) => e.toMap()).toList(),
       'cashOutTiers': cashOutTiers.map((e) => e.toMap()).toList(),
       'commissionDiscrepancyMinor': commissionDiscrepancyMinor,

@@ -10,8 +10,8 @@ class ReportKpiCards extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cashInTotal = stats['cashInTotal'] as int? ?? 0;
-    final cashOutTotal = stats['cashOutTotal'] as int? ?? 0;
+    final cashInTotal = stats['totalCashIn'] as int? ?? 0;
+    final cashOutTotal = stats['totalCashOut'] as int? ?? 0;
     final totalTransactions = stats['totalTransactions'] as int? ?? 0;
     final totalCommission = stats['totalCommission'] as int? ?? 0;
     final depositsCount = stats['depositsCount'] as int? ?? 0;
@@ -22,22 +22,22 @@ class ReportKpiCards extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              child: ElyfStatsCard(
+              child: _ModernKpiCard(
                 label: 'Transactions',
                 value: totalTransactions.toString(),
-                icon: Icons.history_rounded,
+                icon: Icons.sync_alt_rounded,
                 color: AppColors.primary,
-                isGlass: true,
+                subtitle: 'Volume total',
               ),
             ),
             const SizedBox(width: 16),
             Expanded(
-              child: ElyfStatsCard(
+              child: _ModernKpiCard(
                 label: 'Commissions',
-                value: CurrencyFormatter.formatFCFA(totalCommission),
-                icon: Icons.payments_rounded,
-                color: AppColors.success,
-                isGlass: true,
+                value: CurrencyFormatter.formatFCFA(stats['totalCommission'] as int? ?? 0),
+                icon: Icons.account_balance_wallet,
+                color: const Color(0xFF6C5CE7),
+                subtitle: stats['isCommissionDeclared'] == true ? 'Montant Déclaré' : 'Non déclaré',
               ),
             ),
           ],
@@ -46,29 +46,96 @@ class ReportKpiCards extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              child: ElyfStatsCard(
+              child: _ModernKpiCard(
                 label: 'Dépôts',
                 value: depositsCount.toString(),
-                icon: Icons.south_west_rounded,
+                icon: Icons.arrow_downward_rounded,
                 color: const Color(0xFFFF6B00),
-                isGlass: true,
                 subtitle: CurrencyFormatter.formatFCFA(cashInTotal),
               ),
             ),
             const SizedBox(width: 16),
             Expanded(
-              child: ElyfStatsCard(
+              child: _ModernKpiCard(
                 label: 'Retraits',
                 value: withdrawalsCount.toString(),
-                icon: Icons.north_east_rounded,
+                icon: Icons.arrow_upward_rounded,
                 color: AppColors.danger,
-                isGlass: true,
                 subtitle: CurrencyFormatter.formatFCFA(cashOutTotal),
               ),
             ),
           ],
         ),
       ],
+    );
+  }
+}
+
+class _ModernKpiCard extends StatelessWidget {
+  const _ModernKpiCard({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+    this.subtitle,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color color;
+  final String? subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
+    return ElyfCard(
+      padding: const EdgeInsets.all(16),
+      backgroundColor: isDark ? theme.colorScheme.surfaceContainer : Colors.white,
+      elevation: isDark ? 0 : 1,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, color: color, size: 20),
+              ),
+              if (subtitle != null)
+                Text(
+                  subtitle!,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w900,
+              fontFamily: 'Outfit',
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

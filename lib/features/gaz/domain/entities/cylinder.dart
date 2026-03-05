@@ -129,7 +129,7 @@ class Cylinder {
 /// Statut d'une bouteille dans le circuit logistique.
 enum CylinderStatus {
   full('Pleines'),
-  emptyAtStore('Vides (Magasin)'),
+  emptyAtStore('Vides (Disponibles)'),
   emptyInTransit('Vides (En transit)'),
   defective('Défectueuses'),
   leak('Fuites'),

@@ -14,21 +14,22 @@ class QuantityAndTotalWidget extends StatelessWidget {
     required this.quantityController,
     required this.selectedCylinder,
     required this.availableStock,
-    required this.unitPrice,
-    required this.onQuantityChanged,
+    required this.unitPriceController,
+    required this.onQuantityOrPriceChanged,
   });
 
   final TextEditingController quantityController;
+  final TextEditingController unitPriceController;
   final Cylinder? selectedCylinder;
   final int availableStock;
-  final double unitPrice;
-  final VoidCallback onQuantityChanged;
+  final VoidCallback onQuantityOrPriceChanged;
 
   double get _totalAmount {
     final quantity = int.tryParse(quantityController.text) ?? 0;
+    final price = double.tryParse(unitPriceController.text) ?? 0.0;
     return GazFinancialCalculationService.calculateTotalAmount(
       cylinder: selectedCylinder,
-      unitPrice: unitPrice,
+      unitPrice: price,
       quantity: quantity,
     );
   }
@@ -40,23 +41,50 @@ class QuantityAndTotalWidget extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        TextFormField(
-          controller: quantityController,
-          decoration: InputDecoration(
-            labelText: 'Quantité *',
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-            prefixIcon: const Icon(Icons.numbers),
-          ),
-          autofocus: true,
-          keyboardType: TextInputType.number,
-          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          validator: (value) {
-            return GazSalesCalculationService.validateQuantityText(
-              quantityText: value,
-              availableStock: availableStock,
-            );
-          },
-          onChanged: (_) => onQuantityChanged(),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: quantityController,
+                decoration: InputDecoration(
+                  labelText: 'Quantité *',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  prefixIcon: const Icon(Icons.numbers),
+                ),
+                autofocus: true,
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                validator: (value) {
+                  return GazSalesCalculationService.validateQuantityText(
+                    quantityText: value,
+                    availableStock: availableStock,
+                  );
+                },
+                onChanged: (_) => onQuantityOrPriceChanged(),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: TextFormField(
+                controller: unitPriceController,
+                decoration: InputDecoration(
+                  labelText: 'Prix unitaire *',
+                  suffixText: 'FCFA',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  prefixIcon: const Icon(Icons.sell_outlined),
+                ),
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))],
+                validator: (value) {
+                  if (value == null || value.isEmpty) return 'Obligatoire';
+                  if (double.tryParse(value) == null) return 'Invalide';
+                  return null;
+                },
+                onChanged: (_) => onQuantityOrPriceChanged(),
+              ),
+            ),
+          ],
         ),
         if (selectedCylinder != null && quantityController.text.isNotEmpty) ...[
           const SizedBox(height: 16),

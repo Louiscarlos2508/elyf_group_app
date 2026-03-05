@@ -5,6 +5,8 @@ import 'package:intl/intl.dart';
 import '../../widgets/liquidity/liquidity_tabs.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
+import 'package:elyf_groupe_app/shared/domain/entities/treasury_operation.dart';
 import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
 import 'package:elyf_groupe_app/features/orange_money/application/providers.dart';
 import '../../../domain/entities/liquidity_checkpoint.dart';
@@ -103,6 +105,10 @@ class _LiquidityScreenState extends ConsumerState<LiquidityScreen> {
       dailyTransactionStatsProvider(dailyStatsKey),
     );
 
+    final operationsAsync = ref.watch(
+      orangeMoneyTreasuryOperationsStreamProvider(enterpriseKey),
+    );
+
     return ElyfCard(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -158,10 +164,40 @@ class _LiquidityScreenState extends ConsumerState<LiquidityScreen> {
           const SizedBox(height: 32),
           todayCheckpointAsync.when(
             data: (checkpoint) => dailyStatsAsync.when(
-              data: (stats) => LiquidityDailyActivitySection(
-                checkpoint: checkpoint,
-                stats: stats,
-              ),
+              data: (stats) {
+                int treasuryDeposits = 0;
+                int treasuryWithdrawals = 0;
+                int treasuryCount = 0;
+                
+                final ops = operationsAsync.value ?? [];
+                for (final op in ops) {
+                  if (op.date.year == today.year && op.date.month == today.month && op.date.day == today.day) {
+                    treasuryCount++;
+                    if (op.type == TreasuryOperationType.supply) {
+                      treasuryDeposits += op.amount;
+                    } else if (op.type == TreasuryOperationType.removal) {
+                      treasuryWithdrawals += op.amount;
+                    } else if (op.type == TreasuryOperationType.transfer && op.referenceEntityType == 'agent_account') {
+                      if (op.fromAccount == PaymentMethod.mobileMoney && op.toAccount == PaymentMethod.cash) {
+                        treasuryDeposits += op.amount;
+                      } else if (op.fromAccount == PaymentMethod.cash && op.toAccount == PaymentMethod.mobileMoney) {
+                        treasuryWithdrawals += op.amount;
+                      }
+                    }
+                  }
+                }
+
+                final updatedStats = Map<String, dynamic>.from(stats);
+                updatedStats['deposits'] = (updatedStats['deposits'] as int? ?? 0) + treasuryDeposits;
+                updatedStats['withdrawals'] = (updatedStats['withdrawals'] as int? ?? 0) + treasuryWithdrawals;
+                updatedStats['transactionCount'] = (updatedStats['transactionCount'] as int? ?? 0) + treasuryCount;
+
+                return LiquidityDailyActivitySection(
+                  checkpoint: checkpoint,
+                  stats: updatedStats,
+                );
+              },
+
               loading: () => const SizedBox.shrink(),
               error: (_, __) => const SizedBox.shrink(),
             ),

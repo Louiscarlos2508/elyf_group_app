@@ -86,7 +86,7 @@ class TreasuryTab extends ConsumerWidget {
               children: [
                 ActionChip(
                   avatar: const Icon(Icons.add, size: 16),
-                  label: Text(isPOS ? 'Versement à la mère' : 'Apport'),
+                  label: const Text('Apport'),
                   onPressed: () => _showOperationDialog(
                     context,
                     TreasuryOperationType.supply,
@@ -94,7 +94,7 @@ class TreasuryTab extends ConsumerWidget {
                 ),
                 ActionChip(
                   avatar: const Icon(Icons.remove, size: 16),
-                  label: const Text('Retrait'),
+                  label: Text(isPOS ? 'Retrait / Versement' : 'Retrait'),
                   onPressed: () => _showOperationDialog(
                     context,
                     TreasuryOperationType.removal,
@@ -135,6 +135,7 @@ class TreasuryTab extends ConsumerWidget {
         operationsAsync.when(
           data: (ops) => ops.isEmpty
               ? const SliverFillRemaining(
+                  hasScrollBody: false,
                   child: Center(child: Text('Aucune opération enregistrée')),
                 )
               : SliverList(
@@ -172,127 +173,110 @@ class _AutoSynthesisSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final salesAsync = ref.watch(gazHqSalesProvider);
-    final toursAsync = ref.watch(gazClosedToursProvider);
-    final expensesAsync = ref.watch(gazExpensesProvider);
+    final synthesis = ref.watch(gazTreasurySynthesisProvider);
     final theme = Theme.of(context);
     final fmt = NumberFormat('#,###');
 
-    final sales = salesAsync.value ?? [];
-    final tours = toursAsync.value ?? [];
-    final expenses = expensesAsync.value ?? [];
-
-    final totalSalesRevenue = sales.fold<double>(
-      0,
-      (s, v) => s + v.totalAmount,
-    );
-    final totalTourExpenses = tours.fold<double>(
-      0,
-      (s, t) => s + t.totalExpenses,
-    );
-    final totalManualExpenses = expenses.fold<double>(
-      0,
-      (s, e) => s + e.amount,
-    );
-    final estimatedBalance =
-        totalSalesRevenue - totalTourExpenses - totalManualExpenses;
-
-    return Container(
-      margin: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.auto_graph,
-                  size: 18,
-                  color: theme.colorScheme.primary,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Synthèse automatique',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.primary,
+    return synthesis.when(
+      data: (data) => Container(
+              margin: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: theme.colorScheme.outlineVariant),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.auto_graph,
+                          size: 18,
+                          color: theme.colorScheme.primary,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Synthèse automatique',
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Tooltip(
+                          message:
+                              'Calculé depuis les ventes dépôt, dépenses de tournées et dépenses manuelles. '
+                              'Non lié directement à la caisse réelle.',
+                          child: Icon(
+                            Icons.info_outline,
+                            size: 14,
+                            color: theme.colorScheme.outline,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(width: 4),
-                Tooltip(
-                  message:
-                      'Calculé depuis les ventes dépôt, dépenses de tournées et dépenses manuelles. '
-                      'Non lié directement à la caisse réelle.',
-                  child: Icon(
-                    Icons.info_outline,
-                    size: 14,
-                    color: theme.colorScheme.outline,
+                  const Divider(height: 1),
+                  _SynthesisRow(
+                    label: 'Recettes dépôt (ventes)',
+                    amount: data.totalSalesRevenue,
+                    color: Colors.green,
+                    icon: Icons.trending_up,
                   ),
-                ),
-              ],
-            ),
-          ),
-          const Divider(height: 1),
-          _SynthesisRow(
-            label: 'Recettes dépôt (ventes)',
-            amount: totalSalesRevenue,
-            color: Colors.green,
-            icon: Icons.trending_up,
-          ),
-          _SynthesisRow(
-            label: 'Dépenses tournées',
-            amount: -totalTourExpenses,
-            color: theme.colorScheme.error,
-            icon: Icons.local_shipping_outlined,
-          ),
-          _SynthesisRow(
-            label: 'Dépenses opérationnelles',
-            amount: -totalManualExpenses,
-            color: theme.colorScheme.error,
-            icon: Icons.receipt_long_outlined,
-          ),
-          const Divider(height: 1),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Solde estimé',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
+                  _SynthesisRow(
+                    label: 'Dépenses tournées',
+                    amount: -data.totalTourExpenses,
+                    color: theme.colorScheme.error,
+                    icon: Icons.local_shipping_outlined,
                   ),
-                ),
-                Text(
-                  '${estimatedBalance >= 0 ? "+" : ""}${fmt.format(estimatedBalance.round())} CFA',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: estimatedBalance >= 0
-                        ? Colors.green
-                        : theme.colorScheme.error,
+                  _SynthesisRow(
+                    label: 'Dépenses opérationnelles',
+                    amount: -data.totalManualExpenses,
+                    color: theme.colorScheme.error,
+                    icon: Icons.receipt_long_outlined,
                   ),
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-            child: Text(
-              'Les opérations de caisse réelles sont enregistrées via Apport / Retrait ci-dessous.',
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: theme.colorScheme.outline,
-                fontStyle: FontStyle.italic,
+                  const Divider(height: 1),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Solde estimé',
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          '${data.estimatedBalance >= 0 ? "+" : ""}${fmt.format(data.estimatedBalance.round())} CFA',
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: data.estimatedBalance >= 0
+                                ? Colors.green
+                                : theme.colorScheme.error,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                    child: Text(
+                      'Les opérations de caisse réelles sont enregistrées via Apport / Retrait ci-dessous.',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.outline,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
-        ],
-      ),
+      loading: () => AppShimmers.card(context),
+      error: (_, __) => const SizedBox.shrink(),
     );
   }
 }

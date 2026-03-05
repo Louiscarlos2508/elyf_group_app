@@ -9,7 +9,6 @@ import '../../../../shared/shared.dart';
 import '../../../../shared/providers/storage_provider.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/commission.dart';
-import '../widgets/commission_discrepancy_indicator.dart';
 
 /// Dialog for declaring commission with SMS proof
 class CommissionDeclarationDialog extends ConsumerStatefulWidget {
@@ -200,32 +199,6 @@ class _CommissionDeclarationDialogState
                       SizedBox(height: isKeyboardOpen ? 12 : 24),
                       _buildImagePicker(isKeyboardOpen),
                       SizedBox(height: isKeyboardOpen ? 12 : 24),
-                      ExpansionTile(
-                        title: const Text(
-                          'Vérification Système',
-                          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-                        ),
-                        subtitle: _declaredAmount != null 
-                            ? CommissionDiscrepancyIndicator(
-                                estimatedAmount: widget.commission.estimatedAmount,
-                                declaredAmount: _declaredAmount!,
-                                showDetails: false,
-                              )
-                            : const Text('Comparer avec le calcul théorique', style: TextStyle(fontSize: 12)),
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              children: [
-                                _buildEstimatedAmountCard(),
-                                const SizedBox(height: 16),
-                                if (widget.commission.calculationDetails != null)
-                                  _buildCalculationDetails(),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _notesController,
@@ -272,114 +245,6 @@ class _CommissionDeclarationDialogState
     );
   }
 
-  Widget _buildEstimatedAmountCard() {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.blue.shade50,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.blue.shade200),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.calculate, color: Colors.blue.shade700),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Montant Estimé (Système)',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade700,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  CurrencyFormatter.format(widget.commission.estimatedAmount),
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.blue.shade700,
-                  ),
-                ),
-                if (widget.commission.transactionsCount > 0) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    '${widget.commission.transactionsCount} transaction(s)',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCalculationDetails() {
-    final details = widget.commission.calculationDetails!;
-
-    return ExpansionTile(
-      title: const Text(
-        'Détails du calcul',
-        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-      ),
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            children: [
-              _buildDetailRow(
-                'Cash-In Total',
-                CurrencyFormatter.format(details.totalCashIn),
-              ),
-              _buildDetailRow(
-                'Commission Cash-In',
-                CurrencyFormatter.format(details.cashInCommission),
-              ),
-              const Divider(),
-              _buildDetailRow(
-                'Cash-Out Total',
-                CurrencyFormatter.format(details.totalCashOut),
-              ),
-              _buildDetailRow(
-                'Commission Cash-Out',
-                CurrencyFormatter.format(details.cashOutCommission),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDetailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(fontSize: 13),
-          ),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildImagePicker(bool isKeyboardOpen) {
     return Column(

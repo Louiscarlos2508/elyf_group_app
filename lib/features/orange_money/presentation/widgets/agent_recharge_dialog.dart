@@ -113,7 +113,7 @@ class _AgentRechargeDialogState extends State<AgentRechargeDialog> {
                       children: [
                         Text(
                           _selectedType == AgentTransactionType.recharge 
-                            ? '💵 Recharge Agent'
+                            ? '💵 Dépôt (Recharge) Agent'
                             : '💸 Retrait Agent',
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
@@ -124,8 +124,8 @@ class _AgentRechargeDialogState extends State<AgentRechargeDialog> {
                           const SizedBox(height: AppSpacing.xs),
                           Text(
                             _selectedType == AgentTransactionType.recharge
-                              ? 'Attribution de liquidité SIM'
-                              : 'Récupération de liquidité SIM',
+                              ? 'Dépôt client (Diminue SIM, Augmente Cash)'
+                              : 'Retrait client (Augmente SIM, Diminue Cash)',
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant,
                             ),
@@ -199,7 +199,7 @@ class _AgentRechargeDialogState extends State<AgentRechargeDialog> {
                         Expanded(
                           child: _buildTypeButton(
                             AgentTransactionType.recharge,
-                            'Recharge',
+                            'Dépôt (Recharge)',
                             Icons.arrow_downward_rounded,
                             isKeyboardOpen,
                           ),

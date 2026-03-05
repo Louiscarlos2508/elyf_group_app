@@ -15,12 +15,13 @@ export 'controllers/expense_controller.dart';
 export 'controllers/financial_report_controller.dart';
 export 'controllers/gas_controller.dart';
 export 'controllers/gaz_settings_controller.dart';
-export 'controllers/gaz_session_controller.dart';
 export 'controllers/tour_controller.dart';
 export 'controllers/wholesaler_controller.dart';
 export 'controllers/gaz_employee_controller.dart';
 export 'controllers/gaz_salary_payment_controller.dart';
 export 'controllers/leak_report_controller.dart';
+export '../domain/entities/gaz_treasury_synthesis.dart';
+
 
 import 'controllers/cylinder_controller.dart';
 import 'controllers/cylinder_leak_controller.dart';
@@ -29,7 +30,6 @@ import 'controllers/expense_controller.dart';
 import 'controllers/financial_report_controller.dart';
 import 'controllers/gas_controller.dart';
 import 'controllers/gaz_settings_controller.dart';
-import 'controllers/gaz_session_controller.dart';
 import 'controllers/tour_controller.dart';
 import 'controllers/wholesaler_controller.dart';
 import 'controllers/gaz_employee_controller.dart';
@@ -44,7 +44,6 @@ import '../data/repositories/exchange_offline_repository.dart';
 import '../data/repositories/gaz_settings_offline_repository.dart';
 import 'package:elyf_groupe_app/features/administration/application/providers.dart';
 import 'package:elyf_groupe_app/core/repositories/repository_providers.dart';
-import '../data/repositories/session_offline_repository.dart';
 import '../data/repositories/tour_offline_repository.dart';
 import '../data/repositories/wholesaler_offline_repository.dart';
 import '../data/repositories/treasury_offline_repository.dart';
@@ -66,7 +65,6 @@ import '../domain/entities/gaz_settings.dart';
 import '../domain/entities/report_data.dart';
 import '../domain/entities/tour.dart';
 import '../domain/entities/wholesaler.dart';
-import '../domain/entities/gaz_session.dart';
 import '../domain/entities/gaz_employee.dart';
 import '../domain/entities/gaz_salary_payment.dart';
 import '../domain/entities/collection.dart';
@@ -80,8 +78,8 @@ import '../domain/repositories/financial_report_repository.dart';
 import '../domain/repositories/gas_repository.dart';
 import '../domain/repositories/exchange_repository.dart';
 import '../domain/repositories/gaz_settings_repository.dart';
+import '../domain/entities/gaz_treasury_synthesis.dart';
 
-import '../domain/repositories/session_repository.dart';
 import '../domain/repositories/tour_repository.dart';
 import '../domain/repositories/wholesaler_repository.dart';
 import '../domain/repositories/treasury_repository.dart';
@@ -256,10 +254,8 @@ final gasRepositoryProvider = Provider<GasRepository>((ref) {
 });
 
 final gasCylinderRepositoryProvider = Provider<GasRepository>((ref) {
-  final activeEnterprise = ref.watch(activeEnterpriseProvider).value;
-  final enterpriseId = (activeEnterprise?.isPointOfSale == true && activeEnterprise?.type.module == EnterpriseModule.gaz)
-      ? (activeEnterprise?.parentEnterpriseId ?? activeEnterprise?.id ?? 'default')
-      : (activeEnterprise?.id ?? 'default');
+  final enterpriseId =
+      ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
   final driftService = DriftService.instance;
   final syncManager = ref.watch(syncManagerProvider);
   final connectivityService = ref.watch(connectivityServiceProvider);
@@ -310,22 +306,11 @@ final gazTreasuryOperationsStreamProvider =
       return repo.watchOperations(enterpriseId, enterpriseIds: scopedIds);
     });
 
-/// Provider for GazSessionRepository.
-final gazSessionRepositoryProvider = Provider<GazSessionRepository>((ref) {
-  final driftService = ref.watch(driftServiceProvider);
-  return GazSessionOfflineRepository(driftService.db);
-});
-
 final cylinderStockRepositoryProvider = Provider<CylinderStockRepository>((
   ref,
 ) {
-  final activeEnterprise = ref.watch(activeEnterpriseProvider).value;
-  // Si l'entreprise active est un point de vente gaz, on utilise l'ID de
-  // l'entreprise mère, car le stock est enregistré sous la mère.
-  final enterpriseId = (activeEnterprise?.isPointOfSale == true &&
-          activeEnterprise?.type.module == EnterpriseModule.gaz)
-      ? (activeEnterprise?.parentEnterpriseId ?? activeEnterprise?.id ?? 'default')
-      : (activeEnterprise?.id ?? 'default');
+  final enterpriseId =
+      ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
   final driftService = DriftService.instance;
   final syncManager = ref.watch(syncManagerProvider);
   final connectivityService = ref.watch(connectivityServiceProvider);
@@ -526,7 +511,6 @@ final transactionServiceProvider = Provider<TransactionService>((ref) {
     inventoryAuditRepositoryProvider(enterpriseId),
   );
   final expenseRepo = ref.watch(gazExpenseRepositoryProvider);
-  final sessionRepo = ref.watch(gazSessionRepositoryProvider);
   final treasuryRepo = ref.watch(gazTreasuryRepositoryProvider);
   final collectionRepo = ref.watch(collectionRepositoryProvider);
 
@@ -542,7 +526,6 @@ final transactionServiceProvider = Provider<TransactionService>((ref) {
     settingsRepository: settingsRepo,
     inventoryAuditRepository: inventoryAuditRepo,
     expenseRepository: expenseRepo,
-    sessionRepository: sessionRepo,
     treasuryRepository: treasuryRepo,
     collectionRepository: collectionRepo,
   );
@@ -638,34 +621,21 @@ final leakReportSummaryProvider =
     });
 
 final gazSettingsControllerProvider = Provider<GazSettingsController>((ref) {
-  final activeEnterprise = ref.watch(activeEnterpriseProvider).value;
-  final enterpriseId = (activeEnterprise?.isPointOfSale == true && activeEnterprise?.type.module == EnterpriseModule.gaz)
-      ? (activeEnterprise?.parentEnterpriseId ?? activeEnterprise?.id ?? 'default')
-      : (activeEnterprise?.id ?? 'default');
+  final enterpriseId =
+      ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
   final repo = ref.watch(gazSettingsRepositoryProvider(enterpriseId));
   return GazSettingsController(repository: repo);
-});
-
-// GazSessionController is defined in its own file
-
-final gazSessionControllerProvider = Provider<GazSessionController>((ref) {
-  final sessionRepo = ref.watch(gazSessionRepositoryProvider);
-  final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? '';
-
-  return GazSessionController(
-    sessionRepository: sessionRepo,
-    enterpriseId: enterpriseId,
-  );
 });
 
 // Cylinders
 final cylindersProvider = StreamProvider.autoDispose<List<Cylinder>>((ref) {
   final controller = ref.watch(cylinderControllerProvider);
-  final scopedIds = ref.watch(gazSharedScopedEnterpriseIdsProvider).value;
-  // If we have shared IDs (active + parent), watch all of them to ensure metadata is visible
+  final scopedIds = ref.watch(gazScopedEnterpriseIdsProvider).value;
+  
   if (scopedIds != null && scopedIds.isNotEmpty) {
-    return controller.watchCylinders(); // watchCylinders already internally uses its repository which for POS uses parentId
+    return controller.watchCylindersForEnterprises(scopedIds);
   }
+  
   return controller.watchCylinders();
 });
 
@@ -753,12 +723,12 @@ final gazStocksProvider = StreamProvider<List<CylinderStock>>((ref) {
   final controller = ref.watch(cylinderStockControllerProvider);
   final viewType = ref.watch(gazDashboardViewTypeProvider);
 
+  final activeId = ref.watch(activeEnterpriseIdProvider).value ?? 'default';
+
   if (viewType == GazDashboardViewType.local) {
-    final activeId = ref.watch(activeEnterpriseIdProvider).value ?? 'default';
     return controller.watchStocks(activeId, enterpriseIds: [activeId]);
   }
 
-  final activeId = ref.watch(activeEnterpriseIdProvider).value ?? 'default';
   final scopedIds = ref.watch(gazScopedEnterpriseIdsProvider).value;
   return controller.watchStocks(activeId, enterpriseIds: scopedIds);
 });
@@ -913,19 +883,6 @@ final gazProfitProvider = Provider<AsyncValue<double>>((ref) {
   }
 
   return AsyncData((totalSalesAsync.value ?? 0.0) - (totalExpensesAsync.value ?? 0.0));
-});
-
-// Sessions are managed via GazSessionController
-final gazSessionsProvider = StreamProvider<List<GazSession>>((ref) {
-  return ref.watch(gazSessionControllerProvider).watchSessions();
-});
-
-final activeGazSessionProvider = FutureProvider<GazSession?>((ref) {
-  return ref.watch(gazSessionControllerProvider).getActiveSession();
-});
-
-final todayGazSessionProvider = FutureProvider<GazSession?>((ref) {
-  return ref.watch(gazSessionControllerProvider).getActiveSession();
 });
 
 // Report Data Provider
@@ -1395,3 +1352,30 @@ final gazClosedToursProvider = StreamProvider<List<Tour>>((ref) {
   return controller.watchTours(activeId, status: TourStatus.closed);
 });
 
+/// Synthesis of treasury for automatic reporting.
+/// Based on HQ sales, tour expenses, and manual expenses.
+final gazTreasurySynthesisProvider = StreamProvider<GazTreasurySynthesis>((ref) {
+  final salesAsync = ref.watch(gazHqSalesProvider);
+  final toursAsync = ref.watch(gazClosedToursProvider);
+  final expensesAsync = ref.watch(gazExpensesProvider);
+
+  if (salesAsync is AsyncLoading || toursAsync is AsyncLoading || expensesAsync is AsyncLoading) {
+    return const Stream.empty();
+  }
+
+  final sales = salesAsync.value ?? [];
+  final tours = toursAsync.value ?? [];
+  final expenses = expensesAsync.value ?? [];
+
+  final totalRevenue = sales.fold<double>(0, (sum, s) => sum + s.totalAmount);
+  // Total expenses from closed tours (fuel, allowance, etc)
+  final totalTourExpenses = tours.fold<double>(0, (sum, t) => sum + t.totalExpenses);
+  // Manual expenses (standalone)
+  final totalManualExpenses = expenses.fold<double>(0, (sum, e) => sum + e.amount);
+
+  return Stream.value(GazTreasurySynthesis(
+    totalSalesRevenue: totalRevenue,
+    totalTourExpenses: totalTourExpenses,
+    totalManualExpenses: totalManualExpenses,
+  ));
+});

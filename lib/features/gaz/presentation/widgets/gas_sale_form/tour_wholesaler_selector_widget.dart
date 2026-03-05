@@ -24,7 +24,7 @@ class TourWholesalerSelectorWidget extends ConsumerStatefulWidget {
   final String? selectedWholesalerId;
   final String? selectedWholesalerName;
   final String enterpriseId;
-  final ValueChanged<({String id, String name, String tier})?> onWholesalerChanged;
+  final ValueChanged<({String id, String name})?> onWholesalerChanged;
 
   @override
   ConsumerState<TourWholesalerSelectorWidget> createState() =>
@@ -169,7 +169,6 @@ class _TourWholesalerSelectorWidgetState
                     widget.onWholesalerChanged((
                       id: wholesaler.id,
                       name: wholesaler.name,
-                      tier: wholesaler.tier,
                     ));
                   } else {
                     widget.onWholesalerChanged(null);
@@ -307,42 +306,71 @@ class _TourWholesalerSelectorWidgetState
             const SizedBox(width: 8),
             Expanded(
               child: FilledButton(
-                onPressed: () {
-                  final name = _wholesalerNameController.text.trim();
-                  if (name.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Le nom du grossiste est requis'),
-                      ),
-                    );
-                    return;
-                  }
-
-                  // Générer un ID unique pour le nouveau grossiste
-                  final newId = 'wholesaler_${DateTime.now().millisecondsSinceEpoch}';
-
-                  // Notifier le parent avec le nouveau grossiste
-                  widget.onWholesalerChanged((
-                    id: newId,
-                    name: name,
-                    tier: 'default',
-                  ));
-
-                  // Réinitialiser le formulaire
-                  setState(() {
-                    _isAddingNewWholesaler = false;
-                    _wholesalerNameController.clear();
-                    _wholesalerPhoneController.clear();
-                    _wholesalerAddressController.clear();
-                  });
-
+                onPressed: () async {
+                final name = _wholesalerNameController.text.trim();
+                if (name.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Grossiste "$name" ajouté avec succès'),
-                      backgroundColor: theme.colorScheme.primary,
+                    const SnackBar(
+                      content: Text('Le nom du grossiste est requis'),
                     ),
                   );
-                },
+                  return;
+                }
+
+                // Générer un ID unique pour le nouveau grossiste
+                final newId = 'local_${DateTime.now().millisecondsSinceEpoch}';
+
+                final newWholesaler = Wholesaler(
+                  id: newId,
+                  enterpriseId: widget.enterpriseId,
+                  name: name,
+                  phone: _wholesalerPhoneController.text.trim(),
+                  address: _wholesalerAddressController.text.trim(),
+                  isActive: true,
+                  updatedAt: DateTime.now(),
+                  createdAt: DateTime.now(),
+                );
+
+                try {
+                  // Enregistrer formellement le grossiste
+                  await ref.read(wholesalerServiceProvider).registerWholesaler(newWholesaler);
+                  
+                  // Invalider le provider pour rafraîchir la liste
+                  ref.invalidate(allWholesalersProvider(widget.enterpriseId));
+                  
+                  if (mounted) {
+                    // Notifier le parent avec le nouveau grossiste
+                    widget.onWholesalerChanged((
+                      id: newId,
+                      name: name,
+                    ));
+
+                    // Réinitialiser le formulaire
+                    setState(() {
+                      _isAddingNewWholesaler = false;
+                      _wholesalerNameController.clear();
+                      _wholesalerPhoneController.clear();
+                      _wholesalerAddressController.clear();
+                    });
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Grossiste "$name" ajouté avec succès'),
+                        backgroundColor: theme.colorScheme.primary,
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Erreur lors de l\'ajout: $e'),
+                        backgroundColor: theme.colorScheme.error,
+                      ),
+                    );
+                  }
+                }
+              },
                 child: const Text('Ajouter'),
               ),
             ),

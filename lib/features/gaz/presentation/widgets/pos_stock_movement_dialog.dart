@@ -129,6 +129,25 @@ class _PosStockMovementDialogState extends ConsumerState<PosStockMovementDialog>
 
       final transactionService = ref.read(transactionServiceProvider);
 
+      // Check for mismatches to add a note
+      String finalNotes = _notesController.text;
+      if (widget.movementType == PosMovementType.entry) {
+        final stocks = ref.read(gazStocksProvider).value ?? [];
+        final inTransit = stocks.where((s) => s.status == CylinderStatus.emptyInTransit).toList();
+        
+        List<String> mismatches = [];
+        for (final item in inTransit) {
+          final received = (_fullBottles[item.weight] ?? 0) + (_emptyBottles[item.weight] ?? 0);
+          if (received != item.quantity) {
+            mismatches.add('${item.weight}kg: reçu $received, attendu ${item.quantity}');
+          }
+        }
+        
+        if (mismatches.isNotEmpty) {
+          finalNotes += '\n[Écart constaté à l\'entrée : ${mismatches.join(", ")}]';
+        }
+      }
+
       await transactionService.executePosStockMovement(
         enterpriseId: widget.enterpriseId,
         siteId: siteId,
@@ -136,16 +155,13 @@ class _PosStockMovementDialogState extends ConsumerState<PosStockMovementDialog>
         fullEntries: widget.movementType == PosMovementType.entry ? _fullBottles : {},
         emptyEntries: widget.movementType == PosMovementType.entry ? _emptyBottles : {},
         emptyExits: widget.movementType == PosMovementType.emptyExit ? _emptyBottles : {},
-        notes: _notesController.text,
+        notes: finalNotes,
       );
 
       if (!mounted) return;
       NotificationService.showSuccess(context, 'Mouvement enregistré avec succès');
-      ref.invalidate(cylinderStocksProvider((
-        enterpriseId: widget.enterpriseId,
-        status: null,
-        siteId: null,
-      )));
+      ref.invalidate(cylinderStocksProvider);
+      ref.invalidate(gazStocksProvider);
       Navigator.of(context).pop();
     } catch (e, stackTrace) {
       if (!mounted) return;
@@ -222,6 +238,14 @@ class _PosStockMovementDialogState extends ConsumerState<PosStockMovementDialog>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      // Section Pending Refills (Entrée uniquement)
+                      if (widget.movementType == PosMovementType.entry) ...[
+                        _buildPendingRefillsSection(theme),
+                        const SizedBox(height: 16),
+                        const Divider(),
+                        const SizedBox(height: 16),
+                      ],
+
                       // Section Pleins (Entrée uniquement)
                       if (widget.movementType == PosMovementType.entry) ...[
                         _SectionTitle(
@@ -336,6 +360,96 @@ class _PosStockMovementDialogState extends ConsumerState<PosStockMovementDialog>
           ),
         ),
       ),
+    );
+  }
+  Widget _buildPendingRefillsSection(ThemeData theme) {
+    final stocksAsync = ref.watch(gazStocksProvider);
+    
+    return stocksAsync.when(
+      data: (stocks) {
+        final inTransit = stocks
+            .where((s) => s.status == CylinderStatus.emptyInTransit && s.quantity > 0)
+            .toList();
+
+        if (inTransit.isEmpty) {
+          return Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.info_outline, color: theme.colorScheme.primary, size: 20),
+                const SizedBox(width: 12),
+                const Expanded(child: Text('Aucune bouteille vide n\'est actuellement en attente de recharge chez le fournisseur.')),
+              ],
+            ),
+          );
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: _SectionTitle(
+                    icon: Icons.local_shipping_outlined,
+                    color: theme.colorScheme.primary,
+                    label: 'En attente de recharge',
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: () {
+                    setState(() {
+                      for (final s in inTransit) {
+                        _fullBottles[s.weight] = s.quantity;
+                        _emptyBottles.remove(s.weight);
+                      }
+                    });
+                  },
+                  icon: const Icon(Icons.auto_awesome, size: 16),
+                  label: const Text('Tout remplir'),
+                  style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: inTransit.map((s) {
+                final received = (_fullBottles[s.weight] ?? 0) + (_emptyBottles[s.weight] ?? 0);
+                final hasMismatch = received != s.quantity && received > 0;
+                
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: (hasMismatch ? Colors.orange : theme.colorScheme.primary).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: (hasMismatch ? Colors.orange : theme.colorScheme.primary).withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('${s.weight}kg : ', style: const TextStyle(fontWeight: FontWeight.bold)),
+                      Text('${s.quantity} attendus', style: TextStyle(color: theme.colorScheme.primary)),
+                      if (hasMismatch) ...[
+                        const SizedBox(width: 4),
+                        const Icon(Icons.warning_amber_rounded, size: 14, color: Colors.orange),
+                      ],
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
+        );
+      },
+      loading: () => const Center(child: LinearProgressIndicator()),
+      error: (_, __) => const SizedBox.shrink(),
     );
   }
 }

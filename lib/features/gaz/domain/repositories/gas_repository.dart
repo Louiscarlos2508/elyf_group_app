@@ -7,6 +7,7 @@ abstract class GasRepository {
   Future<List<Cylinder>> getCylinders();
   Future<List<Cylinder>> getCylindersForEnterprises(List<String> enterpriseIds);
   Stream<List<Cylinder>> watchCylinders();
+  Stream<List<Cylinder>> watchCylindersForEnterprises(List<String> enterpriseIds);
   Future<Cylinder?> getCylinderById(String id);
   Future<void> addCylinder(Cylinder cylinder);
   Future<void> updateCylinder(Cylinder cylinder);

@@ -3,15 +3,12 @@ import 'package:elyf_groupe_app/features/administration/domain/entities/enterpri
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/orange_money/application/providers.dart';
-import '../../widgets/reports/report_daily_detail_card.dart';
 import '../../widgets/reports/report_kpi_cards.dart';
 import '../../widgets/reports/report_net_balance_card.dart';
 import '../../widgets/reports/report_period_selector.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/app/theme/app_spacing.dart' as tokens;
-import 'package:elyf_groupe_app/app/theme/design_tokens.dart' show AppRadius;
-import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
-import '../../widgets/orange_money_header.dart';
+import '../../widgets/reports/report_performance_chart.dart';
 
 /// Enhanced reports screen with period selector and detailed statistics.
 class ReportsScreen extends ConsumerStatefulWidget {
@@ -77,6 +74,22 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     }
   }
 
+  void _setThisMonth() {
+    final now = DateTime.now();
+    setState(() {
+      _startDate = DateTime(now.year, now.month, 1);
+      _endDate = now;
+    });
+  }
+
+  void _setLastMonth() {
+    final now = DateTime.now();
+    setState(() {
+      _startDate = DateTime(now.year, now.month - 1, 1);
+      _endDate = DateTime(now.year, now.month, 0); // Last day of previous month
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final statsKey =
@@ -106,28 +119,23 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                     onEndDateSelected: () => _selectEndDate(context),
                     onTodaySelected: _setToday,
                     onSevenDaysSelected: _setSevenDays,
+                    onThisMonthSelected: _setThisMonth,
+                    onLastMonthSelected: _setLastMonth,
                   ),
                   const SizedBox(height: tokens.AppSpacing.lg),
                   statsAsync.when(
                     data: (stats) => Column(
                       children: [
+                        ReportPerformanceChart(stats: stats),
+                        const SizedBox(height: tokens.AppSpacing.md),
                         ReportKpiCards(stats: stats),
                         const SizedBox(height: tokens.AppSpacing.md),
                         ReportNetBalanceCard(stats: stats),
-                        const SizedBox(height: tokens.AppSpacing.md),
-                        ReportDailyDetailCard(
-                          onExportPdf: () {
-                            NotificationService.showInfo(
-                              context,
-                              'Export PDF - À implémenter',
-                            );
-                          },
-                        ),
                       ],
                     ),
                     loading: () => const Center(
                       child: Padding(
-                        padding: const EdgeInsets.all(tokens.AppSpacing.md),
+                        padding: EdgeInsets.all(tokens.AppSpacing.md),
                         child: CircularProgressIndicator(),
                       ),
                     ),

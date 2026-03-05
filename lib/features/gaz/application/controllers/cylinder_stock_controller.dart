@@ -144,24 +144,7 @@ class CylinderStockController {
     );
   }
 
-  /// Remboursement de consigné (Retour bouteille vide).
-  Future<void> refundDeposit({
-    required String enterpriseId,
-    required String cylinderId,
-    required int weight,
-    required int quantity,
-    required String userId,
-    String? siteId,
-  }) async {
-    await _transactionService.executeDepositRefund(
-      enterpriseId: enterpriseId,
-      cylinderId: cylinderId,
-      weight: weight,
-      quantity: quantity,
-      userId: userId,
-      siteId: siteId,
-    );
-  }
+
 
   /// Exécute l'opération de remplissage interne (vides -> pleines).
   Future<void> fillCylinders({

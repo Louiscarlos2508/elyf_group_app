@@ -6,12 +6,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../domain/entities/agent.dart' as entity;
-import '../../../domain/entities/orange_money_enterprise_extensions.dart';
-import '../../../../administration/domain/entities/enterprise.dart';
 import '../../../application/providers.dart';
-import 'package:elyf_groupe_app/shared/presentation/widgets/elyf_ui/atoms/elyf_field.dart';
 import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
-import 'package:elyf_groupe_app/features/orange_money/application/controllers/agents_controller.dart';
 
 class AddAgentAccountModal extends ConsumerStatefulWidget {
   const AddAgentAccountModal({
@@ -37,13 +33,9 @@ class _AddAgentAccountModalState extends ConsumerState<AddAgentAccountModal> {
   late TextEditingController _notesController;
 
   // State
-  entity.MobileOperator _selectedAgentOperator = entity.MobileOperator.orange;
   entity.AgentStatus _agentStatus = entity.AgentStatus.active;
-  String? _linkedAgencyId;
   List<String> _attachmentPaths = [];
   bool _isLoading = false;
-
-  final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
@@ -63,13 +55,7 @@ class _AddAgentAccountModalState extends ConsumerState<AddAgentAccountModal> {
     _phoneController = TextEditingController(text: agent.phoneNumber);
     _simController = TextEditingController(text: agent.simNumber);
     _notesController = TextEditingController(text: agent.notes);
-    _selectedAgentOperator = agent.operator;
     _agentStatus = agent.status;
-    
-    // We keep the raw enterpriseId in state. 
-    // The mapping to null (Independent) will be handled in the build method.
-    _linkedAgencyId = agent.enterpriseId;
-    
     _attachmentPaths = List<String>.from(agent.attachmentUrls);
   }
 
@@ -119,7 +105,7 @@ class _AddAgentAccountModalState extends ConsumerState<AddAgentAccountModal> {
         liquidity: widget.agentAccount?.liquidity ?? 0,
         commissionRate: widget.agentAccount?.commissionRate ?? 0.0,
         status: _agentStatus,
-        enterpriseId: _linkedAgencyId ?? ref.read(activeEnterpriseProvider).value?.id ?? '',
+        enterpriseId: widget.agentAccount?.enterpriseId ?? ref.read(activeEnterpriseProvider).value?.id ?? '',
         notes: _notesController.text.trim(),
         attachmentUrls: _attachmentPaths,
         updatedAt: DateTime.now(),
@@ -164,7 +150,7 @@ class _AddAgentAccountModalState extends ConsumerState<AddAgentAccountModal> {
         title: Text(
           widget.isReadOnly 
             ? 'Détails Compte Agent'
-            : ((isEditing ? 'Modifier Compte Agent' : 'Nouveau Compte Agent') + ' (FIXED)'),
+            : (isEditing ? 'Modifier Compte Agent' : 'Nouveau Compte Agent'),
           style: const TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Outfit'),
         ),
         centerTitle: true,
@@ -196,10 +182,6 @@ class _AddAgentAccountModalState extends ConsumerState<AddAgentAccountModal> {
   }
 
   Widget _buildFormFields(ThemeData theme, bool isKeyboardOpen) {
-    // Key format: "parentId|type|searchQuery|excludeAssigned|includeId"
-    final includeId = widget.agentAccount?.enterpriseId ?? '';
-    final agenciesAsync = ref.watch(agentAgenciesProvider('|||true|$includeId'));
-
     return Column(
       children: [
         _buildSectionHeader('Identification du Compte (SIM)'),
@@ -211,50 +193,6 @@ class _AddAgentAccountModalState extends ConsumerState<AddAgentAccountModal> {
           prefixIcon: Icons.person_outline,
           validator: (v) => v?.isEmpty == true ? 'Requis' : null,
           readOnly: widget.isReadOnly,
-        ),
-        SizedBox(height: isKeyboardOpen ? 12 : 16),
-        agenciesAsync.when(
-          data: (agencies) {
-            final activeId = ref.watch(activeEnterpriseProvider).value?.id;
-            
-            // Map the selection: if it's the active enterprise, treat it as null (Independent)
-            final effectiveValue = (_linkedAgencyId == activeId) ? null : _linkedAgencyId;
-            
-            // If editing, ensure the current agency is in the list even if it was filtered out
-            final List<Enterprise> displayAgencies = List.from(agencies);
-            if (widget.agentAccount != null && effectiveValue != null) {
-              final currentAgencyId = widget.agentAccount!.enterpriseId;
-              if (currentAgencyId != activeId && !displayAgencies.any((a) => a.id == currentAgencyId)) {
-                // We need to fetch the full agency info to show its name, but for now we can't easily wait.
-                // However, the provider should ideally include it if we pass the current ID to exclude logic.
-                // For now, let's assume if it's not there, we keep the ID as is and hope the name is cached or handled.
-                // Actually, a better way is to modify the provider to take the "exceptId".
-              }
-            }
-
-            // Safety: Ensure the value exists in the list (or is null)
-            final exists = effectiveValue == null || displayAgencies.any((a) => a.id == effectiveValue);
-            final dropdownValue = exists ? effectiveValue : null;
-            
-            return DropdownButtonFormField<String>(
-              value: dropdownValue,
-              decoration: InputDecoration(
-                labelText: 'Affectation à une Agence',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                filled: true,
-                fillColor: theme.colorScheme.surfaceContainerLowest,
-                prefixIcon: const Icon(Icons.link),
-                contentPadding: isKeyboardOpen ? const EdgeInsets.symmetric(horizontal: 12, vertical: 8) : null,
-              ),
-              items: [
-                const DropdownMenuItem(value: null, child: Text('Aucune agence (Indépendant)')),
-                ...displayAgencies.map((a) => DropdownMenuItem(value: a.id, child: Text(a.name))),
-              ],
-              onChanged: widget.isReadOnly ? null : (v) => setState(() => _linkedAgencyId = v),
-            );
-          },
-          loading: () => const LinearProgressIndicator(),
-          error: (_, __) => const Text('Erreur de chargement des agences'),
         ),
         SizedBox(height: isKeyboardOpen ? 16 : 32),
         _buildSectionHeader('Détails SIM & Opérateur'),

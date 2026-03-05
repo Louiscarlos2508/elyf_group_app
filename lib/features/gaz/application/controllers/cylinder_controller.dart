@@ -17,6 +17,11 @@ class CylinderController {
     return _repository.watchCylinders();
   }
 
+  /// Observe les bouteilles pour plusieurs entreprises
+  Stream<List<Cylinder>> watchCylindersForEnterprises(List<String> enterpriseIds) {
+    return _repository.watchCylindersForEnterprises(enterpriseIds);
+  }
+
   /// Récupère une bouteille par son ID.
   Future<Cylinder?> getCylinderById(String id) async {
     return _repository.getCylinderById(id);

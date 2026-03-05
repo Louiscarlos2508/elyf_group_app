@@ -102,12 +102,15 @@ class SalesReportCylinderStats extends StatelessWidget {
     final result = <String, ({int weight, int count, double total})>{};
 
     for (final sale in sales) {
-      final cylinder = cylinders.firstWhere(
-        (c) => c.id == sale.cylinderId,
-        orElse: () => cylinders.isNotEmpty
-            ? cylinders.first
-            : throw StateError('No cylinders'),
-      );
+      Cylinder? cylinder;
+      try {
+        cylinder = cylinders.firstWhere((c) => c.id == sale.cylinderId);
+      } catch (_) {
+        // En cas de cylinder manquant (ex: pas encore sync), utiliser un fallback
+        // ou ignorer si cylinders est vide.
+        if (cylinders.isEmpty) continue;
+        cylinder = cylinders.first;
+      }
 
       if (!result.containsKey(sale.cylinderId)) {
         result[sale.cylinderId] = (

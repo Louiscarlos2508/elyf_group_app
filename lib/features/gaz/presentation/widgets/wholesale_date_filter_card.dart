@@ -19,13 +19,17 @@ class WholesaleDateFilterCard extends StatelessWidget {
   final ValueChanged<DateTime> onEndDateChanged;
 
   Future<void> _selectDate(BuildContext context, bool isStartDate) async {
+    final now = DateTime.now();
+    final initialDateValue = isStartDate
+          ? (startDate ?? now)
+          : (endDate ?? now);
+    final initialDate = initialDateValue.isAfter(now) ? now : initialDateValue;
+
     final picked = await showDatePicker(
       context: context,
-      initialDate: isStartDate
-          ? (startDate ?? DateTime.now())
-          : (endDate ?? DateTime.now()),
+      initialDate: initialDate,
       firstDate: DateTime(2020),
-      lastDate: DateTime.now(),
+      lastDate: now,
     );
     if (picked != null && context.mounted) {
       if (isStartDate) {

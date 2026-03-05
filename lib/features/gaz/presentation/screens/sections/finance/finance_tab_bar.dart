@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 
 class FinanceTabBar extends StatelessWidget {
-  const FinanceTabBar({super.key, required this.tabController});
+  const FinanceTabBar({
+    super.key,
+    required this.tabController,
+    this.isPOS = false,
+  });
 
   final TabController tabController;
+  final bool isPOS;
 
   @override
   Widget build(BuildContext context) {
@@ -19,9 +24,9 @@ class FinanceTabBar extends StatelessWidget {
         ),
         child: Row(
           children: [
-            _buildTab(context, index: 0, label: 'Dépenses'),
-            _buildTab(context, index: 1, label: 'Trésorerie'),
-            _buildTab(context, index: 2, label: 'Paie'),
+            if (!isPOS) _buildTab(context, index: 0, label: 'Dépenses'),
+            _buildTab(context, index: isPOS ? 0 : 1, label: 'Trésorerie'),
+            if (!isPOS) _buildTab(context, index: 2, label: 'Paie'),
           ],
         ),
       ),

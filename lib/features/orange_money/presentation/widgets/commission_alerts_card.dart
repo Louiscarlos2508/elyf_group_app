@@ -6,10 +6,6 @@ import '../../../orange_money/application/providers.dart';
 /// Type of commission alert
 enum CommissionAlertType {
   pendingDeclaration,
-  pendingValidation,
-  significantDiscrepancy,
-  minorDiscrepancy,
-  disputed,
 }
 
 /// Commission alert data
@@ -166,77 +162,8 @@ class CommissionAlertsCard extends ConsumerWidget {
       ));
     }
 
-    // Écarts significatifs
-    final significantDiscrepancies = commissions
-        .where((c) => c.discrepancyStatus == DiscrepancyStatus.ecartSignificatif)
-        .toList();
+    return alerts;
 
-    if (significantDiscrepancies.isNotEmpty) {
-      alerts.add(CommissionAlert(
-        type: CommissionAlertType.significantDiscrepancy,
-        count: significantDiscrepancies.length,
-        message: '${significantDiscrepancies.length} écart(s) significatif(s) détecté(s)',
-        icon: Icons.error,
-        color: Colors.red,
-        onTap: () {
-          // TODO: Navigate to commissions with significant discrepancies
-        },
-      ));
-    }
-
-    // Écarts mineurs
-    final minorDiscrepancies = commissions
-        .where((c) => c.discrepancyStatus == DiscrepancyStatus.ecartMineur)
-        .toList();
-
-    if (minorDiscrepancies.isNotEmpty) {
-      alerts.add(CommissionAlert(
-        type: CommissionAlertType.minorDiscrepancy,
-        count: minorDiscrepancies.length,
-        message: '${minorDiscrepancies.length} écart(s) mineur(s) à vérifier',
-        icon: Icons.warning_amber,
-        color: Colors.orange,
-        onTap: () {
-          // TODO: Navigate to commissions with minor discrepancies
-        },
-      ));
-    }
-
-    // Commissions en attente de validation
-    final pendingValidation = commissions
-        .where((c) => c.status == CommissionStatus.declared)
-        .toList();
-
-    if (pendingValidation.isNotEmpty) {
-      alerts.add(CommissionAlert(
-        type: CommissionAlertType.pendingValidation,
-        count: pendingValidation.length,
-        message: '${pendingValidation.length} commission(s) en attente de validation',
-        icon: Icons.pending_actions,
-        color: Colors.orange.shade700,
-        onTap: () {
-          // TODO: Navigate to commissions filtered by 'declared'
-        },
-      ));
-    }
-
-    // Commissions en litige
-    final disputed = commissions
-        .where((c) => c.status == CommissionStatus.disputed)
-        .toList();
-
-    if (disputed.isNotEmpty) {
-      alerts.add(CommissionAlert(
-        type: CommissionAlertType.disputed,
-        count: disputed.length,
-        message: '${disputed.length} commission(s) en litige',
-        icon: Icons.gavel,
-        color: Colors.red.shade700,
-        onTap: () {
-          // TODO: Navigate to disputed commissions
-        },
-      ));
-    }
 
     return alerts;
   }

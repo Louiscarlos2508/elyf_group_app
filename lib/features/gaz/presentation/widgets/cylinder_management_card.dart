@@ -12,7 +12,9 @@ import '../../../../../shared/utils/notification_service.dart';
 
 /// Carte de gestion des bouteilles de gaz dans les paramètres.
 class CylinderManagementCard extends ConsumerStatefulWidget {
-  const CylinderManagementCard({super.key});
+  const CylinderManagementCard({super.key, this.isPOS = false});
+
+  final bool isPOS;
 
   @override
   ConsumerState<CylinderManagementCard> createState() =>
@@ -217,6 +219,7 @@ class _CylinderManagementCardState
         builder: (dialogContext) => CylinderFormDialog(
           enterpriseId: activeEnterpriseId,
           moduleId: 'gaz',
+          isPOS: widget.isPOS,
         ),
       );
     } catch (e) {
@@ -239,6 +242,7 @@ class _CylinderManagementCardState
           cylinder: cylinder,
           enterpriseId: activeEnterpriseId,
           moduleId: 'gaz',
+          isPOS: widget.isPOS,
         ),
       );
     } catch (e) {

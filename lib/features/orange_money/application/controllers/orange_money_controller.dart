@@ -3,6 +3,7 @@ import '../../domain/entities/transaction.dart';
 import '../../domain/repositories/transaction_repository.dart';
 import '../../domain/repositories/liquidity_repository.dart';
 import '../../domain/repositories/settings_repository.dart';
+import '../../domain/repositories/commission_repository.dart';
 import '../../domain/services/transaction_service.dart';
 import '../../../audit_trail/domain/services/audit_trail_service.dart';
 import '../../../../core/logging/app_logger.dart';
@@ -20,6 +21,7 @@ class OrangeMoneyController {
     this._repository,
     this._liquidityRepository,
     this._settingsRepository,
+    this._commissionRepository,
     this._treasuryRepository,
     this._auditTrailService,
     this.userId,
@@ -30,6 +32,7 @@ class OrangeMoneyController {
   final TransactionRepository _repository;
   final LiquidityRepository _liquidityRepository;
   final SettingsRepository _settingsRepository;
+  final CommissionRepository _commissionRepository;
   final OrangeMoneyTreasuryRepository _treasuryRepository;
   final AuditTrailService _auditTrailService;
   final String userId;
@@ -38,41 +41,19 @@ class OrangeMoneyController {
 
   Future<OrangeMoneyState> fetchState() async {
     final accessibleIds = await _permissionAdapter.getAccessibleEnterpriseIds(_activeEnterpriseId);
+    final idsList = accessibleIds.toList();
     
-    List<Transaction> transactions;
-    Map<String, dynamic> statistics;
+    final transactions = await _repository.fetchTransactionsByEnterprises(idsList);
+    final treasuryOps = await _treasuryRepository.getOperations(
+      _activeEnterpriseId,
+      enterpriseIds: idsList,
+    );
 
-    if (accessibleIds.length > 1) {
-      // Network View
-      final idsList = accessibleIds.toList();
-      transactions = await _repository.fetchTransactionsByEnterprises(idsList);
-      
-      // Calculate statistics manually for network view
-      final cashInTransactions = transactions.where((t) => t.isCashIn && t.isCompleted).toList();
-      final cashOutTransactions = transactions.where((t) => t.isCashOut && t.isCompleted).toList();
-      
-      final totalCashIn = cashInTransactions.fold<int>(0, (sum, t) => sum + t.amount);
-      final totalCashOut = cashOutTransactions.fold<int>(0, (sum, t) => sum + t.amount);
-      final totalCommission = transactions
-          .where((t) => t.commission != null)
-          .fold<int>(0, (sum, t) => sum + (t.commission ?? 0));
-      
-      statistics = {
-        'totalTransactions': transactions.length,
-        'completedTransactions': transactions.where((t) => t.isCompleted).length,
-        'pendingTransactions': transactions.where((t) => t.isPending).length,
-        'failedTransactions': transactions.where((t) => t.isFailed).length,
-        'totalCashIn': totalCashIn,
-        'totalCashOut': totalCashOut,
-        'netAmount': totalCashIn - totalCashOut,
-        'totalCommission': totalCommission,
-        'isNetworkView': true, // Flag for UI
-      };
-    } else {
-      // Single Enterprise View
-      transactions = await _repository.fetchTransactions();
-      statistics = await _repository.getStatistics();
-    }
+    final statistics = _aggregateStatistics(
+      transactions: transactions,
+      treasuryOps: treasuryOps,
+      isNetworkView: idsList.length > 1,
+    );
     
     final todayCheckpoint = await _liquidityRepository.getTodayCheckpoint(_activeEnterpriseId);
 
@@ -151,20 +132,7 @@ class OrangeMoneyController {
       }
     }
 
-    // 3. Calcul de la commission (PRD Compliance)
-    int? calculatedCommission;
-    if (settings != null) {
-      final tiers = type == TransactionType.cashIn ? settings.cashInTiers : settings.cashOutTiers;
-      
-      // Trouver la tranche correspondante
-      for (final tier in tiers) {
-        if (tier.contains(amount)) {
-          calculatedCommission = tier.calculateCommission(amount);
-          break;
-        }
-      }
-    }
-
+    // 3. Automated Treasury Integration (PRD: Transactions must impact balance immediately)
     final transaction = TransactionService.createTransaction(
       enterpriseId: enterpriseId,
       type: type,
@@ -175,9 +143,9 @@ class OrangeMoneyController {
       idNumber: idNumber,
       idIssueDate: idIssueDate,
       town: town,
-      commission: calculatedCommission,
       createdBy: createdBy ?? userId,
     ).copyWith(reference: reference);
+
 
     final transactionId = await _repository.createTransaction(transaction);
 
@@ -289,10 +257,172 @@ class OrangeMoneyController {
     DateTime? startDate,
     DateTime? endDate,
   }) async {
-    return await _repository.getStatistics(
+    final accessibleIds = await _permissionAdapter.getAccessibleEnterpriseIds(_activeEnterpriseId);
+    final idsList = accessibleIds.toList();
+
+    final transactions = await _repository.fetchTransactionsByEnterprises(
+      idsList,
       startDate: startDate,
       endDate: endDate,
     );
+
+    final treasuryOps = await _treasuryRepository.getOperations(
+      _activeEnterpriseId,
+      enterpriseIds: idsList,
+      from: startDate,
+      to: endDate,
+    );
+
+    final stats = _aggregateStatistics(
+      transactions: transactions,
+      treasuryOps: treasuryOps,
+      isNetworkView: idsList.length > 1,
+      startDate: startDate,
+      endDate: endDate,
+    );
+
+    if (startDate == null || endDate == null) return stats;
+
+    try {
+      int totalDeclaredCommission = 0;
+      bool anyMonthDeclared = false;
+
+      // Check each month completely covered by the range
+      DateTime currentMonth = DateTime(startDate.year, startDate.month, 1);
+      while (currentMonth.isBefore(endDate)) {
+        final endOfMonth = DateTime(currentMonth.year, currentMonth.month + 1, 0);
+        
+        // If this month is fully covered by the selection
+        if (!currentMonth.isBefore(startDate) && !endOfMonth.isAfter(endDate)) {
+          final period = "${currentMonth.year}-${currentMonth.month.toString().padLeft(2, '0')}";
+          
+          final commissions = await _commissionRepository.fetchCommissions(
+            enterpriseId: _activeEnterpriseId,
+            period: period,
+          );
+
+          if (commissions.isNotEmpty && commissions.first.declaredAmount != null) {
+            totalDeclaredCommission += commissions.first.declaredAmount!;
+            anyMonthDeclared = true;
+          }
+        }
+        currentMonth = DateTime(currentMonth.year, currentMonth.month + 1, 1);
+      }
+
+      stats['totalDeclaredCommission'] = totalDeclaredCommission;
+      stats['isCommissionDeclared'] = anyMonthDeclared;
+      if (anyMonthDeclared) {
+        stats['totalCommission'] = totalDeclaredCommission;
+      }
+    } catch (e) {
+      AppLogger.error('Failed to aggregate declared commissions for statistics', error: e);
+    }
+
+    return stats;
+  }
+
+  Map<String, dynamic> _aggregateStatistics({
+    required List<Transaction> transactions,
+    required List<TreasuryOperation> treasuryOps,
+    bool isNetworkView = false,
+    DateTime? startDate,
+    DateTime? endDate,
+  }) {
+    final cashInTransactions = transactions.where((t) => t.isCashIn && t.isCompleted).toList();
+    final cashOutTransactions = transactions.where((t) => t.isCashOut && t.isCompleted).toList();
+
+    int totalCashIn = cashInTransactions.fold<int>(0, (sum, t) => sum + t.amount);
+    int totalCashOut = cashOutTransactions.fold<int>(0, (sum, t) => sum + t.amount);
+    
+    int internalIn = 0;
+    int internalOut = 0;
+    int internalInCount = 0;
+    int internalOutCount = 0;
+
+    // Process Treasury Operations (Internal movements, agent recharges, etc.)
+    for (final op in treasuryOps) {
+      if (op.type == TreasuryOperationType.supply) {
+        internalIn += op.amount;
+        internalInCount++;
+      } else if (op.type == TreasuryOperationType.removal) {
+        internalOut += op.amount;
+        internalOutCount++;
+      } else if (op.type == TreasuryOperationType.transfer && op.referenceEntityType == 'agent_account') {
+        // Only count agent transfers that impact cash flow in/out
+        if (op.fromAccount == PaymentMethod.mobileMoney && op.toAccount == PaymentMethod.cash) {
+          internalIn += op.amount;
+          internalInCount++;
+        } else if (op.fromAccount == PaymentMethod.cash && op.toAccount == PaymentMethod.mobileMoney) {
+          internalOut += op.amount;
+          internalOutCount++;
+        }
+      }
+    }
+
+    final Map<String, Map<String, dynamic>> dailyMap = {};
+    
+    // Add transactions to daily history
+    for (final t in transactions) {
+      if (!t.isCompleted) continue;
+      final dateKey = "${t.date.year}-${t.date.month}-${t.date.day}";
+      final entry = dailyMap.putIfAbsent(dateKey, () => {
+        'date': DateTime(t.date.year, t.date.month, t.date.day),
+        'cashIn': 0,
+        'cashOut': 0,
+        'count': 0,
+      });
+      entry['count'] = (entry['count'] as int) + 1;
+      if (t.isCashIn) entry['cashIn'] = (entry['cashIn'] as int) + t.amount;
+      if (t.isCashOut) entry['cashOut'] = (entry['cashOut'] as int) + t.amount;
+    }
+
+    // Add treasury operations to daily history
+    for (final op in treasuryOps) {
+      final dateKey = "${op.date.year}-${op.date.month}-${op.date.day}";
+      final entry = dailyMap.putIfAbsent(dateKey, () => {
+        'date': DateTime(op.date.year, op.date.month, op.date.day),
+        'cashIn': 0,
+        'cashOut': 0,
+        'count': 0,
+      });
+      
+      if (op.type == TreasuryOperationType.supply) {
+        entry['cashIn'] = (entry['cashIn'] as int) + op.amount;
+        entry['count'] = (entry['count'] as int) + 1;
+      } else if (op.type == TreasuryOperationType.removal) {
+        entry['cashOut'] = (entry['cashOut'] as int) + op.amount;
+        entry['count'] = (entry['count'] as int) + 1;
+      } else if (op.type == TreasuryOperationType.transfer && op.referenceEntityType == 'agent_account') {
+         if (op.fromAccount == PaymentMethod.mobileMoney && op.toAccount == PaymentMethod.cash) {
+          entry['cashIn'] = (entry['cashIn'] as int) + op.amount;
+          entry['count'] = (entry['count'] as int) + 1;
+        } else if (op.fromAccount == PaymentMethod.cash && op.toAccount == PaymentMethod.mobileMoney) {
+          entry['cashOut'] = (entry['cashOut'] as int) + op.amount;
+          entry['count'] = (entry['count'] as int) + 1;
+        }
+      }
+    }
+
+    final dailyHistory = dailyMap.values.toList()
+      ..sort((a, b) => (a['date'] as DateTime).compareTo(b['date'] as DateTime));
+
+    return {
+      'totalTransactions': transactions.length + treasuryOps.length,
+      'completedTransactions': transactions.where((t) => t.isCompleted).length + treasuryOps.length,
+      'totalCashIn': totalCashIn + internalIn,
+      'totalCashOut': totalCashOut + internalOut,
+      'netAmount': (totalCashIn + internalIn) - (totalCashOut + internalOut),
+      'totalCommission': 0, // Will be updated by getStatistics from declared commissions
+      'totalFees': transactions
+          .where((t) => t.isCompleted && t.fees != null)
+          .fold<int>(0, (sum, t) => sum + (t.fees ?? 0)),
+      'depositsCount': cashInTransactions.length + internalInCount,
+      'withdrawalsCount': cashOutTransactions.length + internalOutCount,
+      'dailyHistory': dailyHistory,
+      'isNetworkView': isNetworkView,
+      'startDate': startDate?.toIso8601String(),
+      'endDate': endDate?.toIso8601String(),
+    };
   }
 
   /// Recherche un client existant par numéro de téléphone.

@@ -20,19 +20,16 @@ class SettingsController {
     return await _repository.saveSettings(settings);
   }
 
+  /// Met à jour les notifications
   Future<void> updateNotifications(
     String enterpriseId, {
-    bool? enableLiquidityAlerts,
     bool? enableCommissionReminders,
     bool? enableCheckpointReminders,
-    bool? enableTransactionAlerts,
   }) async {
     return await _repository.updateNotifications(
       enterpriseId,
-      enableLiquidityAlerts: enableLiquidityAlerts,
       enableCommissionReminders: enableCommissionReminders,
       enableCheckpointReminders: enableCheckpointReminders,
-      enableTransactionAlerts: enableTransactionAlerts,
     );
   }
 

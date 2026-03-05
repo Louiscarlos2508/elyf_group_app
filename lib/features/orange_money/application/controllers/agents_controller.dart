@@ -1,4 +1,4 @@
-import '../../domain/entities/transaction.dart';
+import '../../domain/repositories/transaction_repository.dart';
 import '../../domain/repositories/transaction_repository.dart';
 import '../../domain/entities/agent.dart';
 import '../../domain/repositories/agent_repository.dart';
@@ -18,7 +18,6 @@ class AgentsController {
   AgentsController(
     this._enterpriseRepository,
     this._agentRepository,
-    this._transactionRepository,
     this._treasuryRepository,
     this._auditTrailService,
     this.userId,
@@ -29,7 +28,6 @@ class AgentsController {
 
   final EnterpriseRepository _enterpriseRepository;
   final AgentRepository _agentRepository;
-  final TransactionRepository _transactionRepository;
   final OrangeMoneyTreasuryRepository _treasuryRepository;
   final AuditTrailService _auditTrailService;
   final String userId;
@@ -200,13 +198,18 @@ class AgentsController {
         referenceEntityType: 'agent_account',
       );
       for (final op in treasuryOps) {
-        // Recharge: cash → mobileMoney
-        if (op.fromAccount == PaymentMethod.cash && op.toAccount == PaymentMethod.mobileMoney) {
+        final reason = op.reason?.toLowerCase() ?? '';
+        if (reason.contains('recharge')) {
           rechargesToday += op.amount;
-        }
-        // Retrait: mobileMoney → cash
-        else if (op.fromAccount == PaymentMethod.mobileMoney && op.toAccount == PaymentMethod.cash) {
+        } else if (reason.contains('retrait')) {
           withdrawalsToday += op.amount;
+        } else {
+          // Backward compatibility
+          if (op.fromAccount == PaymentMethod.cash && op.toAccount == PaymentMethod.mobileMoney) {
+            rechargesToday += op.amount;
+          } else if (op.fromAccount == PaymentMethod.mobileMoney && op.toAccount == PaymentMethod.cash) {
+            withdrawalsToday += op.amount;
+          }
         }
       }
     } catch (e) {
@@ -278,14 +281,17 @@ class AgentsController {
     return updatedAgency;
   }
 
-  /// Met à jour la liquidité d'un agent (recharge ou retrait SIM).
   Future<Agent> updateAgentLiquidity({
     required Agent agent,
     required int amount,
     required bool isRecharge,
   }) async {
+    // isRecharge (Dépôt): Customer gives cash (cash++), Agent sends e-money (liquidity--)
+    // Retrait: Customer gives e-money (liquidity++), Agent gives cash (cash--)
     final updatedAgent = agent.copyWith(
-      liquidity: isRecharge ? agent.liquidity + amount : (agent.liquidity - amount).clamp(0, double.infinity).toInt(),
+      liquidity: isRecharge 
+          ? (agent.liquidity - amount).clamp(0, double.infinity).toInt()
+          : agent.liquidity + amount,
     );
 
     await _agentRepository.updateAgent(updatedAgent);
@@ -299,12 +305,12 @@ class AgentsController {
         userId: userId,
         amount: amount,
         type: TreasuryOperationType.transfer,
-        fromAccount: isRecharge ? PaymentMethod.cash : PaymentMethod.mobileMoney,
-        toAccount: isRecharge ? PaymentMethod.mobileMoney : PaymentMethod.cash,
+        fromAccount: isRecharge ? PaymentMethod.mobileMoney : PaymentMethod.cash,
+        toAccount: isRecharge ? PaymentMethod.cash : PaymentMethod.mobileMoney,
         date: DateTime.now(),
         reason: isRecharge 
-            ? 'Recharge SIM Agent: ${agent.name} (${agent.phoneNumber})'
-            : 'Retrait SIM Agent: ${agent.name} (${agent.phoneNumber})',
+            ? 'Recharge (Dépôt) Agent: ${agent.name} (SIM: ${agent.simNumber})'
+            : 'Retrait Agent: ${agent.name} (SIM: ${agent.simNumber})',
         referenceEntityId: agent.id,
         referenceEntityType: 'agent_account',
       ));
@@ -314,7 +320,7 @@ class AgentsController {
     
     _logAgentEvent(
       agent.id,
-      isRecharge ? 'AGENT_SIM_RECHARGE' : 'AGENT_SIM_WITHDRAW',
+      isRecharge ? 'AGENT_SIM_DEPOSIT' : 'AGENT_SIM_WITHDRAW',
       'Agent: ${agent.name}, Amount: $amount',
       'agent',
     );

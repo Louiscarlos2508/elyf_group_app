@@ -5,13 +5,11 @@ export 'providers/permission_providers.dart';
 export 'providers/section_providers.dart';
 import '../../audit_trail/application/providers.dart';
 import 'package:elyf_groupe_app/features/administration/application/providers.dart';
-import 'package:elyf_groupe_app/core/repositories/repository_providers.dart';
-import 'package:elyf_groupe_app/features/administration/domain/repositories/enterprise_repository.dart';
 import '../data/repositories/treasury_offline_repository.dart';
 import '../domain/repositories/treasury_repository.dart';
 import 'package:elyf_groupe_app/shared/domain/entities/treasury_operation.dart';
 import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
-import 'package:elyf_groupe_app/shared.dart';
+
 
 import '../application/controllers/agents_controller.dart';
 import '../application/controllers/commissions_controller.dart';
@@ -89,6 +87,7 @@ final orangeMoneyControllerProvider = Provider<OrangeMoneyController>(
     ref.watch(transactionRepositoryProvider),
     ref.watch(liquidityRepositoryProvider),
     ref.watch(settingsRepositoryProvider),
+    ref.watch(commissionRepositoryProvider),
     ref.watch(orangeMoneyTreasuryRepositoryProvider),
     ref.watch(auditTrailServiceProvider),
     ref.watch(currentUserIdProvider) ?? 'system',
@@ -177,7 +176,6 @@ final agentsControllerProvider = Provider<AgentsController>(
   (ref) => AgentsController(
     ref.watch(enterpriseRepositoryProvider),
     ref.watch(agentRepositoryProvider),
-    ref.watch(transactionRepositoryProvider),
     ref.watch(orangeMoneyTreasuryRepositoryProvider),
     ref.watch(auditTrailServiceProvider),
     ref.watch(currentUserIdProvider) ?? 'system',
@@ -477,35 +475,62 @@ final todayLiquidityCheckpointProvider = FutureProvider.autoDispose
     });
 
 /// Provider for all agent-related treasury operations (recharges/withdrawals).
-final allAgentRechargesProvider = StreamProvider.autoDispose.family<List<TreasuryOperation>, String>((ref, enterpriseId) {
+final allAgentRechargesProvider = StreamProvider.autoDispose.family<List<TreasuryOperation>, String>((ref, key) {
+  final parts = key.split('|');
+  final enterpriseId = parts[0];
+  final startDate = parts.length > 1 ? DateTime.fromMillisecondsSinceEpoch(int.parse(parts[1])) : null;
+  final endDate = parts.length > 2 ? DateTime.fromMillisecondsSinceEpoch(int.parse(parts[2])) : null;
+
   final repo = ref.watch(orangeMoneyTreasuryRepositoryProvider);
   return repo.watchOperations(
     enterpriseId,
     referenceEntityType: 'agent_account',
+    from: startDate,
+    to: endDate,
   );
 });
 
 /// Provider for transactions of a specific agent.
-final agentTransactionsProvider = StreamProvider.autoDispose.family<List<Transaction>, String>((ref, agentId) {
+final agentTransactionsProvider = StreamProvider.autoDispose.family<List<Transaction>, String>((ref, key) {
+  final parts = key.split('|');
+  final agentId = parts[0];
+  final startDate = parts.length > 1 ? DateTime.fromMillisecondsSinceEpoch(int.parse(parts[1])) : null;
+  final endDate = parts.length > 2 ? DateTime.fromMillisecondsSinceEpoch(int.parse(parts[2])) : null;
+
   final repository = ref.watch(transactionRepositoryProvider);
-  return repository.watchTransactionsByAgent(agentId);
+  return repository.watchTransactionsByAgent(agentId, startDate: startDate, endDate: endDate);
 });
 
 /// Provider for treasury history (recharges/withdrawals) of a specific agent.
-final agentTreasuryHistoryProvider = StreamProvider.autoDispose.family<List<TreasuryOperation>, String>((ref, agentId) {
+final agentTreasuryHistoryProvider = StreamProvider.autoDispose.family<List<TreasuryOperation>, String>((ref, key) {
+  final parts = key.split('|');
+  final agentId = parts[0];
+  final startDate = parts.length > 1 ? DateTime.fromMillisecondsSinceEpoch(int.parse(parts[1])) : null;
+  final endDate = parts.length > 2 ? DateTime.fromMillisecondsSinceEpoch(int.parse(parts[2])) : null;
+
   final repo = ref.watch(orangeMoneyTreasuryRepositoryProvider);
   final activeEnterprise = ref.watch(activeEnterpriseProvider).value;
   return repo.watchOperations(
     activeEnterprise?.id ?? 'default',
     referenceEntityId: agentId,
     referenceEntityType: 'agent_account',
+    from: startDate,
+    to: endDate,
   );
 });
 
 /// Provider for aggregated statistics of a specific agent.
-final agentStatisticsProvider = Provider.autoDispose.family<AsyncValue<Map<String, dynamic>>, String>((ref, agentId) {
-  final transactionsAsync = ref.watch(agentTransactionsProvider(agentId));
-  final treasuryAsync = ref.watch(agentTreasuryHistoryProvider(agentId));
+final agentStatisticsProvider = Provider.autoDispose.family<AsyncValue<Map<String, dynamic>>, String>((ref, key) {
+  final parts = key.split('|');
+  final agentId = parts[0];
+  final startDateStr = parts.length > 1 ? parts[1] : '';
+  final endDateStr = parts.length > 2 ? parts[2] : '';
+  
+  // Create downstream keys with the same dates
+  final downstreamKey = parts.length > 1 ? '$agentId|$startDateStr|$endDateStr' : agentId;
+
+  final transactionsAsync = ref.watch(agentTransactionsProvider(downstreamKey));
+  final treasuryAsync = ref.watch(agentTreasuryHistoryProvider(downstreamKey));
 
   return transactionsAsync.when(
     data: (transactions) {
@@ -519,21 +544,26 @@ final agentStatisticsProvider = Provider.autoDispose.family<AsyncValue<Map<Strin
 
           // Process Treasury Ops (Recharges/Withdrawals)
           for (final op in treasuryOps) {
-            if (op.fromAccount == PaymentMethod.cash) {
-              totalRecharged += op.amount;
-            } else if (op.toAccount == PaymentMethod.cash) {
-              totalWithdrawn += op.amount;
+            // Recharges (Dépôts Agent)
+            if (op.fromAccount == PaymentMethod.cash && op.toAccount == PaymentMethod.mobileMoney) {
+              totalRecharged += op.amount.toInt();
+            } 
+            // Withdrawals (Retraits Agent)
+            else if (op.fromAccount == PaymentMethod.mobileMoney && op.toAccount == PaymentMethod.cash) {
+              totalWithdrawn += op.amount.toInt();
             }
           }
 
-          // Process Transactions
+          // Process Transactions (Cash-In/Cash-Out Clients)
           for (final t in transactions) {
-            if (t.status != TransactionStatus.completed) continue;
-            totalCommission += t.commission ?? 0;
-            if (t.type == TransactionType.cashIn) {
-              totalCashIn += t.amount;
-            } else if (t.type == TransactionType.cashOut) {
-              totalCashOut += t.amount;
+            if (t.isCompleted) {
+              if (t.isCashIn) {
+                totalCashIn += t.amount.toInt();
+                totalCommission += (t.commission ?? 0).toInt();
+              } else if (t.isCashOut) {
+                totalCashOut += t.amount.toInt();
+                totalCommission += (t.commission ?? 0).toInt();
+              }
             }
           }
 
@@ -543,15 +573,16 @@ final agentStatisticsProvider = Provider.autoDispose.family<AsyncValue<Map<Strin
             'totalCommission': totalCommission,
             'totalCashIn': totalCashIn,
             'totalCashOut': totalCashOut,
-            'transactionCount': transactions.where((t) => t.isCompleted).length,
+            'transactionCount': transactions.length,
+            'source': 'aggregate',
           });
         },
         loading: () => const AsyncValue.loading(),
-        error: (e, st) => AsyncValue.error(e, st),
+        error: (e, s) => AsyncValue.error(e, s),
       );
     },
     loading: () => const AsyncValue.loading(),
-    error: (e, st) => AsyncValue.error(e, st),
+    error: (e, s) => AsyncValue.error(e, s),
   );
 });
 
@@ -651,4 +682,52 @@ final dailyTransactionStatsProvider = StreamProvider.autoDispose
         }),
       );
     });
+
+/// Provider for agent performance ranking.
+/// Fetches all agents and calculates their flux to return a ranked list.
+final agentPerformanceRankingProvider = FutureProvider.autoDispose
+    .family<List<Map<String, dynamic>>, String>((ref, key) async {
+  final parts = key.split('|');
+  final enterpriseId = parts[0].isEmpty ? null : parts[0];
+  final searchQuery = parts.length > 1 && parts[1].isNotEmpty ? parts[1] : null;
+  final startDateStr = parts.length > 2 ? parts[2] : '';
+  final endDateStr = parts.length > 3 ? parts[3] : '';
+
+  final controller = ref.watch(agentsControllerProvider);
+  final agents = await controller.fetchAgents(
+    enterpriseId: enterpriseId,
+    searchQuery: searchQuery,
+  );
+
+  final List<Map<String, dynamic>> ranking = [];
+
+  for (final agent in agents) {
+    // Create the stats key with dates if available
+    final statsKey = parts.length > 2 ? '${agent.id}|$startDateStr|$endDateStr' : agent.id;
+    
+    // Watch the provider to get the current value (or trigger calculation)
+    final statsAsync = ref.watch(agentStatisticsProvider(statsKey));
+    
+    // Since it's an AsyncValue, we only add it if it's data
+    statsAsync.whenData((stats) {
+      final int totalCashIn = stats['totalCashIn'] as int? ?? 0;
+      final int totalCashOut = stats['totalCashOut'] as int? ?? 0;
+      final int totalVolume = totalCashIn + totalCashOut;
+      
+      ranking.add({
+        'agent': agent,
+        'stats': stats,
+        'totalVolume': totalVolume,
+        'count': stats['transactionCount'] as int? ?? 0,
+        'deposits': totalCashIn,
+        'withdrawals': totalCashOut,
+      });
+    });
+  }
+
+  // Sort by totalVolume descending
+  ranking.sort((a, b) => (b['totalVolume'] as int).compareTo(a['totalVolume'] as int));
+
+  return ranking;
+});
 

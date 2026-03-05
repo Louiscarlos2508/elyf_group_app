@@ -39,6 +39,12 @@ class CurrencyFormatter {
     return formatFCFA(amount);
   }
 
+  /// Formate un prix optionnel. Retourne '-' si 0 ou nul.
+  static String formatOptional(double? amount) {
+    if (amount == null || amount == 0) return '-';
+    return formatDouble(amount);
+  }
+
   /// Formate un montant avec séparateurs de milliers.
   /// Méthode interne unifiée pour tous les formats.
   static String _formatAmount(int amount, {required String suffix}) {

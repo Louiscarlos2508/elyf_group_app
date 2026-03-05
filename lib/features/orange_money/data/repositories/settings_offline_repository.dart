@@ -167,20 +167,16 @@ class SettingsOfflineRepository extends OfflineRepository<OrangeMoneySettings>
   @override
   Future<void> updateNotifications(
     String enterpriseId, {
-    bool? enableLiquidityAlerts,
     bool? enableCommissionReminders,
     bool? enableCheckpointReminders,
-    bool? enableTransactionAlerts,
   }) async {
     try {
       final current = await getSettings(enterpriseId);
       if (current != null) {
         final now = DateTime.now();
         final updated = current.copyWith(
-          enableLiquidityAlerts: enableLiquidityAlerts ?? current.enableLiquidityAlerts,
           enableCommissionReminders: enableCommissionReminders ?? current.enableCommissionReminders,
           enableCheckpointReminders: enableCheckpointReminders ?? current.enableCheckpointReminders,
-          enableTransactionAlerts: enableTransactionAlerts ?? current.enableTransactionAlerts,
           updatedAt: now,
         );
         await save(updated);
@@ -196,8 +192,8 @@ class SettingsOfflineRepository extends OfflineRepository<OrangeMoneySettings>
             entityId: _getSettingsId(enterpriseId),
             entityType: 'settings',
             metadata: {
-              'enableLiquidityAlerts': enableLiquidityAlerts,
               'enableCommissionReminders': enableCommissionReminders,
+              'enableCheckpointReminders': enableCheckpointReminders,
             },
             timestamp: now,
           ),

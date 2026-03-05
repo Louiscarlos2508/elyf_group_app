@@ -43,7 +43,7 @@ class CylinderSubmitHandler {
       
       final weight = int.tryParse(weightText) ?? selectedWeight;
       final sellPrice = double.tryParse(sellPriceText) ?? 0.0;
-      final wholesalePrice = double.tryParse(wholesalePriceText) ?? sellPrice;
+      final wholesalePrice = double.tryParse(wholesalePriceText) ?? 0.0;
       final buyPrice = double.tryParse(buyPriceText) ?? 0.0;
       const depositPrice = 0.0;
       final registeredTotal = int.tryParse(registeredTotalText ?? '') ?? 0;
@@ -70,6 +70,20 @@ class CylinderSubmitHandler {
           depositPrice: depositPrice,
           registeredTotal: registeredTotal,
         );
+      }
+      // Validation: Prevent duplicate weights in the same scope
+      if (existingCylinder == null) {
+        final existingCylinders = await ref.read(cylindersProvider.future);
+        final isDuplicate = existingCylinders.any((c) => c.weight == weight);
+        if (isDuplicate) {
+          if (context.mounted) {
+            NotificationService.showError(
+              context,
+              'Une bouteille de ${weight}kg existe déjà dans votre entreprise.',
+            );
+          }
+          return false;
+        }
       }
 
       // 1. Sauvegarder la bouteille

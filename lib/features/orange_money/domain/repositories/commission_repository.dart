@@ -28,43 +28,17 @@ abstract class CommissionRepository {
     CommissionStatus status,
   );
 
-  /// Récupère les commissions nécessitant une validation
-  Future<List<Commission>> getCommissionsRequiringValidation(
-    String enterpriseId,
-  );
-
   /// Crée une nouvelle commission (calcul estimatif)
   Future<String> createCommission(Commission commission);
 
   /// Met à jour une commission
   Future<void> updateCommission(Commission commission);
 
-  /// Déclare le montant SMS d'une commission
-  Future<Commission> declareCommission({
-    required String commissionId,
-    required int declaredAmount,
-    required String smsProofUrl,
-    required String declaredBy,
-  });
-
-  /// Valide une commission (superviseur/entreprise)
-  Future<Commission> validateCommission({
-    required String commissionId,
-    required String validatedBy,
-    String? notes,
-  });
-
   /// Marque une commission comme payée
   Future<Commission> markAsPaid({
     required String commissionId,
     required String paymentProofUrl,
     String? notes,
-  });
-
-  /// Marque une commission comme disputée
-  Future<Commission> markAsDisputed({
-    required String commissionId,
-    required String reason,
   });
 
   /// Supprime une commission (soft delete)

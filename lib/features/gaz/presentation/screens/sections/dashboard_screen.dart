@@ -12,7 +12,6 @@ import 'dashboard/dashboard_performance_section.dart';
 import 'dashboard/dashboard_pos_performance_section.dart';
 import '../../widgets/gaz_header.dart';
 import '../../widgets/dashboard/quick_actions_section.dart';
-import '../../widgets/dashboard/reconciliation_section.dart';
 import '../../widgets/dashboard/low_stock_alert_section.dart';
 import '../../../../../shared/presentation/widgets/elyf_ui/atoms/elyf_icon_button.dart';
 
@@ -124,9 +123,10 @@ class _DashboardContent extends ConsumerWidget {
         ),
 
         // Low Stock Alert section (Story 5.2)
-        const SliverToBoxAdapter(
-          child: LowStockAlertSection(),
-        ),
+        if (isPOS)
+          const SliverToBoxAdapter(
+            child: LowStockAlertSection(),
+          ),
 
         // Quick Actions section
         const SliverPadding(
@@ -141,18 +141,6 @@ class _DashboardContent extends ConsumerWidget {
           ),
         ),
 
-        // Reconciliation section (Z-Report)
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.lg,
-            0,
-            AppSpacing.lg,
-            AppSpacing.lg,
-          ),
-          sliver: const SliverToBoxAdapter(
-            child: DashboardReconciliationSection(),
-          ),
-        ),
         // Stock par capacité section
         const SliverPadding(
           padding: EdgeInsets.fromLTRB(

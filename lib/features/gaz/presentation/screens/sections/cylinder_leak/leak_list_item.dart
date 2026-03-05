@@ -2,12 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../domain/entities/cylinder_leak.dart';
-import '../../../../../../core/auth/providers.dart';
-import '../../../../application/providers.dart';
-import 'package:elyf_groupe_app/shared.dart';
-import '../../../../../../core/errors/error_handler.dart';
-import '../../../../../../core/logging/app_logger.dart';
-import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 
 /// Item de liste pour une fuite.
 class LeakListItem extends ConsumerStatefulWidget {
@@ -20,8 +14,6 @@ class LeakListItem extends ConsumerStatefulWidget {
 }
 
 class _LeakListItemState extends ConsumerState<LeakListItem> {
-  bool _isConverting = false;
-
   Color _getStatusColor(LeakStatus status) {
     switch (status) {
       case LeakStatus.reported:
@@ -32,68 +24,6 @@ class _LeakListItemState extends ConsumerState<LeakListItem> {
         return Colors.green;
       case LeakStatus.convertedToEmpty:
         return Colors.grey;
-    }
-  }
-
-  Future<void> _convertToEmpty() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Convertir en Vide'),
-        content: const Text(
-            'Êtes-vous sûr de vouloir convertir cette fuite en bouteille vide ? '
-            'Cela sera enregistré comme une perte (le gaz s\'est échappé) et la bouteille vide sera remise en stock.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Annuler'),
-          ),
-          ElyfButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Confirmer'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != true) return;
-
-    setState(() => _isConverting = true);
-
-    try {
-      final authController = ref.read(authControllerProvider);
-      final userId = authController.currentUser?.id ?? 'system';
-      final transactionService = ref.read(transactionServiceProvider);
-      
-      final activeEnterprise = ref.read(activeEnterpriseProvider).value;
-      final isPos = activeEnterprise?.isPointOfSale == true;
-      final siteId = isPos ? activeEnterprise?.id : null;
-
-      await transactionService.executeLeakToEmptyConversion(
-        leak: widget.leak,
-        siteId: siteId,
-        userId: userId,
-      );
-
-      if (!mounted) return;
-      NotificationService.showSuccess(context, 'Fuite convertie en bouteille vide avec succès.');
-      ref.invalidate(cylinderLeaksProvider);
-      ref.invalidate(cylinderStocksProvider);
-    } catch (e, stackTrace) {
-      if (!mounted) return;
-      final appException = ErrorHandler.instance.handleError(e, stackTrace);
-      AppLogger.error(
-        'Erreur de conversion fuite: ${appException.message}',
-        name: 'gaz.leak_conversion',
-        error: e,
-        stackTrace: stackTrace,
-      );
-      NotificationService.showError(
-        context,
-        ErrorHandler.instance.getUserMessage(appException),
-      );
-    } finally {
-      if (mounted) setState(() => _isConverting = false);
     }
   }
 
@@ -175,7 +105,7 @@ class _LeakListItemState extends ConsumerState<LeakListItem> {
               ],
             ),
           ),
-          // Date & Action
+          // Date
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             mainAxisAlignment: MainAxisAlignment.start,
@@ -198,28 +128,6 @@ class _LeakListItemState extends ConsumerState<LeakListItem> {
                   ),
                 ),
               ],
-              if (widget.leak.status == LeakStatus.reported && !_isConverting) ...[
-                const SizedBox(height: 12),
-                TextButton.icon(
-                  onPressed: _convertToEmpty,
-                  icon: const Icon(Icons.recycling, size: 16),
-                  label: const Text('Vers Vide', style: TextStyle(fontSize: 12)),
-                  style: TextButton.styleFrom(
-                    foregroundColor: theme.colorScheme.primary,
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                ),
-              ],
-              if (_isConverting) ...[
-                 const SizedBox(height: 12),
-                 const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                 ),
-              ],
             ],
           ),
         ],
@@ -227,3 +135,4 @@ class _LeakListItemState extends ConsumerState<LeakListItem> {
     );
   }
 }
+

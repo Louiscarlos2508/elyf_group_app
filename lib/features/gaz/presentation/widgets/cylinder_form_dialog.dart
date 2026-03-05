@@ -11,12 +11,14 @@ class CylinderFormDialog extends ConsumerStatefulWidget {
   const CylinderFormDialog({
     super.key, 
     this.cylinder,
+    this.initialWeight,
     required this.enterpriseId,
     required this.moduleId,
     this.isPOS = false,
   });
 
   final Cylinder? cylinder;
+  final int? initialWeight;
   final String enterpriseId;
   final String moduleId;
   final bool isPOS;
@@ -57,6 +59,9 @@ class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
         _registeredTotalController.text = widget.cylinder!.registeredTotal.toString();
       }
       _loadExistingStocks();
+    } else if (widget.initialWeight != null) {
+      _selectedWeight = widget.initialWeight;
+      _weightController.text = widget.initialWeight.toString();
     }
 
     // Initialiser tous les prix depuis les réglages (source de vérité prioritaire)
@@ -86,7 +91,8 @@ class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
   }
 
   Future<void> _loadSettingsPrices() async {
-    if (widget.cylinder == null || _enterpriseId == null) return;
+    final weight = widget.cylinder?.weight ?? widget.initialWeight;
+    if (weight == null || _enterpriseId == null) return;
     
     final settings = await ref.read(gazSettingsControllerProvider).getSettings(
       enterpriseId: _enterpriseId!,
@@ -94,10 +100,10 @@ class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
     );
     
     if (settings != null && mounted) {
-      final weight = widget.cylinder!.weight;
       final retailPrice = settings.getRetailPrice(weight);
       final wholesalePrice = settings.getWholesalePrice(weight);
       final purchasePrice = settings.getPurchasePrice(weight);
+      final lowStockThreshold = settings.getLowStockThreshold(weight);
 
       if (retailPrice != null) {
         _sellPriceController.text = retailPrice.toStringAsFixed(0);
@@ -257,8 +263,9 @@ class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
                   const SizedBox(height: 16),
                   
                   // Prix détail
-                  TextFormField(
-                    controller: _sellPriceController,
+                  if (widget.isPOS) ...[
+                    TextFormField(
+                      controller: _sellPriceController,
                     decoration: InputDecoration(
                       labelText: 'Prix de vente (Détail)',
                       hintText: '0',
@@ -280,6 +287,7 @@ class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
                     },
                   ),
                   const SizedBox(height: 16),
+                  ],
 
                   // Prix en gros
                   TextFormField(
@@ -332,79 +340,8 @@ class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
                         return null;
                       },
                     ),
-                    const SizedBox(height: 16),
-                  ],
-                  
-                  // Stock initial et Parc — Masqués pour POS
-                  if (!widget.isPOS) ...[
-                    const Divider(),
-                    const SizedBox(height: 16),
-                    Text(
-                      widget.cylinder == null ? 'Stock Initial (Plein/Vide)' : 'Stock Actuel (Plein/Vide)',
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextFormField(
-                              controller: _initialFullStockController,
-                              decoration: InputDecoration(
-                                labelText: 'Stock Plein',
-                                hintText: '0',
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                prefixIcon: const Icon(Icons.inventory_2_outlined),
-                                filled: true,
-                                fillColor: Colors.grey.withAlpha(10),
-                              ),
-                              keyboardType: TextInputType.number,
-                              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: TextFormField(
-                              controller: _initialEmptyStockController,
-                              decoration: InputDecoration(
-                                labelText: 'Stock Vide',
-                                hintText: '0',
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                prefixIcon: const Icon(Icons.inventory_outlined),
-                                filled: true,
-                                fillColor: Colors.grey.withAlpha(10),
-                              ),
-                              keyboardType: TextInputType.number,
-                              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                            ),
-                          ),
-                        ],
-                      ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _registeredTotalController,
-                      decoration: InputDecoration(
-                        labelText: 'Parc Total (Toutes bouteilles)',
-                        hintText: 'Ex: 50 (plein + vide + en circulation)',
-                        helperText: 'Sert à détecter les pertes. Vide = non suivi.',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        prefixIcon: const Icon(Icons.analytics_outlined),
-                        filled: true,
-                        fillColor: Theme.of(context).colorScheme.primaryContainer.withAlpha(40),
-                      ),
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    ),
                     const SizedBox(height: 32),
-                  ],
+
                   
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,

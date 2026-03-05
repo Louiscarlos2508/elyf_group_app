@@ -68,14 +68,13 @@ class _GazLogisticsScreenState extends ConsumerState<GazLogisticsScreen>
     if (confirmed == true && mounted) {
       try {
         final controller = ref.read(tourControllerProvider);
-        final activeSession = await ref.read(activeGazSessionProvider.future);
         
         final tour = Tour(
           id: '',
           enterpriseId: activeEnterprise.id,
           tourDate: DateTime.now(),
           status: TourStatus.open,
-          sessionId: activeSession?.id,
+          sessionId: null, // Session requirement removed
         );
 
         await controller.createTour(tour);

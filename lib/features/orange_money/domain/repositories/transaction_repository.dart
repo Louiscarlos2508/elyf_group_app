@@ -29,7 +29,11 @@ abstract class TransactionRepository {
     TransactionStatus? status,
   });
 
-  Stream<List<Transaction>> watchTransactionsByAgent(String agentId);
+  Stream<List<Transaction>> watchTransactionsByAgent(
+    String agentId, {
+    DateTime? startDate,
+    DateTime? endDate,
+  });
 
   Stream<List<Transaction>> watchTransactionsByPeriod(
     DateTime start,

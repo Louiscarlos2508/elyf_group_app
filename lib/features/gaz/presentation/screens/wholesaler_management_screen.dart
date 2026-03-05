@@ -43,7 +43,7 @@ class WholesalerManagementScreen extends ConsumerWidget {
                   const Text('Aucun grossiste enregistré'),
                   const SizedBox(height: 24),
                   ElyfButton(
-                    onPressed: () => _showForm(context, enterpriseId, ref),
+                    onPressed: () => _showWholesalerForm(context, enterpriseId, ref),
                     child: const Text('Ajouter mon premier grossiste'),
                   ),
                 ],
@@ -59,7 +59,7 @@ class WholesalerManagementScreen extends ConsumerWidget {
               final wholesaler = wholesalers[index];
               return ListTile(
                 leading: CircleAvatar(
-                  backgroundColor: _getTierColor(wholesaler.tier),
+                  backgroundColor: theme.colorScheme.primary,
                   child: Text(
                     wholesaler.name.substring(0, 1).toUpperCase(),
                     style: const TextStyle(color: Colors.white),
@@ -67,31 +67,36 @@ class WholesalerManagementScreen extends ConsumerWidget {
                 ),
                 title: Text(
                   wholesaler.name,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-                subtitle: Text(wholesaler.phone ?? 'Pas de téléphone'),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (wholesaler.phone != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4.0),
+                        child: Row(
+                          children: [
+                            Icon(Icons.phone, size: 14, color: theme.colorScheme.onSurfaceVariant),
+                            const SizedBox(width: 4),
+                            Text(wholesaler.phone!, style: theme.textTheme.bodySmall),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: _getTierColor(wholesaler.tier).withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        wholesaler.tier.toUpperCase(),
-                        style: TextStyle(
-                          color: _getTierColor(wholesaler.tier),
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                    IconButton(
+                      icon: const Icon(Icons.edit_outlined),
+                      onPressed: () => _showWholesalerForm(context, enterpriseId, ref, wholesaler: wholesaler),
                     ),
-                    const SizedBox(width: 8),
-                    ElyfIconButton(
-                      icon: Icons.edit_outlined,
-                      onPressed: () => _showForm(context, enterpriseId, ref, wholesaler: wholesaler),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline, color: Colors.red),
+                      onPressed: () => _confirmDelete(context, ref, wholesaler),
                     ),
                   ],
                 ),
@@ -103,13 +108,13 @@ class WholesalerManagementScreen extends ConsumerWidget {
         error: (e, _) => Center(child: Text('Erreur: $e')),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _showForm(context, enterpriseId, ref),
+        onPressed: () => _showWholesalerForm(context, enterpriseId, ref),
         child: const Icon(Icons.add),
       ),
     );
   }
 
-  void _showForm(BuildContext context, String enterpriseId, WidgetRef ref, {Wholesaler? wholesaler}) {
+  void _showWholesalerForm(BuildContext context, String enterpriseId, WidgetRef ref, {Wholesaler? wholesaler}) {
     showDialog(
       context: context,
       builder: (context) => WholesalerFormDialog(
@@ -123,16 +128,26 @@ class WholesalerManagementScreen extends ConsumerWidget {
     });
   }
 
-  Color _getTierColor(String tier) {
-    switch (tier.toLowerCase()) {
-      case 'gold':
-        return Colors.orange;
-      case 'silver':
-        return Colors.blueGrey;
-      case 'bronze':
-        return Colors.brown;
-      default:
-        return Colors.blue;
-    }
+  void _confirmDelete(BuildContext context, WidgetRef ref, Wholesaler wholesaler) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Supprimer le grossiste ?'),
+        content: Text('Voulez-vous vraiment supprimer ${wholesaler.name} ?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Annuler'),
+          ),
+          TextButton(
+            onPressed: () async {
+              await ref.read(wholesalerControllerProvider).deleteWholesaler(wholesaler.id);
+              if (context.mounted) Navigator.pop(context);
+            },
+            child: const Text('Supprimer', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
   }
 }

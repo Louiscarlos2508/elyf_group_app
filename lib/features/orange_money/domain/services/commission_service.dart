@@ -41,15 +41,18 @@ class CommissionService {
         .where((tx) => tx.status == TransactionStatus.completed)
         .toList();
 
-    // 4. Calculer par tranche
-    final details = _calculateCommissionDetails(
-      transactions: completedTransactions,
-      cashInTiers: settings.cashInTiers,
-      cashOutTiers: settings.cashOutTiers,
+    // 4. No more system-calculated estimation (User request)
+    final details = CommissionCalculationDetails(
+      transactionsByTranche: {},
+      commissionsByTranche: {},
+      totalCashIn: 0,
+      totalCashOut: 0,
+      cashInCommission: 0,
+      cashOutCommission: 0,
     );
-
-    // 5. Total estimé
-    final estimatedAmount = details.cashInCommission + details.cashOutCommission;
+    
+    // 5. Amount is 0 until declared
+    const estimatedAmount = 0;
 
     // 6. Créer commission
     final commission = Commission(
@@ -87,26 +90,10 @@ class CommissionService {
       );
     }
 
-    // Calculer l'écart
-    final discrepancy = declaredAmount - commission.estimatedAmount;
-    final discrepancyPercentage =
-        (discrepancy.abs() / commission.estimatedAmount * 100);
-
-    // Déterminer le statut de l'écart
-    final settings = await _settingsRepo.getSettings(commission.enterpriseId);
-    if (settings == null) {
-      throw Exception('Settings not found for enterprise ${commission.enterpriseId}');
-    }
-
-    DiscrepancyStatus discrepancyStatus;
-
-    if (discrepancyPercentage < 1) {
-      discrepancyStatus = DiscrepancyStatus.conforme;
-    } else if (discrepancyPercentage <= settings.commissionDiscrepancyMinor) {
-      discrepancyStatus = DiscrepancyStatus.ecartMineur;
-    } else {
-      discrepancyStatus = DiscrepancyStatus.ecartSignificatif;
-    }
+    // Pas d'écart car pas d'estimation
+    const discrepancy = 0;
+    const discrepancyPercentage = 0.0;
+    const discrepancyStatus = DiscrepancyStatus.conforme;
 
     // Mettre à jour
     final updated = commission.copyWith(
@@ -123,60 +110,9 @@ class CommissionService {
 
     await _commissionRepo.updateCommission(updated);
 
-    // Si conforme et auto-validation activée, valider automatiquement
-    if (discrepancyStatus == DiscrepancyStatus.conforme &&
-        settings.autoValidateConformeCommissions) {
-      return await validateCommission(
-        commissionId: commissionId,
-        validatedBy: 'system_auto',
-        notes: 'Auto-validée (écart < 1%)',
-      );
-    }
-
-    // Si écart significatif, marquer comme disputée
-    if (discrepancyStatus == DiscrepancyStatus.ecartSignificatif) {
-      // TODO: Envoyer notification au superviseur
-      return await markAsDisputed(
-        commissionId: commissionId,
-        reason:
-            'Écart significatif de ${discrepancyPercentage.toStringAsFixed(1)}%',
-      );
-    }
-
     return updated;
   }
 
-  /// Valider une commission (Superviseur/Entreprise)
-  Future<Commission> validateCommission({
-    required String commissionId,
-    required String validatedBy,
-    String? notes,
-  }) async {
-    final commission = await _commissionRepo.getCommission(commissionId);
-
-    if (commission == null) {
-      throw Exception('Commission not found: $commissionId');
-    }
-
-    if (commission.status != CommissionStatus.declared &&
-        commission.status != CommissionStatus.disputed) {
-      throw Exception(
-        'Commission must be declared or disputed to validate. Current: ${commission.status}',
-      );
-    }
-
-    final updated = commission.copyWith(
-      status: CommissionStatus.validated,
-      validatedAt: DateTime.now(),
-      validatedBy: validatedBy,
-      notes: notes ?? commission.notes,
-      updatedAt: DateTime.now(),
-    );
-
-    await _commissionRepo.updateCommission(updated);
-
-    return updated;
-  }
 
   /// Marquer comme payée avec preuve
   Future<Commission> markAsPaid({
@@ -190,9 +126,9 @@ class CommissionService {
       throw Exception('Commission not found: $commissionId');
     }
 
-    if (commission.status != CommissionStatus.validated) {
+    if (commission.status != CommissionStatus.declared) {
       throw Exception(
-        'Commission must be validated to mark as paid. Current: ${commission.status}',
+        'Commission must be declared to mark as paid. Current: ${commission.status}',
       );
     }
 
@@ -209,77 +145,8 @@ class CommissionService {
     return updated;
   }
 
-  /// Marquer une commission comme disputée
-  Future<Commission> markAsDisputed({
-    required String commissionId,
-    required String reason,
-  }) async {
-    return await _commissionRepo.markAsDisputed(
-      commissionId: commissionId,
-      reason: reason,
-    );
-  }
 
-  /// Calculer les détails de commission par tranche
-  CommissionCalculationDetails _calculateCommissionDetails({
-    required List<Transaction> transactions,
-    required List<CommissionTier> cashInTiers,
-    required List<CommissionTier> cashOutTiers,
-  }) {
-    final transactionsByTranche = <String, int>{};
-    final commissionsByTranche = <String, int>{};
-
-    int totalCashIn = 0;
-    int totalCashOut = 0;
-    int cashInCommission = 0;
-    int cashOutCommission = 0;
-
-    for (final tx in transactions) {
-      final tiers = tx.type == TransactionType.cashIn ? cashInTiers : cashOutTiers;
-
-      // Trouver la tranche correspondante
-      CommissionTier? matchingTier;
-      for (final tier in tiers) {
-        if (tier.contains(tx.amount)) {
-          matchingTier = tier;
-          break;
-        }
-      }
-
-      if (matchingTier != null) {
-        final trancheKey = matchingTier.label;
-
-        // Compter les transactions par tranche
-        transactionsByTranche[trancheKey] =
-            (transactionsByTranche[trancheKey] ?? 0) + 1;
-
-        // Calculer la commission
-        final commission = matchingTier.calculateCommission(tx.amount);
-
-        // Ajouter aux commissions par tranche
-        commissionsByTranche[trancheKey] =
-            (commissionsByTranche[trancheKey] ?? 0) + commission;
-
-        // Totaux
-        if (tx.type == TransactionType.cashIn) {
-          totalCashIn += tx.amount;
-          cashInCommission += commission;
-        } else {
-          totalCashOut += tx.amount;
-          cashOutCommission += commission;
-        }
-      }
-    }
-
-    return CommissionCalculationDetails(
-      transactionsByTranche: transactionsByTranche,
-      commissionsByTranche: commissionsByTranche,
-      totalCashIn: totalCashIn,
-      totalCashOut: totalCashOut,
-      cashInCommission: cashInCommission,
-      cashOutCommission: cashOutCommission,
-    );
-  }
+  // Removed _calculateCommissionDetails as per user request to disable system calculations
 
   /// Parse le début du mois depuis "YYYY-MM"
   DateTime _parseMonthStart(String period) {

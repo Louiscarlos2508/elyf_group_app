@@ -239,16 +239,19 @@ class _GazTreasuryOperationDialogState extends ConsumerState<GazTreasuryOperatio
   Color _getOperationColor() {
     switch (widget.type) {
       case TreasuryOperationType.supply: return Colors.green;
-      case TreasuryOperationType.removal: return Colors.orange;
+      case TreasuryOperationType.removal: return Colors.red;
       case TreasuryOperationType.transfer: return Colors.blue;
       case TreasuryOperationType.adjustment: return Colors.grey;
     }
   }
 
   String _getOperationTitle() {
+    final activeEnterprise = ref.watch(activeEnterpriseProvider).value;
+    final isPOS = activeEnterprise?.isPointOfSale ?? false;
+
     switch (widget.type) {
       case TreasuryOperationType.supply: return 'Nouvel Apport';
-      case TreasuryOperationType.removal: return 'Nouveau Retrait';
+      case TreasuryOperationType.removal: return isPOS ? 'Nouveau Retrait / Versement' : 'Nouveau Retrait';
       case TreasuryOperationType.transfer: return 'Nouveau Transfert';
       case TreasuryOperationType.adjustment: return 'Nouvel Ajustement';
     }

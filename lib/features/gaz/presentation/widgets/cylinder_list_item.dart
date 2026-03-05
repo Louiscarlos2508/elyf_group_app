@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../shared/presentation/widgets/elyf_ui/atoms/elyf_icon_button.dart';
-
 import 'package:elyf_groupe_app/shared.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/cylinder.dart';
+import './cylinder_form/stock_alert_threshold_dialog.dart';
 
 /// Widget pour afficher une bouteille dans la liste des paramètres.
 class CylinderListItem extends ConsumerWidget {
@@ -166,6 +165,21 @@ child: LayoutBuilder(
                                 ),
                                 const SizedBox(width: 8),
                                 ElyfButton(
+                                  onPressed: () {
+                                    showDialog(
+                                      context: context,
+                                      builder: (context) => StockAlertThresholdDialog(
+                                        cylinder: cylinder,
+                                      ),
+                                    );
+                                  },
+                                  variant: ElyfButtonVariant.text,
+                                  size: ElyfButtonSize.small,
+                                  icon: Icons.notification_important_outlined,
+                                  child: const Text('Alerte'),
+                                ),
+                                const SizedBox(width: 8),
+                                ElyfButton(
                                   onPressed: onDelete,
                                   variant: ElyfButtonVariant.text,
                                   backgroundColor: theme.colorScheme.error.withValues(alpha: 0.1),
@@ -246,6 +260,23 @@ child: LayoutBuilder(
                           Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
+                              ElyfIconButton(
+                                icon: Icons.notification_important_outlined,
+                                onPressed: () {
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) => StockAlertThresholdDialog(
+                                      cylinder: cylinder,
+                                    ),
+                                  );
+                                },
+                                tooltip: 'Alerte stock',
+                                iconColor: theme.colorScheme.secondary,
+                                size: 36,
+                                iconSize: 20,
+                                useGlassEffect: false,
+                              ),
+                              const SizedBox(width: 4),
                               ElyfIconButton(
                                 icon: Icons.edit,
                                 onPressed: onEdit,

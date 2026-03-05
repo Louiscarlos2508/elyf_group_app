@@ -124,6 +124,7 @@ class GasSaleSubmitHandler {
           siteId: null,
         )),
       );
+      ref.invalidate(allWholesalersProvider(enterpriseId));
 
       // Ne pas popper ici, laisser le dialog gérer le succès
       // Navigator.of(context).pop();

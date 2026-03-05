@@ -21,7 +21,6 @@ import '../repositories/gaz_settings_repository.dart';
 import '../repositories/inventory_audit_repository.dart';
 import '../entities/expense.dart';
 import '../repositories/expense_repository.dart';
-import '../repositories/session_repository.dart';
 import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
 import 'package:elyf_groupe_app/shared/domain/entities/treasury_operation.dart';
 import '../repositories/collection_repository.dart';
@@ -49,7 +48,6 @@ class TransactionService {
     required this.settingsRepository,
     required this.inventoryAuditRepository,
     required this.expenseRepository,
-    required this.sessionRepository,
     required this.treasuryRepository,
     required this.collectionRepository,
   });
@@ -65,7 +63,6 @@ class TransactionService {
   final GazSettingsRepository settingsRepository;
   final GazInventoryAuditRepository inventoryAuditRepository;
   final GazExpenseRepository expenseRepository;
-  final GazSessionRepository sessionRepository;
   final GazTreasuryRepository treasuryRepository;
   final CollectionRepository collectionRepository;
 
@@ -228,17 +225,8 @@ class TransactionService {
     required String enterpriseId,
     String? siteId,
   }) async {
-    // 0. Vérifier si une session est ouverte (Obligatoire pour vendre)
-    final activeSession = await sessionRepository.getActiveSession(enterpriseId);
-    if (activeSession == null) {
-      throw ValidationException(
-        'Aucune session active. Veuillez ouvrir une session avant de vendre.',
-        'NO_ACTIVE_SESSION',
-      );
-    }
-
-    // Lier la vente à la session active
-    final saleWithSession = sale.copyWith(sessionId: activeSession.id);
+    // 0. Session check removed (Optional)
+    final saleWithSession = sale;
 
     // 1. Validation de cohérence
     final consistencyError = await consistencyService.validateSaleConsistency(
@@ -271,7 +259,7 @@ class TransactionService {
       );
 
       final fullStocks =
-          stocks.where((s) => s.status == CylinderStatus.full).toList()
+          stocks.where((s) => s.status == CylinderStatus.full && s.cylinderId == saleWithSession.cylinderId).toList()
             ..sort((a, b) => a.updatedAt.compareTo(b.updatedAt)); // FIFO
 
       int remainingToDebit = saleWithSession.quantity;
@@ -437,7 +425,7 @@ class TransactionService {
           'isExchange': saleWithSession.isExchange,
           'emptyReturnedQuantity': saleWithSession.emptyReturnedQuantity,
           'depositAmount': depositAmount,
-          'sessionId': activeSession.id,
+          'sessionId': saleWithSession.sessionId,
           'movements': [
             {
               'cylinderId': saleWithSession.cylinderId,
@@ -917,15 +905,7 @@ class TransactionService {
     required String enterpriseId,
     required String userId,
   }) async {
-    // 0. Validation
-    final activeSession = await sessionRepository.getActiveSession(enterpriseId);
-    if (activeSession == null) {
-      throw ValidationException(
-        'Aucune session active. Veuillez ouvrir une session.',
-        'NO_ACTIVE_SESSION',
-      );
-    }
-
+    // 0. Validation (Session check removed)
     if (collection.emptyBottles.isEmpty) {
       throw ValidationException(
         'La collecte ne contient aucune bouteille.',
@@ -1003,12 +983,12 @@ class TransactionService {
   }
 
 
-  /// Déclare une fuite de manière atomique.
+  /// Déclare une fuite de manière atomique et la convertit immédiatement en vide.
   /// 
   /// Étapes :
   /// 1. Décrémente le stock plein
-  /// 2. Incrémente le stock "Fuite"
-  /// 3. Enregistre la fuite (Standardisé)
+  /// 2. Incrémente le stock "Vide au magasin"
+  /// 3. Enregistre la fuite comme "Trace" (convertedToEmpty)
   /// 4. Log l'audit
   Future<void> executeLeakDeclaration({
     required CylinderLeak leak,
@@ -1027,25 +1007,25 @@ class TransactionService {
       updatedAt: DateTime.now(),
     ));
 
-    // 2. Incrémenter stock fuite
-    final leakStock = fullStocks.where((s) => s.status == CylinderStatus.leak && s.cylinderId == leak.cylinderId).firstOrNull 
+    // 2. Incrémenter stock vide au magasin
+    final emptyStock = fullStocks.where((s) => s.status == CylinderStatus.emptyAtStore && s.cylinderId == leak.cylinderId).firstOrNull 
       ?? CylinderStock(
           id: LocalIdGenerator.generate(),
           cylinderId: leak.cylinderId,
           weight: leak.weight,
-          status: CylinderStatus.leak,
+          status: CylinderStatus.emptyAtStore,
           quantity: 0,
           enterpriseId: leak.enterpriseId,
           updatedAt: DateTime.now(),
         );
 
-    await stockRepository.updateStock(leakStock.copyWith(
-      quantity: leakStock.quantity + 1,
+    await stockRepository.updateStock(emptyStock.copyWith(
+      quantity: emptyStock.quantity + 1,
       updatedAt: DateTime.now(),
     ));
 
-    // 3. Enregistrer la fuite
-    await leakRepository.reportLeak(leak);
+    // 3. Enregistrer la trace de la fuite (Directement comme convertie)
+    await leakRepository.reportLeak(leak.copyWith(status: LeakStatus.convertedToEmpty));
 
     // 4. Audit Trail
     await auditTrailRepository.log(AuditRecord(
@@ -1053,7 +1033,7 @@ class TransactionService {
       enterpriseId: leak.enterpriseId,
       userId: userId,
       module: 'gaz',
-      action: 'LEAK_DECLARATION',
+      action: 'LEAK_DECLARATION_AND_CONVERSION',
       entityId: leak.id,
       entityType: 'leak',
       timestamp: DateTime.now(),
@@ -1062,7 +1042,7 @@ class TransactionService {
         'operation': 'leak',
         'movements': [
           {'cylinderId': leak.cylinderId, 'weight': leak.weight, 'status': 'full', 'delta': -1},
-          {'cylinderId': leak.cylinderId, 'weight': leak.weight, 'status': 'leak', 'delta': 1},
+          {'cylinderId': leak.cylinderId, 'weight': leak.weight, 'status': 'emptyAtStore', 'delta': 1},
         ],
       },
     ));
@@ -1295,82 +1275,7 @@ class TransactionService {
     ));
   }
 
-  /// Exécute un remboursement de consigne (retour de bouteille sans achat).
-  Future<void> executeDepositRefund({
-    required String enterpriseId,
-    required String cylinderId,
-    required int weight,
-    required int quantity,
-    required String userId,
-    String? siteId,
-  }) async {
-    // 1. Créditer le stock de bouteilles vides
-    final stocks = await stockRepository.getStocksByWeight(
-      enterpriseId,
-      weight,
-      siteId: siteId,
-    );
-    
-    final emptyStock = stocks
-        .where((s) => s.status == CylinderStatus.emptyAtStore && s.cylinderId == cylinderId)
-        .firstOrNull;
 
-    if (emptyStock != null) {
-      await stockRepository.updateStockQuantity(
-        emptyStock.id,
-        emptyStock.quantity + quantity,
-      );
-    } else {
-      await stockRepository.addStock(CylinderStock(
-        id: LocalIdGenerator.generate(),
-        cylinderId: cylinderId,
-        weight: weight,
-        status: CylinderStatus.emptyAtStore,
-        quantity: quantity,
-        enterpriseId: enterpriseId,
-        siteId: siteId,
-        updatedAt: DateTime.now(),
-      ));
-    }
-
-    // 2. Récupérer le taux de consigne pour l'audit
-    double refundAmount = 0;
-    final settings = await settingsRepository.getSettings(
-      enterpriseId: enterpriseId,
-      moduleId: 'gaz',
-    );
-    if (settings != null) {
-      refundAmount = settings.getDepositRate(weight) * quantity;
-    }
-
-    // 3. Audit Log
-    await auditTrailRepository.log(AuditRecord(
-      id: '',
-      enterpriseId: enterpriseId,
-      userId: userId,
-      module: 'gaz',
-      action: 'DEPOSIT_REFUND',
-      entityId: cylinderId,
-      entityType: 'cylinder',
-      timestamp: DateTime.now(),
-      metadata: {
-        'operation': 'refund',
-        'cylinderId': cylinderId,
-        'weight': weight,
-        'quantity': quantity,
-        'refundAmount': refundAmount,
-        'siteId': siteId,
-        'movements': [
-          {
-            'cylinderId': cylinderId,
-            'weight': weight,
-            'status': 'emptyAtStore',
-            'delta': quantity,
-          },
-        ],
-      },
-    ));
-  }
 
   /// Exécute un audit d'inventaire complet.
   /// 
@@ -1571,13 +1476,14 @@ class TransactionService {
             ));
           }
         } else {
-          if (targetStock != null && targetStock.quantity >= quantity) {
-            await stockRepository.updateStockQuantity(targetStock.id, targetStock.quantity - quantity);
+          // Prevention of negative stock for removals
+          if (targetStock != null) {
+            final newQuantity = (targetStock.quantity - quantity).clamp(0, double.infinity).toInt();
+            await stockRepository.updateStockQuantity(targetStock.id, newQuantity);
           } else {
-            throw ValidationException(
-              'Stock insuffisant pour ${weight}kg (${status.label}): ${targetStock?.quantity ?? 0} disponible, $quantity demandé.',
-              'INSUFFICIENT_STOCK',
-            );
+            // If no stock record exists, we don't create a negative one
+            // We just create a 0 stock record if it's strictly necessary, but usually we just skip.
+            // For audit consistency, let's just do nothing if targetStock is null and we are removing.
           }
         }
       }
@@ -1585,9 +1491,18 @@ class TransactionService {
 
     try {
       // 1. Process all movements
-      await _processMovement(fullEntries, CylinderStatus.full, true);
-      await _processMovement(emptyEntries, CylinderStatus.emptyAtStore, true);
+      
+      // Sortie de vides -> On enlève du Magasin, On met en Transit
       await _processMovement(emptyExits, CylinderStatus.emptyAtStore, false);
+      await _processMovement(emptyExits, CylinderStatus.emptyInTransit, true);
+
+      // Entrée de pleines -> On ajoute aux Pleines, On enlève du Transit
+      await _processMovement(fullEntries, CylinderStatus.full, true);
+      await _processMovement(fullEntries, CylinderStatus.emptyInTransit, false);
+
+      // Entrée de vides (retours non-chargés) -> On ajoute au Magasin, On enlève du Transit
+      await _processMovement(emptyEntries, CylinderStatus.emptyAtStore, true);
+      await _processMovement(emptyEntries, CylinderStatus.emptyInTransit, false);
 
       // 2. Audit Trail
       await auditTrailRepository.log(AuditRecord(

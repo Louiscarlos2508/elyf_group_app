@@ -232,7 +232,7 @@ class PosBottlesSummary extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Fuites',
+                          'Fuite',
                           style: theme.textTheme.bodySmall?.copyWith(
                             fontSize: 12,
                             color: isDark ? theme.colorScheme.onSurfaceVariant : const Color(0xFF4A5565),

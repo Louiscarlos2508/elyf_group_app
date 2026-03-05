@@ -48,17 +48,6 @@ class SettingsNotificationsCard extends StatelessWidget {
           ),
           const SizedBox(height: 32),
           SettingsToggleItem(
-            label: 'Alerte liquidité critique',
-            description: 'Notification immédiate quand vos fonds sont insuffisants pour opérer.',
-            value: settings.enableLiquidityAlerts,
-            onChanged: (value) {
-              onSettingsChanged(
-                settings.copyWith(enableLiquidityAlerts: value),
-              );
-            },
-          ),
-          const Divider(height: 32, thickness: 0.5),
-          SettingsToggleItem(
             label: 'Rappel commission mensuelle',
             description: 'Aide à ne pas oublier la déclaration de vos commissions en fin de période.',
             value: settings.enableCommissionReminders,
@@ -76,17 +65,6 @@ class SettingsNotificationsCard extends StatelessWidget {
             onChanged: (value) {
               onSettingsChanged(
                 settings.copyWith(enableCheckpointReminders: value),
-              );
-            },
-          ),
-          const Divider(height: 32, thickness: 0.5),
-          SettingsToggleItem(
-            label: 'Alertes transactions majeures',
-            description: 'Soyez notifié pour toute opération dépassant votre seuil de sécurité.',
-            value: settings.enableTransactionAlerts,
-            onChanged: (value) {
-              onSettingsChanged(
-                settings.copyWith(enableTransactionAlerts: value),
               );
             },
           ),

@@ -14,10 +14,8 @@ abstract class SettingsRepository {
   /// Met à jour les notifications
   Future<void> updateNotifications(
     String enterpriseId, {
-    bool? enableLiquidityAlerts,
     bool? enableCommissionReminders,
     bool? enableCheckpointReminders,
-    bool? enableTransactionAlerts,
   });
 
 

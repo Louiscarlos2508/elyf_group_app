@@ -12,11 +12,14 @@ class ExpenseDateInput extends StatelessWidget {
   final ValueChanged<DateTime> onDateSelected;
 
   Future<void> _selectDate(BuildContext context) async {
+    final now = DateTime.now();
+    final initialDate = selectedDate.isAfter(now) ? now : selectedDate;
+    
     final picked = await showDatePicker(
       context: context,
-      initialDate: selectedDate,
+      initialDate: initialDate,
       firstDate: DateTime(2020),
-      lastDate: DateTime.now(),
+      lastDate: now,
     );
     if (picked != null) {
       onDateSelected(picked);

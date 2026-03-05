@@ -56,21 +56,21 @@ class StockStatusTab extends ConsumerWidget {
                   runSpacing: 8,
                   alignment: WrapAlignment.end,
                   children: [
-                    if (!isPOS)
-                      ElyfButton(
-                        onPressed: () {
-                          showDialog(
-                            context: context,
-                            builder: (context) => IndependentCollectionDialog(
-                              enterpriseId: enterpriseId,
-                            ),
-                          );
-                        },
-                        icon: Icons.add_circle_outline,
-                        variant: ElyfButtonVariant.filled,
-                        size: ElyfButtonSize.small,
-                        child: const Text('Collecte (POS)'),
-                      ),
+                    // if (!isPOS)
+                    //   ElyfButton(
+                    //     onPressed: () {
+                    //       showDialog(
+                    //         context: context,
+                    //         builder: (context) => IndependentCollectionDialog(
+                    //           enterpriseId: enterpriseId,
+                    //         ),
+                    //       );
+                    //     },
+                    //     icon: Icons.add_circle_outline,
+                    //     variant: ElyfButtonVariant.filled,
+                    //     size: ElyfButtonSize.small,
+                    //     child: const Text('Collecte (POS)'),
+                    //   ),
                     if (isPOS) ...[
                       // 1. Entrée (Pleins + Vides retour non-rechargés fusionnés)
                       ElyfButton(
@@ -121,11 +121,21 @@ class StockStatusTab extends ConsumerWidget {
                   AppSpacing.lg,
                 ),
                 child: allStocksAsync.when(
-                  data: (allStocks) => StockKpiSection(
-                    allStocks: allStocks,
-                    activePointsOfSale: activePointsOfSale,
-                    pointsOfSale: pointsOfSale,
-                  ),
+                  data: (allStocks) {
+                    return cylindersAsync.when(
+                      data: (cylinders) => StockKpiSection(
+                        allStocks: allStocks,
+                        activePointsOfSale: activePointsOfSale,
+                        pointsOfSale: pointsOfSale,
+                      ),
+                      loading: () => AppShimmers.statsGrid(context),
+                      error: (error, stackTrace) => StockKpiSection(
+                        allStocks: allStocks,
+                        activePointsOfSale: activePointsOfSale,
+                        pointsOfSale: pointsOfSale,
+                      ),
+                    );
+                  },
                   loading: () => AppShimmers.statsGrid(context),
                   error: (error, stackTrace) => const SizedBox.shrink(),
                 ),
@@ -146,47 +156,48 @@ class StockStatusTab extends ConsumerWidget {
             //     ),
             //   ),
 
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(
-                  AppSpacing.lg,
-                  0,
-                  AppSpacing.lg,
-                  AppSpacing.lg,
-                ),
-                child: Container(
-                  padding: const EdgeInsets.all(2),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(14),
+            if (isPOS)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    0,
+                    AppSpacing.lg,
+                    AppSpacing.lg,
                   ),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
+                    padding: const EdgeInsets.all(2),
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.surface,
+                      color: theme.colorScheme.primaryContainer,
                       borderRadius: BorderRadius.circular(14),
                     ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.inventory_2, size: 18, color: theme.colorScheme.primary),
-                        const SizedBox(width: 8),
-                        Text(
-                          isPOS ? 'MON STOCK' : 'INVENTAIRE DÉPÔT PRINCIPAL',
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.2,
-                            color: theme.colorScheme.primary,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surface,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.inventory_2, size: 18, color: theme.colorScheme.primary),
+                          const SizedBox(width: 8),
+                          Text(
+                            'MON STOCK',
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.2,
+                              color: theme.colorScheme.primary,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
 
             // Stock de l'entité actuelle (POS Uniquement)
             if (isPOS)
@@ -195,26 +206,30 @@ class StockStatusTab extends ConsumerWidget {
                   padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                   child: allStocksAsync.when(
                     data: (allStocks) {
-                      final activeId = ref.watch(activeEnterpriseIdProvider).value ?? '';
-                      final currentEnterprise = ref.watch(activeEnterpriseProvider).value;
+                      return cylindersAsync.when(
+                        data: (cylinders) {
+                          final activeId = ref.watch(activeEnterpriseIdProvider).value ?? '';
+                          final currentEnterprise = ref.watch(activeEnterpriseProvider).value;
 
-                      if (currentEnterprise == null) return const SizedBox.shrink();
+                          if (currentEnterprise == null) return const SizedBox.shrink();
 
-                      final cylinders = cylindersAsync.value ?? [];
+                          final metrics = GazStockCalculationService.calculatePosStockMetrics(
+                            enterpriseId: activeId,
+                            allStocks: allStocks,
+                            cylinders: cylinders,
+                          );
 
-                      final metrics = GazStockCalculationService.calculatePosStockMetrics(
-                        enterpriseId: activeId,
-                        allStocks: allStocks,
-                        cylinders: cylinders,
-                      );
-
-                      return PointOfSaleStockCard(
-                        enterprise: currentEnterprise,
-                        fullBottles: metrics.totalFull,
-                        emptyBottles: metrics.totalEmpty,
-                        totalInTransit: metrics.totalInTransit,
-                        issueBottles: metrics.totalIssues,
-                        stockByCapacity: metrics.stockByCapacity,
+                          return PointOfSaleStockCard(
+                            enterprise: currentEnterprise,
+                            fullBottles: metrics.totalFull,
+                            emptyBottles: metrics.totalEmpty,
+                            totalInTransit: metrics.totalInTransit,
+                            issueBottles: metrics.totalIssues,
+                            stockByCapacity: metrics.stockByCapacity,
+                          );
+                        },
+                        loading: () => AppShimmers.card(context),
+                        error: (error, stackTrace) => const SizedBox.shrink(),
                       );
                     },
                     loading: () => AppShimmers.card(context),

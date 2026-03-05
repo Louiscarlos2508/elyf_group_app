@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
 
@@ -12,15 +11,17 @@ class ReportNetBalanceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cashInTotal = stats['cashInTotal'] as int? ?? 0;
-    final cashOutTotal = stats['cashOutTotal'] as int? ?? 0;
+    final cashInTotal = stats['totalCashIn'] as int? ?? 0;
+    final cashOutTotal = stats['totalCashOut'] as int? ?? 0;
     final netBalance = cashInTotal - cashOutTotal;
+    final isPositive = netBalance >= 0;
+    final balanceColor = isPositive ? AppColors.success : AppColors.danger;
     final theme = Theme.of(context);
 
     return ElyfCard(
       padding: const EdgeInsets.all(AppSpacing.lg),
-      backgroundColor: AppColors.success.withValues(alpha: 0.1),
-      borderColor: AppColors.success.withValues(alpha: 0.3),
+      backgroundColor: balanceColor.withValues(alpha: 0.1),
+      borderColor: balanceColor.withValues(alpha: 0.3),
       child: Center(
         child: Column(
           children: [
@@ -33,9 +34,9 @@ class ReportNetBalanceCard extends StatelessWidget {
             ),
             SizedBox(height: AppSpacing.sm),
             Text(
-              '${netBalance >= 0 ? '+' : ''}${CurrencyFormatter.formatFCFA(netBalance)}',
+              '${isPositive ? '+' : ''}${CurrencyFormatter.formatFCFA(netBalance)}',
               style: theme.textTheme.headlineLarge?.copyWith(
-                color: AppColors.success,
+                color: balanceColor,
                 fontWeight: FontWeight.w900,
                 fontFamily: 'Outfit',
               ),

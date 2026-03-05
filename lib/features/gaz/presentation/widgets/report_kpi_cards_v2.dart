@@ -38,6 +38,9 @@ class GazReportKpiCardsV2 extends ConsumerWidget {
 
     return reportDataAsync.when(
       data: (data) {
+        final activeEnterpriseAsync = ref.watch(activeEnterpriseProvider);
+        final isPOS = activeEnterpriseAsync.value?.isPointOfSale ?? true;
+
         return LayoutBuilder(
           builder: (context, constraints) {
             if (constraints.maxWidth > 600) {
@@ -52,26 +55,28 @@ class GazReportKpiCardsV2 extends ConsumerWidget {
                       color: Colors.blue,
                     ),
                   ),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: ElyfStatsCard(
-                      label: 'Dépenses',
-                      value: CurrencyFormatter.formatDouble(data.expensesAmount),
-                      subtitle: '${data.expensesCount} charges',
-                      icon: Icons.receipt_long,
-                      color: Colors.red,
+                  if (!isPOS) ...[
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: ElyfStatsCard(
+                        label: 'Dépenses',
+                        value: CurrencyFormatter.formatDouble(data.expensesAmount),
+                        subtitle: '${data.expensesCount} charges',
+                        icon: Icons.receipt_long,
+                        color: Colors.red,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: ElyfStatsCard(
-                      label: 'Bénéfice Net',
-                      value: CurrencyFormatter.formatDouble(data.profit),
-                      subtitle: data.profit >= 0 ? 'Profit' : 'Déficit',
-                      icon: Icons.account_balance_wallet,
-                      color: data.profit >= 0 ? Colors.green : Colors.red,
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: ElyfStatsCard(
+                        label: 'Bénéfice Net',
+                        value: CurrencyFormatter.formatDouble(data.profit),
+                        subtitle: data.profit >= 0 ? 'Profit' : 'Déficit',
+                        icon: Icons.account_balance_wallet,
+                        color: data.profit >= 0 ? Colors.green : Colors.red,
+                      ),
                     ),
-                  ),
+                  ],
                 ],
               );
             }
@@ -85,22 +90,24 @@ class GazReportKpiCardsV2 extends ConsumerWidget {
                   icon: Icons.trending_up,
                   color: Colors.blue,
                 ),
-                const SizedBox(height: AppSpacing.md),
-                ElyfStatsCard(
-                  label: 'Dépenses',
-                  value: CurrencyFormatter.formatDouble(data.expensesAmount),
-                  subtitle: '${data.expensesCount} charges',
-                  icon: Icons.receipt_long,
-                  color: Colors.red,
-                ),
-                const SizedBox(height: AppSpacing.md),
-                ElyfStatsCard(
-                  label: 'Bénéfice Net',
-                  value: CurrencyFormatter.formatDouble(data.profit),
-                  subtitle: data.profit >= 0 ? 'Profit' : 'Déficit',
-                  icon: Icons.account_balance_wallet,
-                  color: data.profit >= 0 ? Colors.green : Colors.red,
-                ),
+                if (!isPOS) ...[
+                  const SizedBox(height: AppSpacing.md),
+                  ElyfStatsCard(
+                    label: 'Dépenses',
+                    value: CurrencyFormatter.formatDouble(data.expensesAmount),
+                    subtitle: '${data.expensesCount} charges',
+                    icon: Icons.receipt_long,
+                    color: Colors.red,
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  ElyfStatsCard(
+                    label: 'Bénéfice Net',
+                    value: CurrencyFormatter.formatDouble(data.profit),
+                    subtitle: data.profit >= 0 ? 'Profit' : 'Déficit',
+                    icon: Icons.account_balance_wallet,
+                    color: data.profit >= 0 ? Colors.green : Colors.red,
+                  ),
+                ],
               ],
             );
           },
@@ -160,9 +167,9 @@ class GazReportKpiCardsV2 extends ConsumerWidget {
                 color: Colors.blue,
               ),
               ElyfStatsCard(
-                label: 'Fuites',
+                label: 'Fuite',
                 value: '$totalLeaks',
-                subtitle: 'Incidents fuites',
+                subtitle: 'Incidents fuite',
                 icon: Icons.water_drop_outlined,
                 color: Colors.orange,
               ),

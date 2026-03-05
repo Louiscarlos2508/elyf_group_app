@@ -10,7 +10,6 @@ class Wholesaler extends Equatable {
     this.phone,
     this.address,
     this.email,
-    this.tier = 'default',
     this.isActive = true,
     this.createdAt,
     this.updatedAt,
@@ -22,7 +21,6 @@ class Wholesaler extends Equatable {
   final String? phone;
   final String? address;
   final String? email;
-  final String tier; // 'default', 'bronze', 'silver', 'gold'
   final bool isActive;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -34,7 +32,6 @@ class Wholesaler extends Equatable {
     String? phone,
     String? address,
     String? email,
-    String? tier,
     bool? isActive,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -46,7 +43,6 @@ class Wholesaler extends Equatable {
       phone: phone ?? this.phone,
       address: address ?? this.address,
       email: email ?? this.email,
-      tier: tier ?? this.tier,
       isActive: isActive ?? this.isActive,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -67,7 +63,6 @@ class Wholesaler extends Equatable {
       phone: map['phone'] as String?,
       address: map['address'] as String?,
       email: map['email'] as String?,
-      tier: map['tier'] as String? ?? 'default',
       isActive: map['isActive'] as bool? ?? true,
       createdAt: map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : null,
       updatedAt: map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : null,
@@ -82,7 +77,6 @@ class Wholesaler extends Equatable {
       'phone': phone,
       'address': address,
       'email': email,
-      'tier': tier,
       'isActive': isActive,
       'createdAt': createdAt?.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
@@ -97,7 +91,6 @@ class Wholesaler extends Equatable {
         phone,
         address,
         email,
-        tier,
         isActive,
         createdAt,
         updatedAt,

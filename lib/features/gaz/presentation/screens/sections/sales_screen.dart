@@ -10,7 +10,6 @@ import '../../../domain/entities/cylinder.dart';
 import '../../../domain/entities/gas_sale.dart';
 import '../../widgets/gas_sale_form_dialog.dart';
 import '../../widgets/gaz_header.dart';
-import '../../widgets/gaz_session_guard.dart';
 import '../../../application/providers/permission_providers.dart';
 
 import 'retail/retail_new_sale_tab.dart';
@@ -65,38 +64,40 @@ class _GazSalesScreenState extends ConsumerState<GazSalesScreen> {
         final hasWholesalePermission = ref.watch(userHasGazPermissionProvider(GazPermissions.viewWholesale.id)).value ?? false;
         final showWholesale = !isPOS || isManager || hasWholesalePermission;
 
-        final List<String> tabs = ['Détail'];
-        if (showWholesale) tabs.add('Gros');
+        final List<String> tabs = [];
+        if (isPOS) {
+          tabs.add('Détail');
+          if (showWholesale) tabs.add('Gros');
+        }
         tabs.add('Historique');
 
         return DefaultTabController(
           key: ValueKey(tabs.length),
           length: tabs.length,
-          child: GazSessionGuard(
-            child: NestedScrollView(
-              headerSliverBuilder: (context, innerBoxIsScrolled) => [
-                GazHeader(
-                  title: 'VENTES',
-                  subtitle: 'Gestion des Ventes',
-                  asSliver: true,
-                  showViewToggle: false, // User requested to only show network view for main depot
-                  bottom: SalesTabBar(
-                    tabs: tabs,
-                  ),
+          child: NestedScrollView(
+            headerSliverBuilder: (context, innerBoxIsScrolled) => [
+              GazHeader(
+                title: 'VENTES',
+                subtitle: 'Gestion des Ventes',
+                asSliver: true,
+                showViewToggle: false, // User requested to only show network view for main depot
+                bottom: SalesTabBar(
+                  tabs: tabs,
                 ),
-              ],
-              body: TabBarView(
-                children: [
-                   RetailNewSaleTab(
+              ),
+            ],
+            body: TabBarView(
+              children: [
+                if (isPOS)
+                  RetailNewSaleTab(
                     onCylinderTap: (c) => _showSaleDialog(c, SaleType.retail),
                   ),
-                  if (showWholesale)
-                    WholesaleNewSaleTab(
-                      onCylinderTap: (c) => _showSaleDialog(c, SaleType.wholesale),
-                    ),
-                  const SalesHistoryTab(),
-                ],
-              ),
+                if (isPOS && showWholesale)
+                  WholesaleNewSaleTab(
+                    onCylinderTap: (c) => _showSaleDialog(c, SaleType.wholesale),
+                  ),
+                const SalesHistoryTab(),
+              ],
             ),
           ),
         );

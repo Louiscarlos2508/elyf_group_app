@@ -42,14 +42,12 @@ class GasValidationService {
 
   /// Validates that stock is available.
   ///
-  /// Returns null if valid, error message otherwise.
+  /// Returns null if valid, error message otherwise. (Validation disabled as requested by user)
   static String? validateStockAvailability({
     required int quantity,
     required int availableStock,
   }) {
-    if (quantity > availableStock) {
-      return 'Stock insuffisant. Disponible: $availableStock';
-    }
+    // Validation disabled: system stock is no longer blocking
     return null;
   }
 

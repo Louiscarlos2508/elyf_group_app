@@ -140,6 +140,31 @@ class GasOfflineRepository implements GasRepository {
   }
 
   @override
+  Stream<List<Cylinder>> watchCylindersForEnterprises(List<String> enterpriseIds) {
+    return driftService.records
+        .watchForEnterprises(
+          collectionName: _cylindersCollection,
+          enterpriseIds: enterpriseIds,
+          moduleType: 'gaz',
+        )
+        .map((rows) {
+          return rows
+              .map((row) {
+                try {
+                  final map = jsonDecode(row.dataJson) as Map<String, dynamic>;
+                  return _cylinderFromMap(map).copyWith(id: row.localId);
+                } catch (e) {
+                  return null;
+                }
+              })
+              .whereType<Cylinder>()
+              .where((c) => !c.isDeleted)
+              .toList()
+            ..sort((a, b) => a.weight.compareTo(b.weight));
+        });
+  }
+
+  @override
   Future<Cylinder?> getCylinderById(String id) async {
     try {
       final rows = await driftService.records.listForEnterprise(

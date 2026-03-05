@@ -24,23 +24,10 @@ class LeakFilters extends StatelessWidget {
         runSpacing: 8,
         children: [
           FilterChip(
-            label: const Text('Tous'),
-            selected: filterStatus == null,
-            onSelected: (selected) {
-              if (selected) {
-                onFilterChanged(null);
-              }
-            },
+            label: const Text('Toutes les fuites'),
+            selected: true,
+            onSelected: (_) {}, // Statut unique "convertie en vide" désormais
           ),
-          ...LeakStatus.values.where((s) => showExchanged || s != LeakStatus.exchanged).map((status) {
-            return FilterChip(
-              label: Text(status.label),
-              selected: filterStatus == status,
-              onSelected: (selected) {
-                onFilterChanged(selected ? status : null);
-              },
-            );
-          }),
         ],
       ),
     );

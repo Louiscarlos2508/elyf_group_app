@@ -51,16 +51,6 @@ class CommissionStatusBadge extends StatelessWidget {
               fontSize: 12,
             ),
           ),
-          if (showWarningIcon &&
-              discrepancyStatus != null &&
-              discrepancyStatus != DiscrepancyStatus.conforme) ...[
-            const SizedBox(width: 4),
-            Icon(
-              _getDiscrepancyIcon(),
-              size: 14,
-              color: _getDiscrepancyColor(),
-            ),
-          ],
         ],
       ),
     );
@@ -70,8 +60,8 @@ class CommissionStatusBadge extends StatelessWidget {
     switch (status) {
       case CommissionStatus.estimated:
         return const StatusConfig(
-          label: 'Estimée',
-          icon: Icons.calculate,
+          label: 'À déclarer',
+          icon: Icons.history_rounded,
           color: Colors.blue,
         );
       case CommissionStatus.declared:
@@ -80,46 +70,13 @@ class CommissionStatusBadge extends StatelessWidget {
           icon: Icons.pending,
           color: Colors.orange,
         );
-      case CommissionStatus.validated:
-        return const StatusConfig(
-          label: 'Validée',
-          icon: Icons.check_circle,
-          color: Colors.green,
-        );
       case CommissionStatus.paid:
         return const StatusConfig(
           label: 'Payée',
           icon: Icons.payments,
           color: Colors.purple,
         );
-      case CommissionStatus.disputed:
-        return const StatusConfig(
-          label: 'En Litige',
-          icon: Icons.error,
-          color: Colors.red,
-        );
     }
   }
 
-  IconData _getDiscrepancyIcon() {
-    switch (discrepancyStatus) {
-      case DiscrepancyStatus.ecartMineur:
-        return Icons.warning_amber;
-      case DiscrepancyStatus.ecartSignificatif:
-        return Icons.error;
-      default:
-        return Icons.check_circle;
-    }
-  }
-
-  Color _getDiscrepancyColor() {
-    switch (discrepancyStatus) {
-      case DiscrepancyStatus.ecartMineur:
-        return Colors.orange;
-      case DiscrepancyStatus.ecartSignificatif:
-        return Colors.red;
-      default:
-        return Colors.green;
-    }
-  }
 }

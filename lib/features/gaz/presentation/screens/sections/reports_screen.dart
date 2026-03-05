@@ -7,22 +7,17 @@ import 'package:path_provider/path_provider.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import 'package:elyf_groupe_app/core/pdf/gaz_report_pdf_service.dart';
-import 'package:elyf_groupe_app/shared/services/report_export_service.dart';
-import 'package:elyf_groupe_app/features/gaz/domain/services/gaz_report_calculation_service.dart';
+import '../../widgets/report_period_selector_v2.dart';
+import '../../widgets/report_tabs_v2.dart';
+import '../../widgets/sales_report_content_v2.dart';
 import '../../../domain/entities/report_data.dart';
-import '../../../domain/entities/gas_sale.dart';
-import '../../../domain/entities/expense.dart';
 import '../../widgets/expenses_report_content_v2.dart';
 import '../../widgets/financial_report_content_v2.dart';
 import '../../widgets/profit_report_content_v2.dart';
 import '../../widgets/report_kpi_cards_v2.dart';
-import '../../widgets/report_period_selector_v2.dart';
-import '../../widgets/report_tabs_v2.dart';
-import '../../widgets/sales_report_content_v2.dart';
 import '../../widgets/gaz_header.dart';
 import '../../widgets/stock_summary_content.dart';
 import '../../widgets/stock_history_content.dart';
-import '../../widgets/sessions_report_content.dart';
 import '../../widgets/pos_network_report_tab.dart';
 import '../../../../../shared/presentation/widgets/elyf_ui/atoms/elyf_icon_button.dart';
 import '../../../../../core/tenant/tenant_provider.dart' show activeEnterpriseProvider;
@@ -36,7 +31,7 @@ class GazReportsScreen extends ConsumerStatefulWidget {
 }
 
 class _GazReportsScreenState extends ConsumerState<GazReportsScreen> {
-  int _selectedTab = 0;
+  GazReportTab _selectedTab = GazReportTab.activity;
   late DateTime _startDate;
   late DateTime _endDate;
 
@@ -46,15 +41,24 @@ class _GazReportsScreenState extends ConsumerState<GazReportsScreen> {
     // Initialize with current month by default
     final now = DateTime.now();
     _startDate = DateTime(now.year, now.month, 1);
-    _endDate = DateTime(now.year, now.month + 1, 0);
+    
+    // Cap end date to today
+    final endOfMonth = DateTime(now.year, now.month + 1, 0);
+    _endDate = endOfMonth.isAfter(now) ? now : endOfMonth;
   }
 
   Future<void> _selectDate(BuildContext context, bool isStartDate) async {
+    final now = DateTime.now();
+    final initialDate = isStartDate ? _startDate : _endDate;
+    
+    // Ensure initialDate is within bounds [firstDate, lastDate]
+    final safeInitialDate = initialDate.isAfter(now) ? now : initialDate;
+
     final picked = await showDatePicker(
       context: context,
-      initialDate: isStartDate ? _startDate : _endDate,
+      initialDate: safeInitialDate,
       firstDate: DateTime(2020),
-      lastDate: DateTime.now(),
+      lastDate: now,
     );
     if (picked != null) {
       setState(() {
@@ -130,98 +134,7 @@ class _GazReportsScreenState extends ConsumerState<GazReportsScreen> {
     }
   }
 
-  Future<void> _downloadCsv() async {
-    try {
-      if (!mounted) return;
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const Center(child: CircularProgressIndicator()),
-      );
 
-      // Récupérer les ventes et dépenses pour la période
-      final salesAsync = ref.read(gasSalesProvider);
-      final expensesAsync = ref.read(gazExpensesProvider);
-
-      final allSales = salesAsync.when(
-        data: (data) => data,
-        loading: () => <GasSale>[],
-        error: (_, __) => <GasSale>[],
-      );
-
-      final allExpenses = expensesAsync.when(
-        data: (data) => data,
-        loading: () => <GazExpense>[],
-        error: (_, __) => <GazExpense>[],
-      );
-
-      final calculationService = GazReportCalculationService();
-      
-      // Filtrer par date
-      final filteredSales = calculationService.filterSalesByDateRange(
-        sales: allSales,
-        startDate: _startDate,
-        endDate: _endDate,
-      );
-      
-      final filteredExpenses = calculationService.filterExpensesByDateRange(
-        expenses: allExpenses,
-        startDate: _startDate,
-        endDate: _endDate,
-      );
-
-      final exportService = const ReportExportService();
-      
-      // Générer CSV pour les ventes
-      final salesCsv = exportService.exportToCsv(
-        headers: calculationService.getSalesCsvHeaders(),
-        rows: calculationService.mapSalesToCsvRows(filteredSales),
-      );
-
-      // Générer CSV pour les dépenses
-      final expensesCsv = exportService.exportToCsv(
-        headers: calculationService.getExpensesCsvHeaders(),
-        rows: calculationService.mapExpensesToCsvRows(filteredExpenses),
-      );
-
-      // Fusionner ou exporter séparément ? 
-      // Pour faire simple, exportons deux fichiers ou un combiné.
-      // Combinons les dans un seul fichier avec une séparation claire.
-      final combinedCsv = 'RAPPORT GAZ VENTES\n$salesCsv\n\nRAPPORT GAZ DEPENSES\n$expensesCsv';
-
-      final filename = exportService.generateFilename(
-        prefix: 'rapport_gaz_complet',
-        extension: 'csv',
-        startDate: _startDate,
-        endDate: _endDate,
-      );
-
-      final directory = await getTemporaryDirectory();
-      final file = File('${directory.path}/$filename');
-      await file.writeAsString(combinedCsv);
-
-      if (!mounted) return;
-      Navigator.of(context).pop();
-
-      // Ouvrir le fichier
-      final result = await OpenFile.open(file.path);
-      if (!mounted) return;
-
-      if (result.type != ResultType.done) {
-        NotificationService.showInfo(
-          context,
-          'CSV généré: ${file.path}',
-        );
-      }
-    } catch (e) {
-      if (!mounted) return;
-      Navigator.of(context).pop();
-      NotificationService.showError(
-        context,
-        'Erreur lors de la génération CSV: $e',
-      );
-    }
-  }
 
   void _invalidateProviders() {
     ref.invalidate(gazReportDataProvider);
@@ -268,7 +181,6 @@ class _GazReportsScreenState extends ConsumerState<GazReportsScreen> {
                   onStartDateSelected: () => _selectDate(context, true),
                   onEndDateSelected: () => _selectDate(context, false),
                   onDownloadPdf: _downloadPdf,
-                  onDownloadCsv: _downloadCsv,
                 ),
               ),
             ),
@@ -280,7 +192,7 @@ class _GazReportsScreenState extends ConsumerState<GazReportsScreen> {
                 child: GazReportKpiCardsV2(
                   startDate: _startDate,
                   endDate: _endDate,
-                  selectedTab: _selectedTab,
+                  selectedTab: _selectedTab == GazReportTab.stock ? 2 : 0,
                 ),
               ),
             ),
@@ -293,6 +205,7 @@ class _GazReportsScreenState extends ConsumerState<GazReportsScreen> {
                   selectedTab: _selectedTab,
                   onTabChanged: (index) => setState(() => _selectedTab = index),
                   showPosTab: showPosTab,
+                  isPOS: isPOS,
                 ),
               ),
             ),
@@ -301,7 +214,7 @@ class _GazReportsScreenState extends ConsumerState<GazReportsScreen> {
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: _buildTabContent(),
+                child: _buildTabContent(isPOS),
               ),
             ),
 
@@ -312,7 +225,7 @@ class _GazReportsScreenState extends ConsumerState<GazReportsScreen> {
     );
   }
 
-  Widget _buildTabContent() {
+  Widget _buildTabContent(bool isPOS) {
     final reportDataAsync = ref.watch(
       gazReportDataProvider(
         (
@@ -329,21 +242,23 @@ class _GazReportsScreenState extends ConsumerState<GazReportsScreen> {
     );
 
     switch (_selectedTab) {
-      case 0: // Activité
+      case GazReportTab.activity: // Activité
         return Column(
           children: [
             GazSalesReportContentV2(
               startDate: _startDate,
               endDate: _endDate,
             ),
-            const SizedBox(height: 24),
-            GazProfitReportContentV2(
-              startDate: _startDate,
-              endDate: _endDate,
-            ),
+            if (!isPOS) ...[
+              const SizedBox(height: 24),
+              GazProfitReportContentV2(
+                startDate: _startDate,
+                endDate: _endDate,
+              ),
+            ],
           ],
         );
-      case 1: // Trésorerie
+      case GazReportTab.finance: // Trésorerie
         return Column(
           children: [
             GazExpensesReportContentV2(
@@ -361,13 +276,10 @@ class _GazReportsScreenState extends ConsumerState<GazReportsScreen> {
               error: (_, __) => const SizedBox.shrink(),
             ),
             const SizedBox(height: 24),
-            GazSessionsReportContent(
-              startDate: _startDate,
-              endDate: _endDate,
-            ),
+            const SizedBox.shrink(), // Sessions report removed
           ],
         );
-      case 2: // Stocks
+      case GazReportTab.stock: // Stocks
         final activeEnterpriseAsync = ref.watch(activeEnterpriseProvider);
         final enterpriseId = activeEnterpriseAsync.when(
           data: (e) => e?.id ?? '',
@@ -387,7 +299,7 @@ class _GazReportsScreenState extends ConsumerState<GazReportsScreen> {
             ),
           ],
         );
-      case 3: // Réseau POS
+      case GazReportTab.posNetwork: // Réseau POS
         return PosNetworkReportTab(
           startDate: _startDate,
           endDate: _endDate,

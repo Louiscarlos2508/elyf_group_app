@@ -432,7 +432,7 @@ class CommissionOfflineRepository extends OfflineRepository<Commission>
           .where((c) => c.status == CommissionStatus.paid)
           .toList();
       final pendingCommissions = commissions
-          .where((c) => c.status == CommissionStatus.validated)
+          .where((c) => c.status == CommissionStatus.estimated)
           .toList();
       final declaredCommissions = commissions
           .where((c) => c.status == CommissionStatus.declared)
@@ -495,28 +495,6 @@ class CommissionOfflineRepository extends OfflineRepository<Commission>
     }
   }
 
-  @override
-  Future<List<Commission>> getCommissionsRequiringValidation(
-    String enterpriseId,
-  ) async {
-    try {
-      final commissions = await getAllForEnterprise(enterpriseId);
-      return commissions
-          .where((c) =>
-              c.status == CommissionStatus.declared ||
-              c.status == CommissionStatus.disputed)
-          .toList();
-    } catch (error, stackTrace) {
-      final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      AppLogger.error(
-        'Error getting commissions requiring validation',
-        name: 'CommissionOfflineRepository',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      throw appException;
-    }
-  }
 
   @override
   Future<Commission> declareCommission({
@@ -575,59 +553,6 @@ class CommissionOfflineRepository extends OfflineRepository<Commission>
     }
   }
 
-  @override
-  Future<Commission> validateCommission({
-    required String commissionId,
-    required String validatedBy,
-    String? notes,
-  }) async {
-    try {
-      final commission = await getCommission(commissionId);
-      if (commission == null) {
-        throw Exception('Commission not found: $commissionId');
-      }
-
-      final now = DateTime.now();
-      final updated = commission.copyWith(
-        status: CommissionStatus.validated,
-        validatedAt: now,
-        validatedBy: validatedBy,
-        notes: notes ?? commission.notes,
-        updatedAt: now,
-      );
-
-      await save(updated);
-
-      // Audit Log
-      await auditTrailRepository.log(
-        AuditRecord(
-          id: IdGenerator.generate(),
-          enterpriseId: enterpriseId,
-          userId: syncManager.getUserId() ?? '',
-          module: 'orange_money',
-          action: 'validate_commission',
-          entityId: commissionId,
-          entityType: 'commission',
-          metadata: {
-            'period': commission.period,
-            'finalAmount': updated.finalAmount,
-          },
-          timestamp: now,
-        ),
-      );
-
-      return updated;
-    } catch (error, stackTrace) {
-      final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      AppLogger.error(
-        'Error validating commission',
-        name: 'CommissionOfflineRepository',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      throw appException;
-    }
-  }
 
   @override
   Future<Commission> markAsPaid({
@@ -684,56 +609,6 @@ class CommissionOfflineRepository extends OfflineRepository<Commission>
   }
 
   @override
-  Future<Commission> markAsDisputed({
-    required String commissionId,
-    required String reason,
-  }) async {
-    try {
-      final commission = await getCommission(commissionId);
-      if (commission == null) {
-        throw Exception('Commission not found: $commissionId');
-      }
-
-      final now = DateTime.now();
-      final updated = commission.copyWith(
-        status: CommissionStatus.disputed,
-        notes: reason,
-        updatedAt: now,
-      );
-
-      await save(updated);
-
-      // Audit Log
-      await auditTrailRepository.log(
-        AuditRecord(
-          id: LocalIdGenerator.generate(),
-          enterpriseId: enterpriseId,
-          userId: syncManager.getUserId() ?? '',
-          module: 'orange_money',
-          action: 'mark_commission_disputed',
-          entityId: commissionId,
-          entityType: 'commission',
-          metadata: {
-            'period': commission.period,
-            'reason': reason,
-          },
-          timestamp: now,
-        ),
-      );
-
-      return updated;
-    } catch (error, stackTrace) {
-      final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      AppLogger.error(
-        'Error marking commission as disputed',
-        name: 'CommissionOfflineRepository',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      throw appException;
-    }
-  }
-  @override
   Future<Map<String, dynamic>> fetchNetworkStatistics(
     List<String> enterpriseIds, {
     String? period,
@@ -746,8 +621,6 @@ class CommissionOfflineRepository extends OfflineRepository<Commission>
 
       final paidCommissions =
           commissions.where((c) => c.status == CommissionStatus.paid).toList();
-      final validatedCommissions =
-          commissions.where((c) => c.status == CommissionStatus.validated).toList();
       final declaredCommissions =
           commissions.where((c) => c.status == CommissionStatus.declared).toList();
 
@@ -756,12 +629,9 @@ class CommissionOfflineRepository extends OfflineRepository<Commission>
         'totalAmount': commissions.fold<int>(0, (sum, c) => sum + c.finalAmount),
         'totalPaid':
             paidCommissions.fold<int>(0, (sum, c) => sum + c.finalAmount),
-        'totalValidated':
-            validatedCommissions.fold<int>(0, (sum, c) => sum + c.finalAmount),
         'totalDeclared':
             declaredCommissions.fold<int>(0, (sum, c) => sum + c.finalAmount),
         'paidCount': paidCommissions.length,
-        'validatedCount': validatedCommissions.length,
         'declaredCount': declaredCommissions.length,
         'agencyCount': enterpriseIds.length,
       };

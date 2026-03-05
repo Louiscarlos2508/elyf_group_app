@@ -134,11 +134,7 @@ class GazStockCalculationService {
         .where((s) => cylinderIds.contains(s.cylinderId))
         .toList();
 
-    final relevantStocks = isPOS && targetEnterpriseId != null
-        ? validStocks
-              .where((s) => s.enterpriseId == targetEnterpriseId)
-              .toList()
-        : validStocks;
+    final relevantStocks = validStocks;
 
     // 1. Base weight-based Maps (Exhaustive)
     final fullByWeight = <int, int>{};
@@ -154,8 +150,8 @@ class GazStockCalculationService {
       final sFull = relevantStocks.where((s) => s.cylinderId == cId && s.status == CylinderStatus.full).fold<int>(0, (sum, s) => sum + s.quantity.toInt());
       fullByWeight[w] = (fullByWeight[w] ?? 0) + sFull;
 
-      // Empty = physical empty (store + tour)
-      final sEmpty = relevantStocks.where((s) => s.cylinderId == cId && (s.status == CylinderStatus.emptyAtStore || s.status == CylinderStatus.emptyInTransit)).fold<int>(0, (sum, s) => sum + s.quantity.toInt());
+      // Empty = physical empty at store
+      final sEmpty = relevantStocks.where((s) => s.cylinderId == cId && s.status == CylinderStatus.emptyAtStore).fold<int>(0, (sum, s) => sum + s.quantity.toInt());
       emptyByWeight[w] = (emptyByWeight[w] ?? 0) + sEmpty;
 
       // Issues = physical issues (leak + tour_leak + defective)
@@ -225,9 +221,7 @@ class GazStockCalculationService {
 
     final posStocks = validStocks
         .where(
-          (s) =>
-              s.enterpriseId == enterpriseId &&
-              (siteId == null || s.siteId == siteId),
+          (s) => (siteId == null || s.siteId == siteId),
         )
         .toList();
 

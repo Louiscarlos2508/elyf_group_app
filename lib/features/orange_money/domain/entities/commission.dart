@@ -71,17 +71,11 @@ class Commission {
   /// Vérifie si la commission est payée
   bool get isPaid => status == CommissionStatus.paid;
 
-  /// Vérifie si la commission est validée
-  bool get isValidated => status == CommissionStatus.validated;
-
   /// Vérifie si la commission est déclarée
   bool get isDeclared => status == CommissionStatus.declared;
 
   /// Vérifie si la commission est estimée (mois en cours)
   bool get isEstimated => status == CommissionStatus.estimated;
-
-  /// Vérifie si la commission est en litige
-  bool get isDisputed => status == CommissionStatus.disputed;
 
   /// Vérifie si le paiement est proche de l'échéance
   bool isPaymentDueSoon(int daysBefore) {
@@ -91,8 +85,8 @@ class Commission {
     return difference <= daysBefore && difference >= 0;
   }
 
-  /// Montant final (déclaré si disponible, sinon estimé)
-  int get finalAmount => declaredAmount ?? estimatedAmount;
+  /// Montant final (uniquement le montant déclaré)
+  int get finalAmount => declaredAmount ?? 0;
 
   Commission copyWith({
     String? id,
@@ -286,9 +280,7 @@ class CommissionCalculationDetails {
 enum CommissionStatus {
   estimated, // Calculée automatiquement (mois en cours)
   declared, // Agent a déclaré le montant SMS
-  validated, // Entreprise a validé
   paid, // Payée
-  disputed, // Écart significatif en investigation
 }
 
 /// Statut de l'écart entre estimé et déclaré
@@ -302,30 +294,22 @@ extension CommissionStatusExtension on CommissionStatus {
   String get label {
     switch (this) {
       case CommissionStatus.estimated:
-        return 'Estimée';
+        return 'À déclarer';
       case CommissionStatus.declared:
         return 'Déclarée';
-      case CommissionStatus.validated:
-        return 'Validée';
       case CommissionStatus.paid:
         return 'Payée';
-      case CommissionStatus.disputed:
-        return 'En litige';
     }
   }
 
   String get description {
     switch (this) {
       case CommissionStatus.estimated:
-        return 'Calculée automatiquement pour le mois en cours';
+        return 'En attente de déclaration du montant SMS';
       case CommissionStatus.declared:
         return 'Montant SMS déclaré par l\'agent';
-      case CommissionStatus.validated:
-        return 'Validée par l\'entreprise';
       case CommissionStatus.paid:
         return 'Commission payée';
-      case CommissionStatus.disputed:
-        return 'Écart significatif en investigation';
     }
   }
 }

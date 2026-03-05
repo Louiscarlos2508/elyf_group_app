@@ -67,7 +67,6 @@ class CommissionsController {
   Future<String> createCommission(Commission commission) async {
     final commissionId = await _repository.createCommission(commission);
     if (commission.status == CommissionStatus.declared || 
-        commission.status == CommissionStatus.validated || 
         commission.status == CommissionStatus.paid) {
       await _recordTreasuryOperation(commission);
     }
@@ -81,11 +80,9 @@ class CommissionsController {
     // If transitioning to a state that affects treasury (declared/validated/paid), record it
     final wasNotRecorded = oldCommission == null || 
         (oldCommission.status != CommissionStatus.declared && 
-         oldCommission.status != CommissionStatus.validated && 
          oldCommission.status != CommissionStatus.paid);
     
     final isNowRecorded = commission.status == CommissionStatus.declared || 
-                          commission.status == CommissionStatus.validated || 
                           commission.status == CommissionStatus.paid;
 
     if (wasNotRecorded && isNowRecorded) {
@@ -120,7 +117,7 @@ class CommissionsController {
   Future<void> restoreCommission(String commissionId) async {
     await _repository.restoreCommission(commissionId);
     final commission = await _repository.getCommission(commissionId);
-    if (commission != null && (commission.status == CommissionStatus.validated || commission.status == CommissionStatus.paid)) {
+    if (commission != null && commission.status == CommissionStatus.paid) {
       await _recordTreasuryOperation(commission);
     }
   }

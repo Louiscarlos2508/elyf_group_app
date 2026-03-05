@@ -1,5 +1,16 @@
 import 'package:flutter/material.dart';
 
+enum GazReportTab {
+  activity('Activité', Icons.local_fire_department_outlined),
+  finance('Trésorerie', Icons.account_balance_wallet_outlined),
+  stock('Stocks', Icons.inventory_2_outlined),
+  posNetwork('Réseau POS', Icons.store_mall_directory_outlined);
+
+  const GazReportTab(this.label, this.icon);
+  final String label;
+  final IconData icon;
+}
+
 /// Tabs widget for gaz reports module - style eau_minerale.
 class GazReportTabsV2 extends StatelessWidget {
   const GazReportTabsV2({
@@ -7,18 +18,19 @@ class GazReportTabsV2 extends StatelessWidget {
     required this.selectedTab,
     required this.onTabChanged,
     this.showPosTab = false,
+    this.isPOS = false,
   });
 
-  final int selectedTab;
-  final void Function(int) onTabChanged;
+  final GazReportTab selectedTab;
+  final void Function(GazReportTab) onTabChanged;
   final bool showPosTab;
+  final bool isPOS;
 
-  List<_TabInfo> get _tabs => [
-        const _TabInfo('Activité', Icons.local_fire_department_outlined),
-        const _TabInfo('Trésorerie', Icons.account_balance_wallet_outlined),
-        const _TabInfo('Stocks', Icons.inventory_2_outlined),
-        if (showPosTab)
-          const _TabInfo('Réseau POS', Icons.store_mall_directory_outlined),
+  List<GazReportTab> get _tabs => [
+        GazReportTab.activity,
+        if (!isPOS) GazReportTab.finance,
+        GazReportTab.stock,
+        if (showPosTab) GazReportTab.posNetwork,
       ];
 
   @override
@@ -38,7 +50,7 @@ class GazReportTabsV2 extends StatelessWidget {
     );
   }
 
-  Widget _buildWideLayout(ThemeData theme, List<_TabInfo> tabs) {
+  Widget _buildWideLayout(ThemeData theme, List<GazReportTab> tabs) {
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHighest,
@@ -47,15 +59,15 @@ class GazReportTabsV2 extends StatelessWidget {
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
-          children: tabs.asMap().entries.map((entry) {
-            return _buildTab(theme, entry.key, entry.value, false);
+          children: tabs.map((tab) {
+            return _buildTab(theme, tab, false);
           }).toList(),
         ),
       ),
     );
   }
 
-  Widget _buildCompactLayout(ThemeData theme, List<_TabInfo> tabs) {
+  Widget _buildCompactLayout(ThemeData theme, List<GazReportTab> tabs) {
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHighest,
@@ -65,21 +77,21 @@ class GazReportTabsV2 extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 4),
         child: Row(
-          children: tabs.asMap().entries.map((entry) {
-            return _buildTab(theme, entry.key, entry.value, true);
+          children: tabs.map((tab) {
+            return _buildTab(theme, tab, true);
           }).toList(),
         ),
       ),
     );
   }
 
-  Widget _buildTab(ThemeData theme, int index, _TabInfo tab, bool compact) {
-    final isSelected = selectedTab == index;
+  Widget _buildTab(ThemeData theme, GazReportTab tab, bool compact) {
+    final isSelected = selectedTab == tab;
 
     return Padding(
       padding: const EdgeInsets.all(4),
       child: InkWell(
-        onTap: () => onTabChanged(index),
+        onTap: () => onTabChanged(tab),
         borderRadius: BorderRadius.circular(10),
         child: Container(
           padding: EdgeInsets.symmetric(
@@ -125,11 +137,4 @@ class GazReportTabsV2 extends StatelessWidget {
       ),
     );
   }
-}
-
-class _TabInfo {
-  const _TabInfo(this.label, this.icon);
-
-  final String label;
-  final IconData icon;
 }

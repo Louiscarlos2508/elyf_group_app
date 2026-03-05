@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/printing/printer_interface.dart';
 import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
 import '../../domain/entities/gas_sale.dart';
-import '../services/gaz_session_calculation_service.dart';
+// import '../services/gaz_session_calculation_service.dart'; // Removed during session cleanup
 
 /// Service spécialisé pour le formatage et l'impression des reçus Gaz.
 class GazPrintingService {
@@ -60,55 +60,8 @@ class GazPrintingService {
     }
   }
 
-  /// Imprime un résumé journalier (Z-Report).
-  Future<bool> printDailySummary({
-    required ReconciliationMetrics metrics,
-    String? enterpriseName,
-  }) async {
-    try {
-      final buffer = StringBuffer();
-      
-      // Header
-      buffer.writeln('--------------------------------');
-      buffer.writeln(enterpriseName?.toUpperCase() ?? 'ELYF GROUP - GAZ');
-      buffer.writeln('--------------------------------');
-      buffer.writeln('RESUME DE LA JOURNEE (Z)');
-      buffer.writeln('Date: ${_formatDate(metrics.date)}');
-      buffer.writeln('--------------------------------');
-
-      // Totals
-      buffer.writeln('VENTES TOTales : ${metrics.totalSales.toStringAsFixed(0)} FCFA');
-      buffer.writeln('DEPENSES      : ${metrics.totalExpenses.toStringAsFixed(0)} FCFA');
-      buffer.writeln('CASH THEORIQUE: ${metrics.theoreticalCash.toStringAsFixed(0)} FCFA');
-      buffer.writeln('--------------------------------');
-
-      // Payment Methods
-      buffer.writeln('PAR MODE DE PAIEMENT:');
-      metrics.salesByPaymentMethod.forEach((method, amount) {
-        if (amount > 0) {
-          buffer.writeln('${method.label.padRight(12)}: ${amount.toStringAsFixed(0)} FCFA');
-        }
-      });
-      buffer.writeln('--------------------------------');
-
-      // Format Breakdown
-      buffer.writeln('PAR FORMAT DE BOUTEILLE:');
-      metrics.salesByCylinderWeight.forEach((weight, count) {
-        if (count > 0) {
-          buffer.writeln('${'${weight}kg'.padRight(12)}: $count unités');
-        }
-      });
-      buffer.writeln('--------------------------------');
-      
-      buffer.writeln('ELYF GROUP - Gestion Inteligente');
-      buffer.writeln('\n\n\n');
-
-      return await printerService.printText(buffer.toString());
-    } catch (e) {
-      debugPrint('GazPrintingService: Error printing summary: $e');
-      return false;
-    }
-  }
+  // printDailySummary was removed during session infrastructure cleanup.
+  // It can be re-implemented later using a non-session based approach if needed.
 
   String _formatDate(DateTime date) {
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';

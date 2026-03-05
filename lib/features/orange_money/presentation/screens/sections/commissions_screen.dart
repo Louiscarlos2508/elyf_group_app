@@ -9,7 +9,6 @@ import '../../../domain/entities/commission.dart';
 import '../../widgets/commission_alerts_card.dart';
 import '../../widgets/commission_declaration_dialog.dart';
 import '../../widgets/commission_status_badge.dart';
-import '../../widgets/commission_validation_dialog.dart';
 import '../../../domain/services/commission_calculation_service.dart';
 import '../../widgets/commission_form_dialog.dart';
 import 'package:elyf_groupe_app/shared.dart';
@@ -46,7 +45,7 @@ class CommissionsScreen extends ConsumerWidget {
                 ElyfModuleHeader(
                   title: 'Gestion des Commissions',
                   subtitle:
-                      'Consultez vos estimations, déclarez vos SMS et validez vos gains mensuels.',
+                      'Déclarez vos SMS opérateurs et suivez vos gains mensuels.',
                   module: EnterpriseModule.mobileMoney,
                 ),
                 SliverPadding(
@@ -196,6 +195,7 @@ class CommissionsScreen extends ConsumerWidget {
   }
 
   Widget _buildKpiCards(Map<String, dynamic> stats, ThemeData theme) {
+    final isDark = theme.brightness == Brightness.dark;
     return ElyfStatsCard(
       label: 'Mois Passé (Validé)',
       value: CurrencyFormatter.formatFCFA(
@@ -203,7 +203,7 @@ class CommissionsScreen extends ConsumerWidget {
       ),
       icon: Icons.history_rounded,
       color: theme.colorScheme.secondary,
-      isGlass: true,
+      isGlass: isDark,
     );
   }
 
@@ -336,6 +336,7 @@ class CommissionsScreen extends ConsumerWidget {
   }
 
   Widget _buildActionButtons(BuildContext context, Commission commission) {
+    final theme = Theme.of(context);
     // 1. Bouton DÉCLARER (pour Agent)
     if (commission.status == CommissionStatus.estimated) {
       return Consumer(
@@ -345,48 +346,18 @@ class CommissionsScreen extends ConsumerWidget {
             icon: const Icon(Icons.message),
             label: const Text('Déclarer montant SMS'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              backgroundColor: theme.colorScheme.primary,
+              foregroundColor: theme.colorScheme.onPrimary,
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
           );
         },
       );
     }
 
-    // 2. Bouton VALIDER (pour Superviseur)
-    if (commission.status == CommissionStatus.declared ||
-        commission.status == CommissionStatus.disputed) {
-      return Consumer(
-        builder: (context, ref, child) {
-          final canValidateAsync = ref.watch(canValidateCommissionProvider);
-
-          return canValidateAsync.when(
-            data: (canValidate) {
-              if (canValidate) {
-                return ElevatedButton.icon(
-                  onPressed: () => _showValidationDialog(context, ref, commission),
-                  icon: const Icon(Icons.check_circle),
-                  label: const Text('Valider Commission'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF00C897),
-                    foregroundColor: Colors.white,
-                    padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
-                  ),
-                );
-              }
-              return const SizedBox.shrink();
-            },
-            loading: () => const SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-            error: (_, __) => const SizedBox.shrink(),
-          );
-        },
-      );
-    }
 
     return const SizedBox.shrink();
   }
@@ -408,22 +379,6 @@ class CommissionsScreen extends ConsumerWidget {
     }
   }
 
-  Future<void> _showValidationDialog(
-    BuildContext context,
-    WidgetRef ref,
-    Commission commission,
-  ) async {
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) => CommissionValidationDialog(commission: commission),
-    );
-
-    if (result == true) {
-      ref.invalidate(commissionsProvider(enterpriseId ?? ''));
-      ref.invalidate(commissionsStatisticsProvider(enterpriseId ?? ''));
-      ref.invalidate(currentMonthCommissionProvider(enterpriseId ?? ''));
-    }
-  }
 
   Widget _buildStatBox(
     BuildContext context,
@@ -560,31 +515,30 @@ class CommissionsScreen extends ConsumerWidget {
   }
 
   Widget _buildEmptyState(BuildContext context) {
+    final theme = Theme.of(context);
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.all(AppSpacing.xxl),
         child: Column(
           children: [
             Icon(
               Icons.receipt_long_outlined,
               size: 48,
-              color: Colors.grey.shade300,
+              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.md),
             Text(
               'Aucune commission enregistrée',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: Colors.grey.shade600,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: theme.colorScheme.onSurface,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             Text(
               'Les commissions apparaitront ici une fois calculées.',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade500,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
               ),
               textAlign: TextAlign.center,
             ),
@@ -703,19 +657,21 @@ class CommissionsScreen extends ConsumerWidget {
         // Action rapide contextuelle
         if (commission.status == CommissionStatus.estimated)
           IconButton(
-            icon: const Icon(Icons.message, color: Colors.blue),
+            icon: Icon(Icons.message, color: theme.colorScheme.primary),
             onPressed: () => _showDeclarationDialog(context, ref, commission),
             tooltip: 'Déclarer',
           )
         else if (commission.status == CommissionStatus.declared)
           IconButton(
-            icon: const Icon(Icons.check_circle, color: Colors.green),
-            onPressed: () => _showValidationDialog(context, ref, commission),
-            tooltip: 'Valider',
+            icon: Icon(Icons.payment, color: AppColors.success),
+            onPressed: () {
+               // TODO: Mark as paid directly or show payment dialog
+            },
+            tooltip: 'Payer',
           )
         else
           IconButton(
-            icon: const Icon(Icons.chevron_right, color: Colors.grey),
+            icon: Icon(Icons.chevron_right, color: theme.colorScheme.onSurfaceVariant),
             onPressed: () {
               // TODO: Afficher détails commission
             },
@@ -967,6 +923,7 @@ class _AgenciesCommissionsTabState extends ConsumerState<_AgenciesCommissionsTab
   }
 
   Widget _buildNetworkStats(Map<String, dynamic> stats, ThemeData theme) {
+      final isDark = theme.brightness == Brightness.dark;
       return Row(
           children: [
               Expanded(
@@ -975,7 +932,7 @@ class _AgenciesCommissionsTabState extends ConsumerState<_AgenciesCommissionsTab
                       value: CurrencyFormatter.formatFCFA(stats['totalDeclared'] as int? ?? 0),
                       icon: Icons.account_balance_wallet_rounded,
                       color: theme.colorScheme.primary,
-                      isGlass: true,
+                      isGlass: isDark,
                   ),
               ),
               const SizedBox(width: 12),
@@ -985,7 +942,7 @@ class _AgenciesCommissionsTabState extends ConsumerState<_AgenciesCommissionsTab
                       value: CurrencyFormatter.formatFCFA(stats['totalValidated'] as int? ?? 0),
                       icon: Icons.check_circle_rounded,
                       color: AppColors.success,
-                      isGlass: true,
+                      isGlass: isDark,
                   ),
               ),
           ],
@@ -1014,7 +971,12 @@ class _AgenciesCommissionsTabState extends ConsumerState<_AgenciesCommissionsTab
                           child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                  Text(agencyName, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800)),
+                                  Text(
+                                    agencyName, 
+                                    style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                   Text('Période: ${commission.period}', style: theme.textTheme.labelSmall),
                               ],
                           ),
@@ -1023,6 +985,7 @@ class _AgenciesCommissionsTabState extends ConsumerState<_AgenciesCommissionsTab
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                               Text(CurrencyFormatter.formatFCFA(commission.finalAmount), style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900, color: theme.colorScheme.primary)),
+                              SizedBox(height: AppSpacing.xs),
                               CommissionStatusBadge(status: commission.status),
                           ],
                       ),
@@ -1093,6 +1056,6 @@ class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   bool shouldRebuild(_SliverAppBarDelegate oldDelegate) {
-    return false;
+    return true;
   }
 }

@@ -35,7 +35,7 @@ class GazSalesCalculationService {
   static String? validateQuantity({required int? quantity, required int availableStock}) {
     if (quantity == null) return 'Veuillez entrer une quantité';
     if (quantity <= 0) return 'Quantité invalide';
-    if (quantity > availableStock) return 'Stock insuffisant ($availableStock disponible)';
+    // Validation disabled: system stock is no longer blocking
     return null;
   }
 
@@ -109,6 +109,10 @@ class GazSalesCalculationService {
 
   static List<GasSale> calculateTodaySalesByType(List<GasSale> sales, SaleType saleType) {
     return calculateTodaySales(filterSalesByType(sales, saleType));
+  }
+
+  static int calculateTodayVolumeByType(List<GasSale> sales, SaleType saleType) {
+    return calculateTodaySalesByType(sales, saleType).fold<int>(0, (sum, s) => sum + s.quantity);
   }
 
   static double calculateTodayRevenueByType(List<GasSale> sales, SaleType saleType) {

@@ -47,7 +47,6 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
   String? _selectedWholesalerId;
   String? _selectedWholesalerName;
   GasSale? _completedSale;
-  String _selectedTier = 'default';
   PaymentMethod _selectedPaymentMethod = PaymentMethod.cash;
   bool _isMixedPayment = false;
   final _cashAmountController = TextEditingController();
@@ -77,16 +76,18 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
     _notesController.dispose();
     _cashAmountController.dispose();
     _mobileAmountController.dispose();
+    _unitPriceController.dispose();
     super.dispose();
   }
 
-  double _unitPrice = 0.0;
+  final _unitPriceController = TextEditingController(text: '0');
 
   double get _totalAmount {
     final quantity = int.tryParse(_quantityController.text) ?? 0;
+    final unitPrice = double.tryParse(_unitPriceController.text) ?? 0.0;
     return GazFinancialCalculationService.calculateTotalAmount(
       cylinder: _selectedCylinder,
-      unitPrice: _unitPrice,
+      unitPrice: unitPrice,
       quantity: quantity,
     );
   }
@@ -100,7 +101,7 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
       isWholesale: widget.saleType == SaleType.wholesale,
     );
     if (mounted) {
-      setState(() => _unitPrice = price);
+      setState(() => _unitPriceController.text = price.toString());
     }
   }
 
@@ -140,7 +141,7 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
       quantity: quantity,
       availableStock: _availableStock,
       enterpriseId: enterpriseId,
-      siteId: activeEnterprise?.isPointOfSale == true ? activeEnterprise?.id : null,
+      siteId: null, // SiteID is implicit since POS holds its own stock
       saleType: widget.saleType,
       customerName: _customerNameController.text.trim().isEmpty
           ? null
@@ -152,7 +153,7 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
           ? null
           : _notesController.text.trim(),
       totalAmount: _totalAmount,
-      unitPrice: _unitPrice,
+      unitPrice: double.tryParse(_unitPriceController.text) ?? 0.0,
       tourId: null,
       wholesalerId: widget.saleType == SaleType.wholesale
           ? _selectedWholesalerId
@@ -202,20 +203,12 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
     final activeEnterpriseAsync = ref.watch(activeEnterpriseProvider);
 
     // Récupérer l'ID de l'entreprise active
-    // Si c'est un point de vente (POS), le stock est enregistré sous la mère →
-    // on utilise parentEnterpriseId pour les requêtes de stock et d'enregistrement.
-    final enterpriseId = activeEnterpriseAsync.when(
-      data: (enterprise) {
-        if (enterprise != null &&
-            enterprise.isPointOfSale &&
-            enterprise.type.module == EnterpriseModule.gaz) {
-          return enterprise.parentEnterpriseId ?? enterprise.id;
-        }
-        return enterprise?.id;
-      },
-      loading: () => null,
-      error: (_, __) => null,
-    );
+  // Puisque les stocks sont gérés indépendamment pour chaque POS, nous utilisons l'ID direct.
+  final enterpriseId = activeEnterpriseAsync.when(
+    data: (enterprise) => enterprise?.id,
+    loading: () => null,
+    error: (_, __) => null,
+  );
 
     // Initialisation automatique du prix et du stock si un cylinder est pré-sélectionné
     if (!_isInitialized && enterpriseId != null && _selectedCylinder != null) {
@@ -272,42 +265,16 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
                             if (wholesaler != null) {
                               _selectedWholesalerId = wholesaler.id;
                               _selectedWholesalerName = wholesaler.name;
-                              _selectedTier = wholesaler.tier;
                               _updateUnitPrice(enterpriseId);
                             } else {
                               _selectedWholesalerId = null;
                               _selectedWholesalerName = null;
-                              _selectedTier = 'default';
                               _updateUnitPrice(enterpriseId);
                             }
                           });
                         },
                       ),
-                    if (widget.saleType == SaleType.wholesale) ...[
-                      const SizedBox(height: 16),
-                      DropdownButtonFormField<String>(
-                        initialValue: _selectedTier,
-                        decoration: const InputDecoration(
-                          labelText: 'Tier de prix *',
-                          prefixIcon: Icon(Icons.loyalty),
-                          border: OutlineInputBorder(),
-                        ),
-                        items: const [
-                          DropdownMenuItem(value: 'default', child: Text('Standard')),
-                          DropdownMenuItem(value: 'bronze', child: Text('Bronze')),
-                          DropdownMenuItem(value: 'silver', child: Text('Silver')),
-                          DropdownMenuItem(value: 'gold', child: Text('Gold')),
-                        ],
-                        onChanged: (value) {
-                          if (value != null) {
-                            setState(() {
-                              _selectedTier = value;
-                              _updateUnitPrice(enterpriseId);
-                            });
-                          }
-                        },
-                      ),
-                    ],
+
                     if (widget.saleType == SaleType.wholesale)
                       const SizedBox(height: 16),
                     // Sélection de la bouteille
@@ -327,10 +294,10 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
                     // Quantité et total
                     QuantityAndTotalWidget(
                       quantityController: _quantityController,
+                      unitPriceController: _unitPriceController,
                       selectedCylinder: _selectedCylinder,
                       availableStock: _availableStock,
-                      unitPrice: _unitPrice,
-                      onQuantityChanged: () => setState(() {}),
+                      onQuantityOrPriceChanged: () => setState(() {}),
                     ),
                     const SizedBox(height: 16),
                     // Sélecteur méthode de paiement

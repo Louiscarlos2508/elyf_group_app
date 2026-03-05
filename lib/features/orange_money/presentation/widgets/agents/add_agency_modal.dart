@@ -29,9 +29,7 @@ class _AddAgencyModalState extends ConsumerState<AddAgencyModal> {
   // Controllers
   late TextEditingController _nameController;
   late TextEditingController _phoneController;
-  late TextEditingController _liquidityController;
   late TextEditingController _notesController;
-  late TextEditingController _managerController;
 
   // State
   EnterpriseType _selectedAgencyType = EnterpriseType.mobileMoneySubAgent;
@@ -46,18 +44,14 @@ class _AddAgencyModalState extends ConsumerState<AddAgencyModal> {
     } else {
       _nameController = TextEditingController();
       _phoneController = TextEditingController();
-      _liquidityController = TextEditingController(text: '0');
       _notesController = TextEditingController();
-      _managerController = TextEditingController();
     }
   }
 
   void _initAgencyFields(Enterprise agency) {
     _nameController = TextEditingController(text: agency.name);
     _phoneController = TextEditingController(text: agency.phone);
-    _liquidityController = TextEditingController(text: agency.floatBalance?.toString() ?? '0');
     _notesController = TextEditingController(text: agency.description);
-    _managerController = TextEditingController(text: agency.manager);
     _selectedAgencyType = agency.type;
     _isActiveAgency = agency.isActive;
   }
@@ -66,9 +60,7 @@ class _AddAgencyModalState extends ConsumerState<AddAgencyModal> {
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
-    _liquidityController.dispose();
     _notesController.dispose();
-    _managerController.dispose();
     super.dispose();
   }
 
@@ -97,8 +89,6 @@ class _AddAgencyModalState extends ConsumerState<AddAgencyModal> {
         isActive: _isActiveAgency,
         updatedAt: DateTime.now(),
       ).copyWithOrangeMoneyMetadata(
-        floatBalance: int.tryParse(_liquidityController.text.trim()) ?? 0,
-        manager: _managerController.text.trim().isEmpty ? null : _managerController.text.trim(),
       );
 
       if (widget.agency == null) {
@@ -201,24 +191,6 @@ class _AddAgencyModalState extends ConsumerState<AddAgencyModal> {
           hint: 'ex: 70000000',
           prefixIcon: Icons.phone,
           keyboardType: TextInputType.phone,
-          readOnly: widget.isReadOnly,
-        ),
-        SizedBox(height: isKeyboardOpen ? 12 : 16),
-        ElyfField(
-          controller: _managerController,
-          label: 'Nom du Gérant / Responsable',
-          hint: 'ex: Carlos Simporé',
-          prefixIcon: Icons.person_outline,
-          readOnly: widget.isReadOnly,
-        ),
-        SizedBox(height: isKeyboardOpen ? 12 : 16),
-        ElyfField(
-          controller: _liquidityController,
-          label: 'Solde Cash Initial',
-          hint: '0',
-          prefixIcon: Icons.money_outlined,
-          keyboardType: TextInputType.number,
-          suffixText: 'FCFA',
           readOnly: widget.isReadOnly,
         ),
         SizedBox(height: isKeyboardOpen ? 16 : 32),

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:intl/intl.dart';
 
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/logging/app_logger.dart';
@@ -162,20 +163,22 @@ class TransactionOfflineRepository extends OfflineRepository<Transaction>
       var allTransactions = await getAllForEnterprise(enterpriseId);
 
       if (startDate != null) {
+        final startOfDay = DateTime(startDate.year, startDate.month, startDate.day);
         allTransactions = allTransactions
             .where(
               (t) =>
-                  t.date.isAfter(startDate) ||
-                  t.date.isAtSameMomentAs(startDate),
+                  t.date.isAfter(startOfDay) ||
+                  t.date.isAtSameMomentAs(startOfDay),
             )
             .toList();
       }
 
       if (endDate != null) {
+        final endOfDay = DateTime(endDate.year, endDate.month, endDate.day, 23, 59, 59, 999);
         allTransactions = allTransactions
             .where(
               (t) =>
-                  t.date.isBefore(endDate) || t.date.isAtSameMomentAs(endDate),
+                  t.date.isBefore(endOfDay) || t.date.isAtSameMomentAs(endOfDay),
             )
             .toList();
       }
@@ -449,11 +452,12 @@ class TransactionOfflineRepository extends OfflineRepository<Transaction>
   }
 
   @override
-  Stream<List<Transaction>> watchTransactionsByAgent(String agentId) {
-    // Currently Transactions don't have agentId field directly, 
-    // but they might be filtered by notes or other metadata if they were linked.
-    // If agentId is the same as createdBy, we use that.
-    return watchTransactions().map((list) {
+  Stream<List<Transaction>> watchTransactionsByAgent(
+    String agentId, {
+    DateTime? startDate,
+    DateTime? endDate,
+  }) {
+    return watchTransactions(startDate: startDate, endDate: endDate).map((list) {
       return list.where((t) => t.createdBy == agentId).toList();
     });
   }
@@ -516,12 +520,36 @@ class TransactionOfflineRepository extends OfflineRepository<Transaction>
         0,
         (sum, t) => sum + t.amount,
       );
-      final totalCommission = transactions
-          .where((t) => t.commission != null)
-          .fold<int>(0, (sum, t) => sum + (t.commission ?? 0));
+      const totalCommission = 0;
       final totalFees = transactions
-          .where((t) => t.fees != null)
+          .where((t) => t.isCompleted && t.fees != null)
           .fold<int>(0, (sum, t) => sum + (t.fees ?? 0));
+
+      // Calculate daily history for charts and tables
+      final Map<String, Map<String, dynamic>> dailyMap = {};
+      
+      for (final t in transactions) {
+        if (!t.isCompleted) continue;
+        
+        final dateKey = DateFormat('yyyy-MM-dd').format(t.date);
+        final entry = dailyMap.putIfAbsent(dateKey, () => {
+          'date': DateTime(t.date.year, t.date.month, t.date.day),
+          'cashIn': 0,
+          'cashOut': 0,
+          'count': 0,
+        });
+        
+        entry['count'] = (entry['count'] as int) + 1;
+        if (t.isCashIn) {
+          entry['cashIn'] = (entry['cashIn'] as int) + t.amount;
+        } else if (t.isCashOut) {
+          entry['cashOut'] = (entry['cashOut'] as int) + t.amount;
+        }
+        
+      }
+
+      final dailyHistory = dailyMap.values.toList()
+        ..sort((a, b) => (a['date'] as DateTime).compareTo(b['date'] as DateTime));
 
       return {
         'totalTransactions': transactions.length,
@@ -530,11 +558,14 @@ class TransactionOfflineRepository extends OfflineRepository<Transaction>
             .length,
         'pendingTransactions': transactions.where((t) => t.isPending).length,
         'failedTransactions': transactions.where((t) => t.isFailed).length,
+        'depositsCount': cashInTransactions.length,
+        'withdrawalsCount': cashOutTransactions.length,
         'totalCashIn': totalCashIn,
         'totalCashOut': totalCashOut,
         'netAmount': totalCashIn - totalCashOut,
         'totalCommission': totalCommission,
         'totalFees': totalFees,
+        'dailyHistory': dailyHistory,
         'startDate': startDate?.toIso8601String(),
         'endDate': endDate?.toIso8601String(),
       };
@@ -576,20 +607,22 @@ class TransactionOfflineRepository extends OfflineRepository<Transaction>
           .toList();
 
       if (startDate != null) {
+        final startOfDay = DateTime(startDate.year, startDate.month, startDate.day);
         allTransactions = allTransactions
             .where(
               (t) =>
-                  t.date.isAfter(startDate) ||
-                  t.date.isAtSameMomentAs(startDate),
+                  t.date.isAfter(startOfDay) ||
+                  t.date.isAtSameMomentAs(startOfDay),
             )
             .toList();
       }
 
       if (endDate != null) {
+        final endOfDay = DateTime(endDate.year, endDate.month, endDate.day, 23, 59, 59, 999);
         allTransactions = allTransactions
             .where(
               (t) =>
-                  t.date.isBefore(endDate) || t.date.isAtSameMomentAs(endDate),
+                  t.date.isBefore(endOfDay) || t.date.isAtSameMomentAs(endOfDay),
             )
             .toList();
       }

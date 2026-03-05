@@ -8,6 +8,7 @@ import 'finance/finance_tab_bar.dart';
 import 'finance/expenses_tab.dart';
 import 'finance/treasury_tab.dart';
 import 'finance/payroll_tab.dart';
+import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 
 /// Unified Finance screen for the Gaz module.
 /// Consolidates Expenses and Treasury management.
@@ -19,8 +20,9 @@ class GazFinanceScreen extends ConsumerStatefulWidget {
 }
 
 class _GazFinanceScreenState extends ConsumerState<GazFinanceScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late TabController _tabController;
+  bool? _isPOS;
 
   @override
   void initState() {
@@ -61,38 +63,54 @@ class _GazFinanceScreenState extends ConsumerState<GazFinanceScreen>
 
   @override
   Widget build(BuildContext context) {
+    final activeEnterprise = ref.watch(activeEnterpriseProvider).value;
+    final bool isPOS = activeEnterprise?.isPointOfSale ?? true;
+
+    if (_isPOS == null || _isPOS != isPOS) {
+      _isPOS = isPOS;
+      // Re-initialize tab controller if POS status changed
+      _tabController.removeListener(_onTabChanged);
+      _tabController.dispose();
+      _tabController = TabController(length: isPOS ? 1 : 3, vsync: this);
+      _tabController.addListener(_onTabChanged);
+    }
 
     return Scaffold(
       body: NestedScrollView(
         headerSliverBuilder: (context, innerBoxIsScrolled) => [
           GazHeader(
             title: 'FINANCES',
-            subtitle: _getSubtitle(),
+            subtitle: _getSubtitle(isPOS),
             asSliver: true,
             actions: [
-              if (_tabController.index == 0)
+              if (!isPOS && _tabController.index == 0)
                 IconButton(
                   onPressed: _showNewExpenseDialog,
                   icon: const Icon(Icons.add_card, color: Colors.white),
                   tooltip: 'Nouvelle dépense',
                 ),
             ],
-            bottom: FinanceTabBar(tabController: _tabController),
+            bottom: FinanceTabBar(
+              tabController: _tabController,
+              isPOS: isPOS,
+            ),
           ),
         ],
         body: TabBarView(
           controller: _tabController,
           children: [
-            const ExpensesTab(),
+            if (!isPOS) const ExpensesTab(),
             const TreasuryTab(),
-            const PayrollTab(),
+            if (!isPOS) const PayrollTab(),
           ],
         ),
       ),
     );
   }
 
-  String _getSubtitle() {
+  String _getSubtitle(bool isPOS) {
+    if (isPOS) return 'Trésorerie & Caisses';
+    
     switch (_tabController.index) {
       case 0:
         return 'Gestion des Dépenses';

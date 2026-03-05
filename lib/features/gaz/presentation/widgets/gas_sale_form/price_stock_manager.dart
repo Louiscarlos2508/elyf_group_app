@@ -8,7 +8,7 @@ import 'package:elyf_groupe_app/features/gaz/domain/services/gaz_financial_calcu
 class PriceStockManager {
   PriceStockManager._();
 
-  /// Met à jour le prix unitaire selon le type de vente et le tier.
+  /// Met à jour le prix unitaire selon le type de vente.
   static Future<double> updateUnitPrice({
     required WidgetRef ref,
     required Cylinder? cylinder,

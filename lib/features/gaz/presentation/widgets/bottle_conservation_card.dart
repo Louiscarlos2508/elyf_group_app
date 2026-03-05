@@ -190,7 +190,7 @@ class _ConservationRow extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      'Pleines: ${item.full} • Vides: ${item.empty} • Fuites/Déf: ${item.issues}',
+                      'Pleines: ${item.full} • Vides: ${item.empty} • Fuite: ${item.issues}',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                         fontSize: 11,

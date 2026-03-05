@@ -84,7 +84,7 @@ class AgentsDialogs {
               NotificationService.showSuccess(
                 dialogContext,
                 type == AgentTransactionType.recharge
-                    ? 'Recharge de ${AgentsFormatHelpers.formatCurrency(amount)} effectuée pour ${agent.name}'
+                    ? 'Recharge (Dépôt) de ${AgentsFormatHelpers.formatCurrency(amount)} effectué pour ${agent.name}'
                     : 'Retrait de ${AgentsFormatHelpers.formatCurrency(amount)} effectué pour ${agent.name}',
               );
             }

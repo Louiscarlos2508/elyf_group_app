@@ -8,11 +8,12 @@ import 'package:elyf_groupe_app/core/permissions/modules/gaz_permissions.dart';
 import '../../../../../../core/tenant/tenant_provider.dart' show activeEnterpriseProvider;
 import 'package:elyf_groupe_app/features/administration/application/providers.dart';
 import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
-import '../../widgets/bottle_price_table.dart';
+
 import '../../widgets/cylinder_form_dialog.dart';
 import '../../widgets/point_of_sale_form_dialog.dart';
 import '../../widgets/point_of_sale_table.dart';
 import '../../widgets/gaz_header.dart';
+import '../../widgets/cylinder_management_card.dart';
 import '../../../application/providers.dart';
 
 /// Écran de paramètres pour le module Gaz selon le design Figma.
@@ -91,17 +92,18 @@ class GazSettingsScreen extends ConsumerWidget {
                         ),
                       ),
                     ),
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-                      child: _buildStockAlertSection(
-                        context: context,
-                        ref: ref,
-                        theme: theme,
-                        enterpriseId: effectiveEnterpriseId,
+                  if (isPOS)
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+                        child: _buildStockAlertSection(
+                          context: context,
+                          ref: ref,
+                          theme: theme,
+                          enterpriseId: effectiveEnterpriseId,
+                        ),
                       ),
                     ),
-                  ),
                   if (!isPOS)
                     SliverToBoxAdapter(
                       child: Padding(
@@ -151,86 +153,7 @@ class GazSettingsScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(
-                    Icons.monetization_on_outlined,
-                    size: 20, // Slightly smaller icon on mobile
-                    color: theme.colorScheme.primary,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Configuration des prix',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 16,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      if (!isMobile) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          'Gérez les bouteilles et tarifs',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 12),
-                isMobile ? ElyfButton(
-                  onPressed: () {
-                    showDialog(
-                      context: context,
-                      builder: (context) => CylinderFormDialog(
-                        enterpriseId: enterpriseId,
-                        moduleId: moduleId,
-                        isPOS: isPOS,
-                      ),
-                    );
-                  },
-                  size: ElyfButtonSize.small,
-                  icon: Icons.add,
-                  child: const Text('Nouveau'),
-                )
-                    : ElyfButton(
-                        onPressed: () {
-                          showDialog(
-                            context: context,
-                            builder: (context) => CylinderFormDialog(
-                              enterpriseId: enterpriseId,
-                              moduleId: moduleId,
-                              isPOS: isPOS,
-                            ),
-                          );
-                        },
-                        icon: Icons.add,
-                        child: const Text('Nouveau type'),
-                      ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            const Divider(),
-            const SizedBox(height: 16),
-            // Carte avec tableau des tarifs
-            BottlePriceTable(enterpriseId: enterpriseId, moduleId: moduleId),
+            CylinderManagementCard(isPOS: isPOS),
           ],
         ),
       ),
@@ -376,6 +299,7 @@ class GazSettingsScreen extends ConsumerWidget {
     required String enterpriseId,
   }) {
     final settingsAsync = ref.watch(gazSettingsProvider((enterpriseId: enterpriseId, moduleId: 'gaz')));
+    final cylindersAsync = ref.watch(cylindersProvider);
 
     return Card(
       elevation: 0,
@@ -432,12 +356,8 @@ class GazSettingsScreen extends ConsumerWidget {
             const SizedBox(height: 16),
             settingsAsync.when(
               data: (settings) {
-                // Use settings price keys rather than cylinder objects — works on new devices too
-                final weights = {
-                  ...?settings?.retailPrices.keys,
-                  ...?settings?.purchasePrices.keys,
-                  ...?settings?.wholesalePrices.keys,
-                }.toList()..sort();
+                final cylinders = cylindersAsync.value ?? [];
+                final weights = cylinders.map((c) => c.weight).toList()..sort();
                 if (weights.isEmpty) {
                   return const Center(child: Text('Aucun type de bouteille configuré'));
                 }
@@ -452,7 +372,9 @@ class GazSettingsScreen extends ConsumerWidget {
                     return ListTile(
                       contentPadding: EdgeInsets.zero,
                       title: Text('$weight kg'),
-                      subtitle: Text('Seuil actuel : $threshold bouteilles'),
+                      subtitle: Text(
+                        'Seuil actuel : ${threshold == 0 ? '-' : '$threshold bouteilles'}',
+                      ),
                       trailing: SizedBox(
                         width: 100,
                         child: ElyfButton(
@@ -610,7 +532,10 @@ class GazSettingsScreen extends ConsumerWidget {
                     return ListTile(
                       contentPadding: EdgeInsets.zero,
                       title: Text('$weight kg'),
-                      subtitle: Text('Chargement: ${loading.toInt()} F | Déchargement: ${unloading.toInt()} F'),
+                      subtitle: Text(
+                        'Chargement: ${CurrencyFormatter.formatOptional(loading)} | '
+                        'Déchargement: ${CurrencyFormatter.formatOptional(unloading)}',
+                      ),
                       trailing: SizedBox(
                         width: 100,
                         child: ElyfButton(

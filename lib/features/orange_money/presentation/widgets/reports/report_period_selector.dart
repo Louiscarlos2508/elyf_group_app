@@ -14,6 +14,8 @@ class ReportPeriodSelector extends StatelessWidget {
     required this.onEndDateSelected,
     required this.onTodaySelected,
     required this.onSevenDaysSelected,
+    required this.onThisMonthSelected,
+    required this.onLastMonthSelected,
   });
 
   final DateTime? startDate;
@@ -22,13 +24,18 @@ class ReportPeriodSelector extends StatelessWidget {
   final VoidCallback onEndDateSelected;
   final VoidCallback onTodaySelected;
   final VoidCallback onSevenDaysSelected;
+  final VoidCallback onThisMonthSelected;
+  final VoidCallback onLastMonthSelected;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return ElyfCard(
       padding: const EdgeInsets.all(AppSpacing.lg),
+      backgroundColor: isDark ? theme.colorScheme.surfaceContainer : Colors.white,
+      elevation: isDark ? 0 : 1,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -72,6 +79,8 @@ class ReportPeriodSelector extends StatelessWidget {
                 child: _ReportQuickActions(
                   onTodaySelected: onTodaySelected,
                   onSevenDaysSelected: onSevenDaysSelected,
+                  onThisMonthSelected: onThisMonthSelected,
+                  onLastMonthSelected: onLastMonthSelected,
                 ),
               ),
             ],
@@ -150,10 +159,14 @@ class _ReportQuickActions extends StatelessWidget {
   const _ReportQuickActions({
     required this.onTodaySelected,
     required this.onSevenDaysSelected,
+    required this.onThisMonthSelected,
+    required this.onLastMonthSelected,
   });
 
   final VoidCallback onTodaySelected;
   final VoidCallback onSevenDaysSelected;
+  final VoidCallback onThisMonthSelected;
+  final VoidCallback onLastMonthSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -163,50 +176,51 @@ class _ReportQuickActions extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Actions rapides',
+          'Raccourcis',
           style: theme.textTheme.labelMedium?.copyWith(
             color: theme.colorScheme.onSurface,
           ),
         ),
         SizedBox(height: AppSpacing.sm),
-        Row(
+        Wrap(
+          spacing: AppSpacing.sm,
+          runSpacing: AppSpacing.sm,
           children: [
-            Expanded(
-              child: OutlinedButton(
-                onPressed: onTodaySelected,
-                style: OutlinedButton.styleFrom(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: AppSpacing.sm,
-                    vertical: AppSpacing.xs,
-                  ),
-                  minimumSize: const Size(0, 32),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.small),
-                  ),
-                ),
-                child: const Text('Aujourd\'hui'),
-              ),
-            ),
-            SizedBox(width: AppSpacing.sm),
-            Expanded(
-              child: OutlinedButton(
-                onPressed: onSevenDaysSelected,
-                style: OutlinedButton.styleFrom(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: AppSpacing.sm,
-                    vertical: AppSpacing.xs,
-                  ),
-                  minimumSize: const Size(0, 32),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.small),
-                  ),
-                ),
-                child: const Text('7 jours'),
-              ),
-            ),
+            _QuickButton(label: 'Aujourd\'hui', onTap: onTodaySelected),
+            _QuickButton(label: '7 jours', onTap: onSevenDaysSelected),
+            _QuickButton(label: 'Ce mois', onTap: onThisMonthSelected),
+            _QuickButton(label: 'Mois dernier', onTap: onLastMonthSelected),
           ],
         ),
       ],
+    );
+  }
+}
+
+class _QuickButton extends StatelessWidget {
+  const _QuickButton({required this.label, required this.onTap});
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadius.small),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          border: Border.all(color: theme.dividerColor.withValues(alpha: 0.1)),
+          borderRadius: BorderRadius.circular(AppRadius.small),
+        ),
+        child: Text(
+          label,
+          style: theme.textTheme.labelSmall?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
     );
   }
 }

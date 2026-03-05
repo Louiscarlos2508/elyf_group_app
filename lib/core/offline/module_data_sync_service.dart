@@ -29,13 +29,6 @@ class ModuleDataSyncService {
 
   /// Configuration des collections partagées (qui doivent être sync depuis le parent si dispo).
   static const Map<String, List<String>> sharedCollections = {
-    'gaz': [
-      'cylinders',
-      'gaz_settings',
-      'pointOfSale',
-      'cylinder_stocks',
-      'wholesalers',
-    ],
     'orange_money': [
       'agences',
       'orange_money_settings',
@@ -271,14 +264,16 @@ class ModuleDataSyncService {
         try {
           final data = doc.data() as Map<String, dynamic>? ?? {};
           final documentId = doc.id;
-
+          // Ensure the enterpriseId in the JSON payload matches the storage context
+          // to resolve issues with legacy records synced under parent IDs.
+          
           // Ajouter l'ID du document dans les données
           final dataWithId = Map<String, dynamic>.from(data)
             ..['id'] = documentId;
 
           // Convertir les Timestamp en format JSON-compatible
           final jsonCompatibleData = _convertToJsonCompatible(dataWithId);
-
+          
           // Sanitizer et valider les données avant sauvegarde locale
           final sanitizedData = DataSanitizer.sanitizeMap(jsonCompatibleData);
           final jsonPayload = jsonEncode(sanitizedData);
@@ -341,6 +336,10 @@ class ModuleDataSyncService {
           // Crucial : Injecter le finalLocalId déterminé dans les données stockées
           // Pour que les fromMap() puissent toujours retrouver leur localId.
           sanitizedData['localId'] = finalLocalId;
+          
+          // Ensure enterpriseId in JSON matches the storage enterpriseId (important for POS isolation)
+          sanitizedData['enterpriseId'] = storageEnterpriseId;
+
           final updatedJsonPayload = jsonEncode(sanitizedData);
 
           companions.add(OfflineRecordsCompanion.insert(

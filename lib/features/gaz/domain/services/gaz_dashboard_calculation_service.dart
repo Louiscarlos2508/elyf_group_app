@@ -122,9 +122,11 @@ class GazDashboardCalculationService {
     // Calculate COGS (Cost of Goods Sold)
     double monthCOGS = 0.0;
     for (final sale in monthSales) {
+      if (cylinders.isEmpty) continue;
+      
       final cylinder = cylinders.firstWhere(
         (c) => c.id == sale.cylinderId,
-        orElse: () => cylinders.firstWhere((c) => c.weight == 0, orElse: () => cylinders.first),
+        orElse: () => cylinders.first,
       );
       monthCOGS += cylinder.buyPrice * sale.quantity;
     }

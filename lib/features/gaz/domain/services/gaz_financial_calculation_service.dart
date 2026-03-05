@@ -100,13 +100,16 @@ class GazFinancialCalculationService {
     final todayRevenue = GazSalesCalculationService.calculateTodayRevenue(sales);
     final todayExpenses = calculateTodayExpensesTotal(expenses);
     
+    if (cylinders.isEmpty) return todayRevenue - todayExpenses;
+
     double todayCOGS = 0.0;
     for (final sale in todaySales) {
+      if (cylinders.isEmpty) continue;
       final cylinder = cylinders.firstWhere(
         (c) => c.id == sale.cylinderId,
-        orElse: () => cylinders.firstWhere((c) => c.weight == 0, orElse: () => cylinders.first),
+        orElse: () => cylinders.first,
       );
-      todayCOGS += cylinder.buyPrice * sale.quantity;
+      todayCOGS += (cylinder.buyPrice) * sale.quantity;
     }
 
     return todayRevenue - todayCOGS - todayExpenses;
@@ -186,9 +189,10 @@ class GazFinancialCalculationService {
     
     double monthCOGS = 0.0;
     for (final sale in monthSales) {
+      if (cylinders.isEmpty) continue;
       final cylinder = cylinders.firstWhere(
         (c) => c.id == sale.cylinderId,
-        orElse: () => cylinders.firstWhere((c) => c.weight == 0, orElse: () => cylinders.first),
+        orElse: () => cylinders.first,
       );
       monthCOGS += cylinder.buyPrice * sale.quantity;
     }

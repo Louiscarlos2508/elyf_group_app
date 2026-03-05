@@ -154,7 +154,7 @@ class _StockKpiCards extends StatelessWidget {
               const SizedBox(width: 16),
               Expanded(
                 child: StockKpiCard(
-                  title: 'Bouteilles Trouées / Fuites',
+                  title: 'Fuite',
                   value: '${metrics.totalIssues}',
                   subtitle: metrics.issueSummary,
                   icon: Icons.report_problem_outlined,
@@ -208,7 +208,7 @@ class _StockKpiCards extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             StockKpiCard(
-              title: 'Bouteilles Trouées / Fuites',
+              title: 'Fuite',
               value: '${metrics.totalIssues}',
               subtitle: metrics.issueSummary,
               icon: Icons.report_problem_outlined,

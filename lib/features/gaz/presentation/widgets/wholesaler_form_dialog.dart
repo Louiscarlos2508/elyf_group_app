@@ -25,10 +25,7 @@ class _WholesalerFormDialogState extends ConsumerState<WholesalerFormDialog> {
   late TextEditingController _nameController;
   late TextEditingController _phoneController;
   late TextEditingController _addressController;
-  late String _tier;
   bool _isLoading = false;
-
-  final List<String> _tiers = ['default'];
 
   @override
   void initState() {
@@ -36,7 +33,6 @@ class _WholesalerFormDialogState extends ConsumerState<WholesalerFormDialog> {
     _nameController = TextEditingController(text: widget.wholesaler?.name);
     _phoneController = TextEditingController(text: widget.wholesaler?.phone);
     _addressController = TextEditingController(text: widget.wholesaler?.address);
-    _tier = widget.wholesaler?.tier ?? 'default';
   }
 
   @override
@@ -86,8 +82,6 @@ class _WholesalerFormDialogState extends ConsumerState<WholesalerFormDialog> {
                 ),
                 maxLines: 2,
               ),
-              const SizedBox(height: 16),
-              /* Dropdown de palier supprimé car prix unique */
             ],
           ),
         ),
@@ -124,7 +118,6 @@ class _WholesalerFormDialogState extends ConsumerState<WholesalerFormDialog> {
           name: _nameController.text,
           phone: _phoneController.text,
           address: _addressController.text,
-          tier: _tier,
         );
         await controller.updateWholesaler(updated);
       } else {
@@ -134,7 +127,6 @@ class _WholesalerFormDialogState extends ConsumerState<WholesalerFormDialog> {
           name: _nameController.text,
           phone: _phoneController.text,
           address: _addressController.text,
-          tier: _tier,
         );
         await controller.registerWholesaler(newWholesaler);
       }

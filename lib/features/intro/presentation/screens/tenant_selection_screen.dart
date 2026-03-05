@@ -191,25 +191,30 @@ class TenantSelectionScreen extends ConsumerWidget {
 
   Widget _buildLoadingState(BuildContext context, ColorScheme colors) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          SizedBox(
-            width: 64,
-            height: 64,
-            child: CircularProgressIndicator(
-              strokeWidth: 3,
-              color: colors.primary,
-            ),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'Chargement des entreprises...',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: colors.onSurfaceVariant,
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SizedBox(
+                width: 64,
+                height: 64,
+                child: CircularProgressIndicator(
+                  strokeWidth: 3,
+                  color: colors.primary,
                 ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Chargement des entreprises...',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -221,39 +226,41 @@ class TenantSelectionScreen extends ConsumerWidget {
     TextTheme textTheme,
   ) {
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.business_outlined,
-              size: 80,
-              color: colors.onSurfaceVariant.withValues(alpha: 0.5),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Aucune entreprise accessible',
-              style: textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.business_outlined,
+                size: 80,
+                color: colors.onSurfaceVariant.withValues(alpha: 0.5),
               ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Contactez votre administrateur pour obtenir l\'accès à une entreprise.',
-              style: textTheme.bodyLarge?.copyWith(
-                color: colors.onSurfaceVariant,
+              const SizedBox(height: 24),
+              Text(
+                'Aucune entreprise accessible',
+                style: textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 32),
-            FilledButton.icon(
-              onPressed: () => ref.read(authControllerProvider).signOut(),
-              icon: const Icon(Icons.logout),
-              label: const Text('Se déconnecter'),
-            ),
-          ],
+              const SizedBox(height: 12),
+              Text(
+                'Contactez votre administrateur pour obtenir l\'accès à une entreprise.',
+                style: textTheme.bodyLarge?.copyWith(
+                  color: colors.onSurfaceVariant,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 32),
+              FilledButton.icon(
+                onPressed: () => ref.read(authControllerProvider).signOut(),
+                icon: const Icon(Icons.logout),
+                label: const Text('Se déconnecter'),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -267,43 +274,45 @@ class TenantSelectionScreen extends ConsumerWidget {
     String error,
   ) {
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.error_outline,
-              size: 80,
-              color: colors.error,
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Erreur de chargement',
-              style: textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.error_outline,
+                size: 80,
+                color: colors.error,
               ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              error,
-              style: textTheme.bodyMedium?.copyWith(
-                color: colors.onSurfaceVariant,
+              const SizedBox(height: 24),
+              Text(
+                'Erreur de chargement',
+                style: textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 32),
-            FilledButton.icon(
-              onPressed: () => ref.read(authControllerProvider).signOut(),
-              icon: const Icon(Icons.logout),
-              label: const Text('Se déconnecter et réessayer'),
-              style: FilledButton.styleFrom(
-                backgroundColor: colors.error,
-                foregroundColor: colors.onError,
+              const SizedBox(height: 12),
+              Text(
+                error,
+                style: textTheme.bodyMedium?.copyWith(
+                  color: colors.onSurfaceVariant,
+                ),
+                textAlign: TextAlign.center,
               ),
-            ),
-          ],
+              const SizedBox(height: 32),
+              FilledButton.icon(
+                onPressed: () => ref.read(authControllerProvider).signOut(),
+                icon: const Icon(Icons.logout),
+                label: const Text('Se déconnecter et réessayer'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: colors.error,
+                  foregroundColor: colors.onError,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

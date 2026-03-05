@@ -11,7 +11,7 @@ enum LeakStatus {
 
 /// Source d'une fuite.
 enum LeakSource {
-  store('Magasin'),
+  store('Dépôt/POS'),
   tour('Approvisionnement / Tournée'),
   supplier('Fournisseur (Réception)');
 
