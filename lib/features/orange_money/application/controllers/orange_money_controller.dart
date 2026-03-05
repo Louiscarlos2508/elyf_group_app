@@ -411,6 +411,11 @@ class OrangeMoneyController {
       'completedTransactions': transactions.where((t) => t.isCompleted).length + treasuryOps.length,
       'totalCashIn': totalCashIn + internalIn,
       'totalCashOut': totalCashOut + internalOut,
+      // Keys expected by DashboardScreen
+      'cashInTotal': totalCashIn + internalIn,
+      'cashOutTotal': totalCashOut + internalOut,
+      'deposits': totalCashIn + internalIn,
+      'withdrawals': totalCashOut + internalOut,
       'netAmount': (totalCashIn + internalIn) - (totalCashOut + internalOut),
       'totalCommission': 0, // Will be updated by getStatistics from declared commissions
       'totalFees': transactions

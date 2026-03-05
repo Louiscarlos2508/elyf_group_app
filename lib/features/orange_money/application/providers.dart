@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:rxdart/rxdart.dart';
 import 'package:elyf_groupe_app/core/logging/app_logger.dart';
 
 export 'providers/permission_providers.dart';
@@ -572,7 +573,10 @@ final agentStatisticsProvider = Provider.autoDispose.family<AsyncValue<Map<Strin
             }
           }
 
-          // Still calculate commission from client transactions if any
+          // NB: Les transactions clients ne sont PAS incluses ici.
+          // Les agents n'ont pas l'app, donc on ne peut pas connaitre leurs transactions
+          // clients. Seules les recharges/retraits internes (TreasuryOperations)
+          // avec l'entreprise mère sont comptabilisées.
           for (final t in transactions) {
             if (t.isCompleted) {
               totalCommission += (t.commission ?? 0).toInt();
@@ -583,13 +587,16 @@ final agentStatisticsProvider = Provider.autoDispose.family<AsyncValue<Map<Strin
             'totalRecharged': totalRecharged,
             'totalWithdrawn': totalWithdrawn,
             'totalCommission': totalCommission,
-            // Map to CashIn/CashOut for UI (AgentNetworkCard) compatibility
+            // Aliases for UI compatibility (AgentNetworkCard uses totalCashIn/totalCashOut)
             'totalCashIn': totalRecharged, 
             'totalCashOut': totalWithdrawn,
-            'transactionCount': treasuryOps.length, // Count of recharge/withdraw ops
-            'clientTransactionCount': transactions.length,
+            'deposits': totalRecharged,
+            'withdrawals': totalWithdrawn,
+            'transactionCount': treasuryOps.length,
+            'clientTransactionCount': 0, // Agents n'ont pas l'app
+            'treasuryCount': treasuryOps.length,
             'totalVolume': totalRecharged + totalWithdrawn,
-            'source': 'aggregate',
+            'source': 'agent_treasury_only',
           });
         },
         loading: () => const AsyncValue.loading(),
@@ -645,29 +652,44 @@ final dailyTransactionStatsProvider = StreamProvider.autoDispose
           .add(const Duration(days: 1))
           .subtract(const Duration(milliseconds: 1));
 
-      // Stratégie réactive: On regarde si on est en vue réseau (Hierarchy)
       final scopedIdsAsync = ref.watch(orangeMoneyScopedEnterpriseIdsProvider);
-      final repository = ref.watch(transactionRepositoryProvider);
+      final transactionRepo = ref.watch(transactionRepositoryProvider);
+      final treasuryRepo = ref.watch(orangeMoneyTreasuryRepositoryProvider);
 
       return scopedIdsAsync.when(
         data: (ids) {
-          final stream = (ids.length > 1)
-              ? repository.watchTransactionsByEnterprises(
+          // 1. Stream de Transactions (Client)
+          final transactionsStream = (ids.length > 1)
+              ? transactionRepo.watchTransactionsByEnterprises(
                   ids,
                   startDate: startOfDay,
                   endDate: endOfDay,
                 )
-              : repository.watchTransactions(
+              : transactionRepo.watchTransactions(
                   startDate: startOfDay,
                   endDate: endOfDay,
                 );
 
-          return stream.map((transactions) {
+          // 2. Stream de TreasuryOperations (Agents + Internal)
+          // On regarde les opérations pour l'entreprise mère et potentiellement les sous-agences si c'est une vue réseau
+          final treasuryStream = treasuryRepo.watchOperations(
+            enterpriseId ?? 'default',
+            from: startOfDay,
+            to: endOfDay,
+            enterpriseIds: ids.length > 1 ? ids : null,
+          );
+
+          // 3. Combinaison des deux flux
+          return Rx.combineLatest2(transactionsStream, treasuryStream, (transactions, treasuryOps) {
             int deposits = 0;
             int withdrawals = 0;
+            int clientCount = 0;
+            int treasuryCount = 0;
+
+            // Clients Transactions
             for (final t in transactions) {
               if (t.status != TransactionStatus.completed) continue;
-              
+              clientCount++;
               if (t.type == TransactionType.cashIn) {
                 deposits += t.amount;
               } else if (t.type == TransactionType.cashOut) {
@@ -675,10 +697,36 @@ final dailyTransactionStatsProvider = StreamProvider.autoDispose
               }
             }
 
+            // Treasury Operations (Agent Recharges / Agency Supply)
+            for (final op in treasuryOps) {
+              final reason = op.reason?.toLowerCase() ?? '';
+              final isRechargeStr = reason.contains('recharge') || reason.contains('approvisionnement');
+              final isRetraitStr = reason.contains('retrait');
+
+              // Aggregation logic (same as AgentsController)
+              if (isRechargeStr || op.type == TreasuryOperationType.supply) {
+                deposits += op.amount;
+                treasuryCount++;
+              } else if (isRetraitStr || op.type == TreasuryOperationType.removal) {
+                withdrawals += op.amount;
+                treasuryCount++;
+              } else if (op.type == TreasuryOperationType.transfer && op.referenceEntityType == 'agent_account') {
+                if (op.fromAccount == PaymentMethod.mobileMoney && op.toAccount == PaymentMethod.cash) {
+                  deposits += op.amount;
+                  treasuryCount++;
+                } else if (op.fromAccount == PaymentMethod.cash && op.toAccount == PaymentMethod.mobileMoney) {
+                  withdrawals += op.amount;
+                  treasuryCount++;
+                }
+              }
+            }
+
             return {
               'deposits': deposits,
               'withdrawals': withdrawals,
-              'transactionCount': transactions.length,
+              'transactionCount': clientCount + treasuryCount,
+              'clientCount': clientCount,
+              'treasuryCount': treasuryCount,
               'source': ids.length > 1 ? 'network' : 'single',
             };
           });

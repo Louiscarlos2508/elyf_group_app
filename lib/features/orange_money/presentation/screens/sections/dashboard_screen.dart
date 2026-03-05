@@ -23,8 +23,8 @@ class DashboardScreen extends ConsumerWidget {
   Widget _buildData(BuildContext context, WidgetRef ref, OrangeMoneyState data) {
     final theme = Theme.of(context);
     final stats = data.statistics;
-    final cashInTotal = stats['cashInTotal'] as int? ?? 0;
-    final cashOutTotal = stats['cashOutTotal'] as int? ?? 0;
+    final totalCashIn = stats['totalCashIn'] as int? ?? 0;
+    final totalCashOut = stats['totalCashOut'] as int? ?? 0;
     final totalCommission = stats['totalCommission'] as int? ?? 0;
     final pendingTransactions = stats['pendingTransactions'] as int? ?? 0;
     

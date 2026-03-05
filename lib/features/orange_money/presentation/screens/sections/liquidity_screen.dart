@@ -164,36 +164,9 @@ class _LiquidityScreenState extends ConsumerState<LiquidityScreen> {
           todayCheckpointAsync.when(
             data: (checkpoint) => dailyStatsAsync.when(
               data: (stats) {
-                int treasuryDeposits = 0;
-                int treasuryWithdrawals = 0;
-                int treasuryCount = 0;
-                
-                final ops = operationsAsync.value ?? [];
-                for (final op in ops) {
-                  if (op.date.year == today.year && op.date.month == today.month && op.date.day == today.day) {
-                    treasuryCount++;
-                    if (op.type == TreasuryOperationType.supply) {
-                      treasuryDeposits += op.amount;
-                    } else if (op.type == TreasuryOperationType.removal) {
-                      treasuryWithdrawals += op.amount;
-                    } else if (op.type == TreasuryOperationType.transfer && op.referenceEntityType == 'agent_account') {
-                      if (op.fromAccount == PaymentMethod.mobileMoney && op.toAccount == PaymentMethod.cash) {
-                        treasuryDeposits += op.amount;
-                      } else if (op.fromAccount == PaymentMethod.cash && op.toAccount == PaymentMethod.mobileMoney) {
-                        treasuryWithdrawals += op.amount;
-                      }
-                    }
-                  }
-                }
-
-                final updatedStats = Map<String, dynamic>.from(stats);
-                updatedStats['deposits'] = (updatedStats['deposits'] as int? ?? 0) + treasuryDeposits;
-                updatedStats['withdrawals'] = (updatedStats['withdrawals'] as int? ?? 0) + treasuryWithdrawals;
-                updatedStats['transactionCount'] = (updatedStats['transactionCount'] as int? ?? 0) + treasuryCount;
-
                 return LiquidityDailyActivitySection(
                   checkpoint: checkpoint,
-                  stats: updatedStats,
+                  stats: stats,
                 );
               },
 
