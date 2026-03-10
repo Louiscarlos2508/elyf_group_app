@@ -20,6 +20,8 @@ class PurchaseOfflineRepository implements PurchaseRepository {
     this.userId = 'system',
   });
 
+  String get moduleType => 'eau_minerale';
+
   final DriftService driftService;
   final SyncManager syncManager;
   final ConnectivityService connectivityService;
@@ -39,7 +41,7 @@ class PurchaseOfflineRepository implements PurchaseRepository {
       final rows = await driftService.records.listForEnterprise(
         collectionName: collectionName,
         enterpriseId: enterpriseId,
-        moduleType: 'eau_minerale',
+        moduleType: moduleType,
       );
       return rows.map((r) => _recordToEntity(r.dataJson)).toList();
     } catch (error, stackTrace) {
@@ -54,12 +56,12 @@ class PurchaseOfflineRepository implements PurchaseRepository {
         collectionName: collectionName,
         localId: id,
         enterpriseId: enterpriseId,
-        moduleType: 'eau_minerale',
+        moduleType: moduleType,
       ) ?? await driftService.records.findByRemoteId(
         collectionName: collectionName,
         remoteId: id,
         enterpriseId: enterpriseId,
-        moduleType: 'eau_minerale',
+        moduleType: moduleType,
       );
 
       if (record == null) return null;
@@ -80,7 +82,7 @@ class PurchaseOfflineRepository implements PurchaseRepository {
         collectionName: collectionName,
         localId: localId,
         enterpriseId: enterpriseId,
-        moduleType: 'eau_minerale',
+        moduleType: moduleType,
         dataJson: jsonEncode(map),
         localUpdatedAt: DateTime.now(),
       );
@@ -116,7 +118,7 @@ class PurchaseOfflineRepository implements PurchaseRepository {
         collectionName: collectionName,
         localId: purchase.id,
         enterpriseId: enterpriseId,
-        moduleType: 'eau_minerale',
+        moduleType: moduleType,
       );
 
       await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
@@ -124,7 +126,7 @@ class PurchaseOfflineRepository implements PurchaseRepository {
         localId: purchase.id,
         remoteId: record?.remoteId,
         enterpriseId: enterpriseId,
-        moduleType: 'eau_minerale',
+        moduleType: moduleType,
         dataJson: jsonEncode(map),
         localUpdatedAt: DateTime.now(),
       );
@@ -162,7 +164,7 @@ class PurchaseOfflineRepository implements PurchaseRepository {
         collectionName: collectionName,
         localId: id,
         enterpriseId: enterpriseId,
-        moduleType: 'eau_minerale',
+        moduleType: moduleType,
         dataJson: jsonEncode(map),
         localUpdatedAt: DateTime.now(),
       );
@@ -171,7 +173,7 @@ class PurchaseOfflineRepository implements PurchaseRepository {
         collectionName: collectionName,
         localId: id,
         enterpriseId: enterpriseId,
-        moduleType: 'eau_minerale',
+        moduleType: moduleType,
       );
 
       await syncManager.queueDelete(
@@ -195,7 +197,7 @@ class PurchaseOfflineRepository implements PurchaseRepository {
     return driftService.records.watchForEnterprise(
       collectionName: collectionName,
       enterpriseId: enterpriseId,
-      moduleType: 'eau_minerale',
+      moduleType: moduleType,
     ).map((rows) {
       final all = rows.map((r) => _recordToEntity(r.dataJson)).toList();
       if (supplierId != null) {
@@ -229,7 +231,7 @@ class PurchaseOfflineRepository implements PurchaseRepository {
           id: '',
           enterpriseId: enterpriseId,
           userId: syncManager.getUserId() ?? '',
-          module: 'eau_minerale',
+          module: moduleType,
           action: action,
           entityId: entityId,
           entityType: 'purchase',

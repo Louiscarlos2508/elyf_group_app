@@ -103,7 +103,7 @@ class SaleProductSelector extends ConsumerWidget {
                     itemBuilder: (context, index) {
                       final product = list[index];
                       return Consumer(builder: (context, ref, child) {
-                        final stockAsync = ref.watch(productStockQuantityProvider(product.name));
+                        final stockAsync = ref.watch(productStockQuantityProvider(product.id));
                         final stock = stockAsync.value ?? 0;
                         final isOutOfStock = stock <= 0 && !stockAsync.isLoading;
                         
@@ -219,7 +219,7 @@ class SaleProductSelector extends ConsumerWidget {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final productStockAsync = selectedProduct != null 
-        ? ref.watch(productStockQuantityProvider(selectedProduct!.name))
+        ? ref.watch(productStockQuantityProvider(selectedProduct!.id))
         : null;
 
     return Column(

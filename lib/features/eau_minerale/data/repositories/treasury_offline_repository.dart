@@ -203,7 +203,7 @@ class TreasuryOfflineRepository extends OfflineRepository<TreasuryOperation> imp
           id: '',
           enterpriseId: enterpriseId,
           userId: syncManager.getUserId() ?? '',
-          module: 'eau_minerale',
+          module: moduleType,
           action: action,
           entityId: entityId,
           entityType: 'treasury_operation',

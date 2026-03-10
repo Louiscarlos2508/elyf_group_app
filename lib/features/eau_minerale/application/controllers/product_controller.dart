@@ -1,5 +1,5 @@
 import '../../domain/entities/product.dart';
-import '../../domain/pack_constants.dart';
+import '../../domain/product_roles.dart';
 import '../../domain/repositories/product_repository.dart';
 
 /// Controller pour gérer les produits.
@@ -9,103 +9,81 @@ class ProductController {
   final ProductRepository _repository;
   final String enterpriseId;
 
-  Future<Product> ensurePackProduct() async {
+  /// Garantit la présence des produits par défaut (Pack, Bobine, Emballage) avec leurs rôles.
+  Future<void> seedDefaultProducts() async {
     final products = await _repository.fetchProducts();
-    Product? pack;
-    try {
-      pack = products.firstWhere(
-        (p) =>
-            p.id == packProductId ||
-            (p.isFinishedGood &&
-                p.name.toLowerCase().contains(packName.toLowerCase())),
-      );
-    } catch (_) {
-      pack = null;
+
+    // 1. Pack
+    final hasPack = products.any((p) => p.role == ProductRoles.mainFinishedGood);
+    if (!hasPack) {
+      await _repository.createProduct(Product(
+        id: 'pf_pack_${DateTime.now().millisecondsSinceEpoch}',
+        enterpriseId: enterpriseId,
+        name: 'Pack d\'eau minérale',
+        type: ProductType.finishedGood,
+        role: ProductRoles.mainFinishedGood,
+        unitPrice: 200,
+        unit: 'Unité',
+        description: 'Pack standard de bouteilles',
+      ));
     }
 
-    if (pack != null) {
-      if (pack.id != packProductId) {
-        final updatedPack = pack.copyWith(id: packProductId);
-        // We don't necessarily need to save it back to repo with NEW id if we map it in fetch
-        // but it's cleaner to have a consistent record.
-        // However, record replacement safely:
-        return updatedPack;
-      }
-      return pack;
-    }
-
-    final defaultPack = Product(
-      id: packProductId,
-      enterpriseId: enterpriseId,
-      name: packName,
-      type: ProductType.finishedGood,
-      unitPrice: 200,
-      unit: packUnit,
-      description: 'Pack de bouteilles d\'eau minérale',
-    );
-    await _repository.createProduct(defaultPack);
-    return defaultPack;
-  }
-
-  Future<void> ensureDefaultRawMaterials() async {
-    final products = await _repository.fetchProducts();
-    
-    // Ensure Bobine
-    final hasBobine = products.any((p) => p.id == bobineProductId || (p.isRawMaterial && p.name.toLowerCase() == bobineName.toLowerCase()));
+    // 2. Bobine
+    final hasBobine = products.any((p) => p.role == ProductRoles.mainBobine);
     if (!hasBobine) {
-      final bobine = Product(
-        id: bobineProductId,
+      await _repository.createProduct(Product(
+        id: 'mp_bobine_${DateTime.now().millisecondsSinceEpoch}',
         enterpriseId: enterpriseId,
-        name: bobineName,
+        name: 'Bobine',
         type: ProductType.rawMaterial,
+        role: ProductRoles.mainBobine,
         unitPrice: 0,
-        unit: 'unité',
-        description: 'Bobine de film plastique pour sachets',
-      );
-      await _repository.createProduct(bobine);
+        unit: 'Unité',
+        description: 'Bobine de film plastique',
+      ));
     }
 
-    // Ensure Emballage
-    final hasEmballage = products.any((p) => p.id == emballageProductId || (p.isRawMaterial && p.name.toLowerCase() == emballageName.toLowerCase()));
+    // 3. Emballage
+    final hasEmballage = products.any((p) => p.role == ProductRoles.mainPackaging);
     if (!hasEmballage) {
-      final emballage = Product(
-        id: emballageProductId,
+      await _repository.createProduct(Product(
+        id: 'mp_emballage_${DateTime.now().millisecondsSinceEpoch}',
         enterpriseId: enterpriseId,
-        name: emballageName,
+        name: 'Emballage',
         type: ProductType.rawMaterial,
+        role: ProductRoles.mainPackaging,
         unitPrice: 0,
-        unit: 'unité',
+        unit: 'Unité',
+        unitsPerLot: 1000,
         supplyUnit: 'Paquet',
-        unitsPerLot: emballageDefaultUnitsPerLot,
         description: 'Sacs d\'emballage pour les packs',
-      );
-      await _repository.createProduct(emballage);
+      ));
     }
   }
 
-  /// Récupère tous les produits. Garantit la présence du Pack et des matières premières par défaut.
-  /// Le Pack est toujours retourné avec [packProductId] pour aligner Stock / Ventes.
+  /// Récupère tous les produits.
   Future<List<Product>> fetchProducts() async {
-    await ensurePackProduct();
-    await ensureDefaultRawMaterials();
-    final list = await _repository.fetchProducts();
-    final mapped = list.map((p) {
-      if (p.isFinishedGood &&
-          p.name.toLowerCase().contains(packName.toLowerCase()) &&
-          p.id != packProductId) {
-        return p.copyWith(id: packProductId);
-      }
-      return p;
-    }).toList();
-
-    // Dédupliquer par ID pour éviter les doublons de Pack
-    final seen = <String>{};
-    return mapped.where((p) => seen.add(p.id)).toList();
+    return _repository.fetchProducts();
   }
 
   /// Récupère un produit par son ID.
   Future<Product?> getProduct(String id) async {
     return _repository.getProduct(id);
+  }
+
+  /// Récupère un produit par son rôle.
+  Future<Product?> getProductByRole(String role) async {
+    // Essayer via le repository s'il l'implémente, sinon via fetchProducts
+    try {
+      return await _repository.getProductByRole(role);
+    } catch (_) {
+      final all = await fetchProducts();
+      try {
+        return all.firstWhere((p) => p.role == role);
+      } catch (_) {
+        return null;
+      }
+    }
   }
 
   /// Crée un nouveau produit.

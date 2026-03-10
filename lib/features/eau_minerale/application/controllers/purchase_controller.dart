@@ -9,7 +9,6 @@ import '../../domain/entities/stock_movement.dart';
 import '../../domain/entities/expense_record.dart';
 import '../../../../shared/domain/entities/treasury_operation.dart';
 import '../../../../core/logging/app_logger.dart';
-
 import '../controllers/stock_controller.dart';
 
 class PurchaseController {
@@ -42,7 +41,6 @@ class PurchaseController {
       final id = await _purchaseRepository.createPurchase(purchase);
       final entity = purchase.copyWith(id: id);
       
-      // If validated, update stock and financial data immediately
       if (entity.status == PurchaseStatus.validated) {
         await _updateStockForPurchase(entity);
         await _updateFinancialsForPurchase(entity);
@@ -61,7 +59,6 @@ class PurchaseController {
       var purchase = await _purchaseRepository.getPurchase(purchaseId);
       if (purchase != null && purchase.status == PurchaseStatus.draft) {
         if (verifiedItems != null) {
-          // Si les items ont changé (quantités vérifiées), mettre à jour l'entité
           final totalAmount =
               verifiedItems.fold(0, (sum, item) => sum + item.totalPrice);
           purchase = purchase.copyWith(
@@ -88,7 +85,6 @@ class PurchaseController {
     try {
       final id = await _supplierRepository.recordSettlement(settlement);
 
-      // 1. Déduire de la trésorerie
       await _treasuryRepository.createOperation(TreasuryOperation(
         id: '',
         enterpriseId: settlement.enterpriseId,
@@ -104,7 +100,6 @@ class PurchaseController {
         updatedAt: DateTime.now(),
       ));
 
-      // 2. Enregistrer la dépense
       await _financeRepository.createExpense(ExpenseRecord(
         id: '',
         enterpriseId: settlement.enterpriseId,
@@ -118,7 +113,6 @@ class PurchaseController {
         updatedAt: DateTime.now(),
       ));
 
-      // 3. Mettre à jour la balance du fournisseur
       final supplier =
           await _supplierRepository.getSupplier(settlement.supplierId);
       if (supplier != null) {
@@ -129,7 +123,6 @@ class PurchaseController {
         await _supplierRepository.updateSupplier(updatedSupplier);
       }
 
-      // 4. Mettre à jour l'achat spécifique si fourni (pour le suivi du reste à payer)
       if (purchaseId != null) {
         final purchase = await _purchaseRepository.getPurchase(purchaseId);
         if (purchase != null) {
@@ -147,7 +140,6 @@ class PurchaseController {
 
   Future<void> _updateFinancialsForPurchase(Purchase purchase) async {
     try {
-      // 1. Enregistrer la dépense si montant payé > 0
       if (purchase.paidAmount > 0) {
         await _financeRepository.createExpense(ExpenseRecord(
           id: '',
@@ -162,7 +154,6 @@ class PurchaseController {
           updatedAt: DateTime.now(),
         ));
 
-        // 2. Déduire de la trésorerie
         await _treasuryRepository.createOperation(TreasuryOperation(
           id: '',
           enterpriseId: purchase.enterpriseId,
@@ -179,7 +170,6 @@ class PurchaseController {
         ));
       }
 
-      // 3. Mettre à jour la dette fournisseur si achat à crédit
       if (purchase.supplierId != null && purchase.debtAmount > 0) {
         final supplier = await _supplierRepository.getSupplier(purchase.supplierId!);
         if (supplier != null) {
@@ -192,69 +182,24 @@ class PurchaseController {
       }
     } catch (e) {
       AppLogger.error('Failed to update financials for purchase ${purchase.id}', error: e);
-      // We don't rethrow here to avoid failing the stock/validation if only financials fail,
-      // but in a real production system we might want transactionality.
     }
   }
 
   Future<void> _updateStockForPurchase(Purchase purchase) async {
     for (final item in purchase.items) {
       try {
-        final nameLower = item.productName.toLowerCase();
-        
-        // Robust category matching
-        if (nameLower.contains('bobine') || nameLower.contains('film') || nameLower.contains('poly')) {
-          // Utiliser le contrôleur spécialisé pour les bobines
-          await _stockController.recordBobineEntry(
-            productId: item.productId,
-            bobineType: item.productName,
-            quantite: item.quantity,
-            prixUnitaire: item.unitPrice,
-            notes: 'Achat #${purchase.number ?? purchase.id}',
-          );
-        } else if (nameLower.contains('emballage') || 
-                   nameLower.contains('sachet') || 
-                   nameLower.contains('sac') || 
-                   nameLower.contains('bouteille') ||
-                   nameLower.contains('preforme') ||
-                   nameLower.contains('bouchon') ||
-                   nameLower.contains('bidon') ||
-                   nameLower.contains('etiquette') ||
-                   nameLower.contains('film')) {
-          // Utiliser le contrôleur spécialisé pour les emballages
-          final isInLots = item.metadata['isInLots'] as bool? ?? false;
-          final quantiteSaisie = (item.metadata['quantitySaisie'] as num?)?.toDouble() ?? item.quantity.toDouble();
-          final unitsPerLot = item.metadata['unitsPerLot'] as int?;
-
-          await _stockController.recordPackagingEntry(
-            packagingId: item.productId,
-            packagingType: item.productName,
-            quantite: quantiteSaisie,
-            isInLots: isInLots,
-            unitsPerLot: unitsPerLot,
-            prixUnitaire: item.unitPrice,
-            notes: 'Achat #${purchase.number ?? purchase.id}',
-            date: purchase.date,
-          );
-        } else {
-          // Mouvement de stock générique pour les autres produits
-          await _stockRepository.recordMovement(
-            StockMovement(
-              id: '', 
-              enterpriseId: purchase.enterpriseId,
-              productName: item.productName,
-              quantity: item.quantity.toDouble(),
-              unit: item.unit,
-              type: StockMovementType.entry,
-              reason: 'Achat',
-              notes: 'Achat #${purchase.number ?? purchase.id}',
-              date: purchase.date,
-            ),
-          );
-        }
+        await _stockController.recordEntry(
+          productId: item.productId,
+          productName: item.productName,
+          quantite: item.quantity.toDouble(),
+          unit: item.unit,
+          raison: 'Achat (Auto)',
+          notes: 'Achat #${purchase.number ?? purchase.id}',
+        );
       } catch (e) {
         AppLogger.error('Failed to update stock for item ${item.productName}', error: e);
       }
     }
   }
 }
+

@@ -13,6 +13,8 @@ class StockItem {
     this.deletedBy,
   });
 
+  static const int kLowStockThreshold = 100;
+
   final String id;
   final String enterpriseId;
   final String name;

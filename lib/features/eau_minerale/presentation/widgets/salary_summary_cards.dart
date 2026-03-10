@@ -15,7 +15,7 @@ class SalarySummaryCards extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(salaryStateProvider);
     return state.when(
-      data: (data) {
+      data: (SalaryState data) {
         return LayoutBuilder(
           builder: (context, constraints) {
             final isWide = constraints.maxWidth > 700;

@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
-import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/bobine_usage.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/machine_material_usage.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/machine.dart';
-import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/production_session.dart';
-import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/production_session_status.dart';
 import 'machine_breakdown_dialog.dart';
 import 'machine_resume_dialog.dart';
 import 'package:elyf_groupe_app/shared.dart';
@@ -92,22 +90,22 @@ class MachineBreakdownReportCard extends ConsumerWidget {
                   data: (sessions) {
                     return Column(
                       children: machines.map((machine) {
-                        // Trouver la bobine non finie pour cette machine (optionnel)
-                        BobineUsage? bobineNonFinie;
+                        // Trouver la matière non finie pour cette machine (optionnel)
+                        MachineMaterialUsage? materialNonFinie;
                         ProductionSession? sessionActive;
-
+ 
                         for (final session in sessions) {
                           if (session.status ==
                                   ProductionSessionStatus.inProgress ||
                               session.status ==
                                   ProductionSessionStatus.started) {
-                            final bobinesFiltrees = session.bobinesUtilisees
+                            final materialsFiltres = session.machineMaterials
                                 .where(
                                   (b) =>
                                       b.machineId == machine.id && !b.estFinie,
                                 );
-                            if (bobinesFiltrees.isNotEmpty) {
-                              bobineNonFinie = bobinesFiltrees.first;
+                            if (materialsFiltres.isNotEmpty) {
+                              materialNonFinie = materialsFiltres.first;
                               sessionActive = session;
                               break;
                             }
@@ -116,14 +114,14 @@ class MachineBreakdownReportCard extends ConsumerWidget {
 
                         return _BreakdownMachineItem(
                           machine: machine,
-                          bobine: bobineNonFinie,
+                          material: materialNonFinie,
                           onTap: () {
                             if (machine.isActive) {
                               _showBreakdownDialog(
                                 context,
                                 ref,
                                 machine,
-                                bobineNonFinie,
+                                materialNonFinie,
                                 sessionActive,
                               );
                             } else {
@@ -171,7 +169,7 @@ class MachineBreakdownReportCard extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     Machine machine,
-    BobineUsage? bobine,
+    MachineMaterialUsage? material,
     ProductionSession? session,
   ) {
     showDialog(
@@ -179,7 +177,7 @@ class MachineBreakdownReportCard extends ConsumerWidget {
       builder: (dialogContext) => MachineBreakdownDialog(
         machine: machine,
         session: session,
-        bobine: bobine,
+        material: material,
         onPanneSignaled: (event) {
           ref.invalidate(productionSessionsStateProvider);
           if (session != null) {
@@ -202,12 +200,12 @@ class MachineBreakdownReportCard extends ConsumerWidget {
 class _BreakdownMachineItem extends StatelessWidget {
   const _BreakdownMachineItem({
     required this.machine,
-    this.bobine,
+    this.material,
     required this.onTap,
   });
 
   final Machine machine;
-  final BobineUsage? bobine;
+  final MachineMaterialUsage? material;
   final VoidCallback onTap;
 
   @override
@@ -225,7 +223,7 @@ class _BreakdownMachineItem extends StatelessWidget {
       statusLabel = 'EN PANNE';
       statusColor = colors.error;
       statusIcon = Icons.report_gmailerrorred_rounded;
-    } else if (bobine != null) {
+    } else if (material != null) {
       statusLabel = 'En Production';
       statusColor = colors.secondary;
       statusIcon = Icons.settings_suggest_outlined;
@@ -264,10 +262,10 @@ class _BreakdownMachineItem extends StatelessWidget {
         subtitle: Text(
           isBreakdown 
               ? 'Nécessite une remise en service' 
-              : (bobine != null ? 'Bobine ${bobine!.bobineType} en cours' : 'Machine opérationnelle'),
+              : (material != null ? 'Matière ${material!.materialType} en cours' : 'Machine opérationnelle'),
           style: theme.textTheme.bodySmall?.copyWith(
             color: statusColor.withValues(alpha: 0.8),
-            fontWeight: (isBreakdown || bobine != null) ? FontWeight.bold : FontWeight.normal,
+            fontWeight: (isBreakdown || material != null) ? FontWeight.bold : FontWeight.normal,
           ),
         ),
         trailing: Container(

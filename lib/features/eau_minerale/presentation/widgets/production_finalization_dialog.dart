@@ -5,7 +5,7 @@ import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/core/logging/app_logger.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../../../core/tenant/tenant_provider.dart';
-import '../../domain/entities/packaging_stock.dart';
+import '../../domain/product_roles.dart';
 import '../../domain/entities/production_session.dart';
 import '../../domain/entities/production_session_status.dart';
 import 'time_picker_field.dart';
@@ -77,8 +77,8 @@ class _ProductionFinalizationDialogState
     super.dispose();
   }
 
-  Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
+  Future<bool> _submit() async {
+    if (!_formKey.currentState!.validate()) return false;
 
     setState(() => _isLoading = true);
 
@@ -94,7 +94,7 @@ class _ProductionFinalizationDialogState
           'L\'index compteur final est invalide',
         );
         setState(() => _isLoading = false);
-        return;
+        return false;
       }
       final indexCompteurFinalKwh = doubleValue.round();
 
@@ -108,14 +108,14 @@ class _ProductionFinalizationDialogState
           'Veuillez renseigner le nombre de packs produits pour au moins un jour de production.',
         );
         setState(() => _isLoading = false);
-        return;
+        return false;
       }
 
       // Calculer la consommation électrique si les index sont disponibles
       double consommationElectrique = widget.session.consommationCourant;
       if (widget.session.indexCompteurInitialKwh != null) {
         final meterType = await ref.read(electricityMeterTypeProvider.future);
-        if (!mounted) return;
+        if (!mounted) return false;
         consommationElectrique = meterType.calculateConsumption(
           widget.session.indexCompteurInitialKwh!.toDouble(),
           indexCompteurFinalKwh.toDouble(),
@@ -123,13 +123,13 @@ class _ProductionFinalizationDialogState
       }
 
       if (totalEmb <= 0) {
-        if (!mounted) return;
+        if (!mounted) return false;
         NotificationService.showError(
           context,
           'Veuillez renseigner le nombre d\'emballages utilisés pour au moins un jour de production.',
         );
         setState(() => _isLoading = false);
-        return;
+        return false;
       }
 
       // Mettre à jour la session avec les totaux journaliers
@@ -174,10 +174,9 @@ class _ProductionFinalizationDialogState
         // Ajouter les produits finis produits au stock (sauf si déjà fait via journalier)
         if (!aDejaJournalier) {
           try {
-            await stockController.recordCatalogProduction(
-              items: savedSession.producedItems,
+            await stockController.recordProductionOutput(
+              producedItems: savedSession.producedItems,
               productionId: savedSession.id,
-              notes: 'Production finalisée - Enregistrement global du stock de produits finis',
             );
           } catch (e) {
             AppLogger.error(
@@ -199,79 +198,21 @@ class _ProductionFinalizationDialogState
             savedSession.emballagesUtilises != null &&
             savedSession.emballagesUtilises! > 0) {
           try {
-            // Vérifier la disponibilité du stock d'emballages
-            final packagingController = ref.read(
-              packagingStockControllerProvider,
+            // Dans le nouveau modèle, on cherche le produit ayant le rôle d'emballage principal
+            final products = await ref.read(productsProvider.future);
+            final mainPackaging = products.firstWhere(
+              (p) => p.role == ProductRoles.mainPackaging,
+              orElse: () => products.firstWhere((p) => p.name.toLowerCase().contains('emballage')),
             );
-            final stocksEmballages = await packagingController.fetchAll();
 
-            // Chercher le stock d'emballages (type "Emballage")
-            PackagingStock? stockEmballage;
-            try {
-              stockEmballage = await packagingController.fetchByType(
-                'Pack 12 packs',
-              );
-            } catch (_) {
-              // Si pas trouvé par type, utiliser le premier disponible ou créer
-            }
-
-            if (stockEmballage == null && stocksEmballages.isNotEmpty) {
-              stockEmballage = stocksEmballages.first;
-            }
-
-            if (stockEmballage != null) {
-              // Vérifier que le stock est suffisant
-              if (!stockEmballage.peutSatisfaire(
-                savedSession.emballagesUtilises!,
-              )) {
-                if (mounted) {
-                  NotificationService.showWarning(
-                    context,
-                    'Stock d\'emballages insuffisant. Disponible: ${stockEmballage.quantity}, '
-                    'Demandé: ${savedSession.emballagesUtilises}',
-                  );
-                  setState(() => _isLoading = false);
-                  return;
-                }
-              }
-
-              // Enregistrer l'utilisation
-              await stockController.recordPackagingUsage(
-                packagingId: stockEmballage.id,
-                packagingType: stockEmballage.type,
-                quantite: savedSession.emballagesUtilises!.toDouble(),
-                productionId: savedSession.id,
-                notes: 'Emballages utilisés lors de la production',
-              );
-            } else {
-              // Aucun stock d'emballages trouvé, avertir mais continuer
-              if (mounted) {
-                AppLogger.info(
-                  'Aucun stock d\'emballages trouvé. Création d\'un nouveau stock.',
-                  name: 'eau_minerale.production',
-                );
-                final enterpriseId = ref.read(activeEnterpriseProvider).value?.id ?? 'default';
-                // Créer un stock par défaut
-                final nouveauStock = await packagingController.save(
-                  PackagingStock(
-                    id: 'packaging-default',
-                    enterpriseId: enterpriseId,
-                    type: 'Emballage',
-                    quantity: 0, // Sera mis à jour lors de la réception
-                    unit: 'unité',
-                  ),
-                );
-                await stockController.recordPackagingUsage(
-                  packagingId: nouveauStock.id,
-                  packagingType: nouveauStock.type,
-                  quantite: savedSession.emballagesUtilises!.toDouble(),
-                  productionId: savedSession.id,
-                  notes: 'Emballages utilisés lors de la production',
-                );
-              }
-            }
+            await stockController.recordExit(
+              productId: mainPackaging.id,
+              productName: mainPackaging.name,
+              quantite: savedSession.emballagesUtilises!.toDouble(),
+              productionId: savedSession.id,
+              raison: 'Consommation Production',
+            );
           } catch (e) {
-            // Si le stock n'existe pas, on continue quand même (l'utilisateur pourra le créer plus tard)
             AppLogger.error(
               'Erreur lors de la mise à jour du stock d\'emballages: $e',
               name: 'eau_minerale.production',
@@ -295,16 +236,17 @@ class _ProductionFinalizationDialogState
 
       if (mounted) {
         widget.onFinalized(savedSession);
-        Navigator.of(context).pop();
         NotificationService.showSuccess(
           context,
           'Production finalisée avec succès',
         );
       }
+      return true;
     } catch (e) {
       if (mounted) {
         NotificationService.showError(context, 'Erreur: $e');
       }
+      return false;
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -459,7 +401,7 @@ class _ProductionFinalizationDialogState
     final meterTypeAsync = ref.watch(electricityMeterTypeProvider);
 
     return meterTypeAsync.when(
-      data: (meterType) {
+      data: (ElectricityMeterType meterType) {
         return TextFormField(
           controller: _indexCompteurFinalKwhController,
           decoration: _buildInputDecoration(

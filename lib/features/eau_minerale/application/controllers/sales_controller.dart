@@ -1,7 +1,6 @@
-import '../../domain/adapters/pack_stock_adapter.dart';
+import 'stock_controller.dart';
 import '../../domain/entities/sale.dart';
 import '../../domain/entities/closing.dart';
-import '../../domain/pack_constants.dart';
 import '../../domain/repositories/product_repository.dart';
 import '../../domain/repositories/closing_repository.dart';
 import '../../domain/repositories/sale_repository.dart';
@@ -15,7 +14,7 @@ import '../../../../core/logging/app_logger.dart';
 class SalesController {
   SalesController(
     this._saleRepository,
-    this._packStockAdapter,
+    this._stockController,
     this._productRepository,
     this._auditTrailService,
     this._treasuryRepository,
@@ -23,7 +22,7 @@ class SalesController {
   );
 
   final SaleRepository _saleRepository;
-  final PackStockAdapter _packStockAdapter;
+  final StockController _stockController;
   final ProductRepository _productRepository;
   final AuditTrailService _auditTrailService;
   final TreasuryRepository _treasuryRepository;
@@ -37,64 +36,41 @@ class SalesController {
 
   Stream<SalesState> watchRecentSales() {
     return _saleRepository.watchSales().map((sales) {
-      // _saleRepository.watchSales() already sorts, but we can ensure it?
-      // It returns parsed sales.
-      // Filter logic is inside repo if args provided, here no args = All.
       return SalesState(sales: sales);
     });
   }
 
-  /// Crée une vente et décrémente le stock Pack si produit fini.
-  ///
-  /// Utilise [packProductId] pour le Pack (même que Stock, Dashboard, Paramètres).
-  /// Décrémente toujours le StockItem Pack lorsqu'une vente Pack est créée.
+  /// Crée une vente et décrémente le stock si c'est un produit fini.
   Future<String> createSale(Sale sale, String userId) async {
-    // 1. Vérifier si une session de trésorerie est ouverte
-    final currentSession = await _closingRepository.getCurrentSession();
-    if (currentSession == null || currentSession.status != ClosingStatus.open) {
-      throw const ValidationException(
-        'Impossible de réaliser une vente : la session de trésorerie est fermée. '
-        'Veuillez ouvrir une session dans la section Trésorerie.',
-        'TREASURY_SESSION_CLOSED',
-      );
-    }
 
     try {
       final id = await _saleRepository.createSale(sale);
-      final isPack = sale.productId == packProductId;
       
-      // Check if it's a finished good by fetching product details if not a Pack
-      bool isOtherFinishedGood = false;
-      if (!isPack) {
-        try {
-          final product = await _productRepository.getProduct(sale.productId);
-          isOtherFinishedGood = product?.isFinishedGood == true;
-        } catch (e) {
-          AppLogger.error('Error checking finished good status: $e', name: 'SalesController');
-        }
+      // Déterminer dynamiquement si on décrémente le stock
+      bool isFinishedGood = false;
+      try {
+        final product = await _productRepository.getProduct(sale.productId);
+        isFinishedGood = product?.isFinishedGood == true;
+      } catch (e) {
+        AppLogger.error('Error checking product type: $e', name: 'SalesController');
       }
 
-      if ((isPack || isOtherFinishedGood) && sale.quantity > 0) {
+      if (isFinishedGood && sale.quantity > 0) {
         try {
-          await _packStockAdapter.recordPackExit(
-            sale.quantity,
+          await _stockController.recordExit(
             productId: sale.productId,
-            reason: 'Vente',
+            productName: sale.productName ?? 'Produit',
+            quantite: sale.quantity.toDouble(),
+            raison: 'Vente',
             notes: 'Vente ${sale.productName}',
           );
         } catch (e, st) {
-          AppLogger.error(
-            'Failed to record pack exit for sale $id',
-            error: e,
-            stackTrace: st,
-          );
+          AppLogger.error('Failed to record stock exit for sale $id', error: e, stackTrace: st);
         }
       }
 
-      // Record Treasury Operations for payments
       await _recordTreasuryOperationsForSale(sale.copyWith(id: id), userId);
 
-      // 4. Log to Audit Trail
       try {
         await _auditTrailService.logSale(
           enterpriseId: sale.enterpriseId,
@@ -118,69 +94,41 @@ class SalesController {
     }
   }
 
-  /// Annule une vente : met à jour le statut, restaure le stock et inverse la trésorerie.
+  /// Annule une vente et restaure le stock.
   Future<void> voidSale(String saleId, String userId) async {
-    // 1. Vérifier si une session de trésorerie est ouverte
-    final currentSession = await _closingRepository.getCurrentSession();
-    if (currentSession == null || currentSession.status != ClosingStatus.open) {
-      throw const ValidationException(
-        'Impossible d\'annuler la vente : la session de trésorerie est fermée. '
-        'Veuillez ouvrir une session dans la section Trésorerie.',
-        'TREASURY_SESSION_CLOSED',
-      );
-    }
 
     try {
       final sale = await _saleRepository.getSale(saleId);
-      if (sale == null) {
-        throw NotFoundException('Vente non trouvée : $saleId');
-      }
+      if (sale == null) throw NotFoundException('Vente non trouvée : $saleId');
+      if (sale.status == SaleStatus.voided) throw const ValidationException('Déjà annulée.');
 
-      if (sale.status == SaleStatus.voided) {
-        throw const ValidationException('La vente est déjà annulée.', 'SALE_ALREADY_VOIDED');
-      }
-
-      // 2. Mettre à jour le statut de la vente
-      final voidedSale = sale.copyWith(
-        status: SaleStatus.voided,
-        deletedBy: userId,
-      );
+      final voidedSale = sale.copyWith(status: SaleStatus.voided, deletedBy: userId);
       await _saleRepository.updateSale(voidedSale);
 
-      // 3. Restaurer le stock
-      final isPack = sale.productId == packProductId;
-      
-      bool isOtherFinishedGood = false;
-      if (!isPack) {
-        try {
-          final product = await _productRepository.getProduct(sale.productId);
-          isOtherFinishedGood = product?.isFinishedGood == true;
-        } catch (e) {
-          AppLogger.error('Error checking finished good status: $e', name: 'SalesController');
-        }
+      bool isFinishedGood = false;
+      try {
+        final product = await _productRepository.getProduct(sale.productId);
+        isFinishedGood = product?.isFinishedGood == true;
+      } catch (e) {
+        AppLogger.error('Error checking product type: $e', name: 'SalesController');
       }
 
-      if ((isPack || isOtherFinishedGood) && sale.quantity > 0) {
+      if (isFinishedGood && sale.quantity > 0) {
         try {
-          await _packStockAdapter.recordPackEntry(
-            sale.quantity,
+          await _stockController.recordEntry(
             productId: sale.productId,
-            reason: 'Annulation Vente',
+            productName: sale.productName ?? 'Produit',
+            quantite: sale.quantity.toDouble(),
+            raison: 'Annulation Vente',
             notes: 'Annulation vente ${sale.id}',
           );
         } catch (e, st) {
-          AppLogger.error(
-            'Failed to record pack entry for voided sale $saleId',
-            error: e,
-            stackTrace: st,
-          );
+          AppLogger.error('Failed to restore stock for voided sale $saleId', error: e, stackTrace: st);
         }
       }
 
-      // 4. Inverser les opérations de trésorerie
       await _recordReverseTreasuryOperationsForSale(sale, userId);
 
-      // 5. Log to Audit Trail
       try {
         await _auditTrailService.logAction(
           enterpriseId: sale.enterpriseId,
@@ -190,16 +138,13 @@ class SalesController {
           entityId: saleId,
           entityType: 'sale',
           metadata: {
-            'notes': 'Annulation vente de ${sale.totalPrice} FCFA pour ${sale.productName}',
             'saleId': saleId,
             'totalAmount': sale.totalPrice,
-            'productName': sale.productName,
           },
         );
       } catch (e) {
-        AppLogger.error('Failed to log eau_minerale void sale audit', error: e);
+        AppLogger.error('Failed to log void sale audit', error: e);
       }
-
     } catch (e, st) {
       AppLogger.error('Error in voidSale: $e', name: 'SalesController', error: e, stackTrace: st);
       rethrow;
@@ -213,7 +158,7 @@ class SalesController {
           id: '',
           enterpriseId: sale.enterpriseId,
           userId: userId,
-          amount: -sale.cashAmount, // Montant négatif pour inverser
+          amount: -sale.cashAmount,
           type: TreasuryOperationType.supply,
           toAccount: PaymentMethod.cash,
           date: DateTime.now(),
@@ -230,7 +175,7 @@ class SalesController {
           id: '',
           enterpriseId: sale.enterpriseId,
           userId: userId,
-          amount: -sale.orangeMoneyAmount, // Montant négatif
+          amount: -sale.orangeMoneyAmount,
           type: TreasuryOperationType.supply,
           toAccount: PaymentMethod.mobileMoney,
           date: DateTime.now(),
@@ -300,12 +245,13 @@ class SalesState {
   }
 
   int get todayRevenue => sales
-      .where((sale) => _isToday(sale.date))
+      .where((sale) => _isToday(sale.date) && sale.status != SaleStatus.voided)
       .fold(0, (value, sale) => value + sale.totalPrice);
 
   int get todaySalesCount => sales.where((sale) => _isToday(sale.date)).length;
 
   int get todayCollections => sales
-      .where((sale) => _isToday(sale.date))
+      .where((sale) => _isToday(sale.date) && sale.status != SaleStatus.voided)
       .fold(0, (value, sale) => value + sale.amountPaid);
 }
+

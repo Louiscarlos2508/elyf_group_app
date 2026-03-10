@@ -22,7 +22,7 @@ class IndexCompteurFinalField extends ConsumerWidget {
     final meterTypeAsync = ref.watch(electricityMeterTypeProvider);
 
     return meterTypeAsync.when(
-      data: (meterType) {
+      data: (ElectricityMeterType meterType) {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [

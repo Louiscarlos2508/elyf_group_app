@@ -1,10 +1,11 @@
-import 'bobine_usage.dart';
+import 'machine_material_usage.dart';
 import 'production_day.dart';
 import 'production_event.dart';
 import 'production_session_status.dart';
 import 'material_consumption.dart';
 
-/// Session de production avec suivi détaillé des bobines, machines et coûts.
+/// Session de production avec suivi détaillé des matières machines et coûts.
+/// (Anciennement avec suivi spécifique bobines).
 class ProductionSession {
   const ProductionSession({
     required this.id,
@@ -17,11 +18,11 @@ class ProductionSession {
     this.indexCompteurFinalKwh,
     required this.consommationCourant,
     required this.machinesUtilisees,
-    required this.bobinesUtilisees,
+    required this.machineMaterials,
     required this.quantiteProduite,
     required this.quantiteProduiteUnite,
     this.emballagesUtilises,
-    this.coutBobines,
+    this.machineMaterialCost,
     this.coutEmballages,
     this.coutElectricite,
     this.notes,
@@ -40,23 +41,20 @@ class ProductionSession {
   final String id;
   final String enterpriseId;
   final DateTime date;
-  final int period; // Période de production (pour compatibilité)
+  final int period;
   final DateTime heureDebut;
-  final DateTime? heureFin; // null jusqu'à la finalisation de la production
-  final int?
-  indexCompteurInitialKwh; // Index compteur électrique initial (kWh) au démarrage
-  final int?
-  indexCompteurFinalKwh; // Index compteur électrique final (kWh) à la fin
-  final double
-  consommationCourant; // kWh (calculé si indexCompteurInitialKwh et indexCompteurFinalKwh sont définis)
-  final List<String> machinesUtilisees; // IDs des machines
-  final List<BobineUsage> bobinesUtilisees;
-  final int quantiteProduite; // Quantité produite
-  final String quantiteProduiteUnite; // Unité (ex: "pack", "sachet")
-  final int? emballagesUtilises; // Nombre d'emballages utilisés (packs)
-  final int? coutBobines; // Coût total des bobines utilisées (CFA)
-  final int? coutEmballages; // Coût total des emballages utilisés (CFA)
-  final int? coutElectricite; // Coût de l'électricité (CFA)
+  final DateTime? heureFin;
+  final int? indexCompteurInitialKwh;
+  final int? indexCompteurFinalKwh;
+  final double consommationCourant;
+  final List<String> machinesUtilisees;
+  final List<MachineMaterialUsage> machineMaterials;
+  final int quantiteProduite;
+  final String quantiteProduiteUnite;
+  final int? emballagesUtilises;
+  final int? machineMaterialCost;
+  final int? coutEmballages;
+  final int? coutElectricite;
   final String? notes;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -65,15 +63,16 @@ class ProductionSession {
   final DateTime? deletedAt;
   final String? deletedBy;
   final ProductionSessionStatus status;
-  final List<ProductionEvent> events; // Événements (pannes, coupures, arrêts)
-  final List<ProductionDay>
-  productionDays; // Jours de production avec personnel
+  final List<ProductionEvent> events;
+  final List<ProductionDay> productionDays;
   final String? cancelReason;
 
-  /// Calcule la durée de production en heures
+  /// Alias pour compatibilité descendante (transition)
+  List<MachineMaterialUsage> get bobinesUtilisees => machineMaterials;
+  int? get coutBobines => machineMaterialCost;
+
   double get dureeHeures {
     if (heureFin == null) {
-      // Si pas encore finalisée, calculer depuis le début jusqu'à maintenant
       final difference = DateTime.now().difference(heureDebut);
       return difference.inMinutes / 60.0;
     }
@@ -81,30 +80,27 @@ class ProductionSession {
     return difference.inMinutes / 60.0;
   }
 
-  /// Calcule le coût total de la session (bobines + emballages + électricité + personnel)
   int get coutTotal {
-    final coutBob = coutBobines ?? 0;
+    final coutMat = machineMaterialCost ?? 0;
     final coutEmb = coutEmballages ?? 0;
     final coutElec = coutElectricite ?? 0;
     final coutPers = coutTotalPersonnel;
-    return coutBob + coutEmb + coutElec + coutPers;
+    return coutMat + coutEmb + coutElec + coutPers;
   }
 
-  /// Vérifie si la session est complète (toutes les données nécessaires)
   bool get estComplete {
-    return bobinesUtilisees.isNotEmpty &&
+    return machineMaterials.isNotEmpty &&
         machinesUtilisees.isNotEmpty &&
         (quantiteProduite > 0 || totalPacksProduitsJournalier > 0);
   }
 
-  /// Calcule le statut de progression basé sur les données disponibles
   ProductionSessionStatus get calculatedStatus {
     if (quantiteProduite > 0 &&
         heureFin != null &&
         heureFin!.isAfter(heureDebut)) {
       return ProductionSessionStatus.completed;
     }
-    if (machinesUtilisees.isNotEmpty || bobinesUtilisees.isNotEmpty) {
+    if (machinesUtilisees.isNotEmpty || machineMaterials.isNotEmpty) {
       return ProductionSessionStatus.inProgress;
     }
     if (heureDebut.isBefore(DateTime.now())) {
@@ -113,46 +109,29 @@ class ProductionSession {
     return ProductionSessionStatus.draft;
   }
 
-  /// Retourne le statut effectif (toujours utiliser le statut enregistré, sauf s'il est draft)
-  ///
-  /// Le statut enregistré doit toujours être utilisé pour éviter les conflits.
-  /// Si le statut est draft, on peut calculer le statut à partir des données.
   ProductionSessionStatus get effectiveStatus {
-    // Si annulée, on reste annulée
     if (status == ProductionSessionStatus.cancelled) {
       return ProductionSessionStatus.cancelled;
     }
-    // Utiliser le statut enregistré s'il existe et n'est pas draft
-    // Cela garantit que le statut explicitement défini (notamment "completed") est toujours respecté
     if (status != ProductionSessionStatus.draft) {
       return status;
     }
-    // Si le statut est draft, calculer le statut à partir des données disponibles
     return calculatedStatus;
   }
 
-  /// Vérifie si toutes les bobines sont complètement finies.
-  /// Une production ne peut se terminer que si toutes les bobines sont finies.
-  bool get toutesBobinesFinies {
-    if (bobinesUtilisees.isEmpty) return false;
-    return bobinesUtilisees.every((bobine) => bobine.estFinie);
+  bool get toutesMatieresFinies {
+    if (machineMaterials.isEmpty) return false;
+    return machineMaterials.every((m) => m.estFinie);
   }
 
-  /// Vérifie si la production peut être finalisée.
-  /// Conditions : toutes les boubines doivent être finies.
   bool get peutEtreFinalisee {
-    return toutesBobinesFinies &&
-        bobinesUtilisees.isNotEmpty &&
-        machinesUtilisees.length == bobinesUtilisees.length;
+    return toutesMatieresFinies &&
+        machineMaterials.isNotEmpty &&
+        machinesUtilisees.length == machineMaterials.length;
   }
 
-  /// Nombre total de packs produits au cours de la session.
-  /// Priorise la somme des productions journalières détaillées si présentes.
   int get totalPacksProduitsJournalier {
     if (productionDays.isEmpty) return 0;
-    
-    // Si on a des produits finis détaillés dans les jours, on les somme par produit 
-    // ou on retourne simplement le total brut des quantités produites.
     final hasDetailedProduction = productionDays.any((d) => d.producedItems.isNotEmpty);
     if (hasDetailedProduction) {
       return productionDays.fold<int>(
@@ -160,14 +139,12 @@ class ProductionSession {
         (sum, day) => sum + day.producedItems.fold<int>(0, (s, item) => s + item.quantity.toInt()),
       );
     }
-
     return productionDays.fold<int>(
       0,
       (sum, day) => sum + day.packsProduits,
     );
   }
 
-  /// Liste de tous les produits finis produits pendant la session (agrégée).
   List<MaterialConsumption> get producedItems {
     final Map<String, MaterialConsumption> totals = {};
     for (final day in productionDays) {
@@ -185,7 +162,6 @@ class ProductionSession {
     return totals.values.toList();
   }
 
-  /// Liste de toutes les matières consommées pendant la session (agrégée).
   List<MaterialConsumption> get consumptions {
     final Map<String, MaterialConsumption> totals = {};
     for (final day in productionDays) {
@@ -203,21 +179,16 @@ class ProductionSession {
     return totals.values.toList();
   }
 
-  /// Nombre total d'emballages utilisés au cours de la session.
-  /// Priorise le nouveau champ détaillé `consumptions`.
   int get totalEmballagesUtilisesJournalier {
-    // Si on a les nouvelles consommations détaillées, on les préfère
     if (consumptions.isNotEmpty) {
       return consumptions.fold<int>(0, (sum, c) => sum + c.quantity.toInt());
     }
-    // Sinon on retombe sur l'ancien champ
     return productionDays.fold<int>(
       0,
       (sum, day) => sum + day.emballagesUtilises,
     );
   }
 
-  /// Calcule le coût total du personnel pour tous les jours de production.
   int get coutTotalPersonnel {
     return productionDays.fold<int>(
       0,
@@ -225,12 +196,10 @@ class ProductionSession {
     );
   }
 
-  /// Vérifie s'il y a des événements en cours (non terminés).
   bool get aEvenementsEnCours {
     return events.any((event) => !event.estTermine);
   }
 
-  /// Récupère les événements d'un type donné.
   List<ProductionEvent> evenementsParType(ProductionEventType type) {
     return events.where((event) => event.type == type).toList();
   }
@@ -248,11 +217,11 @@ class ProductionSession {
     int? indexCompteurFinalKwh,
     double? consommationCourant,
     List<String>? machinesUtilisees,
-    List<BobineUsage>? bobinesUtilisees,
+    List<MachineMaterialUsage>? machineMaterials,
     int? quantiteProduite,
     String? quantiteProduiteUnite,
     int? emballagesUtilises,
-    int? coutBobines,
+    int? machineMaterialCost,
     int? coutEmballages,
     int? coutElectricite,
     String? notes,
@@ -280,12 +249,12 @@ class ProductionSession {
           indexCompteurFinalKwh ?? this.indexCompteurFinalKwh,
       consommationCourant: consommationCourant ?? this.consommationCourant,
       machinesUtilisees: machinesUtilisees ?? this.machinesUtilisees,
-      bobinesUtilisees: bobinesUtilisees ?? this.bobinesUtilisees,
+      machineMaterials: machineMaterials ?? this.machineMaterials,
       quantiteProduite: quantiteProduite ?? this.quantiteProduite,
       quantiteProduiteUnite:
           quantiteProduiteUnite ?? this.quantiteProduiteUnite,
       emballagesUtilises: emballagesUtilises ?? this.emballagesUtilises,
-      coutBobines: coutBobines ?? this.coutBobines,
+      machineMaterialCost: machineMaterialCost ?? this.machineMaterialCost,
       coutEmballages: coutEmballages ?? this.coutEmballages,
       coutElectricite: coutElectricite ?? this.coutElectricite,
       notes: notes ?? this.notes,
@@ -302,21 +271,13 @@ class ProductionSession {
     );
   }
 
-  /// Merges this session with another one (usually from server/sync).
-  ///
-  /// Priority rules:
-  /// 1. Status: completed > inProgress > started > draft
-  /// 2. Lists (days, bobines, events): merged by key/identity
-  /// 3. Fields: newer (updatedAt) wins
   ProductionSession mergeWith(ProductionSession other) {
-    // If other is null or different ID, return this
     if (other.id != id) return this;
 
     final thisUpdated = updatedAt ?? createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
     final otherUpdated =
         other.updatedAt ?? other.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
 
-    // 1. Status priority
     final statusOrder = {
       ProductionSessionStatus.cancelled: -1,
       ProductionSessionStatus.draft: 0,
@@ -332,8 +293,6 @@ class ProductionSession {
     final mergedStatus =
         thisStatusScore >= otherStatusScore ? status : other.status;
 
-    // 2. Merge Lists
-    // Production Days (by date)
     final Map<String, ProductionDay> mergedDays = {};
     for (final day in productionDays) {
       mergedDays[day.date.toIso8601String().split('T').first] = day;
@@ -341,7 +300,6 @@ class ProductionSession {
     for (final day in other.productionDays) {
       final key = day.date.toIso8601String().split('T').first;
       if (mergedDays.containsKey(key)) {
-        // Simple merge for day: favor newer one for now
         final existing = mergedDays[key]!;
         if (day.updatedAt != null &&
             existing.updatedAt != null &&
@@ -353,29 +311,24 @@ class ProductionSession {
       }
     }
 
-    // Bobines (by machineId)
-    final Map<String, BobineUsage> mergedBobines = {};
-    for (final b in bobinesUtilisees) {
-      mergedBobines[b.machineId] = b;
+    final Map<String, MachineMaterialUsage> mergedMaterials = {};
+    for (final m in machineMaterials) {
+      mergedMaterials[m.machineId] = m;
     }
-    for (final b in other.bobinesUtilisees) {
-      if (mergedBobines.containsKey(b.machineId)) {
-        final existing = mergedBobines[b.machineId]!;
-        // If server bobine is finished and local isn't, prefer finished
-        if (b.estFinie && !existing.estFinie) {
-          mergedBobines[b.machineId] = b;
-        } else if (!b.estFinie && existing.estFinie) {
-          // Keep existing finished one
-        } else if (b.dateInstallation.isAfter(existing.dateInstallation)) {
-          // Sinon prendre la plus récente par date d'installation si même statut
-          mergedBobines[b.machineId] = b;
+    for (final m in other.machineMaterials) {
+      if (mergedMaterials.containsKey(m.machineId)) {
+        final existing = mergedMaterials[m.machineId]!;
+        if (m.estFinie && !existing.estFinie) {
+          mergedMaterials[m.machineId] = m;
+        } else if (!m.estFinie && existing.estFinie) {
+        } else if (m.dateInstallation.isAfter(existing.dateInstallation)) {
+          mergedMaterials[m.machineId] = m;
         }
       } else {
-        mergedBobines[b.machineId] = b;
+        mergedMaterials[m.machineId] = m;
       }
     }
 
-    // Events (by ID)
     final Map<String, ProductionEvent> mergedEvents = {};
     for (final e in events) {
       mergedEvents[e.id] = e;
@@ -384,15 +337,13 @@ class ProductionSession {
       mergedEvents[e.id] = e;
     }
 
-    // 3. Field Merging (Newer wins)
     final useOther = otherUpdated.isAfter(thisUpdated);
 
     return copyWith(
       status: mergedStatus,
       productionDays: mergedDays.values.toList(),
-      bobinesUtilisees: mergedBobines.values.toList(),
+      machineMaterials: mergedMaterials.values.toList(),
       events: mergedEvents.values.toList(),
-      // Simple fields
       heureFin: (status == ProductionSessionStatus.completed)
           ? heureFin ?? other.heureFin
           : (other.status == ProductionSessionStatus.completed ? other.heureFin : null),
@@ -421,13 +372,13 @@ class ProductionSession {
       indexCompteurFinalKwh: (map['indexCompteurFinalKwh'] as num?)?.toInt(),
       consommationCourant: (map['consommationCourant'] as num?)?.toDouble() ?? 0,
       machinesUtilisees: List<String>.from(map['machinesUtilisees'] as List? ?? []),
-      bobinesUtilisees: (map['bobinesUtilisees'] as List? ?? [])
-          .map((e) => BobineUsage.fromMap(e as Map<String, dynamic>))
+      machineMaterials: (map['machineMaterials'] as List? ?? (map['bobinesUtilisees'] as List? ?? []))
+          .map((e) => MachineMaterialUsage.fromMap(e as Map<String, dynamic>))
           .toList(),
       quantiteProduite: (map['quantiteProduite'] as num?)?.toInt() ?? 0,
       quantiteProduiteUnite: map['quantiteProduiteUnite'] as String? ?? '',
       emballagesUtilises: (map['emballagesUtilises'] as num?)?.toInt(),
-      coutBobines: (map['coutBobines'] as num?)?.toInt(),
+      machineMaterialCost: (map['machineMaterialCost'] as num? ?? (map['coutBobines'] as num?))?.toInt(),
       coutEmballages: (map['coutEmballages'] as num?)?.toInt(),
       coutElectricite: (map['coutElectricite'] as num?)?.toInt(),
       notes: map['notes'] as String?,
@@ -468,11 +419,11 @@ class ProductionSession {
       'indexCompteurFinalKwh': indexCompteurFinalKwh,
       'consommationCourant': consommationCourant,
       'machinesUtilisees': machinesUtilisees,
-      'bobinesUtilisees': bobinesUtilisees.map((e) => e.toMap()).toList(),
+      'machineMaterials': machineMaterials.map((e) => e.toMap()).toList(),
       'quantiteProduite': quantiteProduite,
       'quantiteProduiteUnite': quantiteProduiteUnite,
       'emballagesUtilises': emballagesUtilises,
-      'coutBobines': coutBobines,
+      'machineMaterialCost': machineMaterialCost,
       'coutEmballages': coutEmballages,
       'coutElectricite': coutElectricite,
       'notes': notes,

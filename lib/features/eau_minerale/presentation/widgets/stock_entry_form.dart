@@ -9,7 +9,6 @@ import '../../../../core/logging/app_logger.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../../../core/tenant/tenant_provider.dart';
-import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/packaging_stock.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/product.dart';
 
 /// Formulaire pour ajouter des matières premières en stock (bobines, emballages, autres).
@@ -91,81 +90,39 @@ class StockEntryFormState extends ConsumerState<StockEntryForm> {
       
       AppLogger.debug('Quantité validée: $quantite, Produit: ${selectedProduct.name}', name: 'StockEntryForm');
 
-      final isBobine = selectedProduct.name.toLowerCase().contains('bobine');
-
-      if (isBobine) {
-          await stockController.recordBobineEntry(
-            bobineType: selectedProduct.name,
-            quantite: quantite.round(), // Les bobines restent en int
-            prixUnitaire: _priceController.text.isEmpty
-                ? null
-                : int.tryParse(_priceController.text),
-            fournisseur: _supplierController.text.isEmpty
-                ? null
-                : _supplierController.text,
-            notes: _notesController.text.isEmpty ? null : _notesController.text,
-          );
-      } else {
-          final packagingId = 'packaging-${selectedProduct.name.toLowerCase().replaceAll(' ', '-')}';
-          final packagingController = ref.read(packagingStockControllerProvider);
-          var stockEmballage = await packagingController.fetchById(packagingId);
-
-          if (stockEmballage == null) {
-            final unitsPerLot = _useLots ? (int.tryParse(_unitsPerLotController.text) ?? selectedProduct.unitsPerLot) : selectedProduct.unitsPerLot;
-            final enterpriseId = ref.read(activeEnterpriseProvider).value?.id ?? 'default';
-            stockEmballage = PackagingStock(
-              id: packagingId,
-              enterpriseId: enterpriseId,
-              type: selectedProduct.name,
-              quantity: 0, 
-              unit: selectedProduct.unit,
-              unitsPerLot: unitsPerLot,
-              fournisseur: _supplierController.text.isEmpty ? null : _supplierController.text,
-              prixUnitaire: _priceController.text.isEmpty ? null : int.tryParse(_priceController.text),
-              createdAt: _selectedDate,
-              updatedAt: _selectedDate,
-            );
-            await packagingController.save(stockEmballage);
-          } else if (_useLots) {
-             final newUnitsPerLot = int.tryParse(_unitsPerLotController.text) ?? selectedProduct.unitsPerLot;
-             if (newUnitsPerLot > 0 && stockEmballage.unitsPerLot != newUnitsPerLot) {
-               await packagingController.save(stockEmballage.copyWith(unitsPerLot: newUnitsPerLot));
-             }
-          }
-
-          int? prixFinalUnitaire;
-          final prixSaisiStr = _priceController.text.trim();
-          if (prixSaisiStr.isNotEmpty) {
-            final prixSaisi = int.tryParse(prixSaisiStr) ?? 0;
-            if (_useLots) {
-              final unitsPerLot = int.tryParse(_unitsPerLotController.text) ?? stockEmballage.unitsPerLot;
-              prixFinalUnitaire = (prixSaisi / (unitsPerLot > 0 ? unitsPerLot : 1)).round();
-            } else {
-              prixFinalUnitaire = prixSaisi;
-            }
-          }
-
-          final unitsPerLot = _useLots ? (int.tryParse(_unitsPerLotController.text) ?? stockEmballage.unitsPerLot) : null;
-          await stockController.recordPackagingEntry(
-            packagingId: stockEmballage.id,
-            packagingType: selectedProduct.name,
-            quantite: quantite,
-            prixUnitaire: prixFinalUnitaire,
-            isInLots: _useLots,
-            unitsPerLot: unitsPerLot,
-            fournisseur: _supplierController.text.isEmpty ? null : _supplierController.text,
-            notes: _notesController.text.isEmpty ? null : _notesController.text,
-          );
+      // Si le produit utilise des lots (typiquement emballages) et que l'utilisateur a saisi avec des lots
+      int? prixFinalUnitaire;
+      final prixSaisiStr = _priceController.text.trim();
+      double finalQuantity = quantite;
+      
+      if (_useLots) {
+         final unitsPerLot = int.tryParse(_unitsPerLotController.text) ?? selectedProduct.unitsPerLot;
+         finalQuantity = quantite * unitsPerLot; 
+         if (prixSaisiStr.isNotEmpty) {
+           final prixSaisi = int.tryParse(prixSaisiStr) ?? 0;
+           prixFinalUnitaire = (prixSaisi / (unitsPerLot > 0 ? unitsPerLot : 1)).round();
+         }
+      } else if (prixSaisiStr.isNotEmpty) {
+        prixFinalUnitaire = int.tryParse(prixSaisiStr);
       }
+
+      await stockController.recordEntry(
+        productId: selectedProduct.id,
+        productName: selectedProduct.name,
+        quantite: finalQuantity,
+        unit: selectedProduct.unit,
+        fournisseur: _supplierController.text.isEmpty
+            ? null
+            : _supplierController.text,
+        notes: _notesController.text.isEmpty ? null : _notesController.text,
+      );
 
       if (!mounted) return false;
       
       ref.invalidate(stockStateProvider);
       ref.invalidate(stockMovementsProvider);
       
-      final message = isBobine
-          ? '$quantite bobine(s) ajoutée(s)'
-          : '$quantite emballage(s) ajouté(s)';
+      final message = 'Stock ajouté: $finalQuantity ${selectedProduct.unit} de ${selectedProduct.name}';
       NotificationService.showSuccess(context, message);
       return true;
     } catch (e, stackTrace) {

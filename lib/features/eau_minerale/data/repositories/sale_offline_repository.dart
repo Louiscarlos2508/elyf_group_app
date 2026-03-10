@@ -3,6 +3,7 @@ import 'dart:convert';
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/offline_repository.dart';
+import '../../../../core/offline/drift/app_database.dart';
 import '../../domain/entities/sale.dart';
 import '../../domain/repositories/sale_repository.dart';
 
@@ -20,6 +21,8 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
 
   @override
   String get collectionName => 'sales';
+
+  String get moduleType => 'eau_minerale';
 
   @override
   String getLocalId(Sale entity) {
@@ -53,7 +56,7 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
       localId: localId,
       remoteId: getRemoteId(entity),
       enterpriseId: enterpriseId,
-      moduleType: 'eau_minerale',
+      moduleType: moduleType,
       dataJson: jsonEncode(map),
       localUpdatedAt: DateTime.now(),
     );
@@ -81,7 +84,7 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
       collectionName: collectionName,
       remoteId: localId,
       enterpriseId: enterpriseId,
-      moduleType: 'eau_minerale',
+      moduleType: moduleType,
     );
     if (byRemote != null) {
       final sale = fromMap(jsonDecode(byRemote.dataJson) as Map<String, dynamic>);
@@ -92,7 +95,7 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
       collectionName: collectionName,
       localId: localId,
       enterpriseId: enterpriseId,
-      moduleType: 'eau_minerale',
+      moduleType: moduleType,
     );
     if (byLocal == null) return null;
     final sale = fromMap(jsonDecode(byLocal.dataJson) as Map<String, dynamic>);
@@ -116,7 +119,7 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
     final rows = await driftService.records.listForEnterprise(
       collectionName: collectionName,
       enterpriseId: enterpriseId,
-      moduleType: 'eau_minerale',
+      moduleType: moduleType,
     );
 
     AppLogger.debug(
@@ -147,16 +150,45 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
     DateTime? endDate,
     SaleStatus? status,
     String? customerId,
+    String? productionSessionId,
   }) async {
     try {
-      AppLogger.debug(
-        'Fetching sales for enterprise: $enterpriseId',
-        name: 'SaleOfflineRepository',
-      );
-      var allSales = await getAllForEnterprise(enterpriseId);
+      final filters = <String, String>{};
+      if (productionSessionId != null) {
+        filters['productionSessionId'] = productionSessionId;
+      }
+      if (customerId != null) {
+        filters['customerId'] = customerId;
+      }
+      if (status != null) {
+        filters['status'] = status.name;
+      }
+
+      List<OfflineRecord> rows;
+      if (filters.isNotEmpty) {
+        rows = await driftService.records.listForEnterpriseWithJsonFilter(
+          collectionName: collectionName,
+          enterpriseId: enterpriseId,
+          moduleType: moduleType,
+          jsonFilters: filters,
+        );
+      } else {
+        rows = await driftService.records.listForEnterprise(
+          collectionName: collectionName,
+          enterpriseId: enterpriseId,
+          moduleType: moduleType,
+        );
+      }
+
+      var sales = rows
+          .map((row) => safeDecodeJson(row.dataJson, row.localId))
+          .where((map) => map != null)
+          .map((map) => fromMap(map!))
+          .where((sale) => !sale.isDeleted)
+          .toList();
 
       if (startDate != null) {
-        allSales = allSales
+        sales = sales
             .where(
               (s) =>
                   s.date.isAfter(startDate) ||
@@ -166,7 +198,7 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
       }
 
       if (endDate != null) {
-        allSales = allSales
+        sales = sales
             .where(
               (s) =>
                   s.date.isBefore(endDate) || s.date.isAtSameMomentAs(endDate),
@@ -174,18 +206,8 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
             .toList();
       }
 
-      if (status != null) {
-        allSales = allSales.where((s) => s.status == status).toList();
-      }
-
-      if (customerId != null) {
-        allSales = allSales.where((s) => s.customerId == customerId).toList();
-      }
-
-      // Sort by date descending
-      allSales.sort((a, b) => b.date.compareTo(a.date));
-
-      return allSales;
+      // Already deduplicated by listForEnterprise/WithJsonFilter indirectly if we use deduplicateByRemoteId
+      return deduplicateByRemoteId(sales);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       AppLogger.error(
@@ -204,58 +226,64 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
     DateTime? endDate,
     SaleStatus? status,
     String? customerId,
+    String? productionSessionId,
   }) {
-    AppLogger.debug(
-      'Watching sales for enterprise: $enterpriseId',
-      name: 'SaleOfflineRepository',
-    );
+    final filters = <String, String>{};
+    if (productionSessionId != null) {
+      filters['productionSessionId'] = productionSessionId;
+    }
+    if (customerId != null) {
+      filters['customerId'] = customerId;
+    }
+    if (status != null) {
+      filters['status'] = status.name;
+    }
 
-    return driftService.records
-        .watchForEnterprise(
-          collectionName: collectionName,
-          enterpriseId: enterpriseId,
-          moduleType: 'eau_minerale',
-        )
-        .map((rows) {
-          var sales = rows
-              .map((row) => safeDecodeJson(row.dataJson, row.localId))
-              .where((map) => map != null)
-              .map((map) => fromMap(map!))
-              .where((sale) => !sale.isDeleted)
-              .toList();
+    Stream<List<OfflineRecord>> stream;
+    if (filters.isNotEmpty) {
+      stream = driftService.records.watchForEnterpriseWithJsonFilter(
+        collectionName: collectionName,
+        enterpriseId: enterpriseId,
+        moduleType: moduleType,
+        jsonFilters: filters,
+      );
+    } else {
+      stream = driftService.records.watchForEnterprise(
+        collectionName: collectionName,
+        enterpriseId: enterpriseId,
+        moduleType: moduleType,
+      );
+    }
 
-          if (startDate != null) {
-            sales = sales
-                .where(
-                  (s) =>
-                      s.date.isAfter(startDate) ||
-                      s.date.isAtSameMomentAs(startDate),
-                )
-                .toList();
-          }
+    return stream.map((rows) {
+      var sales = rows
+          .map((row) => safeDecodeJson(row.dataJson, row.localId))
+          .where((map) => map != null)
+          .map((map) => fromMap(map!))
+          .where((sale) => !sale.isDeleted)
+          .toList();
 
-          if (endDate != null) {
-            sales = sales
-                .where(
-                  (s) =>
-                      s.date.isBefore(endDate) || s.date.isAtSameMomentAs(endDate),
-                )
-                .toList();
-          }
+      if (startDate != null) {
+        sales = sales
+            .where(
+              (s) =>
+                  s.date.isAfter(startDate) ||
+                  s.date.isAtSameMomentAs(startDate),
+            )
+            .toList();
+      }
 
-          if (status != null) {
-            sales = sales.where((s) => s.status == status).toList();
-          }
+      if (endDate != null) {
+        sales = sales
+            .where(
+              (s) =>
+                  s.date.isBefore(endDate) || s.date.isAtSameMomentAs(endDate),
+            )
+            .toList();
+      }
 
-          if (customerId != null) {
-            sales = sales.where((s) => s.customerId == customerId).toList();
-          }
-
-          // Sort by date descending
-          sales.sort((a, b) => b.date.compareTo(a.date));
-
-          return sales;
-        });
+      return deduplicateByRemoteId(sales);
+    });
   }
   @override
   Future<Sale?> getSale(String id) async {

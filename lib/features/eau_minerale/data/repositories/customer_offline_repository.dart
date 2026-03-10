@@ -23,6 +23,8 @@ class CustomerOfflineRepository implements CustomerRepository {
     required this.saleRepository,
   });
 
+  String get moduleType => 'eau_minerale';
+
   final DriftService driftService;
   final SyncManager syncManager;
   final ConnectivityService connectivityService;
@@ -62,7 +64,7 @@ class CustomerOfflineRepository implements CustomerRepository {
       localId: localId,
       remoteId: remoteId,
       enterpriseId: enterpriseId,
-      moduleType: 'eau_minerale',
+      moduleType: moduleType,
       dataJson: jsonEncode(map),
       localUpdatedAt: DateTime.now(),
     );
@@ -76,7 +78,7 @@ class CustomerOfflineRepository implements CustomerRepository {
       collectionName: collectionName,
       remoteId: id,
       enterpriseId: enterpriseId,
-      moduleType: 'eau_minerale',
+      moduleType: moduleType,
     );
     if (byRemote != null) {
       final map = _recordToMap(byRemote.dataJson);
@@ -87,7 +89,7 @@ class CustomerOfflineRepository implements CustomerRepository {
       collectionName: collectionName,
       localId: id,
       enterpriseId: enterpriseId,
-      moduleType: 'eau_minerale',
+      moduleType: moduleType,
     );
     if (byLocal == null) return null;
     final map = _recordToMap(byLocal.dataJson);
@@ -99,7 +101,7 @@ class CustomerOfflineRepository implements CustomerRepository {
     final rows = await driftService.records.listForEnterprise(
       collectionName: collectionName,
       enterpriseId: enterpriseId,
-      moduleType: 'eau_minerale',
+      moduleType: moduleType,
     );
     return rows
         .map((r) => _recordToMap(r.dataJson))
@@ -243,12 +245,12 @@ class CustomerOfflineRepository implements CustomerRepository {
         collectionName: collectionName,
         localId: id,
         enterpriseId: enterpriseId,
-        moduleType: 'eau_minerale',
+        moduleType: moduleType,
       ) ?? await driftService.records.findByRemoteId(
         collectionName: collectionName,
         remoteId: id,
         enterpriseId: enterpriseId,
-        moduleType: 'eau_minerale',
+        moduleType: moduleType,
       );
 
       if (record != null) {
@@ -260,7 +262,7 @@ class CustomerOfflineRepository implements CustomerRepository {
           localId: record.localId,
           remoteId: record.remoteId,
           enterpriseId: enterpriseId,
-          moduleType: 'eau_minerale',
+          moduleType: moduleType,
           dataJson: jsonEncode(map),
           localUpdatedAt: DateTime.now(),
         );

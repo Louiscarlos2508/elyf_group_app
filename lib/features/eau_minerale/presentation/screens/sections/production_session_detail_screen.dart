@@ -6,7 +6,8 @@ import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/production_session.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/production_session_status.dart';
-import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/bobine_usage.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/machine_material_usage.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/machine.dart';
 import '../../widgets/production_detail_report.dart';
 import '../../widgets/section_placeholder.dart';
 import 'production_session_form_screen.dart';
@@ -146,7 +147,7 @@ class _ProductionSessionDetailContent extends ConsumerWidget {
               const SizedBox(height: 16),
               _buildMachinesCard(context, session),
               const SizedBox(height: 16),
-              _buildBobinesCard(context, session),
+              _buildMaterialsCard(context, session),
               const SizedBox(height: 16),
               PersonnelSection(
                 session: session,
@@ -317,18 +318,18 @@ class _ProductionSessionDetailContent extends ConsumerWidget {
     );
   }
 
-  Widget _buildBobinesCard(BuildContext context, ProductionSession session) {
+  Widget _buildMaterialsCard(BuildContext context, ProductionSession session) {
     final theme = Theme.of(context);
     
-    // Grouper les bobines par machine
-    final bobinesParMachine = <String, List<BobineUsage>>{};
-    for (final bobine in session.bobinesUtilisees) {
-      if (!bobinesParMachine.containsKey(bobine.machineName)) {
-        bobinesParMachine[bobine.machineName] = [];
+    // Grouper les matières par machine
+    final materialsParMachine = <String, List<MachineMaterialUsage>>{};
+    for (final material in session.machineMaterials) {
+      if (!materialsParMachine.containsKey(material.machineName)) {
+        materialsParMachine[material.machineName] = [];
       }
-      bobinesParMachine[bobine.machineName]!.add(bobine);
+      materialsParMachine[material.machineName]!.add(material);
     }
-
+ 
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -344,7 +345,7 @@ class _ProductionSessionDetailContent extends ConsumerWidget {
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  'Utilisation des Bobines',
+                  'Utilisation des Matières',
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -352,11 +353,11 @@ class _ProductionSessionDetailContent extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 16),
-            if (session.bobinesUtilisees.isEmpty)
+            if (session.machineMaterials.isEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8.0),
                 child: Text(
-                  'Aucune bobine installée pour le moment.',
+                  'Aucune matière installée pour le moment.',
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                     fontStyle: FontStyle.italic,
@@ -364,12 +365,12 @@ class _ProductionSessionDetailContent extends ConsumerWidget {
                 ),
               )
             else
-              ...bobinesParMachine.entries.map((entry) {
+              ...materialsParMachine.entries.map((entry) {
                 final machineName = entry.key;
-                final bobines = entry.value;
+                final materials = entry.value;
                 // Trier par date d'installation (plus récent en haut ou en bas ? En bas c'est plus logique pour une timeline)
-                bobines.sort((a, b) => a.heureInstallation.compareTo(b.heureInstallation));
-
+                materials.sort((a, b) => a.heureInstallation.compareTo(b.heureInstallation));
+ 
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -405,11 +406,11 @@ class _ProductionSessionDetailContent extends ConsumerWidget {
                       margin: const EdgeInsets.only(left: 7), // Aligner avec l'icône machine
                       padding: const EdgeInsets.only(left: 16),
                       child: Column(
-                        children: bobines.map((bobine) {
-                          final isLast = bobine == bobines.last;
+                        children: materials.map((material) {
+                          final isLast = material == materials.last;
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 12),
-                            child: _buildBobineTile(context, bobine, isLast),
+                            child: _buildMaterialTile(context, material, isLast),
                           );
                         }).toList(),
                       ),
@@ -422,12 +423,12 @@ class _ProductionSessionDetailContent extends ConsumerWidget {
       ),
     );
   }
-
-  Widget _buildBobineTile(BuildContext context, BobineUsage bobine, bool isLast) {
+ 
+  Widget _buildMaterialTile(BuildContext context, MachineMaterialUsage material, bool isLast) {
     final theme = Theme.of(context);
-    final isFinished = bobine.estFinie;
+    final isFinished = material.estFinie;
     final isActive = !isFinished;
-
+ 
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -452,7 +453,7 @@ class _ProductionSessionDetailContent extends ConsumerWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  bobine.bobineType,
+                  material.materialType,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
                     color: isActive ? theme.colorScheme.onSurface : theme.colorScheme.onSurfaceVariant,
@@ -481,7 +482,7 @@ class _ProductionSessionDetailContent extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.only(left: 28), // Aligner sous le texte
             child: Text(
-              'Installée à ${_formatTime(bobine.heureInstallation)}',
+              'Installée à ${_formatTime(material.heureInstallation)}',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -574,7 +575,7 @@ class _ProductionSessionDetailContent extends ConsumerWidget {
         final meterTypeAsync = ref.watch(electricityMeterTypeProvider);
 
         return meterTypeAsync.when(
-          data: (meterType) {
+          data: (ElectricityMeterType meterType) {
             return _buildInfoRow(
               context,
               'Consommation courant',

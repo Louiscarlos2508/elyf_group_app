@@ -1,7 +1,11 @@
+import 'dart:ffi';
+import 'dart:io';
+import 'package:sqlite3/open.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:elyf_groupe_app/core/offline/drift_service.dart';
 import 'package:elyf_groupe_app/core/offline/sync_manager.dart';
 import 'package:elyf_groupe_app/core/offline/connectivity_service.dart';
+import 'package:drift/native.dart';
 import 'package:elyf_groupe_app/core/offline/handlers/firebase_sync_handler.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/data/repositories/stock_offline_repository.dart';
 import 'package:mockito/mockito.dart';
@@ -9,6 +13,7 @@ import 'package:elyf_groupe_app/features/eau_minerale/domain/repositories/produc
 import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/stock_movement.dart';
 
 class MockProductRepository extends Mock implements ProductRepository {}
+class MockSyncManager extends Mock implements SyncManager {}
 
 /// Mock connectivity service for testing.
 class MockConnectivityService implements ConnectivityService {
@@ -39,25 +44,25 @@ class MockConnectivityService implements ConnectivityService {
 }
 
 void main() {
+  if (Platform.isLinux) {
+    open.overrideFor(OperatingSystem.linux, () {
+      return DynamicLibrary.open('/usr/lib/x86_64-linux-gnu/libsqlite3.so.0');
+    });
+  }
+
   group('StockOfflineRepository', () {
     late StockOfflineRepository repository;
 
     setUp(() async {
+      // Use in-memory database for tests
       final driftService = DriftService.instance;
-      await driftService.initialize();
+      await driftService.initialize(connection: NativeDatabase.memory());
+      
       final connectivityService = MockConnectivityService(isOnline: true);
       await connectivityService.initialize();
-      final syncManager = SyncManager(
-        driftService: driftService,
-        connectivityService: connectivityService,
-        config: const SyncConfig(
-          maxRetryAttempts: 3,
-          syncIntervalMinutes: 5,
-          maxOperationAgeHours: 72,
-        ),
-        syncHandler: MockSyncHandler(),
-      );
-      await syncManager.initialize();
+      
+      final syncManager = MockSyncManager();
+      when(syncManager.getUserId()).thenReturn('test_user');
 
       repository = StockOfflineRepository(
         driftService: driftService,
@@ -69,10 +74,15 @@ void main() {
       );
     });
 
+    tearDown(() async {
+      await DriftService.dispose();
+    });
+
     test('should create stock movement', () async {
       final movement = StockMovement(
         id: '',
         date: DateTime.now(),
+        productId: 'prod1',
         productName: 'Test Product',
         type: StockMovementType.entry,
         reason: 'Test',
@@ -95,6 +105,7 @@ void main() {
       final movement1 = StockMovement(
         id: '',
         date: yesterday,
+        productId: 'prodA',
         productName: 'Product A',
         type: StockMovementType.entry,
         reason: 'Test',
@@ -106,6 +117,7 @@ void main() {
       final movement2 = StockMovement(
         id: '',
         date: tomorrow,
+        productId: 'prodB',
         productName: 'Product B',
         type: StockMovementType.entry,
         reason: 'Test',

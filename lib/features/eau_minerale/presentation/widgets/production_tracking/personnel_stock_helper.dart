@@ -51,8 +51,8 @@ Future<void> _applyProductions(
   // 1. Inverser les anciennes productions (retirer du stock)
   if (oldProduced.isNotEmpty) {
     final returns = oldProduced.map((c) => c.copyWith(quantity: -c.quantity)).toList();
-    await ctrl.recordCatalogProduction(
-      items: returns,
+    await ctrl.recordProductionOutput(
+      producedItems: returns,
       productionId: sessionId,
       notes: 'Correction production journalière (ajustement négatif)',
     );
@@ -60,8 +60,8 @@ Future<void> _applyProductions(
 
   // 2. Appliquer les nouvelles productions
   if (newProduced.isNotEmpty) {
-    await ctrl.recordCatalogProduction(
-      items: newProduced,
+    await ctrl.recordProductionOutput(
+      producedItems: newProduced,
       productionId: sessionId,
       notes: isCorrection ? 'Correction production journalière' : 'Enregistrement journalier',
     );
@@ -115,8 +115,8 @@ Future<void> addBackStockOnDayDelete(WidgetRef ref, ProductionDay day) async {
   // 2. Inverser les productions
   if (hasProduced) {
     final returns = day.producedItems.map((c) => c.copyWith(quantity: -c.quantity)).toList();
-    await stockController.recordCatalogProduction(
-      items: returns,
+    await stockController.recordProductionOutput(
+      producedItems: returns,
       productionId: day.productionId,
       notes: 'Réintégration production (suppression jour)',
     );

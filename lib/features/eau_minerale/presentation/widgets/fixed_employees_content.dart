@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
-import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/daily_worker.dart';
-import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/employee.dart';
 import 'employee_payment_card.dart';
 import 'fixed_employee_form.dart';
 import 'daily_worker_form_dialog.dart';

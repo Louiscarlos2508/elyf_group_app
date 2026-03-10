@@ -3,11 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
-import '../../../domain/entities/bobine_usage.dart';
+import '../../../domain/entities/machine_material_usage.dart';
 import '../../../domain/entities/machine.dart';
 import '../../../domain/entities/production_day.dart';
 import '../../../domain/entities/production_session.dart';
-import '../../widgets/bobine_installation_form.dart';
+import '../../widgets/machine_material_installation_form.dart';
 import '../../widgets/daily_personnel_form.dart';
 import '../../widgets/machine_breakdown_dialog.dart';
 import '../../widgets/machine_selector_field.dart';
@@ -15,62 +15,55 @@ import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
 
 /// Helper class for production session form dialogs.
-/// Extracted from ProductionSessionFormSteps to reduce file size.
 class ProductionSessionFormDialogs {
-  /// Show bobine installation dialog.
-  static Future<void> showBobineInstallation({
+  /// Show machine material installation dialog.
+  static Future<void> showMaterialInstallation({
     required BuildContext context,
     required WidgetRef ref,
     required List<String> machinesSelectionnees,
-    required List<BobineUsage> bobinesUtilisees,
-    required Function(List<BobineUsage>) onBobinesChanged,
+    required List<MachineMaterialUsage> machineMaterials,
+    required Function(List<MachineMaterialUsage>) onMaterialsChanged,
   }) async {
-    // Trouver une machine sans bobine
-    final machinesAvecBobine = bobinesUtilisees.map((b) => b.machineId).toSet();
-    final machinesSansBobine = machinesSelectionnees
-        .where((mId) => !machinesAvecBobine.contains(mId))
+    final machinesAvecMatiere = machineMaterials.map((b) => b.machineId).toSet();
+    final machinesSansMatiere = machinesSelectionnees
+        .where((mId) => !machinesAvecMatiere.contains(mId))
         .toList();
 
-    if (machinesSansBobine.isEmpty) {
+    if (machinesSansMatiere.isEmpty) {
       NotificationService.showInfo(
         context,
-        'Toutes les machines ont une bobine',
+        'Toutes les machines ont une matière',
       );
       return;
     }
 
-    // Récupérer les machines
     final machines = await ref.read(machinesProvider.future);
     final machine = machines.firstWhere(
-      (m) => m.id == machinesSansBobine.first,
+      (m) => m.id == machinesSansMatiere.first,
     );
 
     if (!context.mounted) return;
-    final result = await showDialog<BobineUsage>(
+    final result = await showDialog<MachineMaterialUsage>(
       context: context,
       builder: (dialogContext) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        child: BobineInstallationForm(
+        child: MachineMaterialInstallationForm(
           machine: machine,
-          // Le formulaire vérifiera automatiquement s'il y a une bobine non finie à réutiliser
         ),
       ),
     );
 
     if (result != null && context.mounted) {
-      // Vérifier si cette bobine n'est pas déjà dans la liste (cas de réutilisation)
-      final existeDeja = bobinesUtilisees.any(
+      final existeDeja = machineMaterials.any(
         (b) =>
-            b.bobineType == result.bobineType &&
+            b.materialType == result.materialType &&
             b.machineId == result.machineId,
       );
 
       if (!existeDeja) {
-        // Le stock est décrémenté à la sauvegarde de la session (create/update),
-        // pas à l'installation. Les bobines non finies réutilisées ne décrémentent pas.
-        final updatedBobines = List<BobineUsage>.from(bobinesUtilisees)
+        final updatedMaterials = List<MachineMaterialUsage>.from(machineMaterials)
           ..add(result);
-        onBobinesChanged(updatedBobines);
+        onMaterialsChanged(updatedMaterials);
       }
     }
   }
@@ -83,7 +76,7 @@ class ProductionSessionFormDialogs {
     required DateTime selectedDate,
     required DateTime heureDebut,
     required List<String> machinesUtilisees,
-    required List<BobineUsage> bobinesUtilisees,
+    required List<MachineMaterialUsage> machineMaterials,
     required List<ProductionDay> productionDays,
     required DateTime date,
     required Function(ProductionDay) onDayAdded,
@@ -91,7 +84,6 @@ class ProductionSessionFormDialogs {
   }) async {
     final enterpriseId = ref.read(activeEnterpriseIdProvider).value ?? '';
 
-    // Créer une session temporaire pour le formulaire
     final tempSession = ProductionSession(
       id: session?.id ?? 'temp',
       enterpriseId: enterpriseId,
@@ -100,13 +92,12 @@ class ProductionSessionFormDialogs {
       heureDebut: heureDebut,
       consommationCourant: 0,
       machinesUtilisees: machinesUtilisees,
-      bobinesUtilisees: bobinesUtilisees,
+      machineMaterials: machineMaterials,
       quantiteProduite: 0,
       quantiteProduiteUnite: 'pack',
       productionDays: productionDays,
     );
 
-    // Vérifier si un jour existe déjà pour cette date
     ProductionDay? existingDay;
     try {
       existingDay = productionDays.firstWhere(
@@ -137,11 +128,6 @@ class ProductionSessionFormDialogs {
                 onDayAdded(productionDay);
               }
 
-              // IMPORTANT: Ne pas mettre à jour les stocks ici
-              // Les mouvements de stock seront enregistrés UNIQUEMENT lors de la finalisation
-              // pour éviter les duplications et garantir un historique cohérent
-              // Les modifications des jours de production sont juste sauvegardées dans la session
-
               if (context.mounted) {
                 ref.invalidate(stockStateProvider);
                 Navigator.of(context).pop();
@@ -161,22 +147,20 @@ class ProductionSessionFormDialogs {
     required DateTime selectedDate,
     required DateTime heureDebut,
     required List<String> machinesUtilisees,
-    required List<BobineUsage> bobinesUtilisees,
-    required BobineUsage bobine,
-    required int bobineIndex,
-    required Function() onBobineRemoved,
+    required List<MachineMaterialUsage> machineMaterials,
+    required MachineMaterialUsage material,
+    required int materialIndex,
+    required Function() onMaterialRemoved,
   }) async {
     final enterpriseId = ref.read(activeEnterpriseIdProvider).value ?? '';
     
-    // Créer un objet Machine à partir des infos de la bobine
     final machine = Machine(
-      id: bobine.machineId,
-      name: bobine.machineName,
+      id: material.machineId,
+      name: material.machineName,
       enterpriseId: enterpriseId,
-      reference: bobine.machineId,
+      reference: material.machineId,
     );
 
-    // Créer une session temporaire pour le dialog
     final tempSession = ProductionSession(
       id: session?.id ?? 'temp',
       enterpriseId: enterpriseId,
@@ -185,7 +169,7 @@ class ProductionSessionFormDialogs {
       heureDebut: heureDebut,
       consommationCourant: 0,
       machinesUtilisees: machinesUtilisees,
-      bobinesUtilisees: bobinesUtilisees,
+      machineMaterials: machineMaterials,
       quantiteProduite: 0,
       quantiteProduiteUnite: 'pack',
       events: session?.events ?? [],
@@ -197,10 +181,9 @@ class ProductionSessionFormDialogs {
       builder: (dialogContext) => MachineBreakdownDialog(
         machine: machine,
         session: tempSession,
-        bobine: bobine,
+        material: material,
         onPanneSignaled: (event) {
-          onBobineRemoved();
-          // Invalider les providers pour rafraîchir les données
+          onMaterialRemoved();
           ref.invalidate(productionSessionsStateProvider);
           if (session != null) {
             ref.invalidate(productionSessionDetailProvider((session.id)));

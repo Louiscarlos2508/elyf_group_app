@@ -5,36 +5,36 @@ import 'package:uuid/uuid.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../../../shared/utils/notification_service.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
-import '../../domain/entities/bobine_stock.dart';
-import '../../domain/entities/bobine_usage.dart';
+import '../../domain/entities/machine_material_usage.dart';
 import '../../domain/entities/machine.dart';
 
-/// Formulaire pour ajouter une bobine utilisée.
-class BobineUsageItemForm extends ConsumerStatefulWidget {
-  const BobineUsageItemForm({
+/// Formulaire pour ajouter une matière utilisée sur une machine.
+/// (Anciennement BobineUsageItemForm).
+class MachineMaterialUsageItemForm extends ConsumerStatefulWidget {
+  const MachineMaterialUsageItemForm({
     super.key,
-    required this.bobineStocksDisponibles,
+    required this.materialStocksDisponibles,
     required this.machinesDisponibles,
   });
 
-  final List<BobineStock> bobineStocksDisponibles;
+  final List<dynamic> materialStocksDisponibles;
   final List<Machine> machinesDisponibles;
 
   @override
-  ConsumerState<BobineUsageItemForm> createState() =>
-      _BobineUsageItemFormState();
+  ConsumerState<MachineMaterialUsageItemForm> createState() =>
+      _MachineMaterialUsageItemFormState();
 }
 
-class _BobineUsageItemFormState extends ConsumerState<BobineUsageItemForm> {
+class _MachineMaterialUsageItemFormState extends ConsumerState<MachineMaterialUsageItemForm> {
   final formKey = GlobalKey<FormState>();
   Machine? _machineSelectionnee;
 
   void _submit() {
     if (!formKey.currentState!.validate()) return;
-    if (widget.bobineStocksDisponibles.isEmpty) {
+    if (widget.materialStocksDisponibles.isEmpty) {
       NotificationService.showWarning(
         context,
-        'Aucune bobine disponible en stock',
+        'Aucune matière disponible en stock',
       );
       return;
     }
@@ -43,18 +43,21 @@ class _BobineUsageItemFormState extends ConsumerState<BobineUsageItemForm> {
       return;
     }
 
-    // Prendre automatiquement le premier type de bobine disponible
-    final bobineStock = widget.bobineStocksDisponibles.first;
+    // Prendre automatiquement le premier type de matière disponible
+    // Dans une version future, on pourrait laisser choisir si plusieurs types
+    final stock = widget.materialStocksDisponibles.first;
 
     final now = DateTime.now();
-    final usage = BobineUsage(
+    final usage = MachineMaterialUsage(
       id: const Uuid().v4(),
-      bobineType: bobineStock.type,
+      materialType: stock.type,
       machineId: _machineSelectionnee!.id,
       machineName: _machineSelectionnee!.name,
       dateInstallation: now,
       heureInstallation: now,
       dateUtilisation: now,
+      productId: stock.productId, // Supposant que stock a productId
+      productName: stock.name,
       isReused: false,
     );
 
@@ -69,7 +72,7 @@ class _BobineUsageItemFormState extends ConsumerState<BobineUsageItemForm> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (widget.bobineStocksDisponibles.isEmpty)
+          if (widget.materialStocksDisponibles.isEmpty)
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -87,7 +90,7 @@ class _BobineUsageItemFormState extends ConsumerState<BobineUsageItemForm> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'Aucune bobine disponible en stock',
+                      'Aucune matière disponible en stock',
                       style: TextStyle(
                         color: Theme.of(context).colorScheme.error,
                       ),
@@ -117,11 +120,11 @@ class _BobineUsageItemFormState extends ConsumerState<BobineUsageItemForm> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Une bobine sera automatiquement assignée',
+                          'Une matière sera automatiquement assignée',
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
                         Text(
-                          '${widget.bobineStocksDisponibles.fold<int>(0, (sum, stock) => sum + stock.quantity)} bobine${widget.bobineStocksDisponibles.fold<int>(0, (sum, stock) => sum + stock.quantity) > 1 ? 's' : ''} disponible${widget.bobineStocksDisponibles.fold<int>(0, (sum, stock) => sum + stock.quantity) > 1 ? 's' : ''}',
+                          '${widget.materialStocksDisponibles.length} type(s) disponible(s)',
                           style: Theme.of(context).textTheme.bodySmall
                               ?.copyWith(
                                 color: Theme.of(
@@ -137,7 +140,7 @@ class _BobineUsageItemFormState extends ConsumerState<BobineUsageItemForm> {
             ),
           const SizedBox(height: 16),
           DropdownButtonFormField<Machine>(
-            initialValue: _machineSelectionnee,
+            value: _machineSelectionnee,
             decoration: const InputDecoration(
               labelText: 'Machine',
               prefixIcon: Icon(Icons.precision_manufacturing),
@@ -149,7 +152,6 @@ class _BobineUsageItemFormState extends ConsumerState<BobineUsageItemForm> {
               setState(() => _machineSelectionnee = machine);
             },
             validator: (value) {
-              // Utiliser le service de validation pour extraire la logique métier
               final validationService = ref.read(
                 productionValidationServiceProvider,
               );
@@ -158,7 +160,7 @@ class _BobineUsageItemFormState extends ConsumerState<BobineUsageItemForm> {
           ),
           const SizedBox(height: 24),
           ElevatedButton(
-            onPressed: widget.bobineStocksDisponibles.isEmpty ? null : _submit,
+            onPressed: widget.materialStocksDisponibles.isEmpty ? null : _submit,
             child: const Text('Ajouter'),
           ),
         ],

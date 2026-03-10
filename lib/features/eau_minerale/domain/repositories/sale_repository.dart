@@ -7,6 +7,7 @@ abstract class SaleRepository {
     DateTime? endDate,
     SaleStatus? status,
     String? customerId,
+    String? productionSessionId,
   });
   
   Stream<List<Sale>> watchSales({
@@ -14,6 +15,7 @@ abstract class SaleRepository {
     DateTime? endDate,
     SaleStatus? status,
     String? customerId,
+    String? productionSessionId,
   });
 
   /// Fetches recent sales (last N sales, sorted by date descending).

@@ -18,6 +18,8 @@ class AuditTrailOfflineRepository extends OfflineRepository<AuditRecord>
   @override
   String get collectionName => 'audit_trail';
 
+  String get moduleType => 'audit_trail';
+
   @override
   AuditRecord fromMap(Map<String, dynamic> map) {
     return AuditRecord(

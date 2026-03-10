@@ -1,4 +1,4 @@
-import '../entities/bobine_usage.dart';
+import '../entities/machine_material_usage.dart';
 import '../entities/production_session_status.dart';
 
 /// Service for calculating production session status.
@@ -9,7 +9,7 @@ class ProductionSessionStatusCalculator {
   ///
   /// Status determination logic:
   /// - completed: quantity > 0 AND endTime is set AND endTime > startTime
-  /// - inProgress: machines or bobines are set
+  /// - inProgress: machines or machine materials are set
   /// - started: startTime is before now
   /// - draft: default
   static ProductionSessionStatus calculateStatus({
@@ -17,7 +17,7 @@ class ProductionSessionStatusCalculator {
     required DateTime? heureFin,
     required DateTime heureDebut,
     required List<String> machinesUtilisees,
-    required List<BobineUsage> bobinesUtilisees,
+    required List<MachineMaterialUsage> machineMaterials,
   }) {
     // Completed: quantity produced and end time set
     if (quantiteProduite > 0 &&
@@ -26,8 +26,8 @@ class ProductionSessionStatusCalculator {
       return ProductionSessionStatus.completed;
     }
 
-    // In progress: machines or bobines assigned
-    if (machinesUtilisees.isNotEmpty || bobinesUtilisees.isNotEmpty) {
+    // In progress: machines or materials assigned
+    if (machinesUtilisees.isNotEmpty || machineMaterials.isNotEmpty) {
       return ProductionSessionStatus.inProgress;
     }
 
@@ -54,9 +54,9 @@ class ProductionSessionStatusCalculator {
   /// Determines if a session is in progress.
   static bool isInProgress({
     required List<String> machinesUtilisees,
-    required List<BobineUsage> bobinesUtilisees,
+    required List<MachineMaterialUsage> machineMaterials,
   }) {
-    return machinesUtilisees.isNotEmpty || bobinesUtilisees.isNotEmpty;
+    return machinesUtilisees.isNotEmpty || machineMaterials.isNotEmpty;
   }
 
   /// Determines if a session has started.

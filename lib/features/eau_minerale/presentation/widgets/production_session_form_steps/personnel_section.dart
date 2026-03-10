@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../domain/entities/production_day.dart';
 import '../../../domain/entities/production_session.dart';
-import '../../../domain/entities/bobine_usage.dart';
+import '../../../domain/entities/machine_material_usage.dart';
 import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 import '../daily_personnel_form.dart';
 import 'production_session_form_helpers.dart';
@@ -18,7 +18,7 @@ class PersonnelSection extends ConsumerWidget {
     required this.onProductionDayRemoved,
     this.session,
     this.machinesSelectionnees = const [],
-    this.bobinesUtilisees = const [],
+    this.machineMaterials = const [],
   });
 
   final List<ProductionDay> productionDays;
@@ -27,7 +27,7 @@ class PersonnelSection extends ConsumerWidget {
   final ValueChanged<ProductionDay> onProductionDayRemoved;
   final ProductionSession? session;
   final List<String> machinesSelectionnees;
-  final List bobinesUtilisees;
+  final List<MachineMaterialUsage> machineMaterials;
 
   Widget _buildSectionHeader(BuildContext context, WidgetRef ref) {
     return Row(
@@ -125,7 +125,7 @@ class PersonnelSection extends ConsumerWidget {
           heureDebut: selectedDate,
           consommationCourant: 0,
           machinesUtilisees: machinesSelectionnees,
-          bobinesUtilisees: bobinesUtilisees.cast<BobineUsage>(),
+          machineMaterials: machineMaterials,
           quantiteProduite: 0,
           quantiteProduiteUnite: 'pack',
           productionDays: productionDays,

@@ -120,11 +120,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
         final enterprises = enterprisesAsync.value ?? [];
         if (enterprises.length == 1) {
-          // Une seule entreprise
-          if (activeEnterpriseId == null) {
-            // Déclencher l'auto-sélection et attendre
-            ref.read(autoSelectEnterpriseProvider);
-            return null;
+          final enterpriseId = enterprises.first.id;
+          
+          if (activeEnterpriseId != enterpriseId) {
+            // Pas encore le bon tenant, on laisse l'écran de sélection (qui va auto-switch)
+            // ou on déclenche manuellement si on est certain.
+            // Pour l'instant, on redirige vers selection qui a le listener auto-switch.
+            return '/tenant_selection';
           }
 
           // Entreprise active, vérifier les modules
@@ -136,6 +138,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             final modulePath = _getModulePathFromId(modules.first);
             if (modulePath != null) return '/modules/$modulePath';
           }
+          return '/modules';
         }
 
         return '/tenant_selection';

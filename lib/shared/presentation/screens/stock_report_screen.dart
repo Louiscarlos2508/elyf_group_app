@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:open_file/open_file.dart';
 
 import '../../../core/pdf/eau_minerale_stock_report_pdf_service.dart';
-import '../../../features/eau_minerale/domain/entities/packaging_stock.dart';
 import '../../../features/eau_minerale/domain/entities/stock_item.dart';
 import '../widgets/stock_report_summary.dart';
 import '../widgets/stock_report_table.dart';
@@ -14,14 +13,12 @@ class StockReportScreen extends ConsumerStatefulWidget {
     super.key,
     required this.moduleName,
     required this.stockItems,
-    required this.packagingStocks,
-    required this.availableBobines,
+    required this.availableMachineMaterials,
   });
 
   final String moduleName;
   final List<StockItem> stockItems;
-  final List<PackagingStock> packagingStocks;
-  final int availableBobines;
+  final int availableMachineMaterials;
 
   @override
   ConsumerState<StockReportScreen> createState() => _StockReportScreenState();
@@ -52,29 +49,19 @@ class _StockReportScreenState extends ConsumerState<StockReportScreen> {
       );
     }).toList();
 
-    // Ajouter les emballages
-    final packagingData = widget.packagingStocks.map((stock) {
-      return StockItemData(
-        name: stock.type,
-        quantity: stock.quantity.toDouble(),
-        unit: stock.unit,
-        updatedAt: stock.updatedAt ?? DateTime.now(),
-      );
-    }).toList();
-
-    // Ajouter les bobines disponibles
-    if (widget.availableBobines > 0) {
+    // Ajouter les matières disponibles
+    if (widget.availableMachineMaterials > 0) {
       stockData.add(
         StockItemData(
-          name: 'Bobines disponibles',
-          quantity: widget.availableBobines.toDouble(),
+          name: 'Matières disponibles',
+          quantity: widget.availableMachineMaterials.toDouble(),
           unit: 'unité',
           updatedAt: DateTime.now(),
         ),
       );
     }
 
-    return [...stockData, ...packagingData];
+    return stockData;
   }
 
   Future<void> _downloadPdf(BuildContext context) async {
@@ -88,8 +75,7 @@ class _StockReportScreenState extends ConsumerState<StockReportScreen> {
       final pdfService = EauMineraleStockReportPdfService();
       final file = await pdfService.generateReport(
         stockItems: _getFilteredStockItems(),
-        packagingStocks: widget.packagingStocks,
-        availableBobines: widget.availableBobines,
+        availableMachineMaterials: widget.availableMachineMaterials,
         reportDate: _reportDate,
       );
 

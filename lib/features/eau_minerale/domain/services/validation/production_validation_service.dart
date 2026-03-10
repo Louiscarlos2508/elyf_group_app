@@ -1,4 +1,5 @@
 import '../../entities/machine.dart';
+import '../../entities/machine_material_usage.dart';
 
 /// Service for validating production data.
 ///
@@ -14,9 +15,78 @@ class ProductionValidationService {
     return null;
   }
 
-  /// Validates that bobine stocks are available.
-  bool hasAvailableBobineStocks(List<dynamic> bobineStocks) {
-    return bobineStocks.isNotEmpty;
+  /// Validates that at least one machine is selected.
+  static String? validateMachinesSelection(List<String> machines) {
+    if (machines.isEmpty) {
+      return 'Sélectionnez au moins une machine';
+    }
+    return null;
+  }
+
+  /// Validates that machine material stocks are available.
+  bool hasAvailableMachineMaterialStocks(List<dynamic> machineMaterialStocks) {
+    return machineMaterialStocks.isNotEmpty;
+  }
+
+  /// Validates that all active machines have an associated material.
+  static String? validateMachinesAndMaterials(
+    List<String> machinesSelectionnees,
+    List<MachineMaterialUsage> materials,
+  ) {
+    if (machinesSelectionnees.isEmpty) {
+      return 'Veuillez au moins sélectionner une machine';
+    }
+    if (materials.isEmpty) {
+      return 'Veuillez au moins ajouter une matière';
+    }
+    if (materials.length < machinesSelectionnees.length) {
+      return 'Chaque machine doit avoir une matière installée';
+    }
+    return null;
+  }
+
+  /// Validates that the meter index is provided.
+  static String? validateMeterIndex({
+    required String? indexText,
+    required String meterLabel,
+  }) {
+    if (indexText == null || indexText.trim().isEmpty) {
+      return 'L\'${meterLabel.toLowerCase()} est requis';
+    }
+    return null;
+  }
+
+  /// Validates that the quantity produced is valid.
+  static String? validateQuantity(int? quantity) {
+    if (quantity == null) {
+      return 'La quantité est requise';
+    }
+    if (quantity < 0) {
+      return 'La quantité ne peut pas être négative';
+    }
+    return null;
+  }
+
+  /// Validates that the consumption is valid.
+  static String? validateConsumption(double? consumption) {
+    if (consumption == null) {
+      return 'La consommation est requise';
+    }
+    if (consumption < 0) {
+      return 'La consommation ne peut pas être négative';
+    }
+    return null;
+  }
+
+  /// Validates that the start time is before end time.
+  static String? validateTimeRange({
+    required DateTime startTime,
+    DateTime? endTime,
+  }) {
+    if (endTime != null && endTime.isBefore(startTime)) {
+      return 'L\'heure de fin doit être après l\'heure de début';
+    }
+    return null;
   }
 
   /// Validates product name.

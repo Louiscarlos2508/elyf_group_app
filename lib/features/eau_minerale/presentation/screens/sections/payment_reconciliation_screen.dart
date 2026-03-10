@@ -32,8 +32,8 @@ class _PaymentReconciliationScreenState
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: sessionsAsync.when(
-        data: (sessions) => paymentsAsync.when(
-          data: (salaryState) {
+        data: (List<ProductionSession> sessions) => paymentsAsync.when(
+          data: (SalaryState salaryState) {
             final reconciliationService = PaymentReconciliationService();
             final report = reconciliationService.generateReport(
               sessions: sessions,

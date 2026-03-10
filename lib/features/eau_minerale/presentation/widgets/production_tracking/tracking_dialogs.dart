@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../domain/entities/bobine_usage.dart';
+import '../../../domain/entities/machine_material_usage.dart';
 import '../../../domain/entities/production_session.dart';
-import 'bobine_dialogs.dart';
+import 'machine_material_tracking_dialogs.dart';
 import 'machine_dialogs.dart';
 import 'session_dialogs.dart';
 
@@ -11,7 +11,7 @@ import 'session_dialogs.dart';
 ///
 /// Cette classe délègue aux classes spécialisées :
 /// - [MachineDialogs] pour les dialogs liés aux machines
-/// - [BobineDialogs] pour les dialogs liés aux bobines
+/// - [MachineMaterialTrackingDialogs] pour les dialogs liés aux matières machine
 /// - [SessionDialogs] pour les dialogs liés à la session
 class TrackingDialogs {
   /// Affiche le dialog pour ajouter une machine.
@@ -23,18 +23,18 @@ class TrackingDialogs {
     return MachineDialogs.showAddMachineDialog(context, ref, session);
   }
 
-  /// Affiche le dialog pour installer une nouvelle bobine.
-  static Future<void> showInstallNewBobineDialog(
+  /// Affiche le dialog pour installer une nouvelle matière machine.
+  static Future<void> showInstallNewMaterialDialog(
     BuildContext context,
     WidgetRef ref,
     ProductionSession session,
-    BobineUsage oldBobine,
+    MachineMaterialUsage oldMaterial,
   ) async {
-    return MachineDialogs.showInstallNewBobineDialog(
+    return MachineDialogs.showInstallNewMaterialDialog(
       context,
       ref,
       session,
-      oldBobine,
+      oldMaterial,
     );
   }
 
@@ -52,19 +52,19 @@ class TrackingDialogs {
     BuildContext context,
     WidgetRef ref,
     ProductionSession session,
-    BobineUsage bobine,
+    MachineMaterialUsage material,
   ) {
-    BobineDialogs.showMachineBreakdownDialog(context, ref, session, bobine);
+    MachineMaterialTrackingDialogs.showMachineBreakdownDialog(context, ref, session, material);
   }
 
-  /// Affiche le dialog pour marquer une bobine comme finie.
-  static void showBobineFinishDialog(
+  /// Affiche le dialog pour marquer une matière machine comme finie.
+  static void showMaterialFinishDialog(
     BuildContext context,
     WidgetRef ref,
     ProductionSession session,
-    BobineUsage bobine,
+    MachineMaterialUsage material,
   ) {
-    BobineDialogs.showBobineFinishDialog(context, ref, session, bobine);
+    MachineMaterialTrackingDialogs.showMaterialFinishDialog(context, ref, session, material);
   }
 
   /// Affiche le dialog pour enregistrer un événement.

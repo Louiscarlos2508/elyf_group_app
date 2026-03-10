@@ -1,30 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../domain/entities/bobine_usage.dart';
+import '../../../domain/entities/machine_material_usage.dart';
 import '../../../domain/entities/production_session.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
-import '../bobine_finish_dialog.dart';
+import '../machine_material_finish_dialog.dart';
 import '../machine_breakdown_dialog.dart';
-import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
 
-/// Dialogs pour la gestion des bobines.
-class BobineDialogs {
+/// Dialogs pour la gestion des matières machine.
+/// (Anciennement BobineDialogs).
+class MachineMaterialTrackingDialogs {
   /// Affiche le dialog pour signaler une panne de machine.
   static void showMachineBreakdownDialog(
     BuildContext context,
     WidgetRef ref,
     ProductionSession session,
-    BobineUsage bobine,
+    MachineMaterialUsage material,
   ) async {
-    // 1. Récupérer l'objet machine complet pour éviter la perte d'attributs lors de l'update
     final machineController = ref.read(machineControllerProvider);
-    final machine = await machineController.fetchMachineById(bobine.machineId);
+    final machine = await machineController.fetchMachineById(material.machineId);
 
     if (machine == null) {
       if (context.mounted) {
-        NotificationService.showError(context, 'Impossible de trouver les détails de la machine ${bobine.machineId}.');
+        NotificationService.showError(context, 'Impossible de trouver les détails de la machine ${material.machineId}.');
       }
       return;
     }
@@ -35,28 +34,27 @@ class BobineDialogs {
         builder: (dialogContext) => MachineBreakdownDialog(
           machine: machine,
           session: session,
-          bobine: bobine,
+          material: material,
           onPanneSignaled: (event) {
             ref.invalidate(productionSessionDetailProvider((session.id)));
-            // Optionnel: NotificationService.showInfo est dejà géré par le dialog
           },
         ),
       );
     }
   }
 
-  /// Affiche le dialog pour marquer une bobine comme finie.
-  static void showBobineFinishDialog(
+  /// Affiche le dialog pour marquer une matière comme finie.
+  static void showMaterialFinishDialog(
     BuildContext context,
     WidgetRef ref,
     ProductionSession session,
-    BobineUsage bobine,
+    MachineMaterialUsage material,
   ) {
     showDialog(
       context: context,
-      builder: (dialogContext) => BobineFinishDialog(
+      builder: (dialogContext) => MachineMaterialFinishDialog(
         session: session,
-        bobine: bobine,
+        material: material,
         onFinished: (updatedSession) {
           ref.invalidate(productionSessionDetailProvider((session.id)));
         },

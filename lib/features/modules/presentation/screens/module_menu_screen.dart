@@ -27,15 +27,35 @@ class _ModuleMenuScreenState extends ConsumerState<ModuleMenuScreen> {
     // Activer la sélection automatique si une seule entreprise est disponible
     ref.watch(autoSelectEnterpriseProvider);
 
-    // Auto-navigation si un seul module est accessible
+    // Auto-navigation if only one module is accessible.
+    // We handle BOTH cases:
+    // 1. Data already loaded at build time → use addPostFrameCallback
+    // 2. Data loads later → use ref.listen
+    accessibleModulesAsync.whenData((moduleIds) {
+      if (moduleIds.length == 1) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          try {
+            final moduleId = moduleIds.first;
+            final module = EnterpriseModule.values.firstWhere((e) => e.id == moduleId);
+            developer.log('🚀 Auto-navigating (immediate) to: ${module.id}', name: 'ModuleMenuScreen');
+            _navigateToModule(context, module);
+          } catch (e) {
+            developer.log('❌ Error during auto-navigation: $e', name: 'ModuleMenuScreen');
+          }
+        });
+      }
+    });
+
+    // Also listen for future changes (e.g. tenant switch completes while on this screen)
     ref.listen(userAccessibleModulesForActiveEnterpriseProvider, (previous, next) {
       next.whenData((moduleIds) {
         if (moduleIds.length == 1) {
           try {
             final moduleId = moduleIds.first;
             final module = EnterpriseModule.values.firstWhere((e) => e.id == moduleId);
-            developer.log('🚀 Auto-navigating to module: ${module.id}', name: 'ModuleMenuScreen');
-            _navigateToModule(context, module);
+            developer.log('🚀 Auto-navigating (listener) to: ${module.id}', name: 'ModuleMenuScreen');
+            Future.microtask(() => _navigateToModule(context, module));
           } catch (e) {
             developer.log('❌ Error during auto-navigation: $e', name: 'ModuleMenuScreen');
           }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:developer' as developer;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -18,6 +19,26 @@ class TenantSelectionScreen extends ConsumerWidget {
       userAccessibleEnterprisesProvider,
     );
     final isSwitching = ref.watch(tenantSwitchManagerProvider).isLoading;
+
+    // Auto-selection logic: if only one enterprise is available, switch automatically
+    ref.listen<AsyncValue<List<dynamic>>>(userAccessibleEnterprisesProvider, (previous, next) {
+      next.whenData((enterprises) {
+        if (enterprises.length == 1 && !isSwitching) {
+          final enterprise = enterprises.first;
+          developer.log('🚀 Auto-selecting single enterprise: ${enterprise.id}', name: 'TenantSelectionScreen');
+          
+          Future.microtask(() async {
+            final success = await ref
+                .read(tenantSwitchManagerProvider.notifier)
+                .switchTenant(enterprise.id);
+
+            if (success && context.mounted) {
+              context.go('/modules');
+            }
+          });
+        }
+      });
+    });
 
     return Stack(
       children: [

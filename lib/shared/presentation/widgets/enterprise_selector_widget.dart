@@ -83,11 +83,22 @@ class EnterpriseSelectorWidget extends ConsumerWidget {
           .switchTenant(selected.id);
 
       if (success && context.mounted) {
-        context.go('/modules');
-        
-        // Afficher le message de confirmation après la navigation
+        // Check if there's only one accessible module → navigate directly
+        final modulesAsync = ref.read(userAccessibleModulesForActiveEnterpriseProvider);
+        final modules = modulesAsync.value ?? [];
+
+        String destination = '/modules';
+        if (modules.length == 1) {
+          final modulePath = _getModulePathFromId(modules.first);
+          if (modulePath != null) {
+            destination = '/modules/$modulePath';
+          }
+        }
+
+        context.go(destination);
+
         await Future.delayed(const Duration(milliseconds: 100));
-        
+
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -531,5 +542,23 @@ class _EnterpriseSelectorDialog extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// Helper pour mapper l'ID d'un module vers son chemin de route
+String? _getModulePathFromId(String moduleId) {
+  switch (moduleId) {
+    case 'gaz':
+      return 'gaz';
+    case 'eau_minerale':
+      return 'eau_sachet';
+    case 'orange_money':
+      return 'orange_money';
+    case 'immobilier':
+      return 'immobilier';
+    case 'boutique':
+      return 'boutique';
+    default:
+      return null;
   }
 }

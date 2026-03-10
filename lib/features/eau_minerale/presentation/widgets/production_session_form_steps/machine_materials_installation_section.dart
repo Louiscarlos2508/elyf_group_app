@@ -1,24 +1,25 @@
 import 'package:flutter/material.dart';
 
-import '../../../domain/entities/bobine_usage.dart';
+import '../../../domain/entities/machine_material_usage.dart';
 import 'production_session_form_helpers.dart';
 
-/// Section pour l'installation des bobines sur les machines.
-class BobinesInstallationSection extends StatelessWidget {
-  const BobinesInstallationSection({
+/// Section pour l'installation des matières sur les machines.
+/// (Anciennement BobinesInstallationSection).
+class MachineMaterialsInstallationSection extends StatelessWidget {
+  const MachineMaterialsInstallationSection({
     super.key,
     required this.machinesSelectionnees,
-    required this.bobinesUtilisees,
-    required this.onInstallerBobine,
+    required this.materials,
+    required this.onInstallerMatiere,
     required this.onSignalerPanne,
-    required this.onRetirerBobine,
+    required this.onRetirerMatiere,
   });
 
   final List<String> machinesSelectionnees;
-  final List<BobineUsage> bobinesUtilisees;
-  final VoidCallback onInstallerBobine;
-  final void Function(BuildContext, BobineUsage, int) onSignalerPanne;
-  final ValueChanged<int> onRetirerBobine;
+  final List<MachineMaterialUsage> materials;
+  final VoidCallback onInstallerMatiere;
+  final void Function(BuildContext, MachineMaterialUsage, int) onSignalerPanne;
+  final ValueChanged<int> onRetirerMatiere;
 
   @override
   Widget build(BuildContext context) {
@@ -38,9 +39,9 @@ class BobinesInstallationSection extends StatelessWidget {
       );
     }
 
-    final machinesAvecBobine = bobinesUtilisees.map((b) => b.machineId).toSet();
-    final machinesSansBobine = machinesSelectionnees
-        .where((mId) => !machinesAvecBobine.contains(mId))
+    final machinesAvecMatiere = materials.map((b) => b.machineId).toSet();
+    final machinesSansMatiere = machinesSelectionnees
+        .where((mId) => !machinesAvecMatiere.contains(mId))
         .toList();
 
     return Column(
@@ -50,21 +51,21 @@ class BobinesInstallationSection extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'Bobines installées (${bobinesUtilisees.length}/${machinesSelectionnees.length})',
+              'Matières installées (${materials.length}/${machinesSelectionnees.length})',
               style: Theme.of(context).textTheme.titleSmall,
             ),
-            if (machinesSansBobine.isNotEmpty)
+            if (machinesSansMatiere.isNotEmpty)
               IntrinsicWidth(
                 child: FilledButton.icon(
-                  onPressed: onInstallerBobine,
+                  onPressed: onInstallerMatiere,
                   icon: const Icon(Icons.add),
-                  label: const Text('Installer bobine'),
+                  label: const Text('Installer matière'),
                 ),
               ),
           ],
         ),
         const SizedBox(height: 16),
-        if (bobinesUtilisees.isEmpty)
+        if (materials.isEmpty)
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -84,7 +85,7 @@ class BobinesInstallationSection extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Ajoutez ${machinesSelectionnees.length} bobine(s) (une par machine). Les bobines seront créées automatiquement.',
+                    'Ajoutez ${machinesSelectionnees.length} matière(s) (une par machine).',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: Theme.of(context).colorScheme.error,
                     ),
@@ -94,9 +95,9 @@ class BobinesInstallationSection extends StatelessWidget {
             ),
           )
         else
-          ...bobinesUtilisees.asMap().entries.map((entry) {
+          ...materials.asMap().entries.map((entry) {
             final index = entry.key;
-            final bobine = entry.value;
+            final material = entry.value;
             return Card(
               margin: const EdgeInsets.only(bottom: 8),
               child: ListTile(
@@ -106,10 +107,10 @@ class BobinesInstallationSection extends StatelessWidget {
                   ).colorScheme.primaryContainer,
                   child: Text('${index + 1}'),
                 ),
-                title: Text(bobine.bobineType),
+                title: Text(material.materialType),
                 subtitle: Text(
-                  'Machine: ${bobine.machineName}\n'
-                  'Installée le: ${ProductionSessionFormHelpers.formatDate(bobine.dateInstallation)} à ${ProductionSessionFormHelpers.formatTime(bobine.heureInstallation)}',
+                  'Machine: ${material.machineName}\n'
+                  'Installée le: ${ProductionSessionFormHelpers.formatDate(material.dateInstallation)} à ${ProductionSessionFormHelpers.formatTime(material.heureInstallation)}',
                 ),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -117,18 +118,18 @@ class BobinesInstallationSection extends StatelessWidget {
                     IconButton(
                       icon: const Icon(Icons.build, color: Colors.orange),
                       tooltip: 'Signaler panne',
-                      onPressed: () => onSignalerPanne(context, bobine, index),
+                      onPressed: () => onSignalerPanne(context, material, index),
                     ),
                     IconButton(
                       icon: const Icon(Icons.delete, color: Colors.red),
-                      onPressed: () => onRetirerBobine(index),
+                      onPressed: () => onRetirerMatiere(index),
                     ),
                   ],
                 ),
               ),
             );
           }),
-        if (bobinesUtilisees.length < machinesSelectionnees.length) ...[
+        if (materials.length < machinesSelectionnees.length) ...[
           const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.all(12),
@@ -146,7 +147,7 @@ class BobinesInstallationSection extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Il manque ${machinesSelectionnees.length - bobinesUtilisees.length} bobine(s)',
+                    'Il manque ${machinesSelectionnees.length - materials.length} matière(s)',
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ),

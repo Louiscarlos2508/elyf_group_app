@@ -6,7 +6,6 @@ import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../widgets/finished_products_card.dart';
 import '../../widgets/raw_materials_card.dart';
-import '../../widgets/stock_alerts_widget.dart';
 import '../../widgets/stock_movement_table.dart';
 import '../../widgets/stock_movement_filters.dart';
 import '../../widgets/stock_adjustment_form.dart';
@@ -64,10 +63,7 @@ class StockScreen extends ConsumerWidget {
                        padding: const EdgeInsets.symmetric(horizontal: 24),
                        child: StockAdjustmentForm(
                          showSubmitButton: true,
-                         onSubmit: () async {
-                           Navigator.of(dialogContext).pop();
-                           return true;
-                         },
+                         onSuccess: () => Navigator.of(dialogContext).pop(),
                        ),
                      ),
                    ),
@@ -138,37 +134,12 @@ class _StockContentWithFiltersState
         builder: (context) => StockReportScreen(
           moduleName: 'Eau Minérale',
           stockItems: widget.state.items,
-          packagingStocks: widget.state.packagingStocks,
-          availableBobines: widget.state.availableBobines,
+          availableMachineMaterials: widget.state.availableMachineMaterials,
         ),
       ),
     );
   }
 
-  Future<void> _reconcilePack(BuildContext context) async {
-    final ctrl = ref.read(stockControllerProvider);
-    try {
-      final updated = await ctrl.reconcilePackQuantityFromMovements();
-      if (!context.mounted) return;
-      ref.invalidate(stockStateProvider);
-      ref.invalidate(stockMovementsProvider);
-      if (updated) {
-        NotificationService.showSuccess(
-          context,
-          'Stock Pack aligné avec les mouvements.',
-        );
-      } else {
-        NotificationService.showInfo(
-          context,
-          'Aucun écart entre stock Pack et mouvements.',
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        NotificationService.showError(context, 'Reconcilier Pack: \$e');
-      }
-    }
-  }
 
   void _onFiltersChanged({
     DateTime? startDate,
@@ -257,9 +228,6 @@ class _StockContentWithFiltersState
                               const StockIntegrityCheckDialog(),
                         );
                         break;
-                      case 'reconcile':
-                        _reconcilePack(context);
-                        break;
                     }
                   },
                   itemBuilder: (context) => [
@@ -280,16 +248,6 @@ class _StockContentWithFiltersState
                           Icon(Icons.security_outlined, size: 20),
                           SizedBox(width: 12),
                           Text('Vérifier Intégrité'),
-                        ],
-                      ),
-                    ),
-                    const PopupMenuItem(
-                      value: 'reconcile',
-                      child: Row(
-                        children: [
-                          Icon(Icons.sync_outlined, size: 20),
-                          SizedBox(width: 12),
-                          Text('Réconcilier Pack'),
                         ],
                       ),
                     ),
@@ -357,12 +315,6 @@ class _StockContentWithFiltersState
                   ),
                 ),
               ),
-            const SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 24),
-                child: StockAlertsWidget(),
-              ),
-            ),
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -376,15 +328,14 @@ class _StockContentWithFiltersState
                                 child: RawMaterialsCard(
                                   items: activeState.items,
                                   products: ref.watch(productsProvider).value,
-                                  availableBobines: activeState.availableBobines,
-                                  bobineStocks: activeState.bobineStocks,
-                                  packagingStocks: activeState.packagingStocks,
+                                  availableMachineMaterials: activeState.availableMachineMaterials,
                                 ),
                               ),
                               const SizedBox(width: 16),
                               Expanded(
                                 child: FinishedProductsCard(
                                   items: activeState.items,
+                                  products: ref.watch(productsProvider).value,
                                 ),
                               ),
                             ],
@@ -396,12 +347,13 @@ class _StockContentWithFiltersState
                           RawMaterialsCard(
                             items: activeState.items,
                             products: ref.watch(productsProvider).value,
-                            availableBobines: activeState.availableBobines,
-                            bobineStocks: activeState.bobineStocks,
-                            packagingStocks: activeState.packagingStocks,
+                            availableMachineMaterials: activeState.availableMachineMaterials,
                           ),
                           const SizedBox(height: 16),
-                          FinishedProductsCard(items: activeState.items),
+                          FinishedProductsCard(
+                            items: activeState.items,
+                            products: ref.watch(productsProvider).value,
+                          ),
                         ],
                       ),
               ),

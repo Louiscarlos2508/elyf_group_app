@@ -7,18 +7,13 @@ import 'consommation_field.dart';
 import 'production_session_form_helpers.dart';
 
 /// Étape 3 : Finalisation.
-///
-/// Permet d'enregistrer :
-/// - Index compteur final
-/// - Consommation électrique
-/// - Affiche un résumé de la session
 class StepFinalization extends ConsumerWidget {
   const StepFinalization({
     super.key,
     required this.selectedDate,
     required this.heureDebut,
     required this.machinesCount,
-    required this.bobinesCount,
+    required this.materialsCount,
     required this.indexCompteurInitialController,
     required this.indexCompteurFinalController,
     required this.consommationController,
@@ -29,7 +24,7 @@ class StepFinalization extends ConsumerWidget {
   final DateTime selectedDate;
   final DateTime heureDebut;
   final int machinesCount;
-  final int bobinesCount;
+  final int materialsCount;
   final TextEditingController indexCompteurInitialController;
   final TextEditingController indexCompteurFinalController;
   final TextEditingController consommationController;
@@ -67,7 +62,7 @@ class StepFinalization extends ConsumerWidget {
           date: selectedDate,
           heureDebut: heureDebut,
           machinesCount: machinesCount,
-          bobinesCount: bobinesCount,
+          materialsCount: materialsCount,
           indexInitialKwh: double.tryParse(indexCompteurInitialController.text),
           indexFinalKwh: double.tryParse(indexCompteurFinalController.text),
           consommationText: consommationController.text.isEmpty

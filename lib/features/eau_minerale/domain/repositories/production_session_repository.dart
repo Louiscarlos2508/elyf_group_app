@@ -1,4 +1,5 @@
 import '../entities/production_session.dart';
+import '../entities/machine_material_usage.dart';
 
 /// Repository pour gérer les sessions de production.
 abstract class ProductionSessionRepository {
@@ -25,4 +26,8 @@ abstract class ProductionSessionRepository {
 
   /// Supprime une session de production.
   Future<void> deleteSession(String id);
+
+  /// Récupère la dernière matière installée sur une machine qui n'est pas encore marquée comme finie.
+  /// Utilisé pour optimiser la décrémentation des stocks sans charger tout l'historique en mémoire.
+  Future<MachineMaterialUsage?> fetchLastUnfinishedMaterialForMachine(String machineId);
 }

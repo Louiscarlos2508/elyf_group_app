@@ -2,63 +2,60 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
-import '../../domain/entities/bobine_stock.dart';
-import '../../domain/entities/bobine_usage.dart';
-import 'bobine_usage_item_form.dart';
+import '../../domain/entities/machine_material_usage.dart';
+import 'machine_material_usage_item_form.dart';
 import 'machine_selector_field.dart' show machinesProvider;
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../../../shared/utils/notification_service.dart';
 
-/// Champ pour gérer les bobines utilisées dans une session.
-class BobineUsageFormField extends ConsumerWidget {
-  const BobineUsageFormField({
+/// Champ pour gérer les matières utilisées sur les machines dans une session.
+class MachineMaterialUsageFormField extends ConsumerWidget {
+  const MachineMaterialUsageFormField({
     super.key,
-    required this.bobinesUtilisees,
+    required this.materials,
     required this.machinesDisponibles,
-    required this.onBobinesChanged,
+    required this.onMaterialsChanged,
   });
 
-  /// Limite maximum de bobines autorisées
-  static const maxBobines = 20;
+  static const maxMaterials = 20;
 
-  final List<BobineUsage> bobinesUtilisees;
+  final List<MachineMaterialUsage> materials;
   final List<String> machinesDisponibles;
-  final ValueChanged<List<BobineUsage>> onBobinesChanged;
+  final ValueChanged<List<MachineMaterialUsage>> onMaterialsChanged;
 
-  Future<void> _ajouterBobine(BuildContext context, WidgetRef ref) async {
-    if (bobinesUtilisees.length >= maxBobines) {
+  Future<void> _ajouterMatiere(BuildContext context, WidgetRef ref) async {
+    if (materials.length >= maxMaterials) {
       if (!context.mounted) return;
       NotificationService.showError(
         context,
-        'Maximum $maxBobines bobines autorisées',
+        'Maximum $maxMaterials matières autorisées',
       );
       return;
     }
 
-    final bobineStocks = await ref.read(bobineStocksDisponiblesProvider.future);
+    final materialStocks = await ref.read(machineMaterialsDisponiblesProvider.future);
     final machines = await ref.read(machinesProvider.future);
 
-    // Filtrer les machines qui ont déjà une bobine
-    final machinesAvecBobine = bobinesUtilisees.map((u) => u.machineId).toSet();
+    final machinesAvecMatiere = materials.map((u) => u.machineId).toSet();
     final machinesDisponiblesFiltrees = machines
         .where((m) => machinesDisponibles.contains(m.id))
-        .where((m) => !machinesAvecBobine.contains(m.id))
+        .where((m) => !machinesAvecMatiere.contains(m.id))
         .toList();
 
     if (machinesDisponiblesFiltrees.isEmpty) {
       if (!context.mounted) return;
       NotificationService.showInfo(
         context,
-        'Toutes les machines ont déjà une bobine',
+        'Toutes les machines ont déjà une matière',
       );
       return;
     }
 
-    if (bobineStocks.isEmpty) {
+    if (materialStocks.isEmpty) {
       if (!context.mounted) return;
       NotificationService.showInfo(
         context,
-        'Aucune bobine disponible en stock',
+        'Aucune matière disponible en stock',
       );
       return;
     }
@@ -68,7 +65,7 @@ class BobineUsageFormField extends ConsumerWidget {
     final screenWidth = mediaQuery.size.width;
     final maxDialogWidth = (screenWidth * 0.9).clamp(400.0, 600.0);
 
-    final result = await showDialog<BobineUsage>(
+    final result = await showDialog<MachineMaterialUsage>(
       context: context,
       builder: (dialogContext) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -76,8 +73,8 @@ class BobineUsageFormField extends ConsumerWidget {
           constraints: BoxConstraints(maxWidth: maxDialogWidth),
           child: Padding(
             padding: const EdgeInsets.all(24),
-            child: BobineUsageItemForm(
-              bobineStocksDisponibles: bobineStocks,
+            child: MachineMaterialUsageItemForm(
+              materialStocksDisponibles: materialStocks,
               machinesDisponibles: machinesDisponiblesFiltrees,
             ),
           ),
@@ -86,16 +83,16 @@ class BobineUsageFormField extends ConsumerWidget {
     );
 
     if (result != null) {
-      final nouvellesBobines = List<BobineUsage>.from(bobinesUtilisees);
-      nouvellesBobines.add(result);
-      onBobinesChanged(nouvellesBobines);
+      final nouvellesMatieres = List<MachineMaterialUsage>.from(materials);
+      nouvellesMatieres.add(result);
+      onMaterialsChanged(nouvellesMatieres);
     }
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final canAddMore = bobinesUtilisees.length < maxBobines;
+    final canAddMore = materials.length < maxMaterials;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -107,10 +104,10 @@ class BobineUsageFormField extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Bobines utilisées', style: theme.textTheme.titleSmall),
-                  if (bobinesUtilisees.isNotEmpty)
+                  Text('Matières installées (Machines)', style: theme.textTheme.titleSmall),
+                  if (materials.isNotEmpty)
                     Text(
-                      '${bobinesUtilisees.length} bobine(s)',
+                      '${materials.length} matière(s)',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
@@ -120,15 +117,15 @@ class BobineUsageFormField extends ConsumerWidget {
             ),
             IconButton(
               icon: const Icon(Icons.add),
-              onPressed: canAddMore ? () => _ajouterBobine(context, ref) : null,
+              onPressed: canAddMore ? () => _ajouterMatiere(context, ref) : null,
               tooltip: canAddMore
-                  ? 'Ajouter bobine'
-                  : 'Maximum $maxBobines bobines autorisées',
+                  ? 'Ajouter matière'
+                  : 'Maximum $maxMaterials matières autorisées',
             ),
           ],
         ),
         const SizedBox(height: 8),
-        if (bobinesUtilisees.isEmpty)
+        if (materials.isEmpty)
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -139,7 +136,7 @@ class BobineUsageFormField extends ConsumerWidget {
             ),
             child: Center(
               child: Text(
-                'Aucune bobine ajoutée',
+                'Aucune matière ajoutée',
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -151,24 +148,24 @@ class BobineUsageFormField extends ConsumerWidget {
             constraints: const BoxConstraints(maxHeight: 300),
             child: ListView.builder(
               shrinkWrap: true,
-              itemCount: bobinesUtilisees.length,
+              itemCount: materials.length,
               itemBuilder: (context, index) {
-                final bobine = bobinesUtilisees[index];
+                final material = materials[index];
                 return Card(
                   margin: EdgeInsets.only(
-                    bottom: index < bobinesUtilisees.length - 1 ? 8 : 0,
+                    bottom: index < materials.length - 1 ? 8 : 0,
                   ),
                   child: ListTile(
-                    title: Text(bobine.bobineType),
-                    subtitle: Text('Machine: ${bobine.machineName}'),
+                    title: Text(material.materialType),
+                    subtitle: Text('Machine: ${material.machineName}'),
                     trailing: IconButton(
                       icon: const Icon(Icons.delete, color: Colors.red),
                       onPressed: () {
-                        final nouvellesBobines = List<BobineUsage>.from(
-                          bobinesUtilisees,
+                        final nouvellesMatieres = List<MachineMaterialUsage>.from(
+                          materials,
                         );
-                        nouvellesBobines.removeAt(index);
-                        onBobinesChanged(nouvellesBobines);
+                        nouvellesMatieres.removeAt(index);
+                        onMaterialsChanged(nouvellesMatieres);
                       },
                       tooltip: 'Supprimer',
                     ),
@@ -177,27 +174,14 @@ class BobineUsageFormField extends ConsumerWidget {
               },
             ),
           ),
-        if (!canAddMore && bobinesUtilisees.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Text(
-              'Maximum $maxBobines bobines autorisées',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.error,
-              ),
-            ),
-          ),
       ],
     );
   }
 }
 
-/// Provider pour récupérer les stocks de bobines disponibles (nouveau système par type/quantité).
-final bobineStocksDisponiblesProvider =
-    FutureProvider.autoDispose<List<BobineStock>>((ref) async {
-      final stocks = await ref
-          .read(bobineStockQuantityControllerProvider)
-          .fetchAll();
-      // Filtrer seulement les stocks avec quantité > 0
-      return stocks.where((stock) => stock.quantity > 0).toList();
-    });
+/// Provider pour récupérer les stocks de matières machine disponibles.
+final machineMaterialsDisponiblesProvider =
+    FutureProvider.autoDispose<List<dynamic>>((ref) async {
+  final state = await ref.read(stockStateProvider.future);
+  return state.items.where((i) => i.type == StockType.rawMaterial).toList(); 
+});

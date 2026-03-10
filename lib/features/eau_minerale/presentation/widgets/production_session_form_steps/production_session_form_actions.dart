@@ -3,62 +3,52 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/core/logging/app_logger.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
-import '../../../domain/entities/bobine_usage.dart';
+import '../../../domain/entities/machine_material_usage.dart';
 import '../../../domain/entities/production_day.dart';
 import '../../../domain/entities/production_session.dart';
 import '../../../domain/entities/production_session_status.dart';
 import '../../widgets/machine_selector_field.dart';
-import '../../widgets/bobine_usage_form_field.dart'
-    show bobineStocksDisponiblesProvider;
+import '../../widgets/machine_material_usage_form_field.dart'
+    show machineMaterialsDisponiblesProvider;
 
 /// Helper class for production session form actions.
-/// Extracted from ProductionSessionFormSteps to reduce file size.
 class ProductionSessionFormActions {
-  /// Load unfinished bobines for selected machines.
-  ///
-  /// [bobinesExistantes] : bobines déjà en place dans le formulaire (installations
-  /// manuelles, etc.). Elles sont conservées pour ne pas écraser ni perdre
-  /// d'installation ni provoquer de double décrémentation du stock.
-  static Future<void> chargerBobinesNonFinies({
+  /// Load unfinished machine materials for selected machines.
+  static Future<void> chargerMatieresNonFinies({
     required WidgetRef ref,
     required List<String> machinesSelectionnees,
-    required Function(List<BobineUsage>) onBobinesChanged,
-    required Function(Map<String, BobineUsage>) onMachinesAvecBobineChanged,
-    List<BobineUsage>? bobinesExistantes,
+    required Function(List<MachineMaterialUsage>) onMaterialsChanged,
+    required Function(Map<String, MachineMaterialUsage>) onMachinesAvecMatiereChanged,
+    List<MachineMaterialUsage>? materialsExistants,
   }) async {
     if (machinesSelectionnees.isEmpty) {
-      onBobinesChanged([]);
-      onMachinesAvecBobineChanged({});
+      onMaterialsChanged([]);
+      onMachinesAvecMatiereChanged({});
       return;
     }
 
     try {
-      // Récupérer toutes les sessions précédentes pour vérifier l'état des machines
       final sessions = await ref.read(productionSessionsStateProvider.future);
-
-      // Récupérer les machines et les stocks pour les noms et types disponibles
       final machines = await ref.read(machinesProvider.future);
-      final bobineStocks = await ref.read(
-        bobineStocksDisponiblesProvider.future,
+      final materialStocks = await ref.read(
+        machineMaterialsDisponiblesProvider.future,
       );
 
-      // Utiliser ProductionService pour charger les bobines non finies.
-      // On transmet les bobines existantes du formulaire pour les préserver.
       final productionService = ref.read(productionServiceProvider);
-      final result = await productionService.chargerBobinesNonFinies(
+      // Note: ProductionService needs to be updated too if it has 'bobine' naming
+      final result = await productionService.chargerMatieresNonFinies(
         machinesSelectionnees: machinesSelectionnees,
         sessionsPrecedentes: sessions.toList(),
         machines: machines,
-        bobineStocksDisponibles: bobineStocks,
-        bobinesExistantesParam: bobinesExistantes,
+        materialStocksDisponibles: materialStocks,
+        materialsExistantsParam: materialsExistants,
       );
 
-      // Mettre à jour la liste des bobines utilisées
-      onBobinesChanged(result.bobinesUtilisees);
-      onMachinesAvecBobineChanged(result.machinesAvecBobineNonFinie);
+      onMaterialsChanged(result.machineMaterials);
+      onMachinesAvecMatiereChanged(result.machinesAvecMatiereNonFinie);
 
       AppLogger.debug(
-        'Bobines assignées: ${result.bobinesUtilisees.length} pour ${machinesSelectionnees.length} machines',
+        'Matières assignées: ${result.machineMaterials.length} pour ${machinesSelectionnees.length} machines',
         name: 'eau_minerale.production',
       );
     } catch (e, stackTrace) {
@@ -82,13 +72,16 @@ class ProductionSessionFormActions {
     required int? indexCompteurFinalKwh,
     required double consommationCourant,
     required List<String> machinesUtilisees,
-    required List<BobineUsage> bobinesUtilisees,
+    required List<MachineMaterialUsage> machineMaterials,
     required int quantiteProduite,
     required int? emballagesUtilises,
     required String? notes,
     required ProductionSessionStatus status,
     required List<ProductionDay> productionDays,
     required int period,
+    int? machineMaterialCost,
+    int? coutEmballages,
+    int? coutElectricite,
   }) {
     return ProductionSession(
       id: sessionId ?? '',
@@ -101,13 +94,16 @@ class ProductionSessionFormActions {
       indexCompteurFinalKwh: indexCompteurFinalKwh,
       consommationCourant: consommationCourant,
       machinesUtilisees: machinesUtilisees,
-      bobinesUtilisees: bobinesUtilisees,
+      machineMaterials: machineMaterials,
       quantiteProduite: quantiteProduite,
       quantiteProduiteUnite: 'pack',
       emballagesUtilises: emballagesUtilises,
       notes: notes,
       status: status,
       productionDays: productionDays,
+      machineMaterialCost: machineMaterialCost,
+      coutEmballages: coutEmballages,
+      coutElectricite: coutElectricite,
     );
   }
 
@@ -138,7 +134,7 @@ class ProductionSessionFormActions {
     required ProductionSession? session,
     required int currentStep,
     required List<String> machinesSelectionnees,
-    required List<BobineUsage> bobinesUtilisees,
+    required List<MachineMaterialUsage> machineMaterials,
     required int? indexCompteurInitialKwh,
     required String quantiteText,
     required int? indexCompteurFinalKwh,
@@ -152,20 +148,17 @@ class ProductionSessionFormActions {
 
     switch (currentStep) {
       case 0:
-        // Démarrage : date, machines, index initial kWh
         if (isEditing) {
           return machinesSelectionnees.isNotEmpty &&
-              bobinesUtilisees.length == machinesSelectionnees.length &&
+              machineMaterials.length == machinesSelectionnees.length &&
               indexCompteurInitialKwh != null;
         } else {
           return machinesSelectionnees.isNotEmpty &&
               indexCompteurInitialKwh != null;
         }
       case 1:
-        // Production : quantité produite (seulement en mode édition)
         return isEditing && quantiteText.isNotEmpty;
       case 2:
-        // Finalisation : index final, consommation (seulement en mode édition)
         return isEditing &&
             indexCompteurFinalKwh != null &&
             consommationText.isNotEmpty;
@@ -181,7 +174,7 @@ class ProductionSessionFormActions {
     required DateTime? heureFin,
     required DateTime heureDebut,
     required List<String> machinesUtilisees,
-    required List<BobineUsage> bobinesUtilisees,
+    required List<MachineMaterialUsage> machineMaterials,
   }) {
     final productionService = ref.read(productionServiceProvider);
     return productionService.calculateStatus(
@@ -189,7 +182,7 @@ class ProductionSessionFormActions {
       heureFin: heureFin,
       heureDebut: heureDebut,
       machinesUtilisees: machinesUtilisees,
-      bobinesUtilisees: bobinesUtilisees,
+      machineMaterials: machineMaterials,
     );
   }
 }

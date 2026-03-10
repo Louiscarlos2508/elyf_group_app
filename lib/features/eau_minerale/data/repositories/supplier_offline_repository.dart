@@ -22,6 +22,8 @@ class SupplierOfflineRepository implements SupplierRepository {
     this.userId = 'system',
   });
 
+  String get moduleType => 'eau_minerale';
+
   final DriftService driftService;
   final SyncManager syncManager;
   final ConnectivityService connectivityService;
@@ -41,7 +43,7 @@ class SupplierOfflineRepository implements SupplierRepository {
       final rows = await driftService.records.listForEnterprise(
         collectionName: collectionName,
         enterpriseId: enterpriseId,
-        moduleType: 'eau_minerale',
+        moduleType: moduleType,
       );
       return rows.map((r) => _recordToEntity(r.dataJson)).toList();
     } catch (error, stackTrace) {
@@ -56,12 +58,12 @@ class SupplierOfflineRepository implements SupplierRepository {
         collectionName: collectionName,
         localId: id,
         enterpriseId: enterpriseId,
-        moduleType: 'eau_minerale',
+        moduleType: moduleType,
       ) ?? await driftService.records.findByRemoteId(
         collectionName: collectionName,
         remoteId: id,
         enterpriseId: enterpriseId,
-        moduleType: 'eau_minerale',
+        moduleType: moduleType,
       );
 
       if (record == null) return null;
@@ -82,7 +84,7 @@ class SupplierOfflineRepository implements SupplierRepository {
         collectionName: collectionName,
         localId: localId,
         enterpriseId: enterpriseId,
-        moduleType: 'eau_minerale',
+        moduleType: moduleType,
         dataJson: jsonEncode(map),
         localUpdatedAt: DateTime.now(),
       );
@@ -114,7 +116,7 @@ class SupplierOfflineRepository implements SupplierRepository {
         collectionName: collectionName,
         localId: supplier.id,
         enterpriseId: enterpriseId,
-        moduleType: 'eau_minerale',
+        moduleType: moduleType,
       );
 
       await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
@@ -122,7 +124,7 @@ class SupplierOfflineRepository implements SupplierRepository {
         localId: supplier.id,
         remoteId: record?.remoteId,
         enterpriseId: enterpriseId,
-        moduleType: 'eau_minerale',
+        moduleType: moduleType,
         dataJson: jsonEncode(map),
         localUpdatedAt: DateTime.now(),
       );
@@ -157,7 +159,7 @@ class SupplierOfflineRepository implements SupplierRepository {
         collectionName: collectionName,
         localId: id,
         enterpriseId: enterpriseId,
-        moduleType: 'eau_minerale',
+        moduleType: moduleType,
         dataJson: jsonEncode(map),
         localUpdatedAt: DateTime.now(),
       );
@@ -166,7 +168,7 @@ class SupplierOfflineRepository implements SupplierRepository {
         collectionName: collectionName,
         localId: id,
         enterpriseId: enterpriseId,
-        moduleType: 'eau_minerale',
+        moduleType: moduleType,
       );
 
       await syncManager.queueDelete(
@@ -190,7 +192,7 @@ class SupplierOfflineRepository implements SupplierRepository {
     return driftService.records.watchForEnterprise(
       collectionName: collectionName,
       enterpriseId: enterpriseId,
-      moduleType: 'eau_minerale',
+      moduleType: moduleType,
     ).map((rows) => rows.map((r) => _recordToEntity(r.dataJson)).toList());
   }
 
@@ -213,7 +215,7 @@ class SupplierOfflineRepository implements SupplierRepository {
         collectionName: 'supplier_settlements',
         localId: localId,
         enterpriseId: enterpriseId,
-        moduleType: 'eau_minerale',
+        moduleType: moduleType,
         dataJson: jsonEncode(map),
         localUpdatedAt: DateTime.now(),
       );
@@ -246,7 +248,7 @@ class SupplierOfflineRepository implements SupplierRepository {
       final rows = await driftService.records.listForEnterprise(
         collectionName: 'supplier_settlements',
         enterpriseId: enterpriseId,
-        moduleType: 'eau_minerale',
+        moduleType: moduleType,
       );
       return rows
           .map((r) => SupplierSettlement.fromMap(
@@ -269,7 +271,7 @@ class SupplierOfflineRepository implements SupplierRepository {
           id: '',
           enterpriseId: enterpriseId,
           userId: syncManager.getUserId() ?? '',
-          module: 'eau_minerale',
+          module: moduleType,
           action: action,
           entityId: entityId,
           entityType: 'supplier',

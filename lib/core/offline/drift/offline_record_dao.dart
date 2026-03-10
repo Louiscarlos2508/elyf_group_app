@@ -144,6 +144,36 @@ class OfflineRecordDao {
         .get();
   }
 
+  /// Lists records for an enterprise with optional JSON field filters.
+  /// 
+  /// [jsonFilters] is a map of field names to values.
+  /// Note: The values are compared as strings in SQL.
+  Future<List<OfflineRecord>> listForEnterpriseWithJsonFilter({
+    required String collectionName,
+    required String enterpriseId,
+    required String moduleType,
+    required Map<String, String> jsonFilters,
+  }) async {
+    final query = _db.select(_db.offlineRecords)
+      ..where(
+        (t) =>
+            t.collectionName.equals(collectionName) &
+            t.enterpriseId.equals(enterpriseId) &
+            t.moduleType.equals(moduleType),
+      )
+      ..orderBy([(t) => OrderingTerm.desc(t.localUpdatedAt)]);
+
+    for (final entry in jsonFilters.entries) {
+      final field = entry.key;
+      final value = entry.value;
+      query.where((t) => CustomExpression<String>(
+            "json_extract(${t.dataJson.name}, '\$.$field')",
+          ).equals(value));
+    }
+
+    return query.get();
+  }
+
   Stream<List<OfflineRecord>> watchForEnterprise({
     required String collectionName,
     required String enterpriseId,
@@ -158,6 +188,33 @@ class OfflineRecordDao {
           )
           ..orderBy([(t) => OrderingTerm.desc(t.localUpdatedAt)]))
         .watch();
+  }
+
+  /// Watches records for an enterprise with optional JSON field filters.
+  Stream<List<OfflineRecord>> watchForEnterpriseWithJsonFilter({
+    required String collectionName,
+    required String enterpriseId,
+    required String moduleType,
+    required Map<String, String> jsonFilters,
+  }) {
+    final query = _db.select(_db.offlineRecords)
+      ..where(
+        (t) =>
+            t.collectionName.equals(collectionName) &
+            t.enterpriseId.equals(enterpriseId) &
+            t.moduleType.equals(moduleType),
+      )
+      ..orderBy([(t) => OrderingTerm.desc(t.localUpdatedAt)]);
+
+    for (final entry in jsonFilters.entries) {
+      final field = entry.key;
+      final value = entry.value;
+      query.where((t) => CustomExpression<String>(
+            "json_extract(${t.dataJson.name}, '\$.$field')",
+          ).equals(value));
+    }
+
+    return query.watch();
   }
 
   Future<List<OfflineRecord>> listForEnterprises({

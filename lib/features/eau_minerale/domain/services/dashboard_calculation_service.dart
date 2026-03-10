@@ -33,7 +33,7 @@ class DashboardCalculationService {
       final saleDate = DateTime(s.date.year, s.date.month, s.date.day);
       return saleDate.isAtSameMomentAs(todayStart);
     }).toList();
-    return todaySales.fold(0, (sum, s) => sum + s.amountPaid);
+    return todaySales.fold(0, (sum, s) => sum + s.cashAmount + s.orangeMoneyAmount);
   }
 
   /// Calculates monthly collections (all payments made this month).

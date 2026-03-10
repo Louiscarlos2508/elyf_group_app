@@ -4,11 +4,8 @@ import 'package:elyf_groupe_app/features/eau_minerale/domain/services/sale_servi
 import 'package:elyf_groupe_app/features/eau_minerale/domain/repositories/stock_repository.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/domain/repositories/customer_repository.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/domain/repositories/product_repository.dart';
-import 'package:elyf_groupe_app/features/eau_minerale/domain/adapters/pack_stock_adapter.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/sale.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/product.dart';
-// import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/stock_movement.dart';
-import 'package:elyf_groupe_app/features/eau_minerale/domain/pack_constants.dart';
 
 class MockStockRepository extends Mock implements StockRepository {
   @override
@@ -20,13 +17,7 @@ class MockStockRepository extends Mock implements StockRepository {
 
 class MockCustomerRepository extends Mock implements CustomerRepository {}
 
-class MockPackStockAdapter extends Mock implements PackStockAdapter {
-  @override
-  Future<int> getPackStock({String? productId}) => super.noSuchMethod(
-        Invocation.method(#getPackStock, [], {#productId: productId}),
-        returnValue: Future.value(0),
-      );
-}
+
 
 class MockProductRepository extends Mock implements ProductRepository {
   @override
@@ -40,18 +31,15 @@ void main() {
   late SaleService saleService;
   late MockStockRepository mockStockRepo;
   late MockCustomerRepository mockCustomerRepo;
-  late MockPackStockAdapter mockPackAdapter;
   late MockProductRepository mockProductRepo;
 
   setUp(() {
     mockStockRepo = MockStockRepository();
     mockCustomerRepo = MockCustomerRepository();
-    mockPackAdapter = MockPackStockAdapter();
     mockProductRepo = MockProductRepository();
     saleService = SaleService(
       stockRepository: mockStockRepo,
       customerRepository: mockCustomerRepo,
-      packStockAdapter: mockPackAdapter,
       productRepository: mockProductRepo,
     );
   });
@@ -69,16 +57,7 @@ void main() {
   });
 
   group('SaleService - getCurrentStock', () {
-    test('uses PackStockAdapter for packProductId', () async {
-      when(mockPackAdapter.getPackStock(productId: packProductId))
-          .thenAnswer((_) async => 50);
-
-      final stock = await saleService.getCurrentStock(packProductId);
-      expect(stock, 50);
-      verify(mockPackAdapter.getPackStock(productId: packProductId)).called(1);
-    });
-
-    test('uses PackStockAdapter for finished goods', () async {
+    test('uses StockRepository for finished goods', () async {
       const pf = Product(
         id: 'PF1',
         enterpriseId: 'test',
@@ -88,7 +67,7 @@ void main() {
         unit: 'unit',
       );
       when(mockProductRepo.getProduct('PF1')).thenAnswer((_) async => pf);
-      when(mockPackAdapter.getPackStock(productId: 'PF1'))
+      when(mockStockRepo.getStock('PF1'))
           .thenAnswer((_) async => 30);
 
       final stock = await saleService.getCurrentStock('PF1');
@@ -136,11 +115,11 @@ void main() {
     });
 
     test('validates sufficient stock', () async {
-      when(mockPackAdapter.getPackStock(productId: packProductId))
+      when(mockStockRepo.getStock('PF1'))
           .thenAnswer((_) async => 5);
 
       final error = await saleService.validateSale(
-        productId: packProductId,
+        productId: 'PF1',
         quantity: 10,
         totalPrice: 1000,
         amountPaid: 1000,
@@ -149,11 +128,11 @@ void main() {
     });
 
     test('returns null if validation passes', () async {
-      when(mockPackAdapter.getPackStock(productId: packProductId))
+      when(mockStockRepo.getStock('PF1'))
           .thenAnswer((_) async => 50);
 
       final error = await saleService.validateSale(
-        productId: packProductId,
+        productId: 'PF1',
         quantity: 10,
         totalPrice: 5000,
         amountPaid: 5000,

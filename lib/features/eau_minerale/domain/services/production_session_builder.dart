@@ -1,4 +1,4 @@
-import '../entities/bobine_usage.dart';
+import '../entities/machine_material_usage.dart';
 import '../entities/production_day.dart';
 import '../entities/production_session.dart';
 import '../entities/production_session_status.dart';
@@ -21,13 +21,13 @@ class ProductionSessionBuilder {
     int? indexCompteurFinalKwh,
     required double consommationCourant,
     required List<String> machinesUtilisees,
-    required List<BobineUsage> bobinesUtilisees,
+    required List<MachineMaterialUsage> machineMaterials,
     required int quantiteProduite,
     int? emballagesUtilises,
     String? notes,
     ProductionSessionStatus? status,
     List<ProductionDay>? productionDays,
-    int? coutBobines,
+    int? machineMaterialCost,
     int? coutEmballages,
     int? coutElectricite,
     required int period,
@@ -40,7 +40,7 @@ class ProductionSessionBuilder {
           heureFin: heureFin,
           heureDebut: heureDebut,
           machinesUtilisees: machinesUtilisees,
-          bobinesUtilisees: bobinesUtilisees,
+          machineMaterials: machineMaterials,
         );
 
     return ProductionSession(
@@ -54,11 +54,11 @@ class ProductionSessionBuilder {
       indexCompteurFinalKwh: indexCompteurFinalKwh,
       consommationCourant: consommationCourant,
       machinesUtilisees: machinesUtilisees,
-      bobinesUtilisees: bobinesUtilisees,
+      machineMaterials: machineMaterials,
       quantiteProduite: quantiteProduite,
       quantiteProduiteUnite: 'pack',
       emballagesUtilises: emballagesUtilises,
-      coutBobines: coutBobines,
+      machineMaterialCost: machineMaterialCost,
       coutEmballages: coutEmballages,
       coutElectricite: coutElectricite,
       notes: notes,
@@ -74,11 +74,11 @@ class ProductionSessionBuilder {
     required DateTime selectedDate,
     required DateTime heureDebut,
     required List<String> machinesUtilisees,
-    required List<BobineUsage> bobinesUtilisees,
+    required List<MachineMaterialUsage> machineMaterials,
     required int period,
     double consommationCourant = 0.0,
     int quantiteProduite = 0,
-    int? coutBobines,
+    int? machineMaterialCost,
     int? coutEmballages,
     int? coutElectricite,
   }) {
@@ -92,10 +92,10 @@ class ProductionSessionBuilder {
       indexCompteurFinalKwh: null,
       consommationCourant: consommationCourant,
       machinesUtilisees: machinesUtilisees,
-      bobinesUtilisees: bobinesUtilisees,
+      machineMaterials: machineMaterials,
       quantiteProduite: quantiteProduite,
       emballagesUtilises: null,
-      coutBobines: coutBobines,
+      machineMaterialCost: machineMaterialCost,
       coutEmballages: coutEmballages,
       coutElectricite: coutElectricite,
       notes: null,

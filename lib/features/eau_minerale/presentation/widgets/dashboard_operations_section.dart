@@ -23,11 +23,11 @@ class DashboardOperationsSection extends ConsumerWidget {
     final salaryStateAsync = ref.watch(salaryStateProvider);
 
     return financesState.when(
-      data: (finances) {
+      data: (FinancesState finances) {
         return productionSessionsAsync.when(
-          data: (sessions) {
+          data: (List<ProductionSession> sessions) {
             return salaryStateAsync.when(
-              data: (salaryState) {
+              data: (SalaryState salaryState) {
                 final calculationService = ref.read(
                   dashboardCalculationServiceProvider,
                 );

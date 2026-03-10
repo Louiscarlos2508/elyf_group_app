@@ -105,7 +105,7 @@ class _ElectricityMeterConfigCardState
             ),
             const SizedBox(height: 12),
             meterTypeAsync.when(
-              data: (currentType) =>
+              data: (ElectricityMeterType currentType) =>
                   _buildMeterTypeSelector(context, ref, theme, currentType),
               loading: () => const Center(
                 child: Padding(

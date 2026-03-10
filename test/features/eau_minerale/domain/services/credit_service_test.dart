@@ -74,6 +74,7 @@ class MockSaleRepository implements SaleRepository {
     DateTime? endDate,
     SaleStatus? status,
     String? customerId,
+    String? productionSessionId,
   }) async =>
       [];
 
@@ -83,6 +84,7 @@ class MockSaleRepository implements SaleRepository {
     DateTime? endDate,
     SaleStatus? status,
     String? customerId,
+    String? productionSessionId,
   }) =>
       Stream.value([]);
 

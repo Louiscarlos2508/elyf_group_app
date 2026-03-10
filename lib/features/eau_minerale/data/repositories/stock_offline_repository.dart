@@ -3,6 +3,7 @@ import 'dart:convert';
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/offline_repository.dart';
+import '../../../../core/offline/drift/app_database.dart';
 import '../../../../core/offline/collection_names.dart';
 import '../../domain/entities/stock_movement.dart';
 import '../../domain/repositories/product_repository.dart';
@@ -73,11 +74,6 @@ class StockOfflineRepository extends OfflineRepository<StockMovement>
       updatedAt: DateTime.now(),
     );
     await saveToLocal(deletedStock, userId: syncManager.getUserId() ?? '');
-    
-    AppLogger.info(
-      'Soft-deleted stock movement: ${entity.id}',
-      name: 'StockOfflineRepository',
-    );
   }
 
   @override
@@ -111,14 +107,9 @@ class StockOfflineRepository extends OfflineRepository<StockMovement>
       moduleType: moduleType,
     );
     final entities = rows
-
       .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
       .where((m) => !m.isDeleted)
       .toList();
-
-    
-
-    // Dédupliquer par remoteId pour éviter les doublons
 
     return deduplicateByRemoteId(entities);
   }
@@ -128,10 +119,19 @@ class StockOfflineRepository extends OfflineRepository<StockMovement>
   @override
   Future<int> getStock(String productId) async {
     try {
-      // Stock is calculated from movements, not stored directly on Product
-      // For now, return 0. This should be calculated from StockMovements
-      // or use InventoryRepository to get StockItem
-      return 0;
+      final movements = await fetchMovements(productId: productId);
+      AppLogger.debug('Found ${movements.length} movements for product $productId', name: 'StockOfflineRepository');
+      
+      double total = 0;
+      for (final m in movements) {
+        if (m.type == StockMovementType.entry) {
+          total += m.quantity;
+        } else {
+          total -= m.quantity;
+        }
+      }
+      AppLogger.debug('Calculated total stock for $productId: $total', name: 'StockOfflineRepository');
+      return total.toInt();
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       AppLogger.error(
@@ -147,12 +147,24 @@ class StockOfflineRepository extends OfflineRepository<StockMovement>
   @override
   Future<void> updateStock(String productId, int quantity) async {
     try {
-      // Stock updates are done through movements, not directly on Product
-      // Product entity doesn't have stock properties
-      AppLogger.debug(
-        'updateStock called but Product entity does not have stock properties. Use recordMovement instead.',
-        name: 'StockOfflineRepository',
-      );
+      final currentStock = await getStock(productId);
+      final diff = quantity - currentStock;
+      
+      if (diff == 0) return;
+      
+      final product = await productRepository.getProduct(productId);
+      
+      await recordMovement(StockMovement(
+        id: LocalIdGenerator.generate(),
+        enterpriseId: enterpriseId,
+        productId: productId,
+        productName: product?.name ?? 'Inconnu',
+        date: DateTime.now(),
+        type: diff > 0 ? StockMovementType.entry : StockMovementType.exit,
+        reason: 'Ajustement manuel de stock',
+        quantity: diff.abs().toDouble(),
+        unit: product?.unit ?? 'unite',
+      ));
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       AppLogger.error(
@@ -175,10 +187,12 @@ class StockOfflineRepository extends OfflineRepository<StockMovement>
       final movementWithAudit = movement.copyWith(
         id: localId,
         enterpriseId: enterpriseId,
+        productId: movement.productId, // Just in case
         createdAt: movement.createdAt ?? DateTime.now(),
         updatedAt: DateTime.now(),
       );
       
+      AppLogger.info('Recording movement: ${movementWithAudit.type.name} of ${movementWithAudit.quantity} for ${movementWithAudit.productId}', name: 'StockOfflineRepository');
       await save(movementWithAudit);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
@@ -199,21 +213,37 @@ class StockOfflineRepository extends OfflineRepository<StockMovement>
     DateTime? endDate,
   }) async {
     try {
-      final movements = await getAllForEnterprise(enterpriseId);
-
-      // If productId is provided, fetch the product to get its name for filtering
-      String? productName;
+      final filters = <String, String>{};
       if (productId != null) {
-        final product = await productRepository.getProduct(productId);
-        productName = product?.name;
+        filters['productId'] = productId;
       }
 
-      return movements.where((m) {
-        if (productName != null && m.productName != productName) return false;
-        if (startDate != null && m.date.isBefore(startDate)) return false;
-        if (endDate != null && m.date.isAfter(endDate)) return false;
-        return true;
-      }).toList();
+      List<OfflineRecord> rows;
+      if (filters.isNotEmpty) {
+        rows = await driftService.records.listForEnterpriseWithJsonFilter(
+          collectionName: collectionName,
+          enterpriseId: enterpriseId,
+          moduleType: moduleType,
+          jsonFilters: filters,
+        );
+      } else {
+        rows = await driftService.records.listForEnterprise(
+          collectionName: collectionName,
+          enterpriseId: enterpriseId,
+          moduleType: moduleType,
+        );
+      }
+
+      final movements = rows
+          .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+          .where((m) => !m.isDeleted)
+          .where((m) {
+            if (startDate != null && m.date.isBefore(startDate)) return false;
+            if (endDate != null && m.date.isAfter(endDate)) return false;
+            return true;
+          }).toList();
+
+      return deduplicateByRemoteId(movements);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       AppLogger.error(
@@ -228,20 +258,8 @@ class StockOfflineRepository extends OfflineRepository<StockMovement>
 
   @override
   Future<List<String>> getLowStockAlerts(int thresholdPercent) async {
-    try {
-      // Product entity doesn't have stock properties or alert thresholds
-      // This should be calculated from StockMovements or use InventoryRepository
-      // For now, return empty list
-      return [];
-    } catch (error, stackTrace) {
-      final appException = ErrorHandler.instance.handleError(error, stackTrace);
-      AppLogger.error(
-        'Error getting low stock alerts: ${appException.message}',
-        name: 'StockOfflineRepository',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      throw appException;
-    }
+    // This could involve fetching all products and checking their stock
+    // For now, keep it simple or implement as needed.
+    return [];
   }
 }

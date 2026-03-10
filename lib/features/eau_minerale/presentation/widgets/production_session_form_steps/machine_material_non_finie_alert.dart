@@ -1,20 +1,21 @@
 import 'package:flutter/material.dart';
 
-import '../../../domain/entities/bobine_usage.dart';
+import '../../../domain/entities/machine_material_usage.dart';
 
-/// Widget d'alerte pour informer l'utilisateur des machines avec bobines non finies.
-class BobineNonFinieAlert extends StatelessWidget {
-  const BobineNonFinieAlert({
+/// Widget d'alerte pour informer l'utilisateur des machines avec matières non finies.
+/// (Anciennement BobineNonFinieAlert).
+class MachineMaterialNonFinieAlert extends StatelessWidget {
+  const MachineMaterialNonFinieAlert({
     super.key,
-    required this.machinesAvecBobineNonFinie,
+    required this.machinesAvecMatiereNonFinie,
   });
 
-  final Map<String, BobineUsage> machinesAvecBobineNonFinie;
+  final Map<String, MachineMaterialUsage> machinesAvecMatiereNonFinie;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final machines = machinesAvecBobineNonFinie.keys.toList();
+    final machines = machinesAvecMatiereNonFinie.keys.toList();
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -35,7 +36,7 @@ class BobineNonFinieAlert extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'Bobines non finies détectées',
+                  'Matières non finies détectées',
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: Colors.orange.shade700,
@@ -46,14 +47,14 @@ class BobineNonFinieAlert extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            'Les machines suivantes ont des bobines non finies qui seront réutilisées au lieu d\'utiliser le stock :',
+            'Les machines suivantes ont des matières non finies (bobines, etc) qui seront réutilisées au lieu d\'utiliser le stock :',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 8),
           ...machines.map((machineId) {
-            final bobine = machinesAvecBobineNonFinie[machineId]!;
+            final usage = machinesAvecMatiereNonFinie[machineId]!;
             return Padding(
               padding: const EdgeInsets.only(bottom: 4),
               child: Row(
@@ -66,7 +67,7 @@ class BobineNonFinieAlert extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      '${bobine.machineName}: ${bobine.bobineType}',
+                      '${usage.machineName}: ${usage.materialType}',
                       style: theme.textTheme.bodySmall?.copyWith(
                         fontWeight: FontWeight.w500,
                         color: Colors.orange.shade700,
@@ -94,7 +95,7 @@ class BobineNonFinieAlert extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Ces bobines seront réutilisées automatiquement. Le stock ne sera pas décrémenté.',
+                    'Ces matières seront réutilisées automatiquement. Le stock ne sera pas décrémenté.',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: Colors.orange.shade700,
                       fontStyle: FontStyle.italic,

@@ -2,56 +2,53 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
-import '../../domain/entities/bobine_usage.dart';
+import '../../domain/entities/machine_material_usage.dart';
 import '../../domain/entities/production_session.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../../../shared/utils/notification_service.dart';
 
-/// Dialog pour signaler qu'une bobine est finie.
-class BobineFinishDialog extends ConsumerStatefulWidget {
-  const BobineFinishDialog({
+/// Dialog pour signaler qu'une matière est finie.
+/// (Anciennement BobineFinishDialog).
+class MachineMaterialFinishDialog extends ConsumerStatefulWidget {
+  const MachineMaterialFinishDialog({
     super.key,
     required this.session,
-    required this.bobine,
+    required this.material,
     required this.onFinished,
   });
 
   final ProductionSession session;
-  final BobineUsage bobine;
+  final MachineMaterialUsage material;
   final ValueChanged<ProductionSession> onFinished;
 
   @override
-  ConsumerState<BobineFinishDialog> createState() => _BobineFinishDialogState();
+  ConsumerState<MachineMaterialFinishDialog> createState() => _MachineMaterialFinishDialogState();
 }
 
-class _BobineFinishDialogState extends ConsumerState<BobineFinishDialog> {
+class _MachineMaterialFinishDialogState extends ConsumerState<MachineMaterialFinishDialog> {
   bool _isLoading = false;
 
   Future<void> _submit() async {
     setState(() => _isLoading = true);
 
     try {
-      // Mettre à jour la bobine pour la marquer comme finie
-      final bobinesMisesAJour = widget.session.bobinesUtilisees.map((b) {
-        if (b.bobineType == widget.bobine.bobineType &&
-            b.machineId == widget.bobine.machineId) {
-          return b.copyWith(estFinie: true, dateUtilisation: DateTime.now());
+      final materialsMisesAJour = widget.session.machineMaterials.map((m) {
+        if (m.id == widget.material.id) {
+          return m.copyWith(estFinie: true, dateUtilisation: DateTime.now());
         }
-        return b;
+        return m;
       }).toList();
 
       final sessionMiseAJour = widget.session.copyWith(
-        bobinesUtilisees: bobinesMisesAJour,
+        machineMaterials: materialsMisesAJour,
         updatedAt: DateTime.now(),
       );
 
-      // Sauvegarder la session
       final controller = ref.read(productionSessionControllerProvider);
       final sessionSauvegardee = await controller.updateSession(
         sessionMiseAJour,
       );
 
-      // Invalider le provider pour rafraîchir les données et éviter de réutiliser cette bobine
       ref.invalidate(productionSessionsStateProvider);
 
       if (!mounted) return;
@@ -60,7 +57,7 @@ class _BobineFinishDialogState extends ConsumerState<BobineFinishDialog> {
 
       NotificationService.showSuccess(
         context,
-        'Bobine ${widget.bobine.bobineType} marquée comme finie',
+        'Matière ${widget.material.materialType} marquée comme finie',
       );
     } catch (e) {
       if (!mounted) return;
@@ -92,7 +89,7 @@ class _BobineFinishDialogState extends ConsumerState<BobineFinishDialog> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Bobine finie',
+                    'Matière finie',
                     style: theme.textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -106,7 +103,7 @@ class _BobineFinishDialogState extends ConsumerState<BobineFinishDialog> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Signalez que la bobine ${widget.bobine.bobineType} est finie.',
+              'Signalez que la matière ${widget.material.materialType} est finie.',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -122,10 +119,10 @@ class _BobineFinishDialogState extends ConsumerState<BobineFinishDialog> {
                     _buildInfoRow(
                       context,
                       'Machine',
-                      widget.bobine.machineName,
+                      widget.material.machineName,
                     ),
                     const SizedBox(height: 8),
-                    _buildInfoRow(context, 'Type', widget.bobine.bobineType),
+                    _buildInfoRow(context, 'Type', widget.material.materialType),
                   ],
                 ),
               ),

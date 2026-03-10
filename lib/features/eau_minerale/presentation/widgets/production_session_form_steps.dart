@@ -4,12 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 import '../../../../core/logging/app_logger.dart';
-import '../../domain/entities/bobine_usage.dart';
+import '../../domain/entities/machine_material_usage.dart';
 import '../../domain/entities/production_day.dart';
 import '../../domain/entities/production_session.dart';
 import '../../domain/services/production_session_builder.dart';
 import '../../domain/services/production_session_status_calculator.dart';
-import '../../domain/services/production_session_validation_service.dart';
+import '../../domain/services/validation/production_validation_service.dart';
 import 'production_session_form_steps/production_session_form_actions.dart';
 import 'production_session_form_steps/production_session_form_dialogs.dart';
 import 'production_session_form_steps/production_session_form_helpers.dart';
@@ -51,14 +51,11 @@ class ProductionSessionFormStepsState
   DateTime _selectedDate = DateTime.now();
   DateTime _heureDebut = DateTime.now();
   List<String> _machinesSelectionnees = [];
-  List<BobineUsage> _bobinesUtilisees = [];
+  List<MachineMaterialUsage> _machineMaterials = [];
   List<ProductionDay> _productionDays = [];
-  bool _isSavingDraft =
-      false; // Flag pour éviter les appels multiples simultanés
-  String?
-  _createdSessionId; // ID de la session créée pour éviter les créations multiples
-  Map<String, BobineUsage> _machinesAvecBobineNonFinie =
-      {}; // Machines avec bobines non finies
+  bool _isSavingDraft = false;
+  String? _createdSessionId;
+  Map<String, MachineMaterialUsage> _machinesAvecMatiereNonFinie = {};
 
   @override
   void initState() {
@@ -80,21 +77,20 @@ class ProductionSessionFormStepsState
     _emballagesController.text = session.emballagesUtilises?.toString() ?? '';
     _notesController.text = session.notes ?? '';
     _machinesSelectionnees = List.from(session.machinesUtilisees);
-    _bobinesUtilisees = List.from(session.bobinesUtilisees);
+    _machineMaterials = List.from(session.machineMaterials);
     _productionDays = List.from(session.productionDays);
   }
 
-  /// Vérifie l'état de chaque machine sélectionnée et charge les bobines appropriées.
-  /// Préserve les bobines déjà présentes dans le formulaire pour éviter de les écraser.
-  Future<void> _chargerBobinesNonFinies() async {
-    await ProductionSessionFormActions.chargerBobinesNonFinies(
+  /// Vérifie l'état de chaque machine sélectionnée et charge les matières appropriées.
+  Future<void> _chargerMatieresNonFinies() async {
+    await ProductionSessionFormActions.chargerMatieresNonFinies(
       ref: ref,
       machinesSelectionnees: _machinesSelectionnees,
-      onBobinesChanged: (bobines) =>
-          setState(() => _bobinesUtilisees = bobines),
-      onMachinesAvecBobineChanged: (machines) =>
-          setState(() => _machinesAvecBobineNonFinie = machines),
-      bobinesExistantes: _bobinesUtilisees,
+      onMaterialsChanged: (materials) =>
+          setState(() => _machineMaterials = materials),
+      onMachinesAvecMatiereChanged: (machines) =>
+          setState(() => _machinesAvecMatiereNonFinie = machines),
+      materialsExistants: _machineMaterials,
     );
   }
 
@@ -121,22 +117,20 @@ class ProductionSessionFormStepsState
   Future<void> submit() async {
     if (!_formKey.currentState!.validate()) return;
 
-    // Validation : machines et bobines
-    final machinesBobinesError =
-        ProductionSessionValidationService.validateMachinesAndBobines(
-          machines: _machinesSelectionnees,
-          bobines: _bobinesUtilisees,
+    final validationError =
+        ProductionValidationService.validateMachinesAndMaterials(
+          _machinesSelectionnees,
+          _machineMaterials,
         );
-    if (machinesBobinesError != null) {
-      NotificationService.showWarning(context, machinesBobinesError);
+    if (validationError != null) {
+      NotificationService.showWarning(context, validationError);
       return;
     }
 
-    // Validation : index compteur initial requis
     final meterType = await ref.read(electricityMeterTypeProvider.future);
     if (!mounted) return;
     final meterIndexError =
-        ProductionSessionValidationService.validateMeterIndex(
+        ProductionValidationService.validateMeterIndex(
           indexText: _indexCompteurInitialController.text,
           meterLabel: meterType.initialLabel,
         );
@@ -148,20 +142,17 @@ class ProductionSessionFormStepsState
     try {
       final config = await ref.read(productionPeriodConfigProvider.future);
 
-      // Calculer le statut basé sur les données disponibles
       final status = ProductionSessionStatusCalculator.calculateStatus(
         quantiteProduite: int.tryParse(_quantiteController.text) ?? 0,
         heureFin: null,
         heureDebut: _heureDebut,
         machinesUtilisees: _machinesSelectionnees,
-        bobinesUtilisees: _bobinesUtilisees,
+        machineMaterials: _machineMaterials,
       );
 
-      // Récupérer l'index compteur initial si disponible
       final indexInitialKwh = _indexCompteurInitialKwh;
       final indexFinalKwh = _indexCompteurFinalKwh;
 
-      // Déterminer l'ID de la session à utiliser
       String? sessionId = widget.session?.id ?? _createdSessionId;
       if (sessionId == null || sessionId.isEmpty) {
         sessionId =
@@ -190,7 +181,7 @@ class ProductionSessionFormStepsState
             ) ??
             0.0,
         machinesUtilisees: _machinesSelectionnees,
-        bobinesUtilisees: _bobinesUtilisees,
+        machineMaterials: _machineMaterials,
         quantiteProduite: int.tryParse(_quantiteController.text) ?? 0,
         emballagesUtilises: _emballagesController.text.trim().isNotEmpty
             ? int.tryParse(_emballagesController.text.trim())
@@ -199,18 +190,18 @@ class ProductionSessionFormStepsState
         status: status,
         productionDays: _productionDays,
         period: config.getPeriodForDate(_selectedDate),
+        machineMaterialCost: widget.session?.machineMaterialCost,
+        coutEmballages: widget.session?.coutEmballages,
+        coutElectricite: widget.session?.coutElectricite,
       );
 
       final controller = ref.read(productionSessionControllerProvider);
       ProductionSession savedSession;
 
       if (sessionId == null || sessionId.isEmpty) {
-        // Créer une nouvelle session seulement si aucune session n'existe
         savedSession = await controller.createSession(session);
-        _createdSessionId = savedSession.id; // Stocker l'ID créé
-        // Le stock est décrémenté dans createSession pour les nouvelles bobines
+        _createdSessionId = savedSession.id;
       } else {
-        // Le stock est géré dans updateSession (nouvelles bobines seulement)
         savedSession = await controller.updateSession(session);
       }
 
@@ -228,14 +219,10 @@ class ProductionSessionFormStepsState
     }
   }
 
-  /// Sauvegarde l'état actuel comme brouillon (méthode publique pour l'écran parent).
-  ///
-  /// [silent] : si true, n'affiche pas "État sauvegardé" (ex. sauvegarde avant "Suivant").
   Future<void> saveDraft({bool silent = false}) async {
-    // Éviter les appels multiples simultanés
     if (_isSavingDraft) return;
     if (_machinesSelectionnees.isEmpty) {
-      return; // Pas de sauvegarde si pas de machines
+      return; 
     }
 
     _isSavingDraft = true;
@@ -247,7 +234,7 @@ class ProductionSessionFormStepsState
         heureFin: widget.session?.heureFin,
         heureDebut: _heureDebut,
         machinesUtilisees: _machinesSelectionnees,
-        bobinesUtilisees: _bobinesUtilisees,
+        machineMaterials: _machineMaterials,
       );
 
       final indexInitialKwh = _indexCompteurInitialKwh;
@@ -276,7 +263,7 @@ class ProductionSessionFormStepsState
         consommationCourant:
             double.tryParse(_consommationController.text) ?? 0.0,
         machinesUtilisees: _machinesSelectionnees,
-        bobinesUtilisees: _bobinesUtilisees,
+        machineMaterials: _machineMaterials,
         quantiteProduite: int.tryParse(_quantiteController.text) ?? 0,
         emballagesUtilises: _emballagesController.text.trim().isNotEmpty
             ? int.tryParse(_emballagesController.text.trim())
@@ -290,26 +277,19 @@ class ProductionSessionFormStepsState
       final controller = ref.read(productionSessionControllerProvider);
 
       if (existingSessionId == null || existingSessionId.isEmpty) {
-        // Créer une nouvelle session comme brouillon seulement si aucune session n'existe
         final createdSession = await controller.createSession(session);
-        _createdSessionId =
-            createdSession.id; // Stocker l'ID pour les prochaines sauvegardes
+        _createdSessionId = createdSession.id;
         if (mounted && !silent) {
           NotificationService.showInfo(context, 'État sauvegardé');
         }
       } else {
-        // Mettre à jour la session existante (même ID → pas de doublon).
-        // Le statut est recalculé à chaque sauvegarde depuis les données du formulaire.
         final sessionToUpdate = session.copyWith(id: existingSessionId);
         await controller.updateSession(sessionToUpdate);
         if (mounted && !silent) {
           NotificationService.showInfo(context, 'État sauvegardé');
         }
       }
-      // Ne pas invalider ici : on est dans le formulaire, la liste n'est pas visible.
-      // L'invalidation se fait au submit (ou en quittant) pour limiter les chargements longs.
     } catch (e) {
-      // Ignorer les erreurs de sauvegarde automatique silencieusement
       AppLogger.error(
         'Erreur sauvegarde automatique: $e',
         name: 'eau_minerale.production',
@@ -320,14 +300,13 @@ class ProductionSessionFormStepsState
     }
   }
 
-  /// Valide l'étape actuelle du formulaire.
   bool validateCurrentStep() {
     return ProductionSessionFormActions.validateStep(
       formState: _formKey.currentState,
       session: widget.session,
       currentStep: widget.currentStep,
       machinesSelectionnees: _machinesSelectionnees,
-      bobinesUtilisees: _bobinesUtilisees,
+      machineMaterials: _machineMaterials,
       indexCompteurInitialKwh: _indexCompteurInitialKwh,
       quantiteText: _quantiteController.text,
       indexCompteurFinalKwh: _indexCompteurFinalKwh,
@@ -355,27 +334,27 @@ class ProductionSessionFormStepsState
           selectedDate: _selectedDate,
           heureDebut: _heureDebut,
           machinesSelectionnees: _machinesSelectionnees,
-          bobinesUtilisees: _bobinesUtilisees,
-          machinesAvecBobineNonFinie: _machinesAvecBobineNonFinie,
+          machineMaterials: _machineMaterials,
+          machinesAvecMatiereNonFinie: _machinesAvecMatiereNonFinie,
           indexCompteurInitialController: _indexCompteurInitialController,
           onDateChanged: (date) => setState(() => _selectedDate = date),
           onHeureDebutChanged: (heure) => setState(() => _heureDebut = heure),
           onMachinesChanged: (machines) async {
             setState(() => _machinesSelectionnees = machines);
-            await _chargerBobinesNonFinies();
+            await _chargerMatieresNonFinies();
           },
-          onBobinesChanged: (bobines) =>
-              setState(() => _bobinesUtilisees = bobines),
-          onInstallerBobine: () =>
-              ProductionSessionFormDialogs.showBobineInstallation(
+          onMaterialsChanged: (materials) =>
+              setState(() => _machineMaterials = materials),
+          onInstallerMatiere: () =>
+              ProductionSessionFormDialogs.showMaterialInstallation(
                 context: context,
                 ref: ref,
                 machinesSelectionnees: _machinesSelectionnees,
-                bobinesUtilisees: _bobinesUtilisees,
-                onBobinesChanged: (bobines) =>
-                    setState(() => _bobinesUtilisees = bobines),
+                machineMaterials: _machineMaterials,
+                onMaterialsChanged: (materials) =>
+                    setState(() => _machineMaterials = materials),
               ),
-          onSignalerPanne: (context, bobine, index) =>
+          onSignalerPanne: (context, material, index) =>
               ProductionSessionFormDialogs.showMachineBreakdown(
                 context: context,
                 ref: ref,
@@ -383,14 +362,14 @@ class ProductionSessionFormStepsState
                 selectedDate: _selectedDate,
                 heureDebut: _heureDebut,
                 machinesUtilisees: _machinesSelectionnees,
-                bobinesUtilisees: _bobinesUtilisees,
-                bobine: bobine,
-                bobineIndex: index,
-                onBobineRemoved: () =>
-                    setState(() => _bobinesUtilisees.removeAt(index)),
+                machineMaterials: _machineMaterials,
+                material: material,
+                materialIndex: index,
+                onMaterialRemoved: () =>
+                    setState(() => _machineMaterials.removeAt(index)),
               ),
-          onRetirerBobine: (index) {
-            setState(() => _bobinesUtilisees.removeAt(index));
+          onRetirerMatiere: (index) {
+            setState(() => _machineMaterials.removeAt(index));
           },
         );
       case 1:
@@ -403,8 +382,8 @@ class ProductionSessionFormStepsState
                 selectedDate: _selectedDate,
                 session: widget.session,
                 machinesSelectionnees: _machinesSelectionnees,
-                bobinesUtilisees: _bobinesUtilisees,
-                machinesAvecBobineNonFinie: _machinesAvecBobineNonFinie,
+                machineMaterials: _machineMaterials,
+                machinesAvecMatiereNonFinie: _machinesAvecMatiereNonFinie,
                 onProductionDayAdded: (day) {
                   setState(() {
                     final existingIndex = _productionDays.indexWhere(
@@ -424,20 +403,20 @@ class ProductionSessionFormStepsState
                 },
                 onMachinesChanged: (machines) async {
                   setState(() => _machinesSelectionnees = machines);
-                  await _chargerBobinesNonFinies();
+                  await _chargerMatieresNonFinies();
                 },
-                onBobinesChanged: (bobines) =>
-                    setState(() => _bobinesUtilisees = bobines),
-                onInstallerBobine: () =>
-                    ProductionSessionFormDialogs.showBobineInstallation(
+                onMaterialsChanged: (materials) =>
+                    setState(() => _machineMaterials = materials),
+                onInstallerMatiere: () =>
+                    ProductionSessionFormDialogs.showMaterialInstallation(
                   context: context,
                   ref: ref,
                   machinesSelectionnees: _machinesSelectionnees,
-                  bobinesUtilisees: _bobinesUtilisees,
-                  onBobinesChanged: (bobines) =>
-                      setState(() => _bobinesUtilisees = bobines),
+                  machineMaterials: _machineMaterials,
+                  onMaterialsChanged: (materials) =>
+                      setState(() => _machineMaterials = materials),
                 ),
-                onSignalerPanne: (context, bobine, index) =>
+                onSignalerPanne: (context, material, index) =>
                     ProductionSessionFormDialogs.showMachineBreakdown(
                   context: context,
                   ref: ref,
@@ -445,14 +424,14 @@ class ProductionSessionFormStepsState
                   selectedDate: _selectedDate,
                   heureDebut: _heureDebut,
                   machinesUtilisees: _machinesSelectionnees,
-                  bobinesUtilisees: _bobinesUtilisees,
-                  bobine: bobine,
-                  bobineIndex: index,
-                  onBobineRemoved: () =>
-                      setState(() => _bobinesUtilisees.removeAt(index)),
+                  machineMaterials: _machineMaterials,
+                  material: material,
+                  materialIndex: index,
+                  onMaterialRemoved: () =>
+                      setState(() => _machineMaterials.removeAt(index)),
                 ),
-                onRetirerBobine: (index) {
-                  setState(() => _bobinesUtilisees.removeAt(index));
+                onRetirerMatiere: (index) {
+                  setState(() => _machineMaterials.removeAt(index));
                 },
               )
             : const SizedBox.shrink();
@@ -462,7 +441,7 @@ class ProductionSessionFormStepsState
                 selectedDate: _selectedDate,
                 heureDebut: _heureDebut,
                 machinesCount: _machinesSelectionnees.length,
-                bobinesCount: _bobinesUtilisees.length,
+                materialsCount: _machineMaterials.length,
                 indexCompteurInitialController: _indexCompteurInitialController,
                 indexCompteurFinalController: _indexCompteurFinalController,
                 consommationController: _consommationController,

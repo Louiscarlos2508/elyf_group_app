@@ -10,7 +10,7 @@ class ProductionSessionSummaryCard extends ConsumerWidget {
     required this.date,
     required this.heureDebut,
     required this.machinesCount,
-    required this.bobinesCount,
+    required this.materialsCount,
     this.indexInitialKwh,
     this.indexFinalKwh,
     this.consommationText,
@@ -23,7 +23,7 @@ class ProductionSessionSummaryCard extends ConsumerWidget {
   final DateTime date;
   final DateTime heureDebut;
   final int machinesCount;
-  final int bobinesCount;
+  final int materialsCount;
   final double? indexInitialKwh;
   final double? indexFinalKwh;
   final String? consommationText;
@@ -60,7 +60,7 @@ class ProductionSessionSummaryCard extends ConsumerWidget {
     final meterTypeAsync = ref.watch(electricityMeterTypeProvider);
 
     return meterTypeAsync.when(
-      data: (meterType) {
+      data: (ElectricityMeterType meterType) {
         return Card(
           elevation: 0,
           shape: RoundedRectangleBorder(
@@ -90,7 +90,7 @@ class ProductionSessionSummaryCard extends ConsumerWidget {
                   formatTime(heureDebut),
                 ),
                 _buildSummaryRow(context, 'Machines', '$machinesCount'),
-                _buildSummaryRow(context, 'Bobines', '$bobinesCount'),
+                _buildSummaryRow(context, 'Matières', '$materialsCount'),
                 if (indexInitialKwh != null)
                   _buildSummaryRow(
                     context,

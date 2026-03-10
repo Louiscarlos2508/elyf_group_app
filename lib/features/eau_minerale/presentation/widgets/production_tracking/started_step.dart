@@ -46,7 +46,7 @@ class StartedStep extends ConsumerWidget {
             ),
             const SizedBox(height: 24),
             Text(
-              'Enregistrez les machines et bobines utilisées pour continuer.',
+              'Enregistrez les machines et matières utilisées pour continuer.',
               style: theme.textTheme.bodyMedium,
             ),
             const SizedBox(height: 16),

@@ -4,7 +4,7 @@ import '../../domain/entities/production_event.dart';
 import '../../domain/entities/production_session.dart';
 
 /// Dialog pour reprendre une production après un événement.
-/// Valide que les mêmes bobines sont toujours en place.
+/// Valide que les mêmes matières sont toujours en place.
 class ProductionResumeDialog extends StatelessWidget {
   const ProductionResumeDialog({
     super.key,
@@ -31,20 +31,20 @@ class ProductionResumeDialog extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Vérification des bobines',
+              'Vérification des matières',
               style: theme.textTheme.titleSmall?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              'Les bobines doivent rester dans les machines. Vérifiez que toutes les bobines sont toujours en place avant de reprendre.',
+              'Les matières doivent rester dans les machines. Vérifiez que toutes les matières sont toujours en place avant de reprendre.',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 16),
-            ...session.bobinesUtilisees.map((bobine) {
+            ...session.machineMaterials.map((material) {
               return Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Row(
@@ -57,11 +57,11 @@ class ProductionResumeDialog extends StatelessWidget {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        '${bobine.bobineType} - ${bobine.machineName}',
+                        '${material.materialType} - ${material.machineName}',
                         style: theme.textTheme.bodySmall,
                       ),
                     ),
-                    if (bobine.estFinie)
+                    if (material.estFinie)
                       Icon(
                         Icons.check_circle,
                         size: 16,

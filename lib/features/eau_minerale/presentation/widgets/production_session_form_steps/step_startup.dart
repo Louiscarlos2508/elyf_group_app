@@ -1,21 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../domain/entities/bobine_usage.dart';
+import '../../../domain/entities/machine_material_usage.dart';
 import '../machine_selector_field.dart';
 import '../time_picker_field.dart';
-import 'bobines_installation_section.dart';
-import 'bobine_non_finie_alert.dart';
+import 'machine_materials_installation_section.dart';
+import 'machine_material_non_finie_alert.dart';
 import 'index_compteur_initial_field.dart';
 import 'production_session_form_helpers.dart';
 
 /// Étape 1 : Démarrage de production.
-///
-/// Permet de configurer :
-/// - Date et heure de début
-/// - Machines utilisées
-/// - Installation des bobines
-/// - Index compteur électrique initial
 class StepStartup extends ConsumerWidget {
   const StepStartup({
     super.key,
@@ -23,32 +17,32 @@ class StepStartup extends ConsumerWidget {
     required this.selectedDate,
     required this.heureDebut,
     required this.machinesSelectionnees,
-    required this.bobinesUtilisees,
-    required this.machinesAvecBobineNonFinie,
+    required this.machineMaterials,
+    required this.machinesAvecMatiereNonFinie,
     required this.indexCompteurInitialController,
     required this.onDateChanged,
     required this.onHeureDebutChanged,
     required this.onMachinesChanged,
-    required this.onBobinesChanged,
-    required this.onInstallerBobine,
+    required this.onMaterialsChanged,
+    required this.onInstallerMatiere,
     required this.onSignalerPanne,
-    required this.onRetirerBobine,
+    required this.onRetirerMatiere,
   });
 
   final bool isEditing;
   final DateTime selectedDate;
   final DateTime heureDebut;
   final List<String> machinesSelectionnees;
-  final List<BobineUsage> bobinesUtilisees;
-  final Map<String, BobineUsage> machinesAvecBobineNonFinie;
+  final List<MachineMaterialUsage> machineMaterials;
+  final Map<String, MachineMaterialUsage> machinesAvecMatiereNonFinie;
   final TextEditingController indexCompteurInitialController;
   final ValueChanged<DateTime> onDateChanged;
   final ValueChanged<DateTime> onHeureDebutChanged;
   final ValueChanged<List<String>> onMachinesChanged;
-  final ValueChanged<List<BobineUsage>> onBobinesChanged;
-  final VoidCallback onInstallerBobine;
-  final void Function(BuildContext, BobineUsage, int) onSignalerPanne;
-  final ValueChanged<int> onRetirerBobine;
+  final ValueChanged<List<MachineMaterialUsage>> onMaterialsChanged;
+  final VoidCallback onInstallerMatiere;
+  final void Function(BuildContext, MachineMaterialUsage, int) onSignalerPanne;
+  final ValueChanged<int> onRetirerMatiere;
 
   Future<void> _selectDate(BuildContext context) async {
     final picked = await showDatePicker(
@@ -114,7 +108,7 @@ class StepStartup extends ConsumerWidget {
         Text(
           isEditing
               ? 'Modifiez les informations de démarrage de la session.'
-              : 'Configurez la session de production : date, machines, bobines et index initial.',
+              : 'Configurez la session de production : date, machines, matières et index initial.',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
             color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
@@ -135,10 +129,10 @@ class StepStartup extends ConsumerWidget {
           machinesSelectionnees: machinesSelectionnees,
           onMachinesChanged: onMachinesChanged,
         ),
-        if (machinesAvecBobineNonFinie.isNotEmpty) ...[
+        if (machinesAvecMatiereNonFinie.isNotEmpty) ...[
           const SizedBox(height: 12),
-          BobineNonFinieAlert(
-            machinesAvecBobineNonFinie: machinesAvecBobineNonFinie,
+          MachineMaterialNonFinieAlert(
+            machinesAvecMatiereNonFinie: machinesAvecMatiereNonFinie,
           ),
         ],
         if (machinesSelectionnees.isEmpty) ...[
@@ -152,18 +146,18 @@ class StepStartup extends ConsumerWidget {
         ],
         const SizedBox(height: 24),
         Text(
-          'Installation des bobines',
+          'Installation des matières',
           style: Theme.of(
             context,
           ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 8),
-        BobinesInstallationSection(
+        MachineMaterialsInstallationSection(
           machinesSelectionnees: machinesSelectionnees,
-          bobinesUtilisees: bobinesUtilisees,
-          onInstallerBobine: onInstallerBobine,
+          materials: machineMaterials,
+          onInstallerMatiere: onInstallerMatiere,
           onSignalerPanne: onSignalerPanne,
-          onRetirerBobine: onRetirerBobine,
+          onRetirerMatiere: onRetirerMatiere,
         ),
         const SizedBox(height: 24),
         Text(

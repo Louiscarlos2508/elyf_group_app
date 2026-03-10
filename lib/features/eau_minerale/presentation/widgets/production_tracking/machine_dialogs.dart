@@ -3,14 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
-import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/bobine_usage.dart';
-import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/machine.dart';
-import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/production_session.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
-import '../bobine_installation_form.dart';
+import '../machine_material_installation_form.dart';
 import 'machine_add_helpers.dart';
 import 'machine_installation_form_dialog.dart';
 import 'machine_selection_dialog.dart';
+import '../../../domain/entities/machine_material_usage.dart';
+import '../../../domain/entities/production_session.dart';
+import '../../../domain/entities/machine.dart';
 
 /// Dialogs pour la gestion des machines.
 class MachineDialogs {
@@ -70,21 +70,22 @@ class MachineDialogs {
 
     if (machineSelectionnee == null || !context.mounted) return;
 
-    final bobineNonFinieExistante =
-        await MachineAddHelpers.findUnfinishedBobine(
+    // Rechercher une matière non finie (anciennement bobine)
+    final matiereNonFinieExistante =
+        await MachineAddHelpers.findUnfinishedMaterial(
           ref,
           machineSelectionnee.id,
         );
 
     if (!context.mounted) return;
 
-    if (bobineNonFinieExistante != null) {
-      await MachineAddHelpers.reuseUnfinishedBobine(
+    if (matiereNonFinieExistante != null) {
+      await MachineAddHelpers.reuseUnfinishedMaterial(
         context,
         ref,
         session,
         machineSelectionnee,
-        bobineNonFinieExistante,
+        matiereNonFinieExistante, 
       );
       return;
     }
@@ -100,82 +101,81 @@ class MachineDialogs {
     );
   }
 
-  /// Affiche le dialog pour installer une nouvelle bobine.
-  static Future<void> showInstallNewBobineDialog(
+  /// Affiche le dialog pour installer une nouvelle matière (anciennement bobine).
+  static Future<void> showInstallNewMaterialDialog(
     BuildContext context,
     WidgetRef ref,
     ProductionSession session,
-    BobineUsage oldBobine,
+    MachineMaterialUsage oldMaterial,
   ) async {
     final machines = await ref.read(allMachinesProvider.future);
 
     if (!context.mounted) return;
 
     final machine = machines.firstWhere(
-      (m) => m.id == oldBobine.machineId,
+      (m) => m.id == oldMaterial.machineId,
       orElse: () => throw StateError('Machine not found'),
     );
 
     if (!context.mounted) return;
 
-    await showDialog<BobineUsage>(
+    await showDialog<MachineMaterialUsage>(
       context: context,
       builder: (dialogContext) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 600, maxHeight: 700),
-          child: BobineInstallationForm(
+          child: MachineMaterialInstallationForm(
             machine: machine,
-            onInstalled: (newBobine) async {
-              final aBobineActive = session.bobinesUtilisees.any(
-                (b) => b.machineId == newBobine.machineId && !b.estFinie,
+            onInstalled: (newMaterial) async {
+              final aMatiereActive = session.machineMaterials.any(
+                (m) => m.machineId == newMaterial.machineId && !m.estFinie,
               );
 
-              if (aBobineActive) {
+              if (aMatiereActive) {
                 if (context.mounted) {
                   NotificationService.showWarning(
                     context,
-                    'Cette machine a déjà une bobine active. Finalisez d\'abord la bobine en cours.',
+                    'Cette machine a déjà une matière active. Finalisez d\'abord la matière en cours.',
                   );
                 }
                 return;
               }
 
-              final updatedBobines = List<BobineUsage>.from(
-                session.bobinesUtilisees,
+              final updatedMaterials = List<MachineMaterialUsage>.from(
+                session.machineMaterials,
               );
 
-              // 1. Marquer la bobine précédente comme finie
-              final indexOld = updatedBobines.indexWhere(
-                (b) =>
-                    b.machineId == oldBobine.machineId &&
-                    b.bobineType == oldBobine.bobineType &&
-                    !b.estFinie,
+              // 1. Marquer la matière précédente comme finie
+              final indexOld = updatedMaterials.indexWhere(
+                (m) =>
+                    m.machineId == oldMaterial.machineId &&
+                    m.materialType == oldMaterial.materialType &&
+                    !m.estFinie,
               );
 
               if (indexOld != -1) {
-                updatedBobines[indexOld] = updatedBobines[indexOld].copyWith(
+                updatedMaterials[indexOld] = updatedMaterials[indexOld].copyWith(
                   estFinie: true,
-                  dateUtilisation: DateTime.now(), // Date de fin = maintenant
+                  dateUtilisation: DateTime.now(),
                 );
               }
 
-              // 2. Ajouter la nouvelle bobine
-              // Vérifier doublon (au cas où)
-              final existeDeja = updatedBobines.any(
-                (b) =>
-                    b.bobineType == newBobine.bobineType &&
-                    b.machineId == newBobine.machineId &&
-                    !b.estFinie &&
-                    b != updatedBobines[indexOld], // Différent de celle qu'on vient de finir
+              // 2. Ajouter la nouvelle matière
+              final existeDeja = updatedMaterials.any(
+                (m) =>
+                    m.materialType == newMaterial.materialType &&
+                    m.machineId == newMaterial.machineId &&
+                    !m.estFinie &&
+                    m != (indexOld != -1 ? updatedMaterials[indexOld] : null),
               );
 
               if (!existeDeja) {
-                updatedBobines.add(newBobine);
+                updatedMaterials.add(newMaterial);
               }
 
               final updatedSession = session.copyWith(
-                bobinesUtilisees: updatedBobines,
+                machineMaterials: updatedMaterials,
               );
 
               final controller = ref.read(productionSessionControllerProvider);
@@ -186,7 +186,7 @@ class MachineDialogs {
                 ref.invalidate(productionSessionsStateProvider);
                 NotificationService.showSuccess(
                   context,
-                  'Nouvelle bobine installée avec succès',
+                  'Nouvelle matière installée avec succès',
                 );
               }
             },

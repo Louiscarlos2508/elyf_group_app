@@ -1,11 +1,11 @@
 import 'package:uuid/uuid.dart';
 
-/// Représente l'utilisation d'une bobine dans une session de production.
-/// Les bobines sont gérées par type et quantité (comme les emballages).
-class BobineUsage {
-  const BobineUsage({
-    String? id, // ID unique pour ce "stint" de consommation (le rouleau physique)
-    required this.bobineType, // Type de bobine (ex: "Bobine standard")
+/// Représente l'utilisation d'une matière chargée sur une machine dans une séance de production.
+/// (Anciennement BobineUsage).
+class MachineMaterialUsage {
+  const MachineMaterialUsage({
+    String? id, // ID unique pour cet usage spécifique
+    required this.materialType, // Type de matière (ex: "Bobine standard", "Sachet")
     required this.machineId,
     required this.machineName,
     required this.dateInstallation,
@@ -16,32 +16,29 @@ class BobineUsage {
     this.isReused = false, // Indique si c'est une réutilisation d'une session précédente
     this.productId,
     this.productName,
-  }) : id = id ?? ''; // On accepte le null mais on le convertit en String vide par sécurité
+  }) : id = id ?? '';
 
   final String id;
   final bool isReused;
 
   final String? productId; // ID du produit dans le catalogue
-  final String? productName; // Nom du produit dans le catalogue (facultatif si référencé)
+  final String? productName; // Nom du produit dans le catalogue
 
-  final String bobineType; // Type de bobine (au lieu de référence unique)
-  final String machineId; // ID de la machine qui a utilisé cette bobine
+  final String materialType; // Type ou nom de la matière
+  final String machineId; // ID de la machine
   final String machineName; // Nom de la machine
-  final DateTime dateInstallation; // Date d'installation (obligatoire)
-  final DateTime heureInstallation; // Heure d'installation (obligatoire)
+  final DateTime dateInstallation; // Date d'installation
+  final DateTime heureInstallation; // Heure d'installation
   final DateTime? dateUtilisation;
-  final bool estInstallee; // Indique si la bobine est installée
-  final bool estFinie; // Indique si la bobine est complètement finie
+  final bool estInstallee;
+  final bool estFinie;
 
-  /// Vérifie si la bobine est complètement utilisée
+  /// Vérifie si la matière est complètement utilisée
   bool get estCompletementUtilisee => estFinie;
 
-  /// Vérifie si la bobine peut être retirée (doit être finie)
-  bool get peutEtreRetiree => estFinie;
-
-  BobineUsage copyWith({
+  MachineMaterialUsage copyWith({
     String? id,
-    String? bobineType,
+    String? materialType,
     String? machineId,
     String? machineName,
     DateTime? dateInstallation,
@@ -53,9 +50,9 @@ class BobineUsage {
     String? productId,
     String? productName,
   }) {
-    return BobineUsage(
+    return MachineMaterialUsage(
       id: id ?? this.id,
-      bobineType: bobineType ?? this.bobineType,
+      materialType: materialType ?? this.materialType,
       machineId: machineId ?? this.machineId,
       machineName: machineName ?? this.machineName,
       dateInstallation: dateInstallation ?? this.dateInstallation,
@@ -69,17 +66,15 @@ class BobineUsage {
     );
   }
 
-  factory BobineUsage.fromMap(Map<String, dynamic> map) {
-    // Si l'ID est manquant ou null, on en génère un nouveau pour éviter les crashs
-    // sur les anciens enregistrements lors de la sérialisation
-    String effectiveId = map['id'] as String? ?? '';
+  factory MachineMaterialUsage.fromMap(Map<String, dynamic> map) {
+    String effectiveId = map['id'] as String? ?? (map['usageId'] as String? ?? '');
     if (effectiveId.isEmpty) {
       effectiveId = const Uuid().v4();
     }
 
-    return BobineUsage(
+    return MachineMaterialUsage(
       id: effectiveId,
-      bobineType: map['bobineType'] as String? ?? '',
+      materialType: map['materialType'] as String? ?? (map['bobineType'] as String? ?? ''),
       machineId: map['machineId'] as String? ?? '',
       machineName: map['machineName'] as String? ?? '',
       dateInstallation: DateTime.parse(map['dateInstallation'] as String),
@@ -98,7 +93,7 @@ class BobineUsage {
   Map<String, dynamic> toMap() {
     return {
       'id': id,
-      'bobineType': bobineType,
+      'materialType': materialType,
       'machineId': machineId,
       'machineName': machineName,
       'dateInstallation': dateInstallation.toIso8601String(),

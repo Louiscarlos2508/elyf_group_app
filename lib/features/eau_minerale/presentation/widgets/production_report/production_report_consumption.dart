@@ -26,7 +26,7 @@ class ProductionReportConsumption extends ConsumerWidget {
         ProductionReportComponents.buildSectionTitle('Consommation', theme),
         const SizedBox(height: 16),
         meterTypeAsync.when(
-          data: (meterType) => ProductionReportComponents.buildInfoItem(
+          data: (ElectricityMeterType meterType) => ProductionReportComponents.buildInfoItem(
             label: 'Consommation électrique',
             value:
                 '${session.consommationCourant.toStringAsFixed(2)} ${meterType.unit}',

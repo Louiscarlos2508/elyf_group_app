@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../domain/entities/bobine_usage.dart';
+import '../../../domain/entities/machine_material_usage.dart';
 import '../../../domain/entities/production_session.dart';
 import 'tracking_dialogs.dart';
 
@@ -28,7 +28,7 @@ class TrackingActions extends StatelessWidget {
           label: const Text('Ajouter une machine'),
         ),
         if (session.machinesUtilisees.isNotEmpty &&
-            session.bobinesUtilisees.isNotEmpty) ...[
+            session.machineMaterials.isNotEmpty) ...[
           const SizedBox(height: 24),
           FilledButton.icon(
             onPressed: onFinalize,
@@ -59,17 +59,17 @@ class TrackingActions extends StatelessWidget {
   }
 
   /// Affiche le dialog pour installer une nouvelle bobine.
-  static Future<void> showInstallNewBobineDialog(
+  static Future<void> showInstallNewMaterialDialog(
     BuildContext context,
     WidgetRef ref,
     ProductionSession session,
-    BobineUsage oldBobine,
+    MachineMaterialUsage oldMaterial,
   ) async {
-    return TrackingDialogs.showInstallNewBobineDialog(
+    return TrackingDialogs.showInstallNewMaterialDialog(
       context,
       ref,
       session,
-      oldBobine,
+      oldMaterial,
     );
   }
 
@@ -78,19 +78,19 @@ class TrackingActions extends StatelessWidget {
     BuildContext context,
     WidgetRef ref,
     ProductionSession session,
-    BobineUsage bobine,
+    MachineMaterialUsage material,
   ) {
-    TrackingDialogs.showMachineBreakdownDialog(context, ref, session, bobine);
+    TrackingDialogs.showMachineBreakdownDialog(context, ref, session, material);
   }
 
   /// Affiche le dialog pour marquer une bobine comme finie.
-  static void showBobineFinishDialog(
+  static void showMaterialFinishDialog(
     BuildContext context,
     WidgetRef ref,
     ProductionSession session,
-    BobineUsage bobine,
+    MachineMaterialUsage material,
   ) {
-    TrackingDialogs.showBobineFinishDialog(context, ref, session, bobine);
+    TrackingDialogs.showMaterialFinishDialog(context, ref, session, material);
   }
 
   /// Affiche le dialog pour enregistrer un événement.

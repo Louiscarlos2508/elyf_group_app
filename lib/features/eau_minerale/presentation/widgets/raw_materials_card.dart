@@ -1,26 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:elyf_groupe_app/shared/presentation/widgets/elyf_ui/organisms/elyf_card.dart';
 
-import '../../domain/entities/bobine_stock.dart';
-import '../../domain/entities/packaging_stock.dart';
 import '../../domain/entities/product.dart';
 import '../../domain/entities/stock_item.dart';
-
-
 class RawMaterialsCard extends StatelessWidget {
   final List<StockItem> items;
   final List<Product>? products; // Optionnel pour enrichir les données
-  final int availableBobines; // Total pour compatibilité
-  final List<BobineStock> bobineStocks; // Stocks de bobines par type
-  final List<PackagingStock> packagingStocks;
+  final int availableMachineMaterials; // Total pour compatibilité
 
   const RawMaterialsCard({
     super.key,
     required this.items,
     this.products,
-    required this.availableBobines,
-    required this.bobineStocks,
-    required this.packagingStocks,
+    required this.availableMachineMaterials,
   });
 
   @override
@@ -64,61 +56,39 @@ class RawMaterialsCard extends StatelessWidget {
           
           // 2. Afficher chaque matière première du catalogue
           ...rawMaterialProducts.map((product) {
-            final nameLower = product.name.toLowerCase();
+            final productId = product.id;
             
             // Chercher la quantité totale dans toutes les sources de stock
             double totalQuantity = 0;
-            bool isLowStock = false;
-            int? seuilAlerte;
 
-            // a. Chercher dans packagingStocks
-            final pkgStocks = packagingStocks.where((s) => s.type.toLowerCase() == nameLower);
-            for (final s in pkgStocks) {
-              totalQuantity += s.quantity;
-              if (s.estStockFaible) isLowStock = true;
-              seuilAlerte = s.seuilAlerte;
-            }
-
-            // b. Chercher dans bobineStocks
-            final bbStocks = bobineStocks.where((s) => s.type.toLowerCase() == nameLower);
-            for (final s in bbStocks) {
-              totalQuantity += s.quantity;
-              if (s.estStockFaible) isLowStock = true;
-              seuilAlerte = s.seuilAlerte;
-            }
-
-            // c. Chercher dans les items génériques (si non déjà compté)
-            if (pkgStocks.isEmpty && bbStocks.isEmpty) {
-              final genericItems = items.where((i) => i.name.toLowerCase() == nameLower);
-              for (final i in genericItems) {
-                totalQuantity += i.quantity;
-                // Pas de seuil d'alerte sur les items génériques dans ce modèle
-              }
+            final genericItems = items.where((i) => i.id == productId || i.name.toLowerCase() == product.name.toLowerCase());
+            for (final i in genericItems) {
+              totalQuantity += i.quantity;
             }
 
             // Libellé de quantité
             String quantityDisplay;
-            if (product.unitsPerLot > 1) {
-              final lots = totalQuantity / product.unitsPerLot;
-              quantityDisplay = '${lots.toStringAsFixed(1)} lots (${totalQuantity.toInt()} ${product.unit})';
+            if ((product.unitsPerLot ?? 1) > 1) {
+              final lots = totalQuantity / (product.unitsPerLot ?? 1);
+              quantityDisplay = '${lots.toStringAsFixed(1)} lots (${totalQuantity.toInt()} ${product.unit ?? ''})';
             } else {
-              quantityDisplay = '${totalQuantity.toInt()} ${product.unit}';
+              quantityDisplay = '${totalQuantity.toInt()} ${product.unit ?? ''}';
             }
 
             return Padding(
               padding: const EdgeInsets.only(bottom: 20),
               child: _buildPackagingItem(
                 context,
-                product.name,
-                product.description ?? (product.unitsPerLot > 1 
-                  ? 'Format: ${product.unitsPerLot} ${product.unit}/lot' 
+                product.name ?? 'Inconnu',
+                product.description ?? ((product.unitsPerLot ?? 1) > 1 
+                  ? 'Format: ${product.unitsPerLot} ${product.unit ?? ''}/lot' 
                   : 'Géré à l\'unité'),
                 totalQuantity,
-                product.unit,
-                isLowStock,
-                seuilAlerte,
+                product.unit ?? '',
+                false, // Disable low stock warning logic on raw materials temporarily
+                null,
                 customQuantityLabel: quantityDisplay,
-                icon: _getIconForName(product.name),
+                icon: _getIconForName(product.name ?? 'Inconnu'),
               ),
             );
           }),

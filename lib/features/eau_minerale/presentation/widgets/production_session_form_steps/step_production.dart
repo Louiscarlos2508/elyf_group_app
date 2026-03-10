@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../domain/entities/production_day.dart';
 import '../../../domain/entities/production_session.dart';
-import '../../../domain/entities/bobine_usage.dart';
+import '../../../domain/entities/machine_material_usage.dart';
 import '../machine_selector_field.dart';
-import 'bobines_installation_section.dart';
-import 'bobine_non_finie_alert.dart';
+import 'machine_materials_installation_section.dart';
+import 'machine_material_non_finie_alert.dart';
 import 'personnel_section.dart';
 import 'production_form_fields.dart';
 
@@ -21,13 +21,13 @@ class StepProduction extends ConsumerWidget {
     required this.onProductionDayAdded,
     required this.onProductionDayRemoved,
     required this.machinesSelectionnees,
-    required this.bobinesUtilisees,
-    required this.machinesAvecBobineNonFinie,
+    required this.machineMaterials,
+    required this.machinesAvecMatiereNonFinie,
     required this.onMachinesChanged,
-    required this.onBobinesChanged,
-    required this.onInstallerBobine,
+    required this.onMaterialsChanged,
+    required this.onInstallerMatiere,
     required this.onSignalerPanne,
-    required this.onRetirerBobine,
+    required this.onRetirerMatiere,
     this.session,
   });
 
@@ -38,15 +38,15 @@ class StepProduction extends ConsumerWidget {
   final DateTime selectedDate;
   final ProductionSession? session;
   final List<String> machinesSelectionnees;
-  final List<BobineUsage> bobinesUtilisees;
-  final Map<String, BobineUsage> machinesAvecBobineNonFinie;
+  final List<MachineMaterialUsage> machineMaterials;
+  final Map<String, MachineMaterialUsage> machinesAvecMatiereNonFinie;
   final void Function(ProductionDay) onProductionDayAdded;
   final ValueChanged<ProductionDay> onProductionDayRemoved;
   final ValueChanged<List<String>> onMachinesChanged;
-  final ValueChanged<List<BobineUsage>> onBobinesChanged;
-  final VoidCallback onInstallerBobine;
-  final void Function(BuildContext, BobineUsage, int) onSignalerPanne;
-  final ValueChanged<int> onRetirerBobine;
+  final ValueChanged<List<MachineMaterialUsage>> onMaterialsChanged;
+  final VoidCallback onInstallerMatiere;
+  final void Function(BuildContext, MachineMaterialUsage, int) onSignalerPanne;
+  final ValueChanged<int> onRetirerMatiere;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -56,10 +56,9 @@ class StepProduction extends ConsumerWidget {
         _buildSectionTitle(context, 'Tableau de Bord Production', Icons.dashboard),
         const SizedBox(height: 24),
         
-        // 1. Machines et Bobines (Cœur technique)
         _buildCard(
           context,
-          title: 'Machines et Bobines',
+          title: 'Machines et Matières',
           icon: Icons.precision_manufacturing,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -68,26 +67,25 @@ class StepProduction extends ConsumerWidget {
                 machinesSelectionnees: machinesSelectionnees,
                 onMachinesChanged: onMachinesChanged,
               ),
-              if (machinesAvecBobineNonFinie.isNotEmpty) ...[
+              if (machinesAvecMatiereNonFinie.isNotEmpty) ...[
                 const SizedBox(height: 12),
-                BobineNonFinieAlert(
-                  machinesAvecBobineNonFinie: machinesAvecBobineNonFinie,
+                MachineMaterialNonFinieAlert(
+                  machinesAvecMatiereNonFinie: machinesAvecMatiereNonFinie,
                 ),
               ],
               const SizedBox(height: 24),
-              BobinesInstallationSection(
+              MachineMaterialsInstallationSection(
                 machinesSelectionnees: machinesSelectionnees,
-                bobinesUtilisees: bobinesUtilisees,
-                onInstallerBobine: onInstallerBobine,
+                materials: machineMaterials,
+                onInstallerMatiere: onInstallerMatiere,
                 onSignalerPanne: onSignalerPanne,
-                onRetirerBobine: onRetirerBobine,
+                onRetirerMatiere: onRetirerMatiere,
               ),
             ],
           ),
         ),
         const SizedBox(height: 24),
 
-        // 2. Production (Données)
         _buildCard(
           context,
           title: 'Saisie Production',
@@ -100,13 +98,12 @@ class StepProduction extends ConsumerWidget {
         ),
         const SizedBox(height: 24),
 
-        // 3. Personnel (Écurie)
         PersonnelSection(
           productionDays: productionDays,
           selectedDate: selectedDate,
           session: session,
           machinesSelectionnees: machinesSelectionnees,
-          bobinesUtilisees: bobinesUtilisees,
+          machineMaterials: machineMaterials,
           onProductionDayAdded: onProductionDayAdded,
           onProductionDayRemoved: onProductionDayRemoved,
         ),

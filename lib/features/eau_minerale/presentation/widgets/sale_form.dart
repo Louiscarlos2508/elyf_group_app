@@ -176,7 +176,7 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
 
   Widget _buildQuantityField(BuildContext context, WidgetRef ref) {
     final productStockAsync = _selectedProduct != null 
-        ? ref.watch(productStockQuantityProvider(_selectedProduct!.name))
+        ? ref.watch(productStockQuantityProvider(_selectedProduct!.id))
         : null;
         
     return productStockAsync != null ? productStockAsync.when(
@@ -262,69 +262,8 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
     );
   }
 
-  Widget _buildSessionWarning(BuildContext context, WidgetRef ref) {
-    final sessionAsync = ref.watch(currentClosingSessionProvider);
-    final theme = Theme.of(context);
-
-    return sessionAsync.maybeWhen(
-      data: (session) {
-        if (session != null && session.status == ClosingStatus.open) {
-          return const SizedBox.shrink();
-        }
-
-        return Container(
-          margin: const EdgeInsets.only(bottom: 24),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.errorContainer.withValues(alpha: 0.8),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: theme.colorScheme.error.withValues(alpha: 0.3)),
-          ),
-          child: Row(
-            children: [
-              Icon(Icons.warning_amber_rounded, color: theme.colorScheme.error),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Session de trésorerie fermée',
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.onErrorContainer,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Vous devez ouvrir une session dans l\'onglet "Trésorerie" avant de pouvoir enregistrer une vente.',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onErrorContainer,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-      orElse: () => const SizedBox.shrink(),
-    );
-  }
 
   Future<void> submit() async {
-    // 0. Vérifier la session de trésorerie
-    final currentSession = await ref.read(currentClosingSessionProvider.future);
-    if (currentSession == null || currentSession.status != ClosingStatus.open) {
-      if (!mounted) return;
-      NotificationService.showError(
-        context,
-        'La session de trésorerie est fermée. Veuillez l\'ouvrir avant de vendre.',
-      );
-      return;
-    }
-
     if (_selectedProduct == null) {
       NotificationService.showWarning(
         context,
@@ -354,7 +293,7 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
     }
 
     final saleService = ref.read(saleServiceProvider);
-    final stock = await ref.read(productStockQuantityProvider(_selectedProduct!.name).future);
+    final stock = await ref.read(productStockQuantityProvider(_selectedProduct!.id).future);
     final validationError = await saleService.validateSale(
       productId: _selectedProduct!.id,
       quantity: _quantity,
@@ -363,7 +302,7 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
       customerId: _selectedCustomer?.id,
       customerName: _customerNameController.text,
       customerPhone: _customerPhoneController.text,
-      packStockOverride: stock,
+      stockOverride: stock,
     );
 
     if (!mounted) return;
@@ -460,7 +399,6 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _buildSessionWarning(context, ref),
                       ..._buildLeftColumn(context),
                     ],
                   ),
@@ -479,7 +417,6 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _buildSessionWarning(context, ref),
                 ..._buildLeftColumn(context),
                 const SizedBox(height: 16),
                 ..._buildRightColumn(context),

@@ -14,7 +14,6 @@ import '../../widgets/dashboard_trends_chart.dart';
 import '../../widgets/stock_alert_banner.dart';
 import '../../widgets/supplier_form_dialog.dart';
 import '../../widgets/purchase_entry_dialog.dart';
-import '../../widgets/z_report_dialog.dart';
 
 /// Professional dashboard screen with organized sections and responsive layout.
 class DashboardScreen extends ConsumerWidget {
@@ -95,15 +94,6 @@ class DashboardScreen extends ConsumerWidget {
                         onTap: () => showDialog(context: context, builder: (context) => const SupplierFormDialog()),
                       ),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: DashboardActionCard(
-                        label: 'Clôture (Z)',
-                        icon: Icons.assignment_turned_in,
-                        color: Colors.orange,
-                        onTap: () => showDialog(context: context, builder: (context) => const ZReportDialog()),
-                      ),
-                    ),
                   ],
                 ),
               ),
@@ -163,14 +153,15 @@ class DashboardStockAlerts extends ConsumerWidget {
             .where(
               (item) =>
                   item.type == StockType.finishedGoods &&
-                  item.quantity < 100,
+                  item.quantity < StockItem.kLowStockThreshold,
             )
             .toList();
         if (lowStockItems.isEmpty) return const SizedBox.shrink();
         return StockAlertBanner(
           productName: lowStockItems.first.name,
           onTap: () {
-            // Navigate to stock screen
+            // Appelle le provider de navigation modulaire pour changer de section.
+            ref.read(currentModuleSectionIdProvider.notifier).state = 'stock';
           },
         );
       },

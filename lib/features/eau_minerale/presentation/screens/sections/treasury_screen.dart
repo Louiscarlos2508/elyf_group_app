@@ -5,9 +5,8 @@ import 'package:elyf_groupe_app/features/administration/domain/entities/enterpri
 import 'package:intl/intl.dart';
 import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
+import '../../../../boutique/presentation/screens/sections/widgets/treasury_operation_dialog.dart';
 import '../../../domain/entities/treasury_movement.dart';
-import '../../widgets/z_report_dialog.dart';
-import './widgets/treasury_operation_dialog.dart';
 import 'package:elyf_groupe_app/shared/domain/entities/treasury_operation.dart';
 
 class TreasuryScreen extends ConsumerWidget {
@@ -111,17 +110,7 @@ class TreasuryScreen extends ConsumerWidget {
                     builder: (context) => const TreasuryOperationDialog(type: TreasuryOperationType.adjustment),
                   ),
                 ),
-                sessionAsync.maybeWhen(
-                  data: (session) => ActionChip(
-                    avatar: Icon(session != null ? Icons.lock_clock : Icons.lock_open, size: 18),
-                    label: Text(session != null ? 'Z-Report' : 'Ouvrir Session'),
-                    onPressed: () => showDialog(
-                      context: context,
-                      builder: (context) => const ZReportDialog(),
-                    ),
-                  ),
-                  orElse: () => const SizedBox.shrink(),
-                ),
+
               ],
             ),
           ),

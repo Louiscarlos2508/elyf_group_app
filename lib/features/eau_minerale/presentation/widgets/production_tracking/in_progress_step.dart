@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../domain/entities/production_session.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
-import 'bobines_status_list.dart';
+import 'machine_materials_status_list.dart';
 import 'info_row.dart';
 import 'personnel_section.dart';
 import 'tracking_dialogs.dart';
@@ -17,10 +16,10 @@ class InProgressStep extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final bobinesFinies = session.bobinesUtilisees
-        .where((b) => b.estFinie)
+    final materialsFinis = session.machineMaterials
+        .where((m) => m.estFinie)
         .length;
-    final toutesBobinesFinies = session.toutesBobinesFinies;
+    final toutesMatieresFinies = session.toutesMatieresFinies;
 
     return Card(
       child: Padding(
@@ -40,7 +39,7 @@ class InProgressStep extends ConsumerWidget {
                     ),
                   ),
                 ),
-                if (toutesBobinesFinies)
+                if (toutesMatieresFinies)
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 12,
@@ -60,7 +59,7 @@ class InProgressStep extends ConsumerWidget {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          'Toutes bobines finies',
+                          'Toutes matières finies',
                           style: theme.textTheme.labelSmall?.copyWith(
                             color: theme.colorScheme.onPrimaryContainer,
                             fontWeight: FontWeight.w600,
@@ -79,13 +78,13 @@ class InProgressStep extends ConsumerWidget {
             ),
             InfoRow(
               icon: Icons.inventory_2,
-              label: 'Bobines installées',
-              value: '${session.bobinesUtilisees.length}',
+              label: 'Matières installées',
+              value: '${session.machineMaterials.length}',
             ),
             InfoRow(
               icon: Icons.check_circle_outline,
-              label: 'Bobines finies',
-              value: '$bobinesFinies / ${session.bobinesUtilisees.length}',
+              label: 'Matières finies',
+              value: '$materialsFinis / ${session.machineMaterials.length}',
             ),
             _buildConsumptionInfoRow(context, ref),
             const SizedBox(height: 24),
@@ -96,7 +95,7 @@ class InProgressStep extends ConsumerWidget {
               label: const Text('Ajouter une machine'),
             ),
             const SizedBox(height: 24),
-            BobinesStatusList(session: session),
+            MachineMaterialsStatusList(session: session),
             const SizedBox(height: 24),
             PersonnelSection(session: session),
             const SizedBox(height: 24),
@@ -134,7 +133,7 @@ class InProgressStep extends ConsumerWidget {
     final meterTypeAsync = ref.watch(electricityMeterTypeProvider);
 
     return meterTypeAsync.when(
-      data: (meterType) {
+      data: (ElectricityMeterType meterType) {
         return InfoRow(
           icon: Icons.flash_on,
           label: 'Consommation électrique',

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
-import '../../../domain/entities/bobine_usage.dart';
+import '../../../domain/entities/machine_material_usage.dart';
 import '../../../domain/entities/production_session.dart';
 import '../../../domain/entities/production_session_status.dart';
 import 'production_report_helpers.dart';
@@ -22,7 +22,7 @@ class ProductionReportMachinesBobines extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Machines et Bobines',
+          'Machines et Matières',
           style: theme.textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.bold,
           ),
@@ -34,30 +34,30 @@ class ProductionReportMachinesBobines extends ConsumerWidget {
         ),
         const SizedBox(height: 12),
         allSessionsAsync.when(
-          data: (allSessions) => _buildBobinesList(theme, session, allSessions),
+          data: (allSessions) => _buildMaterialsList(theme, session, allSessions),
           loading: () => const CircularProgressIndicator(),
-          error: (_, __) => _buildBobinesListFallback(theme, session),
+          error: (_, __) => _buildMaterialsListFallback(theme, session),
         ),
       ],
     );
   }
 
-  Widget _buildBobinesList(
+  Widget _buildMaterialsList(
     ThemeData theme,
     ProductionSession session,
     List<ProductionSession> allSessions,
   ) {
     return Column(
-      children: session.bobinesUtilisees.map((bobine) {
-        final reuseInfo = _findBobineReuseInfo(bobine, session, allSessions);
+      children: session.machineMaterials.map((material) {
+        final reuseInfo = _findMaterialReuseInfo(material, session, allSessions);
         final statutCloture =
             session.effectiveStatus == ProductionSessionStatus.completed
-            ? (bobine.estFinie ? 'Finie' : 'Reste en machine')
+            ? (material.estFinie ? 'Finie' : 'Reste en machine')
             : null;
 
-        return _BobineCard(
+        return _MaterialCard(
           theme: theme,
-          bobine: bobine,
+          material: material,
           isReused: reuseInfo.isReused,
           sessionOrigine: reuseInfo.sessionOrigine,
           statutCloture: statutCloture,
@@ -66,17 +66,17 @@ class ProductionReportMachinesBobines extends ConsumerWidget {
     );
   }
 
-  Widget _buildBobinesListFallback(ThemeData theme, ProductionSession session) {
+  Widget _buildMaterialsListFallback(ThemeData theme, ProductionSession session) {
     return Column(
-      children: session.bobinesUtilisees.map((bobine) {
+      children: session.machineMaterials.map((material) {
         final statutCloture =
             session.effectiveStatus == ProductionSessionStatus.completed
-            ? (bobine.estFinie ? 'Finie' : 'Reste en machine')
+            ? (material.estFinie ? 'Finie' : 'Reste en machine')
             : null;
 
-        return _BobineCard(
+        return _MaterialCard(
           theme: theme,
-          bobine: bobine,
+          material: material,
           isReused: false,
           sessionOrigine: null,
           statutCloture: statutCloture,
@@ -85,14 +85,14 @@ class ProductionReportMachinesBobines extends ConsumerWidget {
     );
   }
 
-  ({bool isReused, String? sessionOrigine}) _findBobineReuseInfo(
-    BobineUsage bobine,
+  ({bool isReused, String? sessionOrigine}) _findMaterialReuseInfo(
+    MachineMaterialUsage material,
     ProductionSession currentSession,
     List<ProductionSession> allSessions,
   ) {
-    // Si la bobine a été installée pendant cette session (après ou à l'heure du début), 
+    // Si la matière a été installée pendant cette session (après ou à l'heure du début), 
     // elle n'est pas réutilisée mais neuve.
-    if (!bobine.heureInstallation.isBefore(currentSession.heureDebut)) {
+    if (!material.heureInstallation.isBefore(currentSession.heureDebut)) {
       return (isReused: false, sessionOrigine: null);
     }
 
@@ -109,11 +109,11 @@ class ProductionReportMachinesBobines extends ConsumerWidget {
 
     for (final s in sessionsPrecedentes) {
       try {
-        final bobineDansSessionPrecedente = s.bobinesUtilisees.firstWhere(
-          (b) => b.machineId == bobine.machineId && !b.estFinie,
+        final materialDansSessionPrecedente = s.machineMaterials.firstWhere(
+          (m) => m.machineId == material.machineId && !m.estFinie,
         );
 
-        if (bobineDansSessionPrecedente.bobineType == bobine.bobineType) {
+        if (materialDansSessionPrecedente.materialType == material.materialType) {
           return (
             isReused: true,
             sessionOrigine: ProductionReportHelpers.formatDate(s.date),
@@ -128,17 +128,17 @@ class ProductionReportMachinesBobines extends ConsumerWidget {
   }
 }
 
-class _BobineCard extends StatelessWidget {
-  const _BobineCard({
+class _MaterialCard extends StatelessWidget {
+  const _MaterialCard({
     required this.theme,
-    required this.bobine,
+    required this.material,
     required this.isReused,
     this.sessionOrigine,
     this.statutCloture,
   });
 
   final ThemeData theme;
-  final BobineUsage bobine;
+  final MachineMaterialUsage material;
   final bool isReused;
   final String? sessionOrigine;
   final String? statutCloture;
@@ -150,7 +150,7 @@ class _BobineCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: bobine.estFinie
+          color: material.estFinie
               ? theme.colorScheme.surfaceContainerHighest
               : theme.colorScheme.primaryContainer.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(8),
@@ -167,9 +167,9 @@ class _BobineCard extends StatelessWidget {
             Row(
               children: [
                 Icon(
-                  bobine.estFinie ? Icons.check_circle : Icons.rotate_right,
+                  material.estFinie ? Icons.check_circle : Icons.rotate_right,
                   size: 20,
-                  color: bobine.estFinie
+                  color: material.estFinie
                       ? Colors.green
                       : theme.colorScheme.primary,
                 ),
@@ -182,7 +182,7 @@ class _BobineCard extends StatelessWidget {
                         children: [
                           Expanded(
                             child: Text(
-                              bobine.bobineType,
+                              material.materialType,
                               style: theme.textTheme.bodyMedium?.copyWith(
                                 fontWeight: FontWeight.w600,
                               ),
@@ -210,7 +210,7 @@ class _BobineCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Machine: ${bobine.machineName}',
+                        'Machine: ${material.machineName}',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
@@ -219,8 +219,8 @@ class _BobineCard extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text(
                           sessionOrigine != null
-                              ? 'Bobine non finie de la session du $sessionOrigine'
-                              : 'Bobine non finie d\'une session précédente',
+                              ? 'Matière non finie de la session du $sessionOrigine'
+                              : 'Matière non finie d\'une session précédente',
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: Colors.orange.shade700,
                             fontStyle: FontStyle.italic,
@@ -236,7 +236,7 @@ class _BobineCard extends StatelessWidget {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: bobine.estFinie
+                            color: material.estFinie
                                 ? Colors.green.withValues(alpha: 0.2)
                                 : Colors.orange.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(6),
@@ -244,7 +244,7 @@ class _BobineCard extends StatelessWidget {
                           child: Text(
                             'Statut à la clôture: $statutCloture',
                             style: theme.textTheme.bodySmall?.copyWith(
-                              color: bobine.estFinie
+                              color: material.estFinie
                                   ? Colors.green.shade700
                                   : Colors.orange.shade700,
                               fontWeight: FontWeight.w600,

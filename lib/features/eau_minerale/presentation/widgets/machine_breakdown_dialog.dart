@@ -2,25 +2,26 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
-import '../../domain/entities/bobine_usage.dart';
+import '../../domain/entities/machine_material_usage.dart';
 import '../../domain/entities/machine.dart';
 import '../../domain/entities/production_event.dart';
 import '../../domain/entities/production_session.dart';
 import 'package:elyf_groupe_app/shared.dart';
 
-/// Dialog pour signaler une panne de machine et retirer la bobine.
+/// Dialog pour signaler une panne de machine et retirer la matière.
+/// (Anciennement MachineBreakdownDialog).
 class MachineBreakdownDialog extends ConsumerStatefulWidget {
   const MachineBreakdownDialog({
     super.key,
     required this.machine,
     this.session,
-    this.bobine,
+    this.material,
     required this.onPanneSignaled,
   });
 
   final Machine machine;
   final ProductionSession? session;
-  final BobineUsage? bobine;
+  final MachineMaterialUsage? material;
   final ValueChanged<ProductionEvent> onPanneSignaled;
 
   @override
@@ -35,15 +36,15 @@ class _MachineBreakdownDialogState
   final _notesController = TextEditingController();
   DateTime _selectedDate = DateTime.now();
   TimeOfDay _selectedTime = TimeOfDay.now();
-  late bool _retirerBobine;
+  late bool _retirerMatiere;
 
-  bool get _hasBobine => widget.bobine != null;
+  bool get _hasMaterial => widget.material != null;
   bool get _hasSession => widget.session != null;
 
   @override
   void initState() {
     super.initState();
-    _retirerBobine = _hasBobine;
+    _retirerMatiere = _hasMaterial;
   }
 
   @override
@@ -64,7 +65,6 @@ class _MachineBreakdownDialogState
       _selectedTime.minute,
     );
 
-    // Créer l'événement de panne
     final event = ProductionEvent(
       id: 'event-${DateTime.now().millisecondsSinceEpoch}',
       productionId:
@@ -78,18 +78,17 @@ class _MachineBreakdownDialogState
       createdAt: DateTime.now(),
     );
 
-    // Si on a une session et une bobine, et qu'on veut retirer la bobine
-    if (_hasSession && _hasBobine && _retirerBobine) {
-      final bobinesMisesAJour = widget.session!.bobinesUtilisees.map((b) {
-        if (b.bobineType == widget.bobine!.bobineType &&
-            b.machineId == widget.bobine!.machineId) {
-          return b.copyWith(estFinie: true, dateUtilisation: dateHeure);
+    if (_hasSession && _hasMaterial && _retirerMatiere) {
+      final materialsMisesAJour = widget.session!.machineMaterials.map((m) {
+        if (m.materialType == widget.material!.materialType &&
+            m.machineId == widget.material!.machineId) {
+          return m.copyWith(estFinie: true, dateUtilisation: dateHeure);
         }
-        return b;
+        return m;
       }).toList();
 
       final sessionMiseAJour = widget.session!.copyWith(
-        bobinesUtilisees: bobinesMisesAJour,
+        machineMaterials: materialsMisesAJour,
         events: [...widget.session!.events, event],
         updatedAt: DateTime.now(),
       );
@@ -97,16 +96,15 @@ class _MachineBreakdownDialogState
       final controller = ref.read(productionSessionControllerProvider);
       await controller.updateSession(sessionMiseAJour);
 
-      // Enregistrer le retour de stock pour la bobine retirée (ajoute à la quantité)
       final stockController = ref.read(stockControllerProvider);
-      await stockController.recordBobineEntry(
-        bobineType: widget.bobine!.bobineType,
-        quantite: 1, // Une bobine = 1 unité
-        fournisseur: null,
-        notes: 'Retour suite à panne - Machine ${widget.bobine!.machineName}',
+      await stockController.recordEntry(
+        productId: widget.material!.productId ?? '',
+        productName: widget.material!.productName ?? widget.material!.materialType,
+        quantite: 1, 
+        raison: 'Retour suite à panne - Machine ${widget.material!.machineName}',
+        notes: 'Retour suite à panne - Machine ${widget.material!.machineName}',
       );
     } else if (_hasSession) {
-      // Juste enregistrer l'événement sans retirer la bobine
       final sessionMiseAJour = widget.session!.copyWith(
         events: [...widget.session!.events, event],
         updatedAt: DateTime.now(),
@@ -115,7 +113,7 @@ class _MachineBreakdownDialogState
       final controller = ref.read(productionSessionControllerProvider);
       await controller.updateSession(sessionMiseAJour);
     }
-    // 3. Mettre à jour le statut de la machine elle-même (Persistance du statut en panne)
+
     final machineMiseAJour = widget.machine.copyWith(
       isActive: false,
       updatedAt: DateTime.now(),
@@ -124,9 +122,7 @@ class _MachineBreakdownDialogState
     final machineController = ref.read(machineControllerProvider);
     await machineController.updateMachine(machineMiseAJour);
 
-    // 4. Invalider les providers pour rafraîchir les listes (UI)
     ref.invalidate(allMachinesProvider);
-    // ref.invalidate(machinesProvider); // Optionnel si utilisé ailleurs
 
     if (!mounted) return;
     widget.onPanneSignaled(event);
@@ -134,8 +130,8 @@ class _MachineBreakdownDialogState
 
     NotificationService.showInfo(
       context,
-      _retirerBobine && _hasBobine
-          ? 'Panne signalée et bobine retirée'
+      _retirerMatiere && _hasMaterial
+          ? 'Panne signalée et matière retirée'
           : 'Panne signalée',
     );
   }
@@ -159,7 +155,6 @@ class _MachineBreakdownDialogState
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Header with subtle gradient
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
                   decoration: BoxDecoration(
@@ -204,7 +199,6 @@ class _MachineBreakdownDialogState
                 ),
                 const Divider(height: 1),
 
-                // Form Content
                 Flexible(
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.all(24),
@@ -223,7 +217,6 @@ class _MachineBreakdownDialogState
                         ),
                         const SizedBox(height: 16),
 
-                        // Date & Time
                         Row(
                           children: [
                             Expanded(child: _buildDateTimePicker(theme, colors, isDate: true)),
@@ -233,7 +226,7 @@ class _MachineBreakdownDialogState
                         ),
                         const SizedBox(height: 16),
 
-                        if (_hasBobine) ...[
+                        if (_hasMaterial) ...[
                           ElyfCard(
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                             borderRadius: 16,
@@ -241,13 +234,13 @@ class _MachineBreakdownDialogState
                             borderColor: colors.primary.withValues(alpha: 0.1),
                             child: CheckboxListTile(
                               contentPadding: EdgeInsets.zero,
-                              title: const Text('Retirer bobine', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                              title: const Text('Retirer matière', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                               subtitle: Text(
-                                'Retour au stock (${widget.bobine!.bobineType})',
+                                'Retour au stock (${widget.material!.materialType})',
                                 style: const TextStyle(fontSize: 11),
                               ),
-                              value: _retirerBobine,
-                              onChanged: (value) => setState(() => _retirerBobine = value ?? true),
+                              value: _retirerMatiere,
+                              onChanged: (value) => setState(() => _retirerMatiere = value ?? true),
                             ),
                           ),
                           const SizedBox(height: 16),
@@ -267,7 +260,6 @@ class _MachineBreakdownDialogState
                   ),
                 ),
 
-                // Footer
                 const Divider(height: 1),
                 Padding(
                   padding: const EdgeInsets.all(24),

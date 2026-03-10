@@ -115,29 +115,16 @@ class DashboardStockList extends ConsumerWidget {
   Widget _buildRawMaterialsList(BuildContext context, StockState state) {
     final List<Widget> children = [];
 
-    // Bobines
-    for (final bobine in state.bobineStocks) {
-      children.add(
-        _StockListTile(
-          name: 'Bobine: ${bobine.type}',
-          quantity: bobine.quantity.toDouble(),
-          unit: 'unité',
-          isLowStock: bobine.quantity < 5,
-          isLast: false,
-        ),
-      );
-    }
-
-    // Packaging
-    for (var i = 0; i < state.packagingStocks.length; i++) {
-        final packaging = state.packagingStocks[i];
+    final rawMaterials = state.items.where((i) => i.type == StockType.rawMaterial).toList();
+    for (var i = 0; i < rawMaterials.length; i++) {
+        final raw = rawMaterials[i];
         children.add(
           _StockListTile(
-            name: 'Emballage: ${packaging.type}',
-            quantity: packaging.quantity.toDouble(),
-            unit: 'unité',
-            isLowStock: packaging.quantity < 500,
-            isLast: i == state.packagingStocks.length - 1 && state.bobineStocks.isEmpty,
+            name: raw.name,
+            quantity: raw.quantity.toDouble(),
+            unit: raw.unit,
+            isLowStock: raw.quantity < 5, // Arbitrary threshold
+            isLast: i == rawMaterials.length - 1,
           ),
         );
     }

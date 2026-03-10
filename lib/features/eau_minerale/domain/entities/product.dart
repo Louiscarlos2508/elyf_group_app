@@ -4,6 +4,7 @@ class Product {
     required this.enterpriseId,
     required this.name,
     required this.type,
+    this.role,
     required this.unitPrice,
     required this.unit,
     this.supplyUnit, // ex: "Paquet", "Rouleau"
@@ -19,6 +20,7 @@ class Product {
   final String enterpriseId;
   final String name;
   final ProductType type;
+  final String? role; // e.g., "main_finished_good", "main_raw_material", "capsule"
   final int unitPrice; // Price in CFA
   final String unit;
   final String? supplyUnit;
@@ -49,6 +51,7 @@ class Product {
       enterpriseId: enterpriseId ?? this.enterpriseId,
       name: name ?? this.name,
       type: type ?? this.type,
+      role: role ?? this.role,
       unitPrice: unitPrice ?? this.unitPrice,
       unit: unit ?? this.unit,
       supplyUnit: supplyUnit ?? this.supplyUnit,
@@ -69,6 +72,7 @@ class Product {
       enterpriseId: map['enterpriseId'] as String? ?? defaultEnterpriseId,
       name: map['name'] as String? ?? '',
       type: _parseType(map['type']),
+      role: map['role'] as String?,
       unitPrice: (map['unitPrice'] as num?)?.toInt() ?? 0,
       unit: map['unit'] as String? ?? '',
       supplyUnit: map['supplyUnit'] as String?,
@@ -93,6 +97,7 @@ class Product {
       'enterpriseId': enterpriseId,
       'name': name,
       'type': type.name,
+      'role': role,
       'unitPrice': unitPrice,
       'unit': unit,
       'supplyUnit': supplyUnit,

@@ -18,6 +18,8 @@ class ProductOfflineRepository extends OfflineRepository<Product>
 
   final String enterpriseId;
 
+  String get moduleType => 'eau_minerale';
+
   @override
   String get collectionName => 'products';
 
@@ -55,7 +57,7 @@ class ProductOfflineRepository extends OfflineRepository<Product>
       localId: localId,
       remoteId: getRemoteId(entity),
       enterpriseId: enterpriseId,
-      moduleType: 'eau_minerale',
+      moduleType: moduleType,
       dataJson: jsonEncode(map),
       localUpdatedAt: DateTime.now(),
     );
@@ -82,7 +84,7 @@ class ProductOfflineRepository extends OfflineRepository<Product>
       collectionName: collectionName,
       remoteId: localId,
       enterpriseId: enterpriseId,
-      moduleType: 'eau_minerale',
+      moduleType: moduleType,
     );
     if (byRemote != null) {
       final product = fromMap(jsonDecode(byRemote.dataJson) as Map<String, dynamic>);
@@ -93,7 +95,7 @@ class ProductOfflineRepository extends OfflineRepository<Product>
       collectionName: collectionName,
       localId: localId,
       enterpriseId: enterpriseId,
-      moduleType: 'eau_minerale',
+      moduleType: moduleType,
     );
     if (byLocal == null) return null;
     final product = fromMap(jsonDecode(byLocal.dataJson) as Map<String, dynamic>);
@@ -105,7 +107,7 @@ class ProductOfflineRepository extends OfflineRepository<Product>
     final rows = await driftService.records.listForEnterprise(
       collectionName: collectionName,
       enterpriseId: enterpriseId,
-      moduleType: 'eau_minerale',
+      moduleType: moduleType,
     );
     final entities = rows
         .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
@@ -204,6 +206,35 @@ class ProductOfflineRepository extends OfflineRepository<Product>
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       AppLogger.error(
         'Error deleting product: $id - ${appException.message}',
+        name: 'ProductOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      throw appException;
+    }
+  }
+
+  @override
+  Future<Product?> getProductByRole(String role) async {
+    try {
+      final rows = await driftService.records.listForEnterpriseWithJsonFilter(
+        collectionName: collectionName,
+        enterpriseId: enterpriseId,
+        moduleType: moduleType,
+        jsonFilters: {'role': role},
+      );
+
+      if (rows.isEmpty) return null;
+
+      // In case of duplicates, take the most recent
+      rows.sort((a, b) => b.localUpdatedAt.compareTo(a.localUpdatedAt));
+
+      final product = fromMap(jsonDecode(rows.first.dataJson) as Map<String, dynamic>);
+      return product.isDeleted ? null : product;
+    } catch (error, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
+      AppLogger.error(
+        'Error getting product by role: $role - ${appException.message}',
         name: 'ProductOfflineRepository',
         error: error,
         stackTrace: stackTrace,

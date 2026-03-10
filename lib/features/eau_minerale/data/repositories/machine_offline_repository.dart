@@ -22,6 +22,8 @@ class MachineOfflineRepository extends OfflineRepository<Machine>
   @override
   String get collectionName => 'machines';
 
+  String get moduleType => 'eau_minerale';
+
   @override
   Machine fromMap(Map<String, dynamic> map) =>
       Machine.fromMap(map, enterpriseId);
@@ -57,7 +59,7 @@ class MachineOfflineRepository extends OfflineRepository<Machine>
       localId: localId,
       remoteId: getRemoteId(entity),
       enterpriseId: enterpriseId,
-      moduleType: 'eau_minerale',
+      moduleType: moduleType,
       dataJson: jsonEncode(map),
       localUpdatedAt: DateTime.now(),
     );
@@ -84,7 +86,7 @@ class MachineOfflineRepository extends OfflineRepository<Machine>
       collectionName: collectionName,
       remoteId: localId,
       enterpriseId: enterpriseId,
-      moduleType: 'eau_minerale',
+      moduleType: moduleType,
     );
     if (byRemote != null) {
       final machine = fromMap(jsonDecode(byRemote.dataJson) as Map<String, dynamic>);
@@ -95,7 +97,7 @@ class MachineOfflineRepository extends OfflineRepository<Machine>
       collectionName: collectionName,
       localId: localId,
       enterpriseId: enterpriseId,
-      moduleType: 'eau_minerale',
+      moduleType: moduleType,
     );
     if (byLocal == null) return null;
     final machine = fromMap(jsonDecode(byLocal.dataJson) as Map<String, dynamic>);
@@ -107,7 +109,7 @@ class MachineOfflineRepository extends OfflineRepository<Machine>
     final rows = await driftService.records.listForEnterprise(
       collectionName: collectionName,
       enterpriseId: enterpriseId,
-      moduleType: 'eau_minerale',
+      moduleType: moduleType,
     );
     final entities = rows
         .map((r) {

@@ -1,5 +1,9 @@
 import '../../../../core/logging/app_logger.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../data/repositories/credit_offline_repository.dart';
+import '../../data/repositories/customer_offline_repository.dart';
+import '../../data/repositories/daily_worker_offline_repository.dart';
+import '../../data/repositories/finance_offline_repository.dart';
 import 'permission_providers.dart' show currentUserIdProvider;
 
 import '../../../../core/offline/drift_service.dart';
@@ -7,13 +11,6 @@ import '../../../../core/offline/providers.dart';
 import '../../../../core/tenant/tenant_provider.dart';
 import '../../../../features/audit_trail/application/providers.dart';
 import '../../data/repositories/activity_offline_repository.dart';
-import '../../data/repositories/bobine_stock_quantity_offline_repository.dart';
-import '../../data/repositories/credit_offline_repository.dart';
-import '../../data/repositories/customer_offline_repository.dart';
-import '../../data/repositories/daily_worker_offline_repository.dart';
-import '../../data/repositories/finance_offline_repository.dart';
-import '../../data/repositories/inventory_offline_repository.dart';
-import '../../data/repositories/packaging_stock_offline_repository.dart';
 import '../../data/repositories/report_offline_repository.dart';
 import '../../data/repositories/salary_offline_repository.dart';
 import '../../data/repositories/stock_offline_repository.dart';
@@ -25,14 +22,11 @@ import '../../data/repositories/supplier_offline_repository.dart';
 import '../../data/repositories/purchase_offline_repository.dart';
 import '../../data/repositories/closing_offline_repository.dart';
 import '../../domain/repositories/activity_repository.dart';
-import '../../domain/repositories/bobine_stock_quantity_repository.dart';
 import '../../domain/repositories/credit_repository.dart';
 import '../../domain/repositories/customer_repository.dart';
 import '../../domain/repositories/daily_worker_repository.dart';
 import '../../domain/repositories/finance_repository.dart';
-import '../../domain/repositories/inventory_repository.dart';
 import '../../domain/repositories/machine_repository.dart';
-import '../../domain/repositories/packaging_stock_repository.dart';
 import '../../domain/repositories/product_repository.dart';
 import '../../domain/repositories/production_session_repository.dart';
 import '../../domain/repositories/report_repository.dart';
@@ -101,21 +95,6 @@ final creditRepositoryProvider = Provider<CreditRepository>((ref) {
   );
 });
 
-final inventoryRepositoryProvider = Provider<InventoryRepository>((ref) {
-  final enterpriseId =
-      ref.watch(activeEnterpriseIdProvider).value ?? 'default';
-  final driftService = DriftService.instance;
-  final syncManager = ref.watch(syncManagerProvider);
-  final connectivityService = ref.watch(connectivityServiceProvider);
-
-  return InventoryOfflineRepository(
-    driftService: driftService,
-    syncManager: syncManager,
-    connectivityService: connectivityService,
-    enterpriseId: enterpriseId,
-    moduleType: 'eau_minerale',
-  );
-});
 
 final customerRepositoryProvider = Provider<CustomerRepository>((ref) {
   final enterpriseId =
@@ -222,39 +201,6 @@ final machineRepositoryProvider = Provider<MachineRepository>((ref) {
   );
 });
 
-final bobineStockQuantityRepositoryProvider =
-    Provider<BobineStockQuantityRepository>((ref) {
-      final enterpriseId =
-          ref.watch(activeEnterpriseIdProvider).value ?? 'default';
-      final driftService = DriftService.instance;
-      final syncManager = ref.watch(syncManagerProvider);
-      final connectivityService = ref.watch(connectivityServiceProvider);
-
-      return BobineStockQuantityOfflineRepository(
-        driftService: driftService,
-        syncManager: syncManager,
-        connectivityService: connectivityService,
-        enterpriseId: enterpriseId,
-      );
-    });
-
-final packagingStockRepositoryProvider = Provider<PackagingStockRepository>((
-  ref,
-) {
-  final enterpriseId =
-      ref.watch(activeEnterpriseIdProvider).value ?? 'default';
-  final driftService = DriftService.instance;
-  final syncManager = ref.watch(syncManagerProvider);
-  final connectivityService = ref.watch(connectivityServiceProvider);
-
-  return PackagingStockOfflineRepository(
-    driftService: driftService,
-    syncManager: syncManager,
-    connectivityService: connectivityService,
-    enterpriseId: enterpriseId,
-    moduleType: 'eau_minerale',
-  );
-});
 
 final dailyWorkerRepositoryProvider = Provider<DailyWorkerRepository>((ref) {
   final enterpriseId =
