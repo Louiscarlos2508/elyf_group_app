@@ -160,7 +160,7 @@ class TransactionService {
       userId: userId,
       amount: totalAmount.toInt(),
       type: TreasuryOperationType.removal,
-      fromAccount: PaymentMethod.cash, // Les dépenses sortent généralement du cash
+      fromAccount: PaymentMethod.mobileMoney, // Ravitaillement stock gaz par OM
       date: DateTime.now(),
       reason: expense.description,
       referenceEntityId: expense.id,
@@ -493,66 +493,308 @@ class TransactionService {
   /// Exécute la clôture d'un tour d'approvisionnement fournisseur.
   ///
   /// Le tour est désormais purement administratif.
+  /// Exécute le démarrage d'un tour (Sortie du stock initial du magasin vers le camion).
+  Future<void> executeTourStartTransaction({
+    required String tourId,
+    required String userId,
+    required Map<int, int> fullBottles,
+    required Map<int, int> emptyBottles,
+    required Map<int, String> weightToCylinderId,
+  }) async {
+    final tour = await tourRepository.getTourById(tourId);
+    if (tour == null) throw const NotFoundException('Tour introuvable', 'TOUR_NOT_FOUND');
+
+    // 1. Débiter le stock du magasin
+    for (final entry in fullBottles.entries) {
+      final weight = entry.key;
+      final qty = entry.value;
+      if (qty <= 0) continue;
+      final cylinderId = weightToCylinderId[weight];
+      if (cylinderId == null) continue;
+
+      await _moveStock(
+        enterpriseId: tour.enterpriseId,
+        cylinderId: cylinderId,
+        weight: weight,
+        fromStatus: CylinderStatus.full,
+        toStatus: CylinderStatus.fullInTransit, // On peut utiliser Transit pour "Dans le camion"
+        quantity: qty,
+      );
+    }
+
+    for (final entry in emptyBottles.entries) {
+      final weight = entry.key;
+      final qty = entry.value;
+      if (qty <= 0) continue;
+      final cylinderId = weightToCylinderId[weight];
+      if (cylinderId == null) continue;
+
+      await _moveStock(
+        enterpriseId: tour.enterpriseId,
+        cylinderId: cylinderId,
+        weight: weight,
+        fromStatus: CylinderStatus.emptyAtStore,
+        toStatus: CylinderStatus.emptyInTransit,
+        quantity: qty,
+      );
+    }
+
+    // 2. Audit Log
+    await auditTrailRepository.log(AuditRecord(
+      id: '',
+      enterpriseId: tour.enterpriseId,
+      userId: userId,
+      module: 'gaz',
+      action: 'TOUR_STARTED_STOCK_OUT',
+      entityId: tour.id,
+      entityType: 'tour',
+      timestamp: DateTime.now(),
+      metadata: {
+        'fullBottles': fullBottles.map((k, v) => MapEntry(k.toString(), v)),
+        'emptyBottles': emptyBottles.map((k, v) => MapEntry(k.toString(), v)),
+      },
+    ));
+  }
+
+  /// Exécute la clôture d'un tour d'approvisionnement fournisseur (Journal de bord camion).
+  /// Exécute la recharge d'un tour (Mise à jour du stock dans le camion).
+  Future<void> executeTourRechargeTransaction({
+    required String tourId,
+    required String userId,
+    required Map<int, int> fullReceived,
+    required Map<int, int> emptyReturned,
+    required Map<int, String> weightToCylinderId,
+    double? gasCost,
+  }) async {
+    final tour = await tourRepository.getTourById(tourId);
+    if (tour == null) throw const NotFoundException('Tour introuvable', 'TOUR_NOT_FOUND');
+
+    // 1. Débiter les vides du camion (on les rend au fournisseur)
+    for (final entry in emptyReturned.entries) {
+      final weight = entry.key;
+      final qty = entry.value;
+      if (qty <= 0) continue;
+      final cylinderId = weightToCylinderId[weight];
+      if (cylinderId == null) continue;
+
+      await _moveStock(
+        enterpriseId: tour.enterpriseId,
+        cylinderId: cylinderId,
+        weight: weight,
+        fromStatus: CylinderStatus.emptyInTransit,
+        toStatus: CylinderStatus.emptyAtStore, // Temporairement "store" du fournisseur ou simplement déduit
+        quantity: qty,
+      );
+    }
+
+    // 2. Créditer les pleines dans le camion (reçues du fournisseur)
+    for (final entry in fullReceived.entries) {
+      final weight = entry.key;
+      final qty = entry.value;
+      if (qty <= 0) continue;
+      final cylinderId = weightToCylinderId[weight];
+      if (cylinderId == null) continue;
+
+      // On simule une entrée directe en transit car c'est une recharge fournisseur
+      final stocks = await stockRepository.getStocksByWeight(tour.enterpriseId, weight);
+      final transitStock = stocks.where((s) => s.status == CylinderStatus.fullInTransit && s.cylinderId == cylinderId).firstOrNull;
+
+      if (transitStock != null) {
+        await stockRepository.updateStockQuantity(transitStock.id, transitStock.quantity + qty);
+      } else {
+        await stockRepository.addStock(CylinderStock(
+          id: LocalIdGenerator.generate(),
+          enterpriseId: tour.enterpriseId,
+          cylinderId: cylinderId,
+          weight: weight,
+          status: CylinderStatus.fullInTransit,
+          quantity: qty,
+          updatedAt: DateTime.now(),
+          createdAt: DateTime.now(),
+        ));
+      }
+    }
+
+    // 3. Créer la dépense gaz si un coût est spécifié
+    if (gasCost != null && gasCost > 0) {
+      final expenseId = LocalIdGenerator.generate();
+      await expenseRepository.addExpense(GazExpense(
+        id: expenseId,
+        enterpriseId: tour.enterpriseId,
+        category: ExpenseCategory.stockReplenishment,
+        amount: gasCost,
+        description: 'Recharge Tournée ${tour.id}',
+        date: DateTime.now(),
+        isFixed: false,
+        notes: 'Tour: ${tour.id}',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      ));
+
+      // Ajout de l'opération de trésorerie (Orange Money par défaut pour recharge)
+      await treasuryRepository.saveOperation(TreasuryOperation(
+        id: LocalIdGenerator.generate(),
+        enterpriseId: tour.enterpriseId,
+        userId: userId,
+        amount: gasCost.toInt(),
+        type: TreasuryOperationType.removal,
+        fromAccount: PaymentMethod.mobileMoney,
+        date: DateTime.now(),
+        reason: 'Paiement Recharge Tournée ${tour.id} (Orange Money)',
+        referenceEntityId: expenseId,
+        referenceEntityType: 'gaz_expense',
+        createdAt: DateTime.now(),
+      ));
+    }
+
+    // 4. Audit Log
+    await auditTrailRepository.log(AuditRecord(
+      id: '',
+      enterpriseId: tour.enterpriseId,
+      userId: userId,
+      module: 'gaz',
+      action: 'TOUR_RECHARGED_STOCK_IN',
+      entityId: tour.id,
+      entityType: 'tour',
+      timestamp: DateTime.now(),
+      metadata: {
+        'fullReceived': fullReceived.map((k, v) => MapEntry(k.toString(), v)),
+        'emptyReturned': emptyReturned.map((k, v) => MapEntry(k.toString(), v)),
+        'cost': gasCost,
+      },
+    ));
+  }
+
   Future<({Tour tour, List<StockAlert> alerts})> executeTourClosureTransaction({
     required String tourId,
     required String userId,
+    required Map<int, int> remainingFull,
+    required Map<int, int> remainingEmpty,
     Map<int, String> weightToCylinderId = const {},
   }) async {
     final tour = await tourRepository.getTourById(tourId);
-    if (tour == null) {
-      throw const NotFoundException(
-        'Tour introuvable',
-        'TOUR_NOT_FOUND',
+    if (tour == null) throw const NotFoundException('Tour introuvable', 'TOUR_NOT_FOUND');
+
+    // 1. Traiter toutes les interactions non traitées
+    for (final interaction in tour.siteInteractions) {
+      if (interaction.isProcessed) continue;
+      await processSiteInteraction(tour, interaction, userId, weightToCylinderId);
+    }
+
+    // 2. Traiter les frais de transport (Déduction Trésorerie Cash)
+    for (final expense in tour.transportExpenses) {
+      await treasuryRepository.saveOperation(TreasuryOperation(
+        id: LocalIdGenerator.generate(),
+        enterpriseId: tour.enterpriseId,
+        userId: userId,
+        amount: expense.amount.toInt(),
+        type: TreasuryOperationType.removal,
+        fromAccount: PaymentMethod.cash,
+        date: expense.expenseDate,
+        reason: 'Frais Tournée : ${expense.description.isNotEmpty ? expense.description : expense.category}',
+        referenceEntityId: tour.id,
+        referenceEntityType: 'tour_transport_expense',
+        createdAt: DateTime.now(),
+      ));
+    }
+
+    // 3. Réintégrer le stock restant dans le magasin
+    // Le stock dans le camion est actuellement en 'InTransit'.
+    for (final entry in remainingFull.entries) {
+      final weight = entry.key;
+      final qty = entry.value;
+      if (qty <= 0) continue;
+      final cylinderId = weightToCylinderId[weight];
+      if (cylinderId == null) continue;
+
+      await _moveStock(
+        enterpriseId: tour.enterpriseId,
+        cylinderId: cylinderId,
+        weight: weight,
+        fromStatus: CylinderStatus.fullInTransit,
+        toStatus: CylinderStatus.full,
+        quantity: qty,
+        force: true,
       );
     }
 
-    // 1. Validation : Autorisée si reception saisie OU si distributions effectuées
-    final hasDistributions = tour.wholesaleDistributions.isNotEmpty || tour.posDistributions.isNotEmpty;
-    if (tour.fullBottlesReceived.isEmpty && !hasDistributions) {
-      throw const ValidationException(
-        'Veuillez enregistrer la réception ou les distributions avant la clôture',
-        'NO_FULLS_RECEIVED',
+    for (final entry in remainingEmpty.entries) {
+      final weight = entry.key;
+      final qty = entry.value;
+      if (qty <= 0) continue;
+      final cylinderId = weightToCylinderId[weight];
+      if (cylinderId == null) continue;
+
+      await _moveStock(
+        enterpriseId: tour.enterpriseId,
+        cylinderId: cylinderId,
+        weight: weight,
+        fromStatus: CylinderStatus.emptyInTransit,
+        toStatus: CylinderStatus.emptyAtStore,
+        quantity: qty,
+        force: true,
       );
     }
 
-    // 2. Mettre à jour le tour
-    // Si la réception n'a pas été saisie manuellement, on déduit qu'on a reçu ce qu'on a chargé (Échange Standard)
-    Map<int, int> fullReceived = tour.fullBottlesReceived;
-    if (fullReceived.isEmpty) {
-      fullReceived = tour.emptyBottlesLoaded;
-    }
-
+    // 3. Mettre à jour le tour
     final updatedTour = tour.copyWith(
       status: TourStatus.closed,
-      fullBottlesReceived: fullReceived,
+      remainingFullBottles: remainingFull,
+      remainingEmptyBottles: remainingEmpty,
       closureDate: DateTime.now(),
       updatedAt: DateTime.now(),
     );
-
     await tourRepository.updateTour(updatedTour);
 
-    // 3. Traiter les distributions aux grossistes (Ventes + Trésorerie)
-    for (final dist in tour.wholesaleDistributions) {
-      if (dist.isProcessed) continue;
+    // 4. Audit Log Global
+    await auditTrailRepository.log(AuditRecord(
+      id: '',
+      enterpriseId: tour.enterpriseId,
+      userId: userId,
+      module: 'gaz',
+      action: 'TOUR_CLOSED_FINAL',
+      entityId: tour.id,
+      entityType: 'tour',
+      timestamp: DateTime.now(),
+      metadata: {
+        'remainingFull': remainingFull.map((k, v) => MapEntry(k.toString(), v)),
+        'remainingEmpty': remainingEmpty.map((k, v) => MapEntry(k.toString(), v)),
+        'totalCash': tour.totalCashCollectedFromSites,
+        'totalExpenses': tour.totalExpenses,
+      },
+    ));
 
-      final distSessionId = 'whl_${tour.id}_${dist.wholesalerId}_${DateTime.now().millisecondsSinceEpoch}';
-      
-      // Calculer le prix au kg pour une répartition équitable
-      double totalKg = 0;
-      for (final entry in dist.quantities.entries) {
-        totalKg += entry.key * entry.value;
-      }
-      final pricePerKg = totalKg > 0 ? dist.totalAmount / totalKg : 0.0;
+    return (tour: updatedTour, alerts: const <StockAlert>[]);
+  }
 
-      for (final entry in dist.quantities.entries) {
+  /// Traite une interaction individuelle avec un site.
+  /// Ajuste le stock pour une correction d'interaction (différentiel).
+  Future<void> adjustStock(Tour tour, TourSiteInteraction correction, String userId, Map<int, String> weightToCylinderId) async {
+    // On utilise processSiteInteraction qui fait déjà le travail de mouvement de stock
+    // mais on passe une interaction qui ne contient que les deltas.
+    // Note: Pour les grossistes, cela créera des micro-ventes de correction, ce qui est acceptable
+    // pour garder la trace financière si besoin, ou on pourrait filtrer.
+    await processSiteInteraction(tour, correction, userId, weightToCylinderId);
+  }
+
+  Future<void> processSiteInteraction(Tour tour, TourSiteInteraction interaction, String userId, Map<int, String> weightToCylinderId) async {
+    final sessionId = 'site_${tour.id}_${interaction.siteId}_${interaction.timestamp.millisecondsSinceEpoch}';
+
+    // 1. Si c'est un grossiste, créer les ventes
+    if (interaction.isWholesaler) {
+      for (final entry in interaction.fullBottlesDelivered.entries) {
         final weight = entry.key;
         final qty = entry.value;
         if (qty <= 0) continue;
-
         final cylinderId = weightToCylinderId[weight];
         if (cylinderId == null) continue;
 
-        final unitPrice = weight * pricePerKg; // Prix proportionnel au poids
+        // Calcul du prix proportionnel si montant global saisi
+        double unitPrice = 0;
+        if (interaction.cashCollected > 0) {
+           final totalKg = interaction.fullBottlesDelivered.entries.fold<double>(0, (a, b) => a + (b.key * b.value));
+           unitPrice = totalKg > 0 ? (interaction.cashCollected / totalKg) * weight : 0;
+        }
 
         await gasRepository.addSale(GasSale(
           id: LocalIdGenerator.generate(),
@@ -561,259 +803,118 @@ class TransactionService {
           quantity: qty,
           unitPrice: unitPrice,
           totalAmount: unitPrice * qty,
-          saleDate: DateTime.now(),
+          saleDate: interaction.timestamp,
           saleType: SaleType.wholesale,
           tourId: tour.id,
-          wholesalerId: dist.wholesalerId,
-          wholesalerName: dist.wholesalerName,
+          wholesalerId: interaction.siteId,
+          wholesalerName: interaction.siteName,
           sellerId: userId,
-          paymentMethod: dist.paymentMethod,
-          sessionId: distSessionId, // Unified for history grouping
+          paymentMethod: interaction.paymentMethod,
+          sessionId: sessionId,
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
         ));
-      }
 
-      if (dist.totalAmount > 0) {
-        await treasuryRepository.saveOperation(TreasuryOperation(
-          id: LocalIdGenerator.generate(),
+        // Débiter administrativement du camion (Vente grossiste sort de transit)
+        await _moveStock(
           enterpriseId: tour.enterpriseId,
-          userId: userId,
-          amount: dist.totalAmount.toInt(),
-          type: TreasuryOperationType.supply,
-          toAccount: dist.paymentMethod,
-          date: DateTime.now(),
-          reason: 'Vente en Gros : ${dist.wholesalerName} (Tour ${tour.id})',
-          referenceEntityId: tour.id,
-          referenceEntityType: 'tour_wholesaler_sale',
-          createdAt: DateTime.now(),
-        ));
+          cylinderId: cylinderId,
+          weight: weight,
+          fromStatus: CylinderStatus.fullInTransit,
+          toStatus: CylinderStatus.full, // On simule un passage par 'full' car c'est une vente, 
+                                          // mais on pourrait aussi ne rien incrémenter si on veut juste déduire.
+                                          // Pour éviter d'augmenter le stock magasin, on peut déduire SANS incrémenter
+                                          // ou incrémenter un statut fictif. Ici on va juste déduire du transit.
+          quantity: qty,
+          force: true,
+          decrementOnly: true,
+        );
+      }
+
+      // Collecte de vides chez le grossiste (comme POS)
+      for (final entry in interaction.emptyBottlesCollected.entries) {
+        final weight = entry.key;
+        final qty = entry.value;
+        if (qty <= 0) continue;
+        final cylinderId = weightToCylinderId[weight];
+        if (cylinderId == null) continue;
+
+        // Grossiste (rien/administratif) -> Camion (Parent, InTransit)
+        await _moveStock(
+          enterpriseId: tour.enterpriseId,
+          cylinderId: cylinderId,
+          weight: weight,
+          fromStatus: CylinderStatus.emptyAtStore, // Status source peu importe si force
+          toStatus: CylinderStatus.emptyInTransit,
+          quantity: qty,
+          force: true,
+        );
       }
     }
 
-    // 4. Traiter les distributions aux POS (Mise à jour stock info / Audit)
-    for (final posDist in tour.posDistributions) {
-       await auditTrailRepository.log(AuditRecord(
-        id: '',
-        enterpriseId: updatedTour.enterpriseId,
-        userId: userId,
-        module: 'gaz',
-        action: 'POS_DISTRIBUTION',
-        entityId: updatedTour.id,
-        entityType: 'tour',
-        timestamp: DateTime.now(),
-        metadata: {
-          'posId': posDist.posId,
-          'posName': posDist.posName,
-          'quantities': posDist.quantities.map((k, v) => MapEntry(k.toString(), v)),
-          'receivedDate': posDist.receivedDate?.toIso8601String(),
-        },
-      ));
+    // 2. Si c'est un POS, mettre à jour le stock du camion (Transit) uniquement.
+    // Les POS sont autonomes et gèrent leur propre stock.
+    if (interaction.isPos) {
+      for (final entry in interaction.fullBottlesDelivered.entries) {
+        final weight = entry.key;
+        final qty = entry.value;
+        if (qty <= 0) continue;
+        final cylinderId = weightToCylinderId[weight];
+        if (cylinderId == null) continue;
+
+        // Décrémenter seulement le stock du camion (Transit)
+        await _moveStock(
+          enterpriseId: tour.enterpriseId,
+          cylinderId: cylinderId,
+          weight: weight,
+          fromStatus: CylinderStatus.fullInTransit,
+          toStatus: CylinderStatus.full, // Destination ignorée car decrementOnly
+          quantity: qty,
+          force: true,
+          decrementOnly: true,
+        );
+      }
+
+      for (final entry in interaction.emptyBottlesCollected.entries) {
+        final weight = entry.key;
+        final qty = entry.value;
+        if (qty <= 0) continue;
+        final cylinderId = weightToCylinderId[weight];
+        if (cylinderId == null) continue;
+
+        // Incrémenter le stock du camion (Transit)
+        // On simule une sortie du magasin central (ou pool administratif) vers le camion
+        await _moveStock(
+          enterpriseId: tour.enterpriseId,
+          cylinderId: cylinderId,
+          weight: weight,
+          fromStatus: CylinderStatus.emptyAtStore,
+          toStatus: CylinderStatus.emptyInTransit,
+          quantity: qty,
+          force: true,
+        );
+      }
     }
 
-    // 5. Audit Log Global
-    await auditTrailRepository.log(AuditRecord(
-      id: '',
-      enterpriseId: updatedTour.enterpriseId,
-      userId: userId,
-      module: 'gaz',
-      action: 'STOCK_REPLENISHMENT_TOUR',
-      entityId: updatedTour.id,
-      entityType: 'tour',
-      timestamp: DateTime.now(),
-      metadata: {
-        'operation': 'supplier_exchange',
-        'tourId': updatedTour.id,
-        'supplierName': updatedTour.supplierName,
-        'loadingSources': updatedTour.loadingSources.map((s) => s.toMap()).toList(),
-        'wholesaleDistributions': tour.wholesaleDistributions.map((d) => d.toMap()).toList(),
-        'posDistributions': tour.posDistributions.map((d) => d.toMap()).toList(),
-        'fullBottlesReceived': updatedTour.fullBottlesReceived
-            .map((k, v) => MapEntry(k.toString(), v)),
-        'emptyBottlesReturned': updatedTour.emptyBottlesReturned
-            .map((k, v) => MapEntry(k.toString(), v)),
-        'totalExchangeFees': updatedTour.totalExchangeFees,
-      },
-    ));
-
-    // 6. Enregistrement de l'impact financier (Dépenses)
-    final totalExpenses = updatedTour.totalExpenses;
-
-    if (totalExpenses > 0) {
-      await auditTrailRepository.log(AuditRecord(
-        id: '',
-        enterpriseId: updatedTour.enterpriseId,
-        userId: userId,
-        module: 'gaz',
-        action: 'TOUR_CLOSURE_EXPENSE',
-        entityId: updatedTour.id,
-        entityType: 'tour',
-        timestamp: DateTime.now(),
-        metadata: {
-          'totalExpenses': totalExpenses,
-          'transportExpenses': updatedTour.totalTransportExpenses,
-          'exchangeFees': updatedTour.totalExchangeFees,
-          'gasPurchaseCost': updatedTour.totalGasPurchaseCost,
-          'purchasePricesUsed': updatedTour.purchasePricesUsed
-              .map((k, v) => MapEntry(k.toString(), v)),
-          'tourDate': updatedTour.tourDate.toIso8601String(),
-        },
-      ));
-    }
-
-    AppLogger.info(
-      'TourClosure: Clôture réussie du tour ${updatedTour.id}. '
-      'Vides chargées: ${updatedTour.totalBottlesToLoad}, '
-      'Pleines reçues: ${updatedTour.totalBottlesReceived}, '
-      'Distributions grossistes: ${tour.wholesaleDistributions.length}',
-      name: 'transaction.tour_closure',
-    );
-
-    return (tour: updatedTour, alerts: const <StockAlert>[]);
-  }
-
-  /// Exécute l'encaissement d'un grossiste individuellement lors de Step 3.
-  Future<void> executeWholesaleCollection({
-    required String tourId,
-    required String wholesalerId,
-    required String userId,
-    required Map<int, String> weightToCylinderId,
-  }) async {
-    final tour = await tourRepository.getTourById(tourId);
-    if (tour == null) throw const NotFoundException('Tour introuvable', 'TOUR_NOT_FOUND');
-
-    final distIndex = tour.wholesaleDistributions.indexWhere((d) => d.wholesalerId == wholesalerId);
-    if (distIndex == -1) throw const NotFoundException('Distribution grossiste introuvable', 'DISTRIBUTION_NOT_FOUND');
-
-    final dist = tour.wholesaleDistributions[distIndex];
-    if (dist.isProcessed) return; // Déjà encaissé
-
-    final distSessionId = 'whl_${tour.id}_${dist.wholesalerId}_${DateTime.now().millisecondsSinceEpoch}';
-
-    // 1. Enregistrer les ventes avec prix proportionnel au poids
-    double totalKg = 0;
-    for (final entry in dist.quantities.entries) {
-      totalKg += entry.key * entry.value;
-    }
-    final pricePerKg = totalKg > 0 ? dist.totalAmount / totalKg : 0.0;
-
-    for (final entry in dist.quantities.entries) {
-      final weight = entry.key;
-      final qty = entry.value;
-      if (qty <= 0) continue;
-
-      final cylinderId = weightToCylinderId[weight];
-      if (cylinderId == null) continue;
-
-      final unitPrice = weight * pricePerKg;
-
-      await gasRepository.addSale(GasSale(
-        id: LocalIdGenerator.generate(),
-        enterpriseId: tour.enterpriseId,
-        cylinderId: cylinderId,
-        quantity: qty,
-        unitPrice: unitPrice,
-        totalAmount: unitPrice * qty,
-        saleDate: DateTime.now(),
-        saleType: SaleType.wholesale,
-        tourId: tour.id,
-        wholesalerId: dist.wholesalerId,
-        wholesalerName: dist.wholesalerName,
-        sellerId: userId,
-        paymentMethod: dist.paymentMethod,
-        sessionId: distSessionId, // Unified for history grouping
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      ));
-    }
-
-    // 2. Enregistrer l'opération de trésorerie
-    if (dist.totalAmount > 0) {
+    // 3. Enregistrer l'opération de trésorerie si encaissé
+    if (interaction.cashCollected > 0) {
       await treasuryRepository.saveOperation(TreasuryOperation(
         id: LocalIdGenerator.generate(),
         enterpriseId: tour.enterpriseId,
         userId: userId,
-        amount: dist.totalAmount.toInt(),
+        amount: interaction.cashCollected.toInt(),
         type: TreasuryOperationType.supply,
-        toAccount: dist.paymentMethod,
-        date: DateTime.now(),
-        reason: 'Encaissement Grossiste : ${dist.wholesalerName} (Tour ${tour.id})',
+        toAccount: interaction.paymentMethod,
+        date: interaction.timestamp,
+        reason: 'Recette Site : ${interaction.siteName} (Tour ${tour.id})',
         referenceEntityId: tour.id,
-        referenceEntityType: 'tour_wholesaler_sale',
+        referenceEntityType: 'tour_site_interaction',
         createdAt: DateTime.now(),
       ));
     }
-
-    // 3. Marquer comme traité dans le tour
-    final updatedDistributions = List<WholesaleDistribution>.from(tour.wholesaleDistributions);
-    updatedDistributions[distIndex] = dist.copyWith(isProcessed: true);
-
-    await tourRepository.updateTour(tour.copyWith(
-      wholesaleDistributions: updatedDistributions,
-      updatedAt: DateTime.now(),
-    ));
-
-    // 4. Audit Log
-    await auditTrailRepository.log(AuditRecord(
-      id: '',
-      enterpriseId: tour.enterpriseId,
-      userId: userId,
-      module: 'gaz',
-      action: 'WHOLESALE_COLLECTION',
-      entityId: tour.id,
-      entityType: 'tour',
-      timestamp: DateTime.now(),
-      metadata: {
-        'wholesalerId': wholesalerId,
-        'wholesalerName': dist.wholesalerName,
-        'amount': dist.totalAmount,
-        'paymentMethod': dist.paymentMethod.name,
-      },
-    ));
   }
 
-  /// Met à jour les sources de chargement d'un tour.
-  Future<void> executeTourLoadingTransaction({
-    required String tourId,
-    required String userId,
-    required List<TourLoadingSource> loadingSources,
-  }) async {
-    final tour = await tourRepository.getTourById(tourId);
-    if (tour == null) throw const NotFoundException('Tour introuvable', 'TOUR_NOT_FOUND');
-
-    final oldLoadingSources = tour.loadingSources;
-
-    // Agréger les chargements par poids pour la compatibilité descendante
-    final aggregatedLoading = <int, int>{};
-    for (final source in loadingSources) {
-      for (final entry in source.quantities.entries) {
-        aggregatedLoading[entry.key] = (aggregatedLoading[entry.key] ?? 0) + entry.value;
-      }
-    }
-
-    // Mettre à jour le tour (Purement déclaratif)
-    await tourRepository.updateTour(tour.copyWith(
-      loadingSources: loadingSources,
-      emptyBottlesLoaded: aggregatedLoading,
-      updatedAt: DateTime.now(),
-    ));
-
-    // Audit Trail
-    await auditTrailRepository.log(AuditRecord(
-      id: '',
-      enterpriseId: tour.enterpriseId,
-      userId: userId,
-      module: 'gaz',
-      action: 'TOUR_LOADING_UPDATE',
-      entityId: tour.id,
-      entityType: 'tour',
-      timestamp: DateTime.now(),
-      metadata: {
-        'oldLoadingSources': oldLoadingSources.map((s) => s.toMap()).toList(),
-        'newLoadingSources': loadingSources.map((s) => s.toMap()).toList(),
-      },
-    ));
-  }
+  /// Exécute l'encaissement d'un site individuellement (Optionnel).
 
   /// Annule un tour.
   Future<void> executeTourCancellationTransaction({
@@ -844,7 +945,6 @@ class TransactionService {
     ));
   }
 
-  /// Helper pour déplacer du stock entre deux statuts.
   Future<void> _moveStock({
     required String enterpriseId,
     required String cylinderId,
@@ -852,17 +952,19 @@ class TransactionService {
     required CylinderStatus fromStatus,
     required CylinderStatus toStatus,
     required int quantity,
-    String? siteId,
+    String? fromSiteId,
+    String? siteId, // toSiteId
+    bool force = false,
+    bool decrementOnly = false,
   }) async {
     if (quantity <= 0) return;
 
-    final stocks = await stockRepository.getStocksByWeight(enterpriseId, weight, siteId: siteId);
-    
     // Décrémenter Source
-    final sourceStocks = stocks.where((s) => s.status == fromStatus && s.cylinderId == cylinderId).toList();
+    final stocksSource = await stockRepository.getStocksByWeight(enterpriseId, weight, siteId: fromSiteId);
+    final sourceStocks = stocksSource.where((s) => s.status == fromStatus && s.cylinderId == cylinderId).toList();
     final totalSource = sourceStocks.fold<int>(0, (sum, s) => sum + s.quantity);
     
-    if (totalSource < quantity) {
+    if (totalSource < quantity && !force) {
       throw ValidationException(
         'Stock insuffisant (${fromStatus.label}) pour $weight kg : $totalSource disponibles, $quantity demandées',
         'INSUFFICIENT_STOCK',
@@ -877,8 +979,35 @@ class TransactionService {
       remainingToDeduct -= toDeduct;
     }
 
+    // Si force et qu'il reste à déduire (pas assez de stock), on impacte le premier record ou on crée un négatif
+    if (remainingToDeduct > 0 && force) {
+      if (sourceStocks.isNotEmpty) {
+        final firstRecord = sourceStocks.first;
+        await stockRepository.updateStockQuantity(firstRecord.id, firstRecord.quantity - remainingToDeduct);
+      } else {
+        // Optionnel : Créer un record négatif pour garder la trace de la dette de stock
+        await stockRepository.addStock(CylinderStock(
+          id: LocalIdGenerator.generate(),
+          cylinderId: cylinderId,
+          weight: weight,
+          status: fromStatus,
+          quantity: -remainingToDeduct,
+          enterpriseId: enterpriseId,
+          siteId: fromSiteId,
+          updatedAt: DateTime.now(),
+          createdAt: DateTime.now(),
+        ));
+      }
+    }
+
+    if (decrementOnly) return;
+
     // Incrémenter Destination
-    final destStock = stocks.where((s) => s.status == toStatus && s.cylinderId == cylinderId).firstOrNull;
+    final stocksDest = (fromSiteId == siteId) 
+        ? stocksSource 
+        : await stockRepository.getStocksByWeight(enterpriseId, weight, siteId: siteId);
+    
+    final destStock = stocksDest.where((s) => s.status == toStatus && s.cylinderId == cylinderId).firstOrNull;
     if (destStock != null) {
       await stockRepository.updateStockQuantity(destStock.id, destStock.quantity + quantity);
     } else {
@@ -899,12 +1028,12 @@ class TransactionService {
 
 
 
-  /// Déclare une fuite de manière atomique et la convertit immédiatement en vide.
+  /// Déclare une fuite de manière atomique.
   /// 
   /// Étapes :
   /// 1. Décrémente le stock plein
-  /// 2. Incrémente le stock "Vide au magasin"
-  /// 3. Enregistre la fuite comme "Trace" (convertedToEmpty)
+  /// 2. Incrémente le stock "Fuite" (CylinderStatus.leak)
+  /// 3. Enregistre la fuite comme "Signalée" (reported)
   /// 4. Log l'audit
   Future<void> executeLeakDeclaration({
     required CylinderLeak leak,
@@ -923,25 +1052,25 @@ class TransactionService {
       updatedAt: DateTime.now(),
     ));
 
-    // 2. Incrémenter stock vide au magasin
-    final emptyStock = fullStocks.where((s) => s.status == CylinderStatus.emptyAtStore && s.cylinderId == leak.cylinderId).firstOrNull 
+    // 2. Incrémenter stock fuite au magasin
+    final leakStock = fullStocks.where((s) => s.status == CylinderStatus.leak && s.cylinderId == leak.cylinderId).firstOrNull 
       ?? CylinderStock(
           id: LocalIdGenerator.generate(),
           cylinderId: leak.cylinderId,
           weight: leak.weight,
-          status: CylinderStatus.emptyAtStore,
+          status: CylinderStatus.leak,
           quantity: 0,
           enterpriseId: leak.enterpriseId,
           updatedAt: DateTime.now(),
         );
 
-    await stockRepository.updateStock(emptyStock.copyWith(
-      quantity: emptyStock.quantity + 1,
+    await stockRepository.updateStock(leakStock.copyWith(
+      quantity: leakStock.quantity + 1,
       updatedAt: DateTime.now(),
     ));
 
-    // 3. Enregistrer la trace de la fuite (Directement comme convertie)
-    await leakRepository.reportLeak(leak.copyWith(status: LeakStatus.convertedToEmpty));
+    // 3. Enregistrer la trace de la fuite (Comme signalée)
+    await leakRepository.reportLeak(leak.copyWith(status: LeakStatus.reported));
 
     // 4. Audit Trail
     await auditTrailRepository.log(AuditRecord(
@@ -949,16 +1078,16 @@ class TransactionService {
       enterpriseId: leak.enterpriseId,
       userId: userId,
       module: 'gaz',
-      action: 'LEAK_DECLARATION_AND_CONVERSION',
+      action: 'LEAK_DECLARATION_REPORTED',
       entityId: leak.id,
       entityType: 'leak',
       timestamp: DateTime.now(),
       metadata: {
         ...leak.toMap(),
-        'operation': 'leak',
+        'operation': 'leak_reported',
         'movements': [
           {'cylinderId': leak.cylinderId, 'weight': leak.weight, 'status': 'full', 'delta': -1},
-          {'cylinderId': leak.cylinderId, 'weight': leak.weight, 'status': 'emptyAtStore', 'delta': 1},
+          {'cylinderId': leak.cylinderId, 'weight': leak.weight, 'status': 'leak', 'delta': 1},
         ],
       },
     ));
@@ -1342,82 +1471,121 @@ class TransactionService {
   }) async {
     final cylinders = await gasRepository.getCylinders();
 
-    Future<void> processMovement(Map<int, int> quantities, CylinderStatus status, bool isAddition) async {
-      for (final entry in quantities.entries) {
+    try {
+      // 1. Sortie de vides -> Priorité aux Fuites (Leak) puis Vides (EmptyAtStore)
+      for (final entry in emptyExits.entries) {
         final weight = entry.key;
-        final quantity = entry.value;
-        if (quantity <= 0) continue;
+        final totalQuantity = entry.value;
+        if (totalQuantity <= 0) continue;
 
         final cylinder = cylinders.firstWhere(
           (c) => c.weight == weight && c.enterpriseId == enterpriseId,
-          orElse: () => cylinders.firstWhere(
-            (c) => c.weight == weight,
-            orElse: () => throw NotFoundException('Cylindre $weight kg introuvable', 'CYLINDER_NOT_FOUND'),
-          ),
+          orElse: () => cylinders.firstWhere((c) => c.weight == weight),
         );
 
-        final existingStocks = await stockRepository.getStocksByWeight(
-           enterpriseId, 
-           weight, 
-           siteId: siteId,
-        );
-        final targetStock = existingStocks
-            .where((s) => s.status == status && s.cylinderId == cylinder.id)
-            .firstOrNull;
+        // Chercher les fuites signalées (reported)
+        final reportedLeaks = (await leakRepository.getLeaks(enterpriseId, status: LeakStatus.reported))
+            .where((l) => l.weight == weight && l.cylinderId == cylinder.id)
+            .toList();
+        
+        int leaksToConsume = totalQuantity < reportedLeaks.length ? totalQuantity : reportedLeaks.length;
+        
+        if (leaksToConsume > 0) {
+          // Déplacer les fuites : leak -> emptyInTransit
+          await _moveStock(
+            enterpriseId: enterpriseId,
+            cylinderId: cylinder.id,
+            weight: weight,
+            fromStatus: CylinderStatus.leak,
+            toStatus: CylinderStatus.emptyInTransit,
+            quantity: leaksToConsume,
+            fromSiteId: siteId,
+            siteId: null, // Vers le camion (Transit global)
+            force: true,
+          );
 
-        if (isAddition) {
-          if (targetStock != null) {
-            await stockRepository.updateStockQuantity(targetStock.id, targetStock.quantity + quantity);
-          } else {
-            await stockRepository.addStock(CylinderStock(
-              id: LocalIdGenerator.generate(),
-              cylinderId: cylinder.id,
-              weight: weight,
-              status: status,
-              quantity: quantity,
-              enterpriseId: enterpriseId,
-              siteId: siteId,
+          // Mettre à jour les records de fuite
+          for (int i = 0; i < leaksToConsume; i++) {
+            await leakRepository.updateLeak(reportedLeaks[i].copyWith(
+              status: LeakStatus.convertedToEmpty,
               updatedAt: DateTime.now(),
-              createdAt: DateTime.now(),
             ));
           }
-        } else {
-          // Prevention of negative stock for removals
-          if (targetStock != null) {
-            final newQuantity = (targetStock.quantity - quantity).clamp(0, double.infinity).toInt();
-            await stockRepository.updateStockQuantity(targetStock.id, newQuantity);
-          } else {
-            // If no stock record exists, we don't create a negative one
-            // We just create a 0 stock record if it's strictly necessary, but usually we just skip.
-            // For audit consistency, let's just do nothing if targetStock is null and we are removing.
-          }
+        }
+
+        // Déplacer le reste : emptyAtStore -> emptyInTransit
+        final remainingEmpty = totalQuantity - leaksToConsume;
+        if (remainingEmpty > 0) {
+          await _moveStock(
+            enterpriseId: enterpriseId,
+            cylinderId: cylinder.id,
+            weight: weight,
+            fromStatus: CylinderStatus.emptyAtStore,
+            toStatus: CylinderStatus.emptyInTransit,
+            quantity: remainingEmpty,
+            fromSiteId: siteId,
+            siteId: null,
+            force: true,
+          );
         }
       }
-    }
 
-    try {
-      // 1. Process all movements
-      
-      // Sortie de vides -> On enlève du Magasin, On met en Transit
-      await processMovement(emptyExits, CylinderStatus.emptyAtStore, false);
-      await processMovement(emptyExits, CylinderStatus.emptyInTransit, true);
+      // 2. Entrée de pleines -> On ajoute aux Pleines, On enlève du Transit
+      for (final entry in fullEntries.entries) {
+         final weight = entry.key;
+         final quantity = entry.value;
+         if (quantity <= 0) continue;
 
-      // Entrée de pleines -> On ajoute aux Pleines, On enlève du Transit
-      await processMovement(fullEntries, CylinderStatus.full, true);
-      await processMovement(fullEntries, CylinderStatus.emptyInTransit, false);
+         final cylinder = cylinders.firstWhere(
+           (c) => c.weight == weight && c.enterpriseId == enterpriseId,
+           orElse: () => cylinders.firstWhere((c) => c.weight == weight),
+         );
 
-      // Entrée de vides (retours non-chargés) -> On ajoute au Magasin, On enlève du Transit
-      await processMovement(emptyEntries, CylinderStatus.emptyAtStore, true);
-      await processMovement(emptyEntries, CylinderStatus.emptyInTransit, false);
+         await _moveStock(
+           enterpriseId: enterpriseId,
+           cylinderId: cylinder.id,
+           weight: weight,
+           fromStatus: CylinderStatus.emptyInTransit, // Vient du transit
+           toStatus: CylinderStatus.full,
+           quantity: quantity,
+           fromSiteId: null,
+           siteId: siteId,
+           force: true,
+         );
+      }
 
-      // 2. Audit Trail
+      // 3. Entrée de vides (retours non-chargés) -> On ajoute au Magasin, On enlève du Transit
+      for (final entry in emptyEntries.entries) {
+         final weight = entry.key;
+         final quantity = entry.value;
+         if (quantity <= 0) continue;
+
+         final cylinder = cylinders.firstWhere(
+           (c) => c.weight == weight && c.enterpriseId == enterpriseId,
+           orElse: () => cylinders.firstWhere((c) => c.weight == weight),
+         );
+
+         await _moveStock(
+           enterpriseId: enterpriseId,
+           cylinderId: cylinder.id,
+           weight: weight,
+           fromStatus: CylinderStatus.emptyInTransit,
+           toStatus: CylinderStatus.emptyAtStore,
+           quantity: quantity,
+           fromSiteId: null,
+           siteId: siteId,
+           force: true,
+         );
+      }
+
+      // 4. Audit Trail
       await auditTrailRepository.log(AuditRecord(
         id: '',
         enterpriseId: enterpriseId,
         userId: userId,
         module: 'gaz',
-        action: 'POS_STOCK_MOVEMENT',
-        entityId: 'pos_movement_${DateTime.now().millisecondsSinceEpoch}',
+        action: 'POS_STOCK_MOVEMENT_REFINED',
+        entityId: 'pos_mv_${DateTime.now().millisecondsSinceEpoch}',
         entityType: 'stock_movement',
         timestamp: DateTime.now(),
         metadata: {

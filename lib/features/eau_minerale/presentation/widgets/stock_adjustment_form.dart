@@ -10,10 +10,10 @@ import '../../domain/pack_constants.dart';
 import '../../domain/entities/bobine_stock_movement.dart';
 import '../../domain/entities/packaging_stock_movement.dart';
 
-/// Formulaire pour retirer des stocks (bobines, emballages, produits finis).
+/// Formulaire pour ajuster les stocks (ajouter ou retirer).
 /// 
-/// Utilisé pour les corrections d'inventaire (retraits uniquement).
-/// Pour les ajouts, utiliser le formulaire d'approvisionnement.
+/// Audit & UX: Design simplifié avec icônes et codes couleurs pour l'accessibilité.
+/// Idéal pour les utilisateurs non-lettrés grâce aux repères visuels forts.
 class StockAdjustmentForm extends ConsumerStatefulWidget {
   const StockAdjustmentForm({
     super.key,
@@ -21,10 +21,7 @@ class StockAdjustmentForm extends ConsumerStatefulWidget {
     this.onSubmit,
   });
 
-  /// Afficher le bouton de soumission dans le formulaire.
   final bool showSubmitButton;
-
-  /// Callback optionnel pour la soumission (utilisé par FormDialog).
   final Future<bool> Function()? onSubmit;
 
   @override
@@ -33,6 +30,7 @@ class StockAdjustmentForm extends ConsumerStatefulWidget {
 }
 
 enum _AdjustmentType { bobine, emballage, produitFini }
+enum _AdjustmentDirection { addition, removal }
 
 class StockAdjustmentFormState
     extends ConsumerState<StockAdjustmentForm> {
@@ -41,10 +39,10 @@ class StockAdjustmentFormState
   final _justificatifController = TextEditingController();
 
   _AdjustmentType _selectedType = _AdjustmentType.bobine;
-  bool _useLots = false; // Toggle pour saisir en lots au lieu d'unités
+  _AdjustmentDirection _direction = _AdjustmentDirection.removal;
+  bool _useLots = false;
   bool _isLoading = false;
 
-  // Type fixe pour toutes les bobines
   static const String _bobineType = 'Bobine';
 
   @override
@@ -54,7 +52,6 @@ class StockAdjustmentFormState
     super.dispose();
   }
 
-  /// Méthode publique pour soumettre le formulaire (utilisée par FormDialog).
   Future<bool> submit() async {
     if (widget.onSubmit != null) {
       return widget.onSubmit!();
@@ -73,142 +70,126 @@ class StockAdjustmentFormState
         if (!mounted) return false;
         NotificationService.showError(
           context,
-          'Le justificatif est obligatoire pour les ajustements',
+          'Un justificatif est nécessaire.',
         );
         return false;
       }
 
+      final isAddition = _direction == _AdjustmentDirection.addition;
+      final prefix = isAddition ? '[AJOUT]' : '[RETRAIT]';
+      final fullReason = 'Ajustement $prefix: $justificatif';
+
       switch (_selectedType) {
         case _AdjustmentType.bobine:
-          // Récupérer le stock de bobines
-          final bobineController =
-              ref.read(bobineStockQuantityControllerProvider);
-          final stock = await bobineController.fetchByType(_bobineType);
+          final bobineController = ref.read(bobineStockQuantityControllerProvider);
+          var stock = await bobineController.fetchByType(_bobineType);
 
-          if (stock == null) {
-            throw const NotFoundException('Stock de bobines non trouvé');
+          if (stock == null && !isAddition) {
+             throw const NotFoundException('Stock de bobines non trouvé');
           }
 
-          // Vérifier que le stock est suffisant pour le retrait
-          final currentQuantity = stock.quantity;
-          final quantiteInt = quantite.toInt();
-          
-          if (currentQuantity < quantiteInt) {
-            throw ValidationException(
-              'Stock insuffisant. Stock actuel: $currentQuantity, '
-              'Demandé: $quantiteInt',
-            );
+          if (!isAddition && stock != null) {
+            final currentQuantity = stock.quantity;
+            if (currentQuantity < quantite.toInt()) {
+              throw ValidationException('Stock insuffisant ($currentQuantity disponible).');
+            }
           }
 
-          // Enregistrer le mouvement d'ajustement (retrait uniquement)
-          const movementType = BobineMovementType.retrait;
-
+          final movementType = isAddition ? BobineMovementType.entree : BobineMovementType.retrait;
           final enterpriseId = ref.read(activeEnterpriseProvider).value?.id ?? 'default';
+          
           final movement = BobineStockMovement(
-            id: 'movement-${DateTime.now().millisecondsSinceEpoch}',
+            id: 'local_adj_bb_${DateTime.now().millisecondsSinceEpoch}',
             enterpriseId: enterpriseId,
-            bobineId: stock.id,
+            bobineId: stock?.id ?? 'bobine-standard',
             bobineReference: _bobineType,
             type: movementType,
             date: DateTime.now(),
             quantite: quantite,
-            raison: 'Ajustement: $justificatif',
+            raison: fullReason,
             notes: justificatif,
             createdAt: DateTime.now(),
           );
-          // recordMovement met automatiquement à jour le stock
           await bobineController.recordMovement(movement);
           break;
 
         case _AdjustmentType.emballage:
-          // Récupérer le stock d'emballages
-          final packagingController =
-              ref.read(packagingStockControllerProvider);
-          final packagingStock = await packagingController.fetchByType('Emballage');
+          final packagingController = ref.read(packagingStockControllerProvider);
+          var packagingStock = await packagingController.fetchByType('Emballage');
 
-          if (packagingStock == null) {
+          if (packagingStock == null && !isAddition) {
             throw const NotFoundException('Stock d\'emballages non trouvé');
           }
 
-          // Calculer la quantité en unités si lots sélectionnés
-          int quantiteInt = quantite.toInt();
-          String quantiteLabel = '$quantiteInt unités';
-          
-          if (_useLots) {
-             final unitsPerLot = packagingStock.unitsPerLot;
-             quantiteInt = (quantite * unitsPerLot).toInt();
-             quantiteLabel = '${quantite.toInt()} lots (soit $quantiteInt unités)';
+          int quantiteUnits = quantite.toInt();
+          if (_useLots && packagingStock != null) {
+             quantiteUnits = (quantite * packagingStock.unitsPerLot).toInt();
+          } else if (_useLots) {
+             quantiteUnits = (quantite * 100).toInt(); // Fallback lot size if new stock
           }
 
-          // Vérifier que le stock est suffisant pour le retrait
-          if (packagingStock.quantity < quantiteInt) {
-            throw ValidationException(
-              'Stock insuffisant. Stock actuel: ${packagingStock.quantity}, '
-              'Demandé: $quantiteLabel',
-            );
+          if (!isAddition && packagingStock != null && packagingStock.quantity < quantiteUnits) {
+            throw ValidationException('Stock insuffisant (${packagingStock.quantity} disponible).');
           }
 
-          // Enregistrer le mouvement d'ajustement (retrait uniquement)
-          // recordMovement met automatiquement à jour le stock (comme pour les bobines)
-          const movementType = PackagingMovementType.ajustement;
-
+          final movementType = isAddition ? PackagingMovementType.entree : PackagingMovementType.ajustement;
           final enterpriseId = ref.read(activeEnterpriseProvider).value?.id ?? 'default';
+          
           final movement = PackagingStockMovement(
-            id: 'movement-${DateTime.now().millisecondsSinceEpoch}',
+            id: 'local_adj_pkg_${DateTime.now().millisecondsSinceEpoch}',
             enterpriseId: enterpriseId,
-            packagingId: packagingStock.id,
+            packagingId: packagingStock?.id ?? 'packaging-emballage',
             packagingType: 'Emballage',
             type: movementType,
             date: DateTime.now(),
-            quantite: quantiteInt,
-            raison: 'Ajustement: $justificatif',
+            quantite: quantiteUnits,
+            isInLots: _useLots,
+            quantiteSaisie: quantite,
+            raison: fullReason,
             notes: justificatif,
             createdAt: DateTime.now(),
           );
-          // recordMovement met automatiquement à jour le stock
           await packagingController.recordMovement(movement);
           break;
 
         case _AdjustmentType.produitFini:
-          // Récupérer le stock de produits finis
           final stockState = await stockController.fetchSnapshot();
           final stockItems = stockState.items;
 
-          // Pack uniquement (même qu'en stock / paramètres / ventes)
-          StockItem packStock;
+          StockItem? packStock;
           try {
             packStock = stockItems.firstWhere(
               (item) =>
                   item.type == StockType.finishedGoods &&
                   item.name.toLowerCase().contains(packName.toLowerCase()),
             );
-          } catch (_) {
-            throw const NotFoundException(
-              'Stock $packName non trouvé. Créez un item « $packName » '
-              'en produits finis.',
-            );
+          } catch (_) {}
+
+          if (packStock == null && !isAddition) {
+             throw const NotFoundException('Stock $packName non trouvé.');
           }
 
-          // Vérifier que le stock est suffisant pour le retrait
-          final currentQuantity = packStock.quantity;
-          
-          if (currentQuantity < quantite) {
-            throw ValidationException(
-              'Stock insuffisant. Stock actuel: $currentQuantity, '
-              'Demandé: $quantite',
-            );
+          if (!isAddition && packStock != null && packStock.quantity < quantite) {
+            throw ValidationException('Stock insuffisant (${packStock.quantity.toInt()} disponible).');
           }
 
-          // Enregistrer le mouvement d'ajustement (retrait uniquement)
-          const movementType = StockMovementType.exit;
+          final movementType = isAddition ? StockMovementType.entry : StockMovementType.exit;
+
+          if (isAddition && packStock == null) {
+            // S'assurer que l'item existe pour l'ajout
+            packStock = await stockController.ensureStockItemForProduct(
+              productName: packName,
+              unit: packUnit,
+            );
+          }
 
           await stockController.recordItemMovement(
-            itemId: packStock.id,
+            itemId: packStock!.id,
             itemName: packStock.name,
             type: movementType,
             quantity: quantite,
             unit: packStock.unit,
-            reason: 'Ajustement: $justificatif',
+            reason: fullReason,
             notes: justificatif,
           );
           break;
@@ -216,325 +197,263 @@ class StockAdjustmentFormState
 
       if (!mounted) return false;
 
-      // Invalider les providers pour rafraîchir l'affichage
       ref.invalidate(stockStateProvider);
-      // Invalider tous les providers de mouvements pour rafraîchir l'historique
-      // Note: stockMovementsProvider est un family provider, donc on doit invalider
-      // tous les paramètres possibles. On utilise invalidateAll pour être sûr.
       ref.invalidate(stockMovementsProvider);
       
-      final typeLabel = _selectedType == _AdjustmentType.bobine
-          ? 'bobine(s)'
-          : _selectedType == _AdjustmentType.emballage
-          ? (_useLots ? 'lot(s) d\'emballages' : 'emballage(s)')
-          : 'pack(s)';
-      final message =
-          '${quantite.toStringAsFixed(0)} $typeLabel retiré(s)';
-      NotificationService.showSuccess(context, message);
+      final label = isAddition ? 'ajouté(s)' : 'retiré(s)';
+      NotificationService.showSuccess(context, 'Stock mis à jour ($label)');
 
-      // Ne pas fermer le dialog ici - le FormDialog le fera automatiquement
-      // si on retourne true
       return true;
     } catch (e) {
       if (!mounted) return false;
-      
-      // Gérer les exceptions de manière cohérente
-      String errorMessage;
-      if (e is AppException) {
-        errorMessage = e.message;
-      } else {
-        errorMessage = e.toString().replaceAll('Exception: ', '');
-        if (errorMessage.isEmpty) {
-          errorMessage = 'Erreur lors de l\'ajustement. Veuillez réessayer.';
-        }
-      }
-      
-      NotificationService.showError(context, errorMessage);
+      NotificationService.showError(context, e.toString().replaceAll('Exception: ', ''));
       return false;
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  Future<void> _submit() async {
-    await submit();
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
-    final quantite = double.tryParse(_quantityController.text) ?? 0;
+    final isAdd = _direction == _AdjustmentDirection.addition;
+    final colorTheme = isAdd ? Colors.green : Colors.red;
 
     return Form(
       key: _formKey,
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 20),
+        padding: const EdgeInsets.symmetric(vertical: 10),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Section Type de Stock
+            // 1. DIRECTION (GROS ICONES POUR NON-LECTEURS)
+            Row(
+              children: [
+                Expanded(
+                  child: _buildDirectionCard(
+                    direction: _AdjustmentDirection.addition,
+                    icon: Icons.add_circle_outline_rounded,
+                    label: 'AJOUTER (+)',
+                    activeColor: Colors.green,
+                    isSelected: _direction == _AdjustmentDirection.addition,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildDirectionCard(
+                    direction: _AdjustmentDirection.removal,
+                    icon: Icons.remove_circle_outline_rounded,
+                    label: 'RETIRER (-)',
+                    activeColor: Colors.red,
+                    isSelected: _direction == _AdjustmentDirection.removal,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+
+            // 2. TYPE DE STOCK (AVEC ICONES CLAIRES)
+            ElyfCard(
+              padding: const EdgeInsets.all(16),
+              borderRadius: 20,
+              backgroundColor: colors.surfaceContainerLow,
+              child: SegmentedButton<_AdjustmentType>(
+                segments: const [
+                  ButtonSegment(
+                    value: _AdjustmentType.bobine,
+                    label: Text('BOBINE'),
+                    icon: Icon(Icons.repeat_rounded, size: 20),
+                  ),
+                  ButtonSegment(
+                    value: _AdjustmentType.emballage,
+                    label: Text('SACHET'),
+                    icon: Icon(Icons.layers_rounded, size: 20),
+                  ),
+                  ButtonSegment(
+                    value: _AdjustmentType.produitFini,
+                    label: Text('PACK'),
+                    icon: Icon(Icons.local_drink_rounded, size: 20),
+                  ),
+                ],
+                selected: {_selectedType},
+                style: SegmentedButton.styleFrom(
+                  selectedBackgroundColor: colorTheme.withAlpha(25),
+                  selectedForegroundColor: colorTheme,
+                  side: BorderSide(color: colorTheme.withAlpha(50)),
+                ),
+                onSelectionChanged: (newVal) => setState(() => _selectedType = newVal.first),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // 3. QUANTITÉ (GROS TEXTE)
             ElyfCard(
               padding: const EdgeInsets.all(20),
               borderRadius: 24,
-              backgroundColor: colors.surfaceContainerLow.withValues(alpha: 0.5),
+              borderColor: colorTheme.withAlpha(70),
+              backgroundColor: colorTheme.withAlpha(5),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                   Row(
-                    children: [
-                      Icon(Icons.inventory_2_rounded, size: 18, color: colors.primary),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Type de Stock à Ajuster',
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: colors.primary,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  SegmentedButton<_AdjustmentType>(
-                    segments: const [
-                      ButtonSegment(
-                        value: _AdjustmentType.bobine,
-                        label: Text('Bobine'),
-                        icon: Icon(Icons.repeat_rounded, size: 18),
-                      ),
-                      ButtonSegment(
-                        value: _AdjustmentType.emballage,
-                        label: Text('Emb.'),
-                        icon: Icon(Icons.layers_rounded, size: 18),
-                      ),
-                      ButtonSegment(
-                        value: _AdjustmentType.produitFini,
-                        label: Text('Pack'),
-                        icon: Icon(Icons.shopping_bag_rounded, size: 18),
-                      ),
-                    ],
-                    selected: {_selectedType},
-                    style: SegmentedButton.styleFrom(
-                      side: BorderSide(color: colors.outline.withValues(alpha: 0.1)),
-                      selectedBackgroundColor: colors.primary,
-                      selectedForegroundColor: colors.onPrimary,
+                  if (_selectedType == _AdjustmentType.emballage) _buildPkgToggle(),
+                  TextFormField(
+                    controller: _quantityController,
+                    textAlign: TextAlign.center,
+                    decoration: InputDecoration(
+                      hintText: '0',
+                      prefixIcon: Icon(Icons.numbers_rounded, color: colorTheme),
+                      labelText: isAdd ? 'Combien on ajoute ?' : 'Combien on retire ?',
+                      labelStyle: TextStyle(color: colorTheme, fontWeight: FontWeight.bold),
+                      border: InputBorder.none,
+                      suffixText: _getSuffix(),
                     ),
-                    onSelectionChanged: (Set<_AdjustmentType> newSelection) {
-                      setState(() {
-                        _selectedType = newSelection.first;
-                      });
-                    },
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    style: theme.textTheme.displaySmall?.copyWith(
+                      fontWeight: FontWeight.w900,
+                      color: colorTheme,
+                    ),
+                    inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))],
+                    validator: (v) => (v == null || v.isEmpty || (double.tryParse(v) ?? 0) <= 0) ? 'Entrez un nombre' : null,
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 16),
 
-            // Section Quantité & Justificatif
-            ElyfCard(
-              padding: const EdgeInsets.all(20),
-              borderRadius: 24,
-              backgroundColor: colors.primary.withValues(alpha: 0.03),
-              borderColor: colors.primary.withValues(alpha: 0.1),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                   Row(
-                    children: [
-                      Icon(Icons.edit_note_rounded, size: 18, color: colors.primary),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Détails de l\'Ajustement',
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: colors.primary,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  if (_selectedType == _AdjustmentType.emballage) ...[
-                    // Toggle Lot vs Unité
-                    Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: colors.surfaceContainerLow.withValues(alpha: 0.3),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: colors.outline.withValues(alpha: 0.1)),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: _buildUnitToggleSegment(
-                              isSelected: !_useLots,
-                              label: 'Unités',
-                              onTap: () => setState(() => _useLots = false),
-                            ),
-                          ),
-                          Expanded(
-                            child: _buildUnitToggleSegment(
-                              isSelected: _useLots,
-                              label: 'Lots',
-                              onTap: () => setState(() => _useLots = true),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-                  TextFormField(
-                    controller: _quantityController,
-                    decoration: _buildInputDecoration(
-                      label: 'Quantité à retirer *',
-                      icon: Icons.numbers_rounded,
-                      hintText: '0',
-                      helperText: _selectedType == _AdjustmentType.bobine
-                          ? 'Nombre de bobines'
-                          : _selectedType == _AdjustmentType.emballage
-                          ? (_useLots ? 'Nombre de lots' : 'Nombre d\'emballages')
-                          : 'Nombre de packs',
-                      suffixText: _selectedType == _AdjustmentType.emballage && _useLots
-                          ? 'lot${quantite > 1 ? 's' : ''}'
-                          : 'unité${quantite > 1 ? 's' : ''}',
-                    ),
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: colors.primary,
-                    ),
-                    inputFormatters: [
-                      FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
-                    ],
-                    validator: (v) {
-                      if (v == null || v.isEmpty) return 'Requis';
-                      final qty = double.tryParse(v);
-                      if (qty == null || qty <= 0) return 'Quantité invalide';
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _justificatifController,
-                    decoration: _buildInputDecoration(
-                      label: 'Justificatif *',
-                      icon: Icons.description_rounded,
-                      hintText: 'Raison de l\'ajustement...',
-                    ),
-                    maxLines: 3,
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Obligatoire';
-                      }
-                      return null;
-                    },
-                  ),
-                ],
+            // 4. JUSTIFICATIF (SIMPLE ET AVEC CHOIX)
+            Text(
+              'Raison (Facultatif mais recommandé)',
+              style: theme.textTheme.labelMedium?.copyWith(color: colors.onSurfaceVariant),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _buildReasonChip('Erreur de saisie'),
+                _buildReasonChip('Perte / Casse'),
+                _buildReasonChip('Inventaire'),
+                _buildReasonChip('Don / Échantillon'),
+              ],
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _justificatifController,
+              decoration: _buildInputDecoration(
+                label: 'Ou écrivez ici...',
+                icon: Icons.chat_bubble_outline_rounded,
+                color: colors.onSurfaceVariant,
               ),
+              maxLines: 2,
             ),
             const SizedBox(height: 24),
 
-            if (widget.showSubmitButton) _buildSubmitButton(),
+            if (widget.showSubmitButton) _buildSubmitButton(colorTheme),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildUnitToggleSegment({
-    required bool isSelected,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        decoration: BoxDecoration(
-          color: isSelected ? colors.primary : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Text(
-          label,
-          textAlign: TextAlign.center,
-          style: theme.textTheme.labelLarge?.copyWith(
-            color: isSelected ? colors.onPrimary : colors.onSurfaceVariant,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-          ),
-        ),
-      ),
-    );
-  }
-
-  InputDecoration _buildInputDecoration({
-    required String label,
+  Widget _buildDirectionCard({
+    required _AdjustmentDirection direction,
     required IconData icon,
-    String? hintText,
-    String? helperText,
-    String? suffixText,
+    required String label,
+    required Color activeColor,
+    required bool isSelected,
   }) {
-    final colors = Theme.of(context).colorScheme;
-    return InputDecoration(
-      labelText: label,
-      hintText: hintText,
-      helperText: helperText,
-      suffixText: suffixText,
-      prefixIcon: Icon(icon, size: 20, color: colors.primary),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: colors.outline.withValues(alpha: 0.1)),
+    return InkWell(
+      onTap: () => setState(() => _direction = direction),
+      borderRadius: BorderRadius.circular(20),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        decoration: BoxDecoration(
+          color: isSelected ? activeColor : activeColor.withAlpha(10),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? activeColor : activeColor.withAlpha(50),
+            width: 2,
+          ),
+          boxShadow: isSelected ? [BoxShadow(color: activeColor.withAlpha(50), blurRadius: 10, offset: const Offset(0, 4))] : [],
+        ),
+        child: Column(
+          children: [
+            Icon(icon, size: 40, color: isSelected ? Colors.white : activeColor),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: TextStyle(
+                fontWeight: FontWeight.w900,
+                color: isSelected ? Colors.white : activeColor,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
       ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: colors.outline.withValues(alpha: 0.1)),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: colors.primary, width: 2),
-      ),
-      filled: true,
-      fillColor: colors.surfaceContainerLow.withValues(alpha: 0.3),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
     );
   }
 
-  Widget _buildSubmitButton() {
-    final colors = Theme.of(context).colorScheme;
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(colors: [colors.primary, colors.secondary]),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: colors.primary.withValues(alpha: 0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
+  Widget _buildPkgToggle() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          FilterChip(
+            label: const Text('UNITÉS'),
+            selected: !_useLots,
+            onSelected: (v) => setState(() => _useLots = false),
+          ),
+          const SizedBox(width: 12),
+          FilterChip(
+            label: const Text('LOTS'),
+            selected: _useLots,
+            onSelected: (v) => setState(() => _useLots = true),
           ),
         ],
       ),
-      child: ElevatedButton(
-        onPressed: _isLoading ? null : _submit,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.transparent,
-          foregroundColor: Colors.white,
-          shadowColor: Colors.transparent,
-          padding: const EdgeInsets.symmetric(vertical: 18),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        ),
-        child: _isLoading
-            ? const SizedBox(
-                height: 20,
-                width: 20,
-                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-              )
-            : const Text(
-                'RETIRER DU STOCK',
-                style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1),
-              ),
+    );
+  }
+
+  Widget _buildReasonChip(String reason) {
+    return ActionChip(
+      label: Text(reason, style: const TextStyle(fontSize: 12)),
+      onPressed: () => setState(() => _justificatifController.text = reason),
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    );
+  }
+
+  String _getSuffix() {
+    if (_selectedType == _AdjustmentType.bobine) return 'bob.';
+    if (_selectedType == _AdjustmentType.emballage) return _useLots ? 'lots' : 'unit.';
+    return 'packs';
+  }
+
+  InputDecoration _buildInputDecoration({required String label, required IconData icon, required Color color}) {
+    return InputDecoration(
+      labelText: label,
+      prefixIcon: Icon(icon, size: 20, color: color),
+      filled: true,
+      fillColor: color.withAlpha(10),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+    );
+  }
+
+  Widget _buildSubmitButton(Color color) {
+    return ElevatedButton.icon(
+      onPressed: _isLoading ? null : () => submit(),
+      icon: _isLoading ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.check_circle_rounded),
+      label: Text(_direction == _AdjustmentDirection.addition ? 'VALIDER L\'AJOUT' : 'VALIDER LE RETRAIT'),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: color,
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
       ),
     );
   }

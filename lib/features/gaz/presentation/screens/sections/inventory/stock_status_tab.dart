@@ -11,7 +11,10 @@ import 'package:elyf_groupe_app/features/administration/domain/entities/enterpri
 import '../stock/stock_kpi_section.dart';
 import '../stock/stock_pos_list.dart';
 import '../../../widgets/pos_stock_movement_dialog.dart';
+import '../../../widgets/gas_sale_form_dialog.dart';
+import '../../../../domain/entities/gas_sale.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/services/gaz_stock_calculation_service.dart';
+
 
 class StockStatusTab extends ConsumerWidget {
   const StockStatusTab({super.key, required this.enterpriseId, required this.moduleId});
@@ -203,14 +206,60 @@ class StockStatusTab extends ConsumerWidget {
                             cylinders: cylinders,
                           );
 
-                          return PointOfSaleStockCard(
-                            enterprise: currentEnterprise,
-                            fullBottles: metrics.totalFull,
-                            emptyBottles: metrics.totalEmpty,
-                            totalInTransit: metrics.totalInTransit,
-                            issueBottles: metrics.totalIssues,
-                            stockByCapacity: metrics.stockByCapacity,
+                          return InkWell(
+                            onTap: () async {
+                              final settings = ref.read(gazSettingsProvider((
+                                enterpriseId: enterpriseId,
+                                moduleId: 'gaz',
+                              ))).value;
+                              
+                              final isWholesaleEnabled = settings?.wholesalePrices.isNotEmpty ?? false;
+
+                              if (isWholesaleEnabled) {
+                                // Show choice for hybrid POS
+                                final SaleType? saleType = await showDialog<SaleType>(
+                                  context: context,
+                                  builder: (context) => AlertDialog(
+                                    title: const Text('Enregistrer une vente'),
+                                    content: const Text('Quel type de vente souhaitez-vous effectuer ?'),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(context, SaleType.retail),
+                                        child: const Text('DÉTAIL'),
+                                      ),
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(context, SaleType.wholesale),
+                                        child: const Text('GROS'),
+                                      ),
+                                    ],
+                                  ),
+                                );
+
+                                if (saleType != null && context.mounted) {
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) => GasSaleFormDialog(saleType: saleType),
+                                  );
+                                }
+                              } else {
+                                // Retail only POS
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => const GasSaleFormDialog(saleType: SaleType.retail),
+                                );
+                              }
+                            },
+                            borderRadius: BorderRadius.circular(16),
+                            child: PointOfSaleStockCard(
+                              enterprise: currentEnterprise,
+                              fullBottles: metrics.totalFull,
+                              emptyBottles: metrics.totalEmpty,
+                              totalInTransit: metrics.totalInTransit,
+                              issueBottles: metrics.totalIssues,
+                              stockByCapacity: metrics.stockByCapacity,
+                            ),
                           );
+
                         },
                         loading: () => AppShimmers.card(context),
                         error: (error, stackTrace) => const SizedBox.shrink(),

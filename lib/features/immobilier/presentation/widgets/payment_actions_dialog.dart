@@ -5,7 +5,7 @@ import 'package:open_file/open_file.dart';
 import '../../../../core/pdf/unified_payment_pdf_service.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/payment.dart';
-import 'package:elyf_groupe_app/shared/presentation/widgets/print_receipt_button.dart';
+import 'immobilier_print_receipt_button.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../../../shared/utils/notification_service.dart';
 
@@ -62,7 +62,7 @@ class _PaymentActionsDialogState extends ConsumerState<PaymentActionsDialog> {
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          PrintReceiptButton(
+          ImmobilierPrintReceiptButton(
             payment: widget.payment,
             onPrintSuccess: () => Navigator.of(context).pop(),
           ),

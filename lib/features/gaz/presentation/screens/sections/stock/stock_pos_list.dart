@@ -6,7 +6,8 @@ import 'package:elyf_groupe_app/features/administration/domain/entities/enterpri
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import '../../../widgets/point_of_sale_stock_card.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/services/gaz_stock_calculation_service.dart';
-import '../inventory/pos_details_screen.dart';
+import '../../../widgets/pos_sales_summary_dialog.dart';
+
 
 /// Liste des cartes de stock par point de vente.
 class StockPosList extends ConsumerWidget {
@@ -53,11 +54,11 @@ class StockPosList extends ConsumerWidget {
         );
 
         return InkWell(
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => PosDetailsScreen(pos: pos),
-            ),
+          onTap: () => showDialog(
+            context: context,
+            builder: (context) => PosSalesSummaryDialog(pos: pos),
           ),
+
           borderRadius: BorderRadius.circular(16),
           child: PointOfSaleStockCard(
             enterprise: pos,

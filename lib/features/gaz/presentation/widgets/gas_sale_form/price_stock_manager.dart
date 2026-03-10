@@ -10,7 +10,7 @@ class PriceStockManager {
 
   /// Met à jour le prix unitaire selon le type de vente.
   static Future<double> updateUnitPrice({
-    required WidgetRef ref,
+    required Ref ref,
     required Cylinder? cylinder,
     required String? enterpriseId,
     required bool isWholesale,
@@ -43,7 +43,7 @@ class PriceStockManager {
 
   /// Met à jour le stock disponible.
   static Future<int> updateAvailableStock({
-    required WidgetRef ref,
+    required Ref ref,
     required Cylinder? cylinder,
     required String? enterpriseId,
   }) async {

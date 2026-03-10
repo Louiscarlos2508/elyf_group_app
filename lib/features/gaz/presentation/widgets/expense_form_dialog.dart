@@ -62,6 +62,8 @@ class _GazExpenseFormDialogState extends ConsumerState<GazExpenseFormDialog>
       _enterpriseId = widget.expense!.enterpriseId;
       _receiptPath = widget.expense!.receiptPath;
       _selectedPaymentMethod = widget.expense!.paymentMethod;
+    } else {
+      _selectedPaymentMethod = PaymentMethod.cash;
     }
   }
 
@@ -194,7 +196,14 @@ class _GazExpenseFormDialogState extends ConsumerState<GazExpenseFormDialog>
                   ExpenseCategoryInput(
                     selectedCategory: _selectedCategory,
                     onCategoryChanged: (category) {
-                      setState(() => _selectedCategory = category);
+                      setState(() {
+                        _selectedCategory = category;
+                        if (category == ExpenseCategory.stockReplenishment) {
+                          _selectedPaymentMethod = PaymentMethod.mobileMoney;
+                        } else {
+                          _selectedPaymentMethod = PaymentMethod.cash;
+                        }
+                      });
                     },
                   ),
                   const SizedBox(height: 16),

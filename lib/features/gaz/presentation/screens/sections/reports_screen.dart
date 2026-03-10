@@ -260,7 +260,7 @@ class _GazReportsScreenState extends ConsumerState<GazReportsScreen> {
               data: (reportData) => GazFinancialReportContentV2(
                 startDate: _startDate,
                 endDate: _endDate,
-                totalRevenue: reportData.salesRevenue,
+                reportData: reportData,
               ),
               loading: () => AppShimmers.list(context),
               error: (_, __) => const SizedBox.shrink(),

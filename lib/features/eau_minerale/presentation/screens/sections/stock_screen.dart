@@ -17,24 +17,64 @@ class StockScreen extends ConsumerWidget {
 
 
   void _showStockAdjustment(BuildContext context, WidgetRef ref) {
-    final formKey = GlobalKey<StockAdjustmentFormState>();
-
     showDialog(
       context: context,
       builder: (dialogContext) {
-        return FormDialog(
-          title: 'Ajustement de Stock (Retrait)',
-          saveLabel: 'Retirer',
-          onSave: () async {
-            final formState = formKey.currentState;
-            if (formState != null) {
-              return formState.submit();
-            }
-            return false;
-          },
-          child: StockAdjustmentForm(
-            key: formKey,
-            showSubmitButton: false,
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 500),
+            child: ElyfCard(
+              padding: EdgeInsets.zero,
+              borderRadius: 32,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                   // Header personnalisé
+                   Padding(
+                     padding: const EdgeInsets.fromLTRB(24, 24, 16, 8),
+                     child: Row(
+                       children: [
+                         Container(
+                           padding: const EdgeInsets.all(10),
+                           decoration: BoxDecoration(
+                             color: Theme.of(context).colorScheme.primary.withAlpha(20),
+                             borderRadius: BorderRadius.circular(12),
+                           ),
+                           child: Icon(Icons.auto_fix_high_rounded, color: Theme.of(context).colorScheme.primary),
+                         ),
+                         const SizedBox(width: 16),
+                         Expanded(
+                           child: Text(
+                             'Ajustement Stock',
+                             style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                           ),
+                         ),
+                         IconButton.filledTonal(
+                           icon: const Icon(Icons.close, size: 20),
+                           onPressed: () => Navigator.of(dialogContext).pop(),
+                         ),
+                       ],
+                     ),
+                   ),
+                   Flexible(
+                     child: SingleChildScrollView(
+                       padding: const EdgeInsets.symmetric(horizontal: 24),
+                       child: StockAdjustmentForm(
+                         showSubmitButton: true,
+                         onSubmit: () async {
+                           Navigator.of(dialogContext).pop();
+                           return true;
+                         },
+                       ),
+                     ),
+                   ),
+                   const SizedBox(height: 12),
+                ],
+              ),
+            ),
           ),
         );
       },

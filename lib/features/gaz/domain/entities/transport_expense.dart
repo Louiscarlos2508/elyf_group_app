@@ -2,24 +2,28 @@
 class TransportExpense {
   const TransportExpense({
     required this.id,
+    required this.category,
     required this.description,
     required this.amount,
     required this.expenseDate,
   });
 
   final String id;
+  final String category;
   final String description;
   final double amount;
   final DateTime expenseDate;
 
   TransportExpense copyWith({
     String? id,
+    String? category,
     String? description,
     double? amount,
     DateTime? expenseDate,
   }) {
     return TransportExpense(
       id: id ?? this.id,
+      category: category ?? this.category,
       description: description ?? this.description,
       amount: amount ?? this.amount,
       expenseDate: expenseDate ?? this.expenseDate,
@@ -29,6 +33,7 @@ class TransportExpense {
   factory TransportExpense.fromMap(Map<String, dynamic> map) {
     return TransportExpense(
       id: map['id'] as String? ?? '',
+      category: map['category'] as String? ?? 'autre',
       description: map['description'] as String? ?? '',
       amount: (map['amount'] as num?)?.toDouble() ?? 0.0,
       expenseDate: map['expenseDate'] != null
@@ -40,6 +45,7 @@ class TransportExpense {
   Map<String, dynamic> toMap() {
     return {
       'id': id,
+      'category': category,
       'description': description,
       'amount': amount,
       'expenseDate': expenseDate.toIso8601String(),

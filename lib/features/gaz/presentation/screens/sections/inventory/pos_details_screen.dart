@@ -362,7 +362,7 @@ class _PosSalesTab extends ConsumerWidget {
           separatorBuilder: (_, __) => const SizedBox(height: 12),
           itemBuilder: (context, index) {
             final sale = sales[index];
-            return WholesaleSaleCard(sale: sale);
+            return WholesaleSaleCard(sales: [sale]);
           },
         );
       },

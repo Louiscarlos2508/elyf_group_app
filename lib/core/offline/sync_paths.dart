@@ -1,3 +1,5 @@
+import 'collection_names.dart';
+
 /// Global collection paths configuration.
 ///
 /// Maps logical collection names to physical Firestore paths.
@@ -109,6 +111,10 @@ final collectionPaths = <String, String Function(String?)>{
       'enterprises/${enterpriseId!}/gazSessions',
   'gaz_treasury_operations': (enterpriseId) =>
       'enterprises/${enterpriseId!}/gazTreasuryOperations',
+  CollectionNames.gazPosRemittances: (enterpriseId) =>
+      'enterprises/${enterpriseId!}/gazPosRemittances',
+  CollectionNames.gazSiteLogisticsRecords: (enterpriseId) =>
+      'enterprises/${enterpriseId!}/gazSiteLogisticsRecords',
 
   // Audit Trail module
   'audit_trail': (enterpriseId) => 'enterprises/${enterpriseId!}/auditTrail',

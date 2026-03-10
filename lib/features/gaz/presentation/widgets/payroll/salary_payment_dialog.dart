@@ -7,6 +7,8 @@ import 'package:elyf_groupe_app/features/gaz/domain/entities/gaz_employee.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/gaz_salary_payment.dart';
 import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 
+import '../../../../../shared/domain/entities/payment_method.dart';
+
 class GazSalaryPaymentDialog extends ConsumerStatefulWidget {
   const GazSalaryPaymentDialog({super.key});
 
@@ -20,6 +22,7 @@ class _GazSalaryPaymentDialogState extends ConsumerState<GazSalaryPaymentDialog>
   late TextEditingController _amountController;
   late TextEditingController _periodController;
   late TextEditingController _notesController;
+  PaymentMethod _selectedPaymentMethod = PaymentMethod.cash;
 
   @override
   void initState() {
@@ -90,6 +93,27 @@ class _GazSalaryPaymentDialogState extends ConsumerState<GazSalaryPaymentDialog>
                 decoration: const InputDecoration(labelText: 'Notes (Optionnel)'),
                 maxLines: 2,
               ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<PaymentMethod>(
+                value: _selectedPaymentMethod,
+                decoration: const InputDecoration(
+                  labelText: 'Mode de Paiement',
+                  prefixIcon: Icon(Icons.account_balance_wallet_outlined),
+                ),
+                items: [
+                  DropdownMenuItem(
+                    value: PaymentMethod.cash,
+                    child: Text(PaymentMethod.cash.label),
+                  ),
+                  DropdownMenuItem(
+                    value: PaymentMethod.mobileMoney,
+                    child: const Text('Orange Money'),
+                  ),
+                ],
+                onChanged: (val) {
+                  if (val != null) setState(() => _selectedPaymentMethod = val);
+                },
+              ),
             ],
           ),
         ),
@@ -121,6 +145,7 @@ class _GazSalaryPaymentDialogState extends ConsumerState<GazSalaryPaymentDialog>
       paymentDate: DateTime.now(),
       period: _periodController.text,
       notes: _notesController.text,
+      paymentMethod: _selectedPaymentMethod,
       treasuryOperationId: const Uuid().v4(),
     );
 

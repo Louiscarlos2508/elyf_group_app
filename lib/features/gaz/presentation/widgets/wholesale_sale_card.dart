@@ -8,7 +8,7 @@ import '../../application/providers.dart';
 import '../../domain/entities/gas_sale.dart';
 import 'gas_print_receipt_button.dart';
 import '../../domain/services/gaz_sale_pdf_service.dart';
-import 'package:open_filex/open_filex.dart';
+import 'package:open_file/open_file.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
 import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
@@ -248,7 +248,7 @@ class WholesaleSaleCard extends ConsumerWidget {
       
       if (context.mounted) {
         Navigator.pop(context); 
-        OpenFilex.open(file.path);
+        OpenFile.open(file.path);
       }
     } catch (e) {
       if (context.mounted) {
@@ -256,7 +256,4 @@ class WholesaleSaleCard extends ConsumerWidget {
       }
     }
   }
-}
-
-  /* Cleanup: Removed old methods and unused _DetailItem */
 }

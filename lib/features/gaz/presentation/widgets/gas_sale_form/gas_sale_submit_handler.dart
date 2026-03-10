@@ -17,7 +17,7 @@ class GasSaleSubmitHandler {
 
   static Future<GasSale?> submit({
     required BuildContext context,
-    required WidgetRef ref,
+    required Ref ref,
     required Cylinder selectedCylinder,
     required int quantity,
     required int availableStock,

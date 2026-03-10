@@ -12,7 +12,8 @@ import '../../presentation/screens/sections/settings_screen.dart';
 import '../../presentation/screens/sections/inventory_screen.dart';
 import '../../presentation/screens/sections/sales_screen.dart';
 import '../../presentation/screens/sections/finance_screen.dart';
-import '../../presentation/screens/sections/logistics_screen.dart';
+import '../../presentation/screens/sections/pos_reconciliation_screen.dart';
+import '../../../tour/presentation/screens/tour_list_screen.dart';
 import 'permission_providers.dart';
 
 /// Provider pour récupérer les sections accessibles selon les permissions.
@@ -82,7 +83,7 @@ final accessibleGazSectionsProvider = FutureProvider<List<NavigationSection>>((
           section: NavigationSection(
             label: 'Logistique',
             icon: Icons.local_shipping_outlined,
-            builder: () => const GazLogisticsScreen(),
+            builder: () => const TourListScreen(),
             isPrimary: true,
             enterpriseId: enterpriseId,
             moduleId: moduleId,
@@ -101,6 +102,16 @@ final accessibleGazSectionsProvider = FutureProvider<List<NavigationSection>>((
             GazPermissions.viewExpenses.id,
             GazPermissions.viewTreasury.id,
           },
+        ),
+        (
+          section: NavigationSection(
+            label: 'Suivi POS',
+            icon: Icons.account_balance_outlined,
+            builder: () => const GazPOSReconciliationScreen(),
+            enterpriseId: enterpriseId,
+            moduleId: moduleId,
+          ),
+          requiredPermissions: {GazPermissions.viewDashboard.id},
         ),
         (
           section: NavigationSection(
@@ -144,6 +155,11 @@ final accessibleGazSectionsProvider = FutureProvider<List<NavigationSection>>((
   for (final item in allSections) {
     // Restriction : Logistique n'est pas pour les POS
     if (item.section.label == 'Logistique' && isPOS) {
+      continue;
+    }
+
+    // Restriction : Suivi POS est pour le parent uniquement
+    if (item.section.label == 'Suivi POS' && isPOS) {
       continue;
     }
 

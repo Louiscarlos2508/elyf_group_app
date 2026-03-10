@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
 
 enum GazSalaryStatus {
   paid,
@@ -16,6 +17,7 @@ class GazSalaryPayment extends Equatable {
   final String? period; // e.g., "Mars 2026"
   final String? notes;
   final String? treasuryOperationId;
+  final PaymentMethod? paymentMethod;
   final GazSalaryStatus status;
 
   const GazSalaryPayment({
@@ -28,6 +30,7 @@ class GazSalaryPayment extends Equatable {
     this.period,
     this.notes,
     this.treasuryOperationId,
+    this.paymentMethod,
     this.status = GazSalaryStatus.paid,
   });
 
@@ -42,6 +45,7 @@ class GazSalaryPayment extends Equatable {
     period,
     notes,
     treasuryOperationId,
+    paymentMethod,
     status,
   ];
 
@@ -56,6 +60,7 @@ class GazSalaryPayment extends Equatable {
       'period': period,
       'notes': notes,
       'treasuryOperationId': treasuryOperationId,
+      'paymentMethod': paymentMethod?.name,
       'status': status.name,
     };
   }
@@ -71,6 +76,9 @@ class GazSalaryPayment extends Equatable {
       period: json['period'] as String?,
       notes: json['notes'] as String?,
       treasuryOperationId: json['treasuryOperationId'] as String?,
+      paymentMethod: json['paymentMethod'] != null
+          ? PaymentMethod.values.byName(json['paymentMethod'] as String)
+          : null,
       status: GazSalaryStatus.values.firstWhere(
         (e) => e.name == json['status'],
         orElse: () => GazSalaryStatus.paid,

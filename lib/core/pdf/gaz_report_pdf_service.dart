@@ -20,23 +20,66 @@ class GazReportPdfService extends BaseReportPdfService {
 
     final contentSections = [
       buildKpiSection(
-        title: 'Vue d\'ensemble Financière',
+        title: 'Résumé de l\'Activité',
         kpis: [
           {
-            'label': 'Chiffre d\'Affaires (CA)',
-            'value': formatCurrency(reportData.salesRevenue.toInt()),
+            'label': 'Chiffre d\'Affaires Réel',
+            'value': formatCurrency(reportData.realSalesRevenue.toInt()),
           },
           {
-            'label': 'Montant des Dépenses',
+            'label': 'Total Dépenses',
             'value': formatCurrency(reportData.expensesAmount.toInt()),
           },
           {
-            'label': 'Bénéfice Net',
-            'value': formatCurrency(reportData.profit.toInt()),
+            'label': 'Bénéfice Net Réel',
+            'value': formatCurrency(reportData.realProfit.toInt()),
           },
           {
             'label': 'Taux de Marge',
             'value': '${reportData.profitMarginPercentage.toStringAsFixed(1)}%',
+          },
+        ],
+      ),
+
+      if (reportData.internalWholesaleRevenue > 0)
+        buildKpiSection(
+          title: 'Mouvements Internes (Hors CA)',
+          kpis: [
+            {
+              'label': 'Ventes aux POS (Internes)',
+              'value': formatCurrency(reportData.internalWholesaleRevenue.toInt()),
+            },
+          ],
+        ),
+
+      buildKpiSection(
+        title: 'Situation Trésorerie (Actuelle)',
+        kpis: [
+          {
+            'label': 'Solde Espèces',
+            'value': formatCurrency(reportData.cashBalance.toInt()),
+          },
+          {
+            'label': 'Solde Orange Money',
+            'value': formatCurrency(reportData.omBalance.toInt()),
+          },
+          {
+            'label': 'Total Trésorerie',
+            'value': formatCurrency((reportData.cashBalance + reportData.omBalance).toInt()),
+          },
+        ],
+      ),
+
+      buildKpiSection(
+        title: 'Ventes par Mode de Paiement (Période)',
+        kpis: [
+          {
+            'label': 'Total Cash',
+            'value': formatCurrency(reportData.cashTotal.toInt()),
+          },
+          {
+            'label': 'Total Mobile Money',
+            'value': formatCurrency(reportData.omTotal.toInt()),
           },
         ],
       ),

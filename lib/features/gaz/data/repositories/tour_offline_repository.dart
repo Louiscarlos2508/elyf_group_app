@@ -53,12 +53,23 @@ class TourOfflineRepository extends OfflineRepository<Tour>
     final localId = existingLocalId ?? getLocalId(entity);
     final remoteId = getRemoteId(entity);
     
-    // S'assurer que le JSON contient le localId comme ID principal
-    final map = toMap(entity)..['id'] = localId..['localId'] = localId;
-    await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
+    // Récupérer le record existant pour préserver le remoteId si nécessaire
+    final existingRecord = await driftService.records.findByLocalId(
       collectionName: collectionName,
       localId: localId,
-      remoteId: remoteId,
+      enterpriseId: enterpriseId,
+      moduleType: moduleType,
+    );
+    
+    final effectiveRemoteId = remoteId ?? existingRecord?.remoteId;
+    
+    // S'assurer que le JSON contient le localId comme ID principal
+    final map = toMap(entity)..['id'] = localId..['localId'] = localId;
+    await driftService.records.upsert(
+      userId: userId ?? syncManager.getUserId() ?? '', 
+      collectionName: collectionName,
+      localId: localId,
+      remoteId: effectiveRemoteId,
       enterpriseId: enterpriseId,
       moduleType: moduleType,
       dataJson: jsonEncode(map),
@@ -66,7 +77,7 @@ class TourOfflineRepository extends OfflineRepository<Tour>
     );
     
     AppLogger.debug(
-      'Tour sauvegardé - localId: $localId, remoteId: $remoteId, entity.id: ${entity.id}, existing: ${existingLocalId != null}',
+      'Tour sauvegardé - localId: $localId, remoteId: $effectiveRemoteId, entity.id: ${entity.id}, existing: ${existingLocalId != null}',
       name: 'TourOfflineRepository.saveToLocal',
     );
   }
@@ -410,6 +421,10 @@ class TourOfflineRepository extends OfflineRepository<Tour>
       Tour updated;
       switch (status) {
         case TourStatus.open:
+        case TourStatus.collecting:
+        case TourStatus.recharging:
+        case TourStatus.delivering:
+        case TourStatus.closing:
           updated = tour.copyWith(status: status);
           break;
         case TourStatus.closed:

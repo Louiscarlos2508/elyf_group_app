@@ -2,11 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
-import 'package:elyf_groupe_app/features/administration/application/providers.dart';
-import 'package:elyf_groupe_app/shared.dart';
 import '../point_of_sale_form_dialog.dart';
-import 'pos_stock_dialog.dart';
-import 'pos_types_dialog.dart';
 
 /// Ligne du tableau des points de vente.
 class PosTableRow extends ConsumerWidget {
@@ -21,25 +17,6 @@ class PosTableRow extends ConsumerWidget {
   final String enterpriseId;
   final String moduleId;
 
-  Future<void> _showStockDialog(BuildContext context, WidgetRef ref) async {
-    await showDialog(
-      context: context,
-      builder: (dialogContext) =>
-          PosStockDialog(enterprise: enterprise, enterpriseId: enterpriseId),
-    );
-  }
-
-  Future<void> _showTypesDialog(BuildContext context, WidgetRef ref) async {
-    await showDialog(
-      context: context,
-      builder: (dialogContext) => PosTypesDialog(
-        enterprise: enterprise,
-        enterpriseId: enterpriseId,
-        moduleId: moduleId,
-      ),
-    );
-  }
-
   Future<void> _editPointOfSale(BuildContext context) async {
     final result = await showDialog<bool>(
       context: context,
@@ -52,56 +29,6 @@ class PosTableRow extends ConsumerWidget {
 
     if (result == true && context.mounted) {
       // Le provider sera invalidé dans le dialog
-    }
-  }
-
-  Future<void> _deletePointOfSale(BuildContext context, WidgetRef ref) async {
-    final theme = Theme.of(context);
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Supprimer le point de vente'),
-        content: Text(
-          'Êtes-vous sûr de vouloir supprimer "${enterprise.name}" ?\n\nCette action est irréversible.',
-        ),
-        actions: [
-          ElyfButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            variant: ElyfButtonVariant.text,
-            child: const Text('Annuler'),
-          ),
-          ElyfButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            backgroundColor: theme.colorScheme.error,
-            textColor: theme.colorScheme.onError,
-            child: const Text('Supprimer'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != true) return;
-
-    try {
-      final controller = ref.read(enterpriseControllerProvider);
-      await controller.deleteEnterprise(enterprise.id);
-
-      if (!context.mounted) return;
-
-      ref.invalidate(
-        enterprisesByParentAndTypeProvider((parentId: enterpriseId, type: EnterpriseType.gasPointOfSale)),
-      );
-
-      NotificationService.showSuccess(
-        context,
-        'Point de vente supprimé avec succès',
-      );
-    } catch (e) {
-      if (!context.mounted) return;
-      NotificationService.showError(
-        context,
-        'Erreur lors de la suppression: ${e.toString()}',
-      );
     }
   }
 
@@ -175,19 +102,19 @@ class PosTableRow extends ConsumerWidget {
         icon: const Icon(Icons.more_vert),
         onSelected: (value) {
           switch (value) {
-            case 'stock':
-              _showStockDialog(context, ref);
+            case 'edit':
+              _editPointOfSale(context);
               break;
           }
         },
         itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
           const PopupMenuItem<String>(
-            value: 'stock',
+            value: 'edit',
             child: Row(
               children: [
-                Icon(Icons.inventory_2_outlined, size: 20),
+                Icon(Icons.edit_outlined, size: 20),
                 SizedBox(width: 12),
-                Text('Stock'),
+                Text('Modifier'),
               ],
             ),
           ),

@@ -10,14 +10,11 @@ import 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/gas_sale.dart';
 import 'gas_sale_form/customer_info_widget.dart';
 import 'gas_sale_form/cylinder_selector_widget.dart';
-import 'gas_sale_form/gas_sale_submit_handler.dart';
-import 'gas_sale_form/price_stock_manager.dart';
 import 'gas_sale_form/quantity_and_total_widget.dart';
 import 'gas_sale_form/tour_wholesaler_selector_widget.dart';
 import 'gas_print_receipt_button.dart';
-import '../../application/providers.dart';
-import 'package:elyf_groupe_app/core/logging/app_logger.dart';
-import 'package:elyf_groupe_app/features/gaz/domain/services/gaz_financial_calculation_service.dart';
+import 'gas_sale_form/gas_sale_form_controller.dart';
+
 /// Dialog de formulaire pour créer une vente de gaz.
 class GasSaleFormDialog extends ConsumerStatefulWidget {
   const GasSaleFormDialog({
@@ -38,36 +35,34 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
   final _customerNameController = TextEditingController();
   final _customerPhoneController = TextEditingController();
   final _notesController = TextEditingController();
-
-  Cylinder? _selectedCylinder;
-  int _availableStock = 0;
-  bool _isLoading = false;
-  String? _selectedWholesalerId;
-  String? _selectedWholesalerName;
-  GasSale? _completedSale;
-  PaymentMethod _selectedPaymentMethod = PaymentMethod.cash;
-  bool _isMixedPayment = false;
   final _cashAmountController = TextEditingController();
   final _mobileAmountController = TextEditingController();
+  final _unitPriceController = TextEditingController(text: '0');
+
   bool _isInitialized = false;
-  bool _showAdvancedOptions = false;
 
   @override
   void initState() {
     super.initState();
-    _selectedCylinder = widget.initialCylinder;
     _quantityController.text = '1';
+    _quantityController.addListener(_onQuantityChanged);
+    _unitPriceController.addListener(_onUnitPriceChanged);
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Initialiser le prix unitaire si un cylinder est déjà sélectionné
-    // Note: enterpriseId sera récupéré dans le build via le provider
+  void _onQuantityChanged() {
+    final qty = int.tryParse(_quantityController.text) ?? 0;
+    ref.read(gasSaleFormControllerProvider(widget.saleType).notifier).updateQuantity(qty);
+  }
+
+  void _onUnitPriceChanged() {
+    final price = double.tryParse(_unitPriceController.text) ?? 0.0;
+    ref.read(gasSaleFormControllerProvider(widget.saleType).notifier).updateUnitPrice(price);
   }
 
   @override
   void dispose() {
+    _quantityController.removeListener(_onQuantityChanged);
+    _unitPriceController.removeListener(_onUnitPriceChanged);
     _quantityController.dispose();
     _customerNameController.dispose();
     _customerPhoneController.dispose();
@@ -78,122 +73,24 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
     super.dispose();
   }
 
-  final _unitPriceController = TextEditingController(text: '0');
-
-  double get _totalAmount {
-    final quantity = int.tryParse(_quantityController.text) ?? 0;
-    final unitPrice = double.tryParse(_unitPriceController.text) ?? 0.0;
-    return GazFinancialCalculationService.calculateTotalAmount(
-      cylinder: _selectedCylinder,
-      unitPrice: unitPrice,
-      quantity: quantity,
-    );
-  }
-
-  Future<void> _updateUnitPrice(String? enterpriseId) async {
-    if (enterpriseId == null) return;
-    final price = await PriceStockManager.updateUnitPrice(
-      ref: ref,
-      cylinder: _selectedCylinder,
-      enterpriseId: enterpriseId,
-      isWholesale: widget.saleType == SaleType.wholesale,
-    );
-    if (mounted) {
-      setState(() => _unitPriceController.text = price.toString());
-    }
-  }
-
-  Future<void> _updateAvailableStock(String? enterpriseId) async {
-    if (enterpriseId == null) return;
-    final stock = await PriceStockManager.updateAvailableStock(
-      ref: ref,
-      cylinder: _selectedCylinder,
-      enterpriseId: enterpriseId,
-    );
-    if (mounted) {
-      setState(() => _availableStock = stock);
-    }
-  }
-
   Future<void> _submit(String? enterpriseId) async {
     if (!_formKey.currentState!.validate()) return;
     if (enterpriseId == null) {
       NotificationService.showError(context, 'Aucune entreprise sélectionnée');
       return;
     }
-    if (_selectedCylinder == null) {
-      NotificationService.showError(
-        context,
-        'Veuillez sélectionner une bouteille',
-      );
-      return;
-    }
 
-    final quantity = int.tryParse(_quantityController.text) ?? 1;
-
-    final activeEnterprise = ref.read(activeEnterpriseProvider).value;
-    final sale = await GasSaleSubmitHandler.submit(
+    final notifier = ref.read(gasSaleFormControllerProvider(widget.saleType).notifier);
+    
+    await notifier.submit(
       context: context,
-      ref: ref,
-      selectedCylinder: _selectedCylinder!,
-      quantity: quantity,
-      availableStock: _availableStock,
       enterpriseId: enterpriseId,
-      siteId: null, // SiteID is implicit since POS holds its own stock
-      saleType: widget.saleType,
-      customerName: _customerNameController.text.trim().isEmpty
-          ? null
-          : _customerNameController.text.trim(),
-      customerPhone: _customerPhoneController.text.trim().isEmpty
-          ? null
-          : _customerPhoneController.text.trim(),
-      notes: _notesController.text.trim().isEmpty
-          ? null
-          : _notesController.text.trim(),
-      totalAmount: _totalAmount,
-      unitPrice: double.tryParse(_unitPriceController.text) ?? 0.0,
-      tourId: null,
-      wholesalerId: widget.saleType == SaleType.wholesale
-          ? _selectedWholesalerId
-          : null,
-      wholesalerName: widget.saleType == SaleType.wholesale
-          ? _selectedWholesalerName
-          : null,
-      emptyReturnedQuantity: quantity,
-      dealType: GasSaleDealType.exchange,
-      paymentMethod: _isMixedPayment ? PaymentMethod.both : _selectedPaymentMethod,
-      cashAmount: _isMixedPayment ? double.tryParse(_cashAmountController.text) : null,
-      mobileMoneyAmount: _isMixedPayment ? double.tryParse(_mobileAmountController.text) : null,
-      onLoadingChanged: () => setState(() => _isLoading = true),
+      customerName: _customerNameController.text.trim().isEmpty ? null : _customerNameController.text.trim(),
+      customerPhone: _customerPhoneController.text.trim().isEmpty ? null : _customerPhoneController.text.trim(),
+      notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+      cashAmount: double.tryParse(_cashAmountController.text),
+      mobileMoneyAmount: double.tryParse(_mobileAmountController.text),
     );
-
-    if (sale != null && mounted) {
-      HapticFeedback.heavyImpact();
-      setState(() => _completedSale = sale);
-      
-      // Auto-print logic (Story 2.4)
-      try {
-        final settingsAsync = ref.read(gazSettingsProvider((
-          enterpriseId: enterpriseId,
-          moduleId: 'gaz',
-        )));
-        
-        settingsAsync.whenData((settings) async {
-          if (settings is GazSettings && settings.autoPrintReceipt == true) {
-            final printingService = ref.read(gazPrintingServiceProvider);
-            final enterpriseName = ref.read(activeEnterpriseProvider).value?.name;
-            
-            await printingService.printSaleReceipt(
-              sale: sale,
-              cylinderLabel: _selectedCylinder?.label,
-              enterpriseName: enterpriseName,
-            );
-          }
-        });
-      } catch (e) {
-        AppLogger.error('Failed to auto-print receipt', error: e);
-      }
-    }
   }
   @override
   Widget build(BuildContext context) {
@@ -208,13 +105,20 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
     error: (_, __) => null,
   );
 
+    final state = ref.watch(gasSaleFormControllerProvider(widget.saleType));
+    final notifier = ref.read(gasSaleFormControllerProvider(widget.saleType).notifier);
+
     // Initialisation automatique du prix et du stock si un cylinder est pré-sélectionné
-    if (!_isInitialized && enterpriseId != null && _selectedCylinder != null) {
+    if (!_isInitialized && enterpriseId != null) {
       _isInitialized = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _updateUnitPrice(enterpriseId);
-        _updateAvailableStock(enterpriseId);
+        notifier.initialize(widget.initialCylinder, enterpriseId);
       });
+    }
+
+    // Mise à jour synchrone du prix (uniquement si le controller est à 0 et qu'on a un prix en state)
+    if (_unitPriceController.text == '0' && state.unitPrice != 0) {
+      _unitPriceController.text = state.unitPrice.toString();
     }
 
     try {
@@ -255,21 +159,15 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
                     if (widget.saleType == SaleType.wholesale &&
                         enterpriseId != null)
                       TourWholesalerSelectorWidget(
-                        selectedWholesalerId: _selectedWholesalerId,
-                        selectedWholesalerName: _selectedWholesalerName,
+                        selectedWholesalerId: state.wholesalerId,
+                        selectedWholesalerName: state.wholesalerName,
                         enterpriseId: enterpriseId,
                         onWholesalerChanged: (wholesaler) {
-                          setState(() {
-                            if (wholesaler != null) {
-                              _selectedWholesalerId = wholesaler.id;
-                              _selectedWholesalerName = wholesaler.name;
-                              _updateUnitPrice(enterpriseId);
-                            } else {
-                              _selectedWholesalerId = null;
-                              _selectedWholesalerName = null;
-                              _updateUnitPrice(enterpriseId);
-                            }
-                          });
+                          notifier.updateWholesaler(
+                            wholesaler?.id,
+                            wholesaler?.name,
+                            enterpriseId,
+                          );
                         },
                       ),
 
@@ -277,15 +175,9 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
                       const SizedBox(height: 16),
                     // Sélection de la bouteille
                     CylinderSelectorWidget(
-                      selectedCylinder: _selectedCylinder,
+                      selectedCylinder: state.selectedCylinder,
                       onCylinderChanged: (value) {
-                        setState(() {
-                          _selectedCylinder = value;
-                          if (enterpriseId != null) {
-                            _updateAvailableStock(enterpriseId);
-                            _updateUnitPrice(enterpriseId);
-                          }
-                        });
+                        notifier.updateCylinder(value, enterpriseId);
                       },
                     ),
                     const SizedBox(height: 16),
@@ -293,26 +185,25 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
                     QuantityAndTotalWidget(
                       quantityController: _quantityController,
                       unitPriceController: _unitPriceController,
-                      selectedCylinder: _selectedCylinder,
-                      availableStock: _availableStock,
-                      onQuantityOrPriceChanged: () => setState(() {}),
+                      selectedCylinder: state.selectedCylinder,
+                      availableStock: state.availableStock,
+                      onQuantityOrPriceChanged: () {
+                         // Les listeners s'occupent de mettre à jour le notifier
+                      },
                     ),
                     const SizedBox(height: 16),
                     // Sélecteur méthode de paiement
                     _PaymentMethodSelector(
-                      selected: _selectedPaymentMethod,
-                      isMixed: _isMixedPayment,
-                      onChanged: (method, isMixed) => setState(() {
-                        _selectedPaymentMethod = method;
-                        _isMixedPayment = isMixed;
-                      }),
+                      selected: state.paymentMethod,
+                      isMixed: state.isMixedPayment,
+                      onChanged: (method, isMixed) => notifier.updatePaymentMethod(method, isMixed),
                     ),
-                    if (_isMixedPayment) ...[
+                    if (state.isMixedPayment) ...[
                       const SizedBox(height: 12),
                       _MixedPaymentFields(
                         cashController: _cashAmountController,
                         mobileController: _mobileAmountController,
-                        totalAmount: _totalAmount,
+                        totalAmount: state.totalAmount,
                       ),
                     ],
                     const SizedBox(height: 16),
@@ -320,20 +211,20 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
                     if (widget.saleType == SaleType.retail) ...[
                       const SizedBox(height: 8),
                       InkWell(
-                        onTap: () => setState(() => _showAdvancedOptions = !_showAdvancedOptions),
+                        onTap: () => notifier.toggleAdvancedOptions(),
                         borderRadius: BorderRadius.circular(8),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(vertical: 8),
                           child: Row(
                             children: [
                               Icon(
-                                _showAdvancedOptions ? Icons.expand_less : Icons.expand_more,
+                                state.showAdvancedOptions ? Icons.expand_less : Icons.expand_more,
                                 size: 20,
                                 color: theme.colorScheme.primary,
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                _showAdvancedOptions ? 'Moins d\'options' : 'Plus d\'options (Client, Notes...)',
+                                state.showAdvancedOptions ? 'Moins d\'options' : 'Plus d\'options (Client, Notes...)',
                                 style: theme.textTheme.labelMedium?.copyWith(
                                   color: theme.colorScheme.primary,
                                   fontWeight: FontWeight.bold,
@@ -343,7 +234,7 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
                           ),
                         ),
                       ),
-                      if (_showAdvancedOptions) ...[
+                      if (state.showAdvancedOptions) ...[
                         const SizedBox(height: 12),
                         CustomerInfoWidget(
                           customerNameController: _customerNameController,
@@ -363,7 +254,7 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
                         showCustomerFields: false,
                       ),
                     ],
-                    if (_completedSale != null) ...[
+                    if (state.completedSale != null) ...[
                       const SizedBox(height: 24),
                       Container(
                         padding: const EdgeInsets.all(16),
@@ -406,8 +297,8 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
                             ),
                             const SizedBox(height: 16),
                             GasPrintReceiptButton(
-                              sale: _completedSale!,
-                              cylinderLabel: _selectedCylinder?.label,
+                              sale: state.completedSale!,
+                              cylinderLabel: state.selectedCylinder?.label,
                               onPrintSuccess: () {
                                 Navigator.of(context).pop();
                               },
@@ -428,8 +319,8 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
                         onCancel: () => Navigator.of(context).pop(),
                         onSubmit: () => _submit(enterpriseId),
                         submitLabel: 'Enregistrer la vente',
-                        isLoading: _isLoading,
-                        submitEnabled: !_isLoading && enterpriseId != null,
+                        isLoading: state.isLoading,
+                        submitEnabled: !state.isLoading && enterpriseId != null,
                       ),
                     ],
                   ],

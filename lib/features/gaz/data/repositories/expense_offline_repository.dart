@@ -52,11 +52,22 @@ class GazExpenseOfflineRepository extends OfflineRepository<GazExpense>
     final existingLocalId = await findExistingLocalId(entity, moduleType: moduleType);
     final localId = existingLocalId ?? getLocalId(entity);
     final remoteId = getRemoteId(entity);
-    final map = toMap(entity)..['localId'] = localId..['id'] = localId;
-    await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
+    
+    // Récupérer le record existant pour préserver le remoteId si nécessaire
+    final existingRecord = await driftService.records.findByLocalId(
       collectionName: collectionName,
       localId: localId,
-      remoteId: remoteId,
+      enterpriseId: enterpriseId,
+      moduleType: moduleType,
+    );
+    final effectiveRemoteId = remoteId ?? existingRecord?.remoteId;
+
+    final map = toMap(entity)..['localId'] = localId..['id'] = localId;
+    await driftService.records.upsert(
+      userId: userId ?? syncManager.getUserId() ?? '', 
+      collectionName: collectionName,
+      localId: localId,
+      remoteId: effectiveRemoteId,
       enterpriseId: enterpriseId,
       moduleType: moduleType,
       dataJson: jsonEncode(map),

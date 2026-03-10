@@ -37,8 +37,8 @@ class _GazInventoryScreenState extends ConsumerState<GazInventoryScreen>
     final List<String> newTabs = ['Stock'];
     if (isPOS) {
       newTabs.add('Fuites');
+      newTabs.add('Historique');
     }
-    newTabs.add('Historique');
 
     // If tabs are already initialized and length matches, we are good
     if (_tabs.isNotEmpty && _tabs.length == newTabs.length) return;
@@ -117,7 +117,9 @@ class _GazInventoryScreenState extends ConsumerState<GazInventoryScreen>
                 enterpriseId: enterpriseId,
                 moduleId: 'gaz',
               ),
-            StockHistoryTab(enterpriseId: enterpriseId),
+            if (isPOS)
+              StockHistoryTab(enterpriseId: enterpriseId),
+
           ],
         ),
       ),

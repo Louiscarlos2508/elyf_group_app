@@ -89,7 +89,28 @@ abstract class OfflineRepository<T> with OptimisticUIRepositoryMixin<T> {
     try {
       await driftService.db.transaction(() async {
         final userId = syncManager.getUserId();
-        // Save to local storage first
+
+        // 1. D'abord, essayer de récupérer le remoteId existant si celui de l'entité est nul
+        // Cela permet de préserver le lien avec Firestore même si l'entité locale
+        // ne stocke pas explicitement le remoteId dans son ID.
+        var effectiveRemoteId = remoteId;
+        if (effectiveRemoteId == null || effectiveRemoteId.isEmpty) {
+          final existingRecord = await driftService.records.findByLocalId(
+            collectionName: collectionName,
+            localId: localId,
+            enterpriseId: enterpriseId ?? '',
+            moduleType: (this as dynamic).moduleType ?? '', // Nécessite que le repo expose moduleType
+          );
+          if (existingRecord != null && existingRecord.remoteId != null) {
+            effectiveRemoteId = existingRecord.remoteId;
+            AppLogger.debug(
+              'Preserving existing remoteId for $collectionName/$localId: $effectiveRemoteId',
+              name: 'offline.repository',
+            );
+          }
+        }
+
+        // 2. Save to local storage first
         try {
           await saveToLocal(entity, userId: userId);
         } catch (e, stackTrace) {
@@ -101,19 +122,17 @@ abstract class OfflineRepository<T> with OptimisticUIRepositoryMixin<T> {
             stackTrace: stackTrace,
           );
           // Ne pas rethrow - permet à l'opération de continuer même si Drift échoue
-          // L'entité sera récupérée depuis Firestore lors de la prochaine synchronisation
         }
 
-        // Queue sync operation if auto-sync is enabled
-        // Même si la sauvegarde locale a échoué, on peut quand même queue la sync
+        // 3. Queue sync operation if auto-sync is enabled
         if (enableAutoSync) {
           try {
-            if (remoteId != null && remoteId.isNotEmpty) {
+            if (effectiveRemoteId != null && effectiveRemoteId.isNotEmpty) {
               // Update existing remote document
               await syncManager.queueUpdate(
                 collectionName: syncCollectionName,
                 localId: localId,
-                remoteId: remoteId,
+                remoteId: effectiveRemoteId,
                 data: data,
                 enterpriseId: enterpriseId,
               );
@@ -134,7 +153,6 @@ abstract class OfflineRepository<T> with OptimisticUIRepositoryMixin<T> {
               error: e,
               stackTrace: stackTrace,
             );
-            // Ne pas rethrow - la sync se fera plus tard
           }
         }
       });

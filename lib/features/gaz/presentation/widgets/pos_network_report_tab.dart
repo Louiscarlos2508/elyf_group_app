@@ -8,6 +8,7 @@ import '../../domain/entities/gas_sale.dart';
 import '../../../../features/administration/domain/entities/enterprise.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import '../../domain/entities/cylinder.dart';
+import '../../domain/entities/report_data.dart';
 
 class PosNetworkReportTab extends ConsumerWidget {
   const PosNetworkReportTab({
@@ -36,6 +37,13 @@ class PosNetworkReportTab extends ConsumerWidget {
             type: EnterpriseType.gasPointOfSale,
           )),
         );
+        final reportDataAsync = ref.watch(
+          gazReportDataProvider((
+            period: GazReportPeriod.custom,
+            startDate: startDate,
+            endDate: endDate,
+          )),
+        );
 
         return salesAsync.when(
           data: (sales) {
@@ -43,11 +51,25 @@ class PosNetworkReportTab extends ConsumerWidget {
               data: (cylinders) {
                 return pointsOfSaleAsync.when(
                   data: (pointsOfSale) {
-                    if (pointsOfSale.isEmpty) {
-                      return _buildEmptyState(context, theme);
-                    }
-                    return _buildContent(
-                        context, ref, theme, sales, pointsOfSale, cylinders);
+                    return reportDataAsync.when(
+                      data: (reportData) {
+                        if (pointsOfSale.isEmpty) {
+                          return _buildEmptyState(context, theme);
+                        }
+                        return _buildContent(
+                          context,
+                          ref,
+                          theme,
+                          sales,
+                          pointsOfSale,
+                          cylinders,
+                          reportData,
+                        );
+                      },
+                      loading: () =>
+                          const Center(child: CircularProgressIndicator()),
+                      error: (err, _) => Center(child: Text('Erreur Rapport: $err')),
+                    );
                   },
                   loading: () =>
                       const Center(child: CircularProgressIndicator()),
@@ -101,6 +123,7 @@ class PosNetworkReportTab extends ConsumerWidget {
     List<GasSale> allSales,
     List<Enterprise> pointsOfSale,
     List<Cylinder> cylinders,
+    GazReportData reportData,
   ) {
     final reportService = ref.read(gazReportCalculationServiceProvider);
     
@@ -111,12 +134,10 @@ class PosNetworkReportTab extends ConsumerWidget {
       endDate: endDate,
     );
 
-    // Calculate Global Network KPIs
-    double totalRevenue = 0;
-    for (final sale in filteredSales) {
-      totalRevenue += sale.totalAmount;
-    }
-    final double avgBasket = filteredSales.isEmpty ? 0.0 : totalRevenue / filteredSales.length;
+    // Calculate Global Network KPIs using REAL revenue (excluding internal movements)
+    final double totalRevenue = reportData.realSalesRevenue;
+    final double avgBasket = reportData.salesCount == 0 ? 0.0 : totalRevenue / reportData.salesCount;
+    final int totalSalesCount = reportData.salesCount;
 
     // Cylinder name map
     final cylinderNames = {for (final c in cylinders) c.id: '${c.weight}kg'};
@@ -170,7 +191,7 @@ class PosNetworkReportTab extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildNetworkKpis(theme, totalRevenue, filteredSales.length, avgBasket),
+        _buildNetworkKpis(theme, totalRevenue, totalSalesCount, avgBasket),
         const SizedBox(height: 24),
         _buildProductBreakdownSection(theme, globalProductBreakdown),
         const SizedBox(height: 32),

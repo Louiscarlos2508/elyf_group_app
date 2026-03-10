@@ -34,6 +34,7 @@ class SmartDeduplicator {
     'properties': ['address', 'reference'],
     'contracts': ['contractNumber', 'reference'],
     'production_sessions': ['date', 'heureDebut', 'enterpriseId'],
+    'tours': ['tourDate', 'enterpriseId'],
   };
 
   /// Génère un hash pour une entité basé sur ses champs clés.

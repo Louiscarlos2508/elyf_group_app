@@ -1,9 +1,6 @@
-import 'package:flutter/material.dart';
 import '../../../../core/printing/printer_interface.dart';
-import '../../../../core/printing/thermal_receipt_builder.dart';
-import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
+import '../../../../core/services/sunmi_print_service.dart';
 import '../../domain/entities/gas_sale.dart';
-// import '../services/gaz_session_calculation_service.dart'; // Removed during session cleanup
 
 /// Service spécialisé pour le formatage et l'impression des reçus Gaz.
 class GazPrintingService {
@@ -17,49 +14,13 @@ class GazPrintingService {
     String? cylinderLabel,
     String? enterpriseName,
   }) async {
-    try {
-      final width = await printerService.getLineWidth();
-      final builder = ThermalReceiptBuilder(width: width);
-
-      // Header
-      builder.header(enterpriseName?.toUpperCase() ?? 'ELYF GROUP - GAZ', subtitle: 'RECU DE VENTE');
-      
-      builder.row('Date', _formatDate(sale.saleDate));
-      builder.row('No Ticket', sale.id.split('-').last.toUpperCase());
-      builder.row('Type Vente', sale.saleType.label);
-      builder.space();
-
-      // Client
-      if (sale.customerName != null || sale.wholesalerName != null) {
-        builder.row('Client', sale.wholesalerName ?? sale.customerName ?? 'Client Divers');
-        builder.space();
-      }
-
-      // Items
-      builder.section('Détail Achat');
-      
-      final priceDetail = '${sale.quantity}x ${sale.unitPrice.toStringAsFixed(0)}';
-      final totalDetail = '${sale.totalAmount.toStringAsFixed(0)} FCFA';
-      builder.itemRow(cylinderLabel ?? 'Bouteille Gaz', priceDetail, totalDetail);
-      builder.row('Transaction', sale.dealType.label);
-      builder.separator();
-      
-      // Total
-      builder.total('TOTAL', '${sale.totalAmount.toStringAsFixed(0)} FCFA');
-      builder.row('Paiement', sale.paymentMethod.label);
-      
-      builder.space();
-      builder.footer('Merci de votre confiance !');
-
-      return await printerService.printText(builder.toString());
-    } catch (e) {
-      debugPrint('GazPrintingService: Error printing receipt: $e');
-      return false;
-    }
+    // Delegate to unified Sunmi printing service for consistent template
+    return SunmiPrintService.instance.printGasSaleReceipt(
+      enterpriseName: enterpriseName ?? 'ELYF GROUP - GAZ',
+      sale: sale,
+      cylinderLabel: cylinderLabel,
+    );
   }
-
-  // printDailySummary was removed during session infrastructure cleanup.
-  // It can be re-implemented later using a non-session based approach if needed.
 
   /// Imprime un reçu pour une vente de gaz groupée (plusieurs poids).
   Future<bool> printBatchSaleReceipt({
@@ -67,51 +28,11 @@ class GazPrintingService {
     String? enterpriseName,
   }) async {
     if (sales.isEmpty) return false;
-    try {
-      final width = await printerService.getLineWidth();
-      final builder = ThermalReceiptBuilder(width: width);
-      final mainSale = sales.first;
-
-      // Header
-      builder.header(enterpriseName?.toUpperCase() ?? 'ELYF GROUP - GAZ', subtitle: 'RECU DE VENTE (GROUPE)');
-      
-      builder.row('Date', _formatDate(mainSale.saleDate));
-      builder.row('Type Vente', mainSale.saleType.label);
-      if (mainSale.wholesalerName != null) {
-        builder.row('Grossiste', mainSale.wholesalerName!);
-      }
-      builder.space();
-
-      // Items
-      builder.section('DETAILS DES ARTICLES');
-      
-      double totalAmount = 0;
-      for (final sale in sales) {
-        totalAmount += sale.totalAmount;
-        // We don't have cylinder label here easily, but we can assume "BTL Xkg"
-        // In a real app, labels should be passed or fetched.
-        // For now, let's use a generic format.
-        builder.itemRow(
-          'Gaz BTL', 
-          '${sale.quantity}x ${sale.unitPrice.toStringAsFixed(0)}', 
-          '${sale.totalAmount.toStringAsFixed(0)}'
-        );
-      }
-      
-      builder.separator();
-      
-      // Total
-      builder.total('TOTAL GENERAL', '${totalAmount.toStringAsFixed(0)} FCFA');
-      builder.row('Paiement', mainSale.paymentMethod.label);
-      
-      builder.space();
-      builder.footer('Merci de votre confiance !');
-
-      return await printerService.printText(builder.toString());
-    } catch (e) {
-      debugPrint('GazPrintingService: Error printing batch receipt: $e');
-      return false;
-    }
+    // Delegate to unified Sunmi printing service
+    return SunmiPrintService.instance.printGasBatchSaleReceipt(
+      enterpriseName: enterpriseName ?? 'ELYF GROUP - GAZ',
+      sales: sales,
+    );
   }
 
   String _formatDate(DateTime date) {

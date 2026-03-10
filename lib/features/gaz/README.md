@@ -23,10 +23,17 @@ Le Parent agit comme un coordinateur administratif et logistique.
     - Les recharges chez les grossistes.
     - Les dépenses logistiques (carburant, main-d'œuvre, route).
     - La collecte des fonds auprès des grossistes.
-- **Ressources Humaines** : Gestion des paiements de salaires des employés du groupe.
 - **Trésorerie Centrale** : Suivi des flux financiers liés aux tournées et aux remontées des POS.
+- **Réconciliation des POS (Phase 2)** : Gestion du "Compte Courant" pour chaque POS :
+    - **Stock Consigné** : Valeur monétaire des bouteilles confiées (calculée au prix parent).
+    - **Versements (Remittances)** : Suivi des fonds reversés par le POS au Parent.
+    - **Fuites & Pertes** : Déduction automatique de la valeur des fuites du solde dû.
+    - **Solde POS** : Calcul en temps réel : `(Valeur Stock Consigné) - (Versements Validés) - (Valeur Fuites)`.
 
 ## 3. Architecture Data
+- **Entities Clés** :
+    - `GazPOSRemittance` : Flux financier d'un POS vers le Parent.
+    - `GazSiteLogisticsRecord` : Synthèse logistique et financière par site (Solde courant).
 - **Isolation** : Utilisation de `siteId` pour isoler les inventaires physiques de chaque POS sous un même Parent.
 - **Sync** : Synchronisation temps réel entre le mobile et Firestore pour une supervision instantanée par le Parent.
 

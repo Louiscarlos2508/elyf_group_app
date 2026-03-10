@@ -51,8 +51,6 @@ void main() {
     // Default setups
     when(mockPermissionAdapter.getAccessibleEnterpriseIds(any))
         .thenAnswer((_) async => {enterpriseId});
-    when(mockSettingsRepo.getSettings(any))
-        .thenAnswer((_) async => null);
   });
 
   group('OrangeMoneyController - createTransactionFromInput', () {

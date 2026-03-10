@@ -29,6 +29,7 @@ class GazSalaryPaymentController {
         userId: userId,
         amount: payment.amount.toInt(),
         type: TreasuryOperationType.removal,
+        fromAccount: payment.paymentMethod,
         date: payment.paymentDate,
         reason: 'Salaire: ${payment.employeeName}${payment.period != null ? " (${payment.period})" : ""}',
         referenceEntityId: payment.id,

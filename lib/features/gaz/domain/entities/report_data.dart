@@ -11,10 +11,17 @@ class GazReportData {
     this.wholesaleSalesCount = 0,
     this.productBreakdown = const {},
     this.posPerformance = const [],
+    this.internalWholesaleRevenue = 0,
+    this.externalWholesaleRevenue = 0,
+    this.retailRevenue = 0,
+    this.cashTotal = 0,
+    this.omTotal = 0,
+    this.cashBalance = 0,
+    this.omBalance = 0,
   });
 
   final GazReportPeriod period;
-  final double salesRevenue; // Chiffre d'affaires
+  final double salesRevenue; // Chiffre d'affaires total brut
   final double expensesAmount; // Montant des dépenses
   final double profit; // Bénéfice net (salesRevenue - expensesAmount)
   final int salesCount;
@@ -22,16 +29,35 @@ class GazReportData {
   final int retailSalesCount;
   final int wholesaleSalesCount;
 
+  // Ventilations des revenus
+  final double internalWholesaleRevenue; // Ventes Parent -> POS
+  final double externalWholesaleRevenue; // Ventes vers clients externes
+  final double retailRevenue; // Ventes au détail
+
+  // Totaux par mode de paiement
+  final double cashTotal;
+  final double omTotal;
+
+  // Situation actuelle Trésorerie
+  final double cashBalance;
+  final double omBalance;
+
+  /// Chiffre d'Affaires Réel (Exclut les mouvements internes)
+  double get realSalesRevenue => externalWholesaleRevenue + retailRevenue;
+
+  /// Bénéfice Réel (CA Réel - Dépenses)
+  double get realProfit => realSalesRevenue - expensesAmount;
+
   /// Quantity sold per cylinder label (e.g., {'6kg': 45, '12kg': 20})
   final Map<String, int> productBreakdown;
 
   /// List of performance data per POS (if applicable)
   final List<GazPosPerformance> posPerformance;
 
-  /// Taux de marge bénéficiaire en pourcentage
+  /// Taux de marge bénéficiaire réel en pourcentage
   double get profitMarginPercentage {
-    if (salesRevenue == 0) return 0;
-    return (profit / salesRevenue) * 100;
+    if (realSalesRevenue == 0) return 0;
+    return (realProfit / realSalesRevenue) * 100;
   }
 }
 

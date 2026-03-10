@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
+import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
+import '../expense_form_dialog.dart';
 import '../leak_report_dialog.dart';
 
 class QuickActionsSection extends ConsumerWidget {
@@ -7,6 +10,9 @@ class QuickActionsSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final activeEnterprise = ref.watch(activeEnterpriseProvider).value;
+    final isPos = activeEnterprise?.isPointOfSale ?? false;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -20,18 +26,44 @@ class QuickActionsSection extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _QuickActionButton(
-                label: 'Signaler Fuite',
-                icon: Icons.water_drop_outlined,
-                color: Colors.red,
-                onTap: () => _showLeakDialog(context),
+        if (isPos)
+          Row(
+            children: [
+              Expanded(
+                child: _QuickActionButton(
+                  label: 'Signaler Fuite',
+                  icon: Icons.water_drop_outlined,
+                  color: Colors.red,
+                  onTap: () => _showLeakDialog(context),
+                ),
               ),
-            ),
-          ],
-        ),
+            ],
+          )
+        else
+          Row(
+            children: [
+              Expanded(
+                child: _QuickActionButton(
+                  label: 'Nouveau Tour',
+                  icon: Icons.local_shipping_outlined,
+                  color: Colors.blue,
+                  onTap: () {
+                    // Navigate to Logistics Tab
+                    ref.read(gazNavigationIndexProvider.notifier).setIndex(2);
+                  },
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _QuickActionButton(
+                  label: 'Ajouter Dépense',
+                  icon: Icons.add_card_outlined,
+                  color: Colors.orange,
+                  onTap: () => _showExpenseDialog(context),
+                ),
+              ),
+            ],
+          ),
       ],
     );
   }
@@ -43,6 +75,12 @@ class QuickActionsSection extends ConsumerWidget {
     );
   }
 
+  void _showExpenseDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => const GazExpenseFormDialog(),
+    );
+  }
 }
 
 class _QuickActionButton extends StatelessWidget {
@@ -69,9 +107,9 @@ class _QuickActionButton extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: color.withAlpha(20),
+            color: color.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: color.withAlpha(50)),
+            border: Border.all(color: color.withValues(alpha: 0.2)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -79,7 +117,7 @@ class _QuickActionButton extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: color.withAlpha(40),
+                  color: color.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(icon, color: color, size: 24),
@@ -89,7 +127,7 @@ class _QuickActionButton extends StatelessWidget {
                 label,
                 style: theme.textTheme.labelLarge?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: color.withAlpha(200),
+                  color: color.withValues(alpha: 0.8),
                 ),
                 textAlign: TextAlign.center,
               ),

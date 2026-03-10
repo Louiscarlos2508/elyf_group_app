@@ -55,7 +55,10 @@ class StockMovementTable extends StatelessWidget {
       );
     }
 
-    // Calculer les statistiques
+    // Calculer les statistiques (seulement si même unité)
+    final uniqueUnits = movements.map((m) => m.unit).toSet();
+    final hasSingleUnit = uniqueUnits.length == 1;
+
     final totalEntries = movements
         .where((m) => m.type == StockMovementType.entry)
         .fold<double>(0, (sum, m) => sum + m.quantity);
@@ -63,6 +66,7 @@ class StockMovementTable extends StatelessWidget {
         .where((m) => m.type == StockMovementType.exit)
         .fold<double>(0, (sum, m) => sum + m.quantity);
     final netMovement = totalEntries - totalExits;
+    final unitLabel = hasSingleUnit ? uniqueUnits.first : '';
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -78,6 +82,7 @@ class StockMovementTable extends StatelessWidget {
               totalExits,
               netMovement,
               movements.length,
+              unitLabel,
             ),
             const SizedBox(height: 16),
             // Tableau ou liste des mouvements
@@ -97,6 +102,7 @@ class StockMovementTable extends StatelessWidget {
     double totalExits,
     double netMovement,
     int totalMovements,
+    String unit,
   ) {
     final theme = Theme.of(context);
 
@@ -113,6 +119,7 @@ class StockMovementTable extends StatelessWidget {
               totalEntries,
               Colors.green,
               Icons.arrow_downward,
+              unit,
             ),
           ),
           _buildDivider(theme),
@@ -123,6 +130,7 @@ class StockMovementTable extends StatelessWidget {
               totalExits,
               Colors.red,
               Icons.arrow_upward,
+              unit,
             ),
           ),
           _buildDivider(theme),
@@ -133,6 +141,7 @@ class StockMovementTable extends StatelessWidget {
               netMovement,
               netMovement >= 0 ? Colors.green : Colors.red,
               Icons.balance,
+              unit,
             ),
           ),
           _buildDivider(theme),
@@ -163,19 +172,24 @@ class StockMovementTable extends StatelessWidget {
     String label,
     double value,
     Color color,
-    IconData icon,
-  ) {
+    IconData icon, [
+    String unit = '',
+  ]) {
     final theme = Theme.of(context);
+    final displayValue = unit.isEmpty ? value.toInt().toString() : '${value.toInt()} $unit';
+    
     return Column(
       children: [
         Icon(icon, size: 16, color: color),
         const SizedBox(height: 4),
         Text(
-          value.toStringAsFixed(0),
-          style: theme.textTheme.titleMedium?.copyWith(
+          displayValue,
+          style: theme.textTheme.labelLarge?.copyWith(
             fontWeight: FontWeight.bold,
             color: color,
+            fontSize: unit.isEmpty ? 14 : 11,
           ),
+          textAlign: TextAlign.center,
         ),
         Text(
           label,

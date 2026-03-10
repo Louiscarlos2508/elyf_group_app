@@ -24,9 +24,9 @@ class FinanceTabBar extends StatelessWidget {
         ),
         child: Row(
           children: [
-            if (!isPOS) _buildTab(context, index: 0, label: 'Dépenses'),
-            _buildTab(context, index: isPOS ? 0 : 1, label: 'Trésorerie'),
-            if (!isPOS) _buildTab(context, index: 2, label: 'Paie'),
+            _buildTab(context, index: 0, label: 'Dépenses'),
+            _buildTab(context, index: 1, label: 'Trésorerie'),
+            if (!isPOS) _buildTab(context, index: 2, label: 'Salaires'),
           ],
         ),
       ),

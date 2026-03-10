@@ -4,7 +4,7 @@ import '../../domain/entities/contract.dart';
 import '../../domain/entities/payment.dart';
 import '../../domain/entities/property.dart';
 import '../../domain/entities/tenant.dart';
-import 'package:elyf_groupe_app/shared/presentation/widgets/print_receipt_button.dart';
+import 'immobilier_print_receipt_button.dart';
 import 'payment_card_helpers.dart';
 import 'payment_form_dialog.dart';
 
@@ -293,7 +293,7 @@ class PaymentDetailDialog extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              PrintReceiptButton(
+              ImmobilierPrintReceiptButton(
                 payment: payment,
                 onPrintSuccess: () => Navigator.of(context).pop(),
               ),

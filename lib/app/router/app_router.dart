@@ -11,6 +11,7 @@ import 'package:elyf_groupe_app/features/intro/presentation/screens/splash_scree
 import 'package:elyf_groupe_app/features/modules/presentation/screens/module_menu_screen.dart';
 import 'package:elyf_groupe_app/features/intro/presentation/screens/tenant_selection_screen.dart';
 import 'package:elyf_groupe_app/app/router/module_route_wrappers.dart';
+import 'package:elyf_groupe_app/features/tour/presentation/screens/tour_router.dart';
 
 import 'package:elyf_groupe_app/core/auth/providers.dart';
 import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
@@ -270,6 +271,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: AppRoute.homeBoutique.name,
         builder: (context, state) => const BoutiqueRouteWrapper(),
       ),
+      ...tourRouterRoutes,
     ],
   );
 });

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/cylinder.dart';
+import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 
 /// Widget pour afficher une bouteille dans la liste des paramètres.
 class CylinderListItem extends ConsumerWidget {
@@ -134,17 +135,35 @@ child: LayoutBuilder(
                                         ],
                                       ),
                                       const SizedBox(height: 4),
-                                      Text(
-                                        'Détail: ${CurrencyFormatter.formatDouble(cylinder.sellPrice)} FCFA',
-                                        style: theme.textTheme.bodySmall?.copyWith(
-                                          color: theme.colorScheme.onSurfaceVariant,
-                                        ),
-                                      ),
-                                      Text(
-                                        'Gros: ${wholesalePrice != null && wholesalePrice > 0 ? CurrencyFormatter.formatDouble(wholesalePrice) : "-"} FCFA',
-                                        style: theme.textTheme.bodySmall?.copyWith(
-                                          color: theme.colorScheme.onSurfaceVariant,
-                                        ),
+                                      Builder(
+                                        builder: (context) {
+                                          final isPOS = ref.read(activeEnterpriseProvider).value?.isPointOfSale ?? false;
+                                          final purchasePrice = settings?.getPurchasePrice(cylinder.weight);
+                                          
+                                          final line1 = isPOS 
+                                            ? 'Détail: ${CurrencyFormatter.formatDouble(cylinder.sellPrice)} FCFA'
+                                            : 'Achat: ${purchasePrice != null && purchasePrice > 0 ? CurrencyFormatter.formatDouble(purchasePrice) : "-"} FCFA';
+                                          
+                                          final line2 = 'Gros: ${wholesalePrice != null && wholesalePrice > 0 ? CurrencyFormatter.formatDouble(wholesalePrice) : "-"} FCFA';
+  
+                                          return Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                line1,
+                                                style: theme.textTheme.bodySmall?.copyWith(
+                                                  color: theme.colorScheme.onSurfaceVariant,
+                                                ),
+                                              ),
+                                              Text(
+                                                line2,
+                                                style: theme.textTheme.bodySmall?.copyWith(
+                                                  color: theme.colorScheme.onSurfaceVariant,
+                                                ),
+                                              ),
+                                            ],
+                                          );
+                                        }
                                       ),
                                     ],
                                   ),
@@ -229,12 +248,22 @@ child: LayoutBuilder(
                                   ],
                                 ),
                                 const SizedBox(height: 4),
-                                Text(
-                                  'Détail: ${CurrencyFormatter.formatDouble(cylinder.sellPrice)} FCFA | '
-                                  'Gros: ${wholesalePrice != null && wholesalePrice > 0 ? CurrencyFormatter.formatDouble(wholesalePrice) : "-"} FCFA',
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: theme.colorScheme.onSurfaceVariant,
-                                  ),
+                                Builder(
+                                  builder: (context) {
+                                    final isPOS = ref.read(activeEnterpriseProvider).value?.isPointOfSale ?? false;
+                                    final purchasePrice = settings?.getPurchasePrice(cylinder.weight);
+                                    
+                                    final priceText = isPOS
+                                      ? 'Détail: ${CurrencyFormatter.formatDouble(cylinder.sellPrice)} FCFA | Gros: ${wholesalePrice != null && wholesalePrice > 0 ? CurrencyFormatter.formatDouble(wholesalePrice) : "-"} FCFA'
+                                      : 'Achat: ${purchasePrice != null && purchasePrice > 0 ? CurrencyFormatter.formatDouble(purchasePrice) : "-"} FCFA | Gros: ${wholesalePrice != null && wholesalePrice > 0 ? CurrencyFormatter.formatDouble(wholesalePrice) : "-"} FCFA';
+
+                                    return Text(
+                                      priceText,
+                                      style: theme.textTheme.bodySmall?.copyWith(
+                                        color: theme.colorScheme.onSurfaceVariant,
+                                      ),
+                                    );
+                                  }
                                 ),
                               ],
                             ),

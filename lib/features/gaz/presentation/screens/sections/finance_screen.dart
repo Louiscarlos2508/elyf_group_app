@@ -65,14 +65,16 @@ class _GazFinanceScreenState extends ConsumerState<GazFinanceScreen>
   Widget build(BuildContext context) {
     final activeEnterprise = ref.watch(activeEnterpriseProvider).value;
     final bool isPOS = activeEnterprise?.isPointOfSale ?? true;
+    final int targetLength = isPOS ? 2 : 3;
 
     if (_isPOS == null || _isPOS != isPOS) {
+      if (_tabController.length != targetLength) {
+        _tabController.removeListener(_onTabChanged);
+        _tabController.dispose();
+        _tabController = TabController(length: targetLength, vsync: this);
+        _tabController.addListener(_onTabChanged);
+      }
       _isPOS = isPOS;
-      // Re-initialize tab controller if POS status changed
-      _tabController.removeListener(_onTabChanged);
-      _tabController.dispose();
-      _tabController = TabController(length: isPOS ? 1 : 3, vsync: this);
-      _tabController.addListener(_onTabChanged);
     }
 
     return Scaffold(
@@ -82,14 +84,7 @@ class _GazFinanceScreenState extends ConsumerState<GazFinanceScreen>
             title: 'FINANCES',
             subtitle: _getSubtitle(isPOS),
             asSliver: true,
-            actions: [
-              if (!isPOS && _tabController.index == 0)
-                IconButton(
-                  onPressed: _showNewExpenseDialog,
-                  icon: const Icon(Icons.add_card, color: Colors.white),
-                  tooltip: 'Nouvelle dépense',
-                ),
-            ],
+            actions: [],
             bottom: FinanceTabBar(
               tabController: _tabController,
               isPOS: isPOS,
@@ -99,7 +94,7 @@ class _GazFinanceScreenState extends ConsumerState<GazFinanceScreen>
         body: TabBarView(
           controller: _tabController,
           children: [
-            if (!isPOS) const ExpensesTab(),
+            const ExpensesTab(),
             const TreasuryTab(),
             if (!isPOS) const PayrollTab(),
           ],
@@ -117,7 +112,7 @@ class _GazFinanceScreenState extends ConsumerState<GazFinanceScreen>
       case 1:
         return 'Trésorerie & Caisses';
       case 2:
-        return 'Gestion de la Paie';
+        return 'Gestion des Salaires';
       default:
         return 'Suivi Financier';
     }

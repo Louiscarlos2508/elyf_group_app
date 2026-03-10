@@ -143,6 +143,7 @@ class CylinderLeak {
   Map<String, dynamic> toMap() {
     return {
       'id': id,
+      'localId': id,
       'enterpriseId': enterpriseId,
       'cylinderId': cylinderId,
       'weight': weight,

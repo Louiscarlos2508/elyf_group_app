@@ -118,6 +118,7 @@ class RawMaterialsCard extends StatelessWidget {
                 isLowStock,
                 seuilAlerte,
                 customQuantityLabel: quantityDisplay,
+                icon: _getIconForName(product.name),
               ),
             );
           }),
@@ -212,6 +213,7 @@ class RawMaterialsCard extends StatelessWidget {
     bool isLowStock,
     int? seuilAlerte, {
     String? customQuantityLabel,
+    IconData? icon,
   }) {
     final theme = Theme.of(context);
     final color = isLowStock ? Colors.red : Colors.orange.shade800;
@@ -221,6 +223,10 @@ class RawMaterialsCard extends StatelessWidget {
       children: [
         Row(
           children: [
+            if (icon != null) ...[
+              Icon(icon, size: 20, color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5)),
+              const SizedBox(width: 12),
+            ],
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -286,5 +292,13 @@ class RawMaterialsCard extends StatelessWidget {
         ),
       ],
     );
+  }
+  IconData? _getIconForName(String name) {
+    final n = name.toLowerCase();
+    if (n.contains('bobine')) return Icons.repeat_rounded;
+    if (n.contains('sachet') || n.contains('emballage')) return Icons.layers_rounded;
+    if (n.contains('bouchon')) return Icons.radio_button_checked_rounded;
+    if (n.contains('etiquette')) return Icons.label_important_outline_rounded;
+    return Icons.inventory_2_outlined;
   }
 }

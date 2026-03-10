@@ -85,6 +85,7 @@ class CylinderStock {
   Map<String, dynamic> toMap() {
     return {
       'id': id,
+      'localId': id,
       'cylinderId': cylinderId,
       'weight': weight,
       'status': status.name,

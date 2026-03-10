@@ -105,7 +105,11 @@ class ModuleRealtimeSyncService {
       final syncManager = _syncManager;
       if (syncManager != null) {
         final pendingOps = await syncManager.getPendingForCollection(collectionName);
-        hasPendingChanges = pendingOps.any((op) => op.documentId == localRecord.remoteId);
+        // Robust ID matching: check BOTH localId and remoteId
+        hasPendingChanges = pendingOps.any((op) => 
+          op.documentId == localRecord.localId || 
+          (localRecord.remoteId != null && op.documentId == localRecord.remoteId)
+        );
       }
 
       final firestoreUpdatedAtStr = firestoreData['updatedAt'] as String?;
@@ -116,12 +120,20 @@ class ModuleRealtimeSyncService {
       final localUpdatedAtStr = localData['updatedAt'] as String?;
       final localUpdatedAtParsed = localUpdatedAtStr != null ? DateTime.tryParse(localUpdatedAtStr) : null;
 
+      // CRITICAL: If has pending changes, we MUST keep local, regardless of timestamp.
+      if (hasPendingChanges) {
+        AppLogger.debug(
+          'Keeping local version for $collectionName/${localRecord.localId} due to pending changes',
+          name: 'realtime.sync',
+        );
+        return null; 
+      }
+
       if (localUpdatedAtParsed == null) {
         return (data: firestoreData, updatedAt: DateTime.now());
       }
 
       final localIsNewer = localUpdatedAtParsed.isAfter(firestoreUpdatedAt);
-      if (localIsNewer && hasPendingChanges) return null; // Keep local
 
       // Soft delete logic
       final firestoreDeletedAt = firestoreData['deletedAt'];
@@ -215,6 +227,8 @@ class ModuleRealtimeSyncService {
         firestore: firestore,
         driftService: driftService,
         collectionPaths: collectionPaths,
+        syncManager: _syncManager,
+        conflictResolver: _conflictResolver,
       );
       await syncService.syncModuleData(
         enterpriseId: enterpriseId,

@@ -14,6 +14,7 @@ import 'sales_report/sales_report_recent_sales.dart';
 import 'sales_report/sales_report_retail_stats.dart';
 import 'sales_report/sales_report_type_cards.dart';
 import 'sales_report/sales_report_wholesale_stats.dart';
+import 'package:elyf_groupe_app/shared.dart';
 
 /// Content widget for sales report tab - style eau_minerale.
 class GazSalesReportContentV2 extends ConsumerWidget {
@@ -176,6 +177,10 @@ class GazSalesReportContentV2 extends ConsumerWidget {
           retailSales: groupedSales.retailSales,
           wholesaleSales: groupedSales.wholesaleSales,
         ),
+        if (reportData.internalWholesaleRevenue > 0) ...[
+          const SizedBox(height: 16),
+          _buildInternalVsExternalBreakdown(theme, reportData),
+        ],
         const SizedBox(height: 24),
         Text(
           'Statistiques Détaillées',
@@ -210,8 +215,82 @@ class GazSalesReportContentV2 extends ConsumerWidget {
           ),
           const SizedBox(height: 24),
         ],
-        SalesReportRecentSales(sales: filteredSales),
       ],
+    );
+  }
+  Widget _buildInternalVsExternalBreakdown(ThemeData theme, GazReportData data) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.secondaryContainer.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.secondary.withValues(alpha: 0.2),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.compare_arrows, color: theme.colorScheme.secondary, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                'Ventilation du Chiffre d\'Affaires',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.secondary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _buildBreakdownRow(
+            theme,
+            'CA Client Final (Réel)',
+            data.realSalesRevenue,
+            theme.colorScheme.primary,
+            isBold: true,
+          ),
+          const Divider(),
+          _buildBreakdownRow(
+            theme,
+            'Mouvements Internes (Siège -> POS)',
+            data.internalWholesaleRevenue,
+            theme.colorScheme.secondary,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBreakdownRow(
+    ThemeData theme,
+    String label,
+    double amount,
+    Color color, {
+    bool isBold = false,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+            ),
+          ),
+          Text(
+            CurrencyFormatter.formatDouble(amount),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: isBold ? FontWeight.bold : FontWeight.w600,
+              color: color,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

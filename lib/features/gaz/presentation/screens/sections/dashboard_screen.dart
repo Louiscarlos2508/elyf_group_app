@@ -9,7 +9,8 @@ import 'package:elyf_groupe_app/features/gaz/presentation/widgets/dashboard_stoc
 import '../../widgets/permission_guard.dart';
 import 'dashboard/dashboard_kpi_section.dart';
 import 'dashboard/dashboard_performance_section.dart';
-import 'dashboard/dashboard_pos_performance_section.dart';
+import 'dashboard/dashboard_parent_tour_section.dart';
+import 'dashboard/dashboard_reconciliation_section.dart';
 import '../../widgets/gaz_header.dart';
 import '../../widgets/dashboard/quick_actions_section.dart';
 import '../../widgets/dashboard/low_stock_alert_section.dart';
@@ -121,6 +122,20 @@ class _DashboardContent extends ConsumerWidget {
           ),
         ),
 
+        // Activité des tours pour l'entreprise mère
+        if (!isPOS)
+          const SliverPadding(
+            padding: EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              0,
+              AppSpacing.lg,
+              AppSpacing.lg,
+            ),
+            sliver: SliverToBoxAdapter(
+              child: DashboardParentTourSection(),
+            ),
+          ),
+
         // Low Stock Alert section (Story 5.2)
         if (isPOS)
           const SliverToBoxAdapter(
@@ -140,33 +155,35 @@ class _DashboardContent extends ConsumerWidget {
           ),
         ),
 
-        // Stock par capacité section
-        const SliverPadding(
-          padding: EdgeInsets.fromLTRB(
-            AppSpacing.lg,
-            0,
-            AppSpacing.lg,
-            AppSpacing.lg,
+        // Stock par capacité section (Masqué pour le parent en Phase 2)
+        if (isPOS)
+          const SliverPadding(
+            padding: EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              0,
+              AppSpacing.lg,
+              AppSpacing.lg,
+            ),
+            sliver: SliverToBoxAdapter(
+              child: DashboardStockByCapacity(),
+            ),
           ),
-          sliver: SliverToBoxAdapter(
-            child: DashboardStockByCapacity(),
-          ),
-        ),
 
-        // Performance chart (7 derniers jours)
-        const SliverPadding(
-          padding: EdgeInsets.fromLTRB(
-            AppSpacing.lg,
-            0,
-            AppSpacing.lg,
-            AppSpacing.lg,
+        // Performance chart (7 derniers jours) (Masqué pour le parent en Phase 2)
+        if (isPOS)
+          const SliverPadding(
+            padding: EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              0,
+              AppSpacing.lg,
+              AppSpacing.lg,
+            ),
+            sliver: SliverToBoxAdapter(
+              child: _DashboardChartsSliver(),
+            ),
           ),
-          sliver: SliverToBoxAdapter(
-            child: _DashboardChartsSliver(),
-          ),
-        ),
 
-        // Performance par point de vente
+        // Réconciliation par point de vente (Phase 2)
         if (!isPOS)
           const SliverPadding(
             padding: EdgeInsets.fromLTRB(
@@ -176,7 +193,7 @@ class _DashboardContent extends ConsumerWidget {
               AppSpacing.xl,
             ),
             sliver: SliverToBoxAdapter(
-              child: _DashboardPosPerformanceSliver(),
+              child: DashboardReconciliationSection(),
             ),
           ),
       ],
@@ -205,6 +222,7 @@ class _DashboardKpiSliver extends ConsumerWidget {
     return dashboardDataAsync.when(
       data: (data) => DashboardKpiSection(
         sales: data.sales,
+        remittances: data.remittances,
         expenses: data.expenses,
         cylinders: data.cylinders,
         stocks: data.stocks,
@@ -239,30 +257,6 @@ class _DashboardChartsSliver extends ConsumerWidget {
       error: (error, stackTrace) => ErrorDisplayWidget(
         error: error,
         title: 'Erreur de chargement des performances',
-        onRetry: () => ref.refresh(gazDashboardDataProviderComplete),
-      ),
-    );
-  }
-}
-
-/// Specialized widget for POS performance to enable granular rebuilds.
-class _DashboardPosPerformanceSliver extends ConsumerWidget {
-  const _DashboardPosPerformanceSliver();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final dashboardDataAsync = ref.watch(gazDashboardDataProviderComplete);
-
-    return dashboardDataAsync.when(
-      data: (data) => DashboardPosPerformanceSection(
-        sales: data.sales,
-        stocks: data.stocks,
-      ),
-      loading: () => AppShimmers.table(context, rows: 4),
-      error: (error, stackTrace) => ErrorDisplayWidget(
-        error: error,
-        title: 'Erreur de chargement',
-        message: 'Impossible de charger les performances par point de vente.',
         onRetry: () => ref.refresh(gazDashboardDataProviderComplete),
       ),
     );

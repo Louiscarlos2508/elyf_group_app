@@ -12,6 +12,7 @@ class GazExpense {
     required this.isFixed,
     this.paymentMethod, // null = pas de déduction trésorerie auto
     this.notes,
+    this.tourId,
     this.receiptPath,
     this.createdAt,
     this.updatedAt,
@@ -28,6 +29,7 @@ class GazExpense {
   final bool isFixed; // Charge fixe vs variable
   final PaymentMethod? paymentMethod; // Mode de paiement (pour déduction auto de la trésorerie)
   final String? notes;
+  final String? tourId;
   final String? receiptPath;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -46,6 +48,7 @@ class GazExpense {
     bool? isFixed,
     Object? paymentMethod = _sentinel,
     String? notes,
+    String? tourId,
     String? receiptPath,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -62,6 +65,7 @@ class GazExpense {
       isFixed: isFixed ?? this.isFixed,
       paymentMethod: paymentMethod == _sentinel ? this.paymentMethod : paymentMethod as PaymentMethod?,
       notes: notes ?? this.notes,
+      tourId: tourId ?? this.tourId,
       receiptPath: receiptPath ?? this.receiptPath,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -94,6 +98,7 @@ class GazExpense {
           ? PaymentMethod.values.byName(map['paymentMethod'] as String)
           : null,
       notes: map['notes'] as String?,
+      tourId: map['tourId'] as String?,
       receiptPath: map['receiptPath'] as String?,
       createdAt: map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : null,
       updatedAt: map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : null,
@@ -105,6 +110,7 @@ class GazExpense {
   Map<String, dynamic> toMap() {
     return {
       'id': id,
+      'localId': id,
       'category': category.name,
       'amount': amount,
       'description': description,
@@ -113,6 +119,7 @@ class GazExpense {
       'isFixed': isFixed,
       'paymentMethod': paymentMethod?.name,
       'notes': notes,
+      'tourId': tourId,
       'receiptPath': receiptPath,
       'createdAt': createdAt?.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),

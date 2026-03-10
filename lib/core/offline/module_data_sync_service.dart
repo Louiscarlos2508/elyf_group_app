@@ -11,6 +11,8 @@ import 'collection_names.dart';
 import 'drift_service.dart';
 import 'drift/app_database.dart';
 import 'security/data_sanitizer.dart';
+import 'sync_manager.dart';
+import 'sync/sync_conflict_resolver.dart';
 
 /// Service pour synchroniser les données d'un module depuis Firestore vers Drift.
 ///
@@ -21,10 +23,15 @@ class ModuleDataSyncService {
     required this.firestore,
     required this.driftService,
     required this.collectionPaths,
-  });
+    SyncManager? syncManager,
+    SyncConflictResolver? conflictResolver,
+  })  : _syncManager = syncManager,
+        _conflictResolver = conflictResolver ?? const SyncConflictResolver();
 
   final FirebaseFirestore firestore;
   final DriftService driftService;
+  final SyncManager? _syncManager;
+  final SyncConflictResolver _conflictResolver;
   final Map<String, String Function(String p1)> collectionPaths;
 
   /// Configuration des collections partagées (qui doivent être sync depuis le parent si dispo).
@@ -85,6 +92,8 @@ class ModuleDataSyncService {
       'gaz_treasury_operations',
       'wholesalers',
       'inventory_audits',
+      CollectionNames.gazPosRemittances,
+      CollectionNames.gazSiteLogisticsRecords,
     ],
     'orange_money': [
       'transactions',
@@ -200,6 +209,92 @@ class ModuleDataSyncService {
     return value;
   }
 
+  Future<({Map<String, dynamic> data, DateTime updatedAt})?> _resolveConflict({
+    required OfflineRecord localRecord,
+    required Map<String, dynamic> firestoreData,
+    required String collectionName,
+  }) async {
+    try {
+      final localData = jsonDecode(localRecord.dataJson) as Map<String, dynamic>;
+      
+      // Check for pending changes
+      bool hasPendingChanges = false;
+      final syncManager = _syncManager;
+      if (syncManager != null) {
+        final pendingOps = await syncManager.getPendingForCollection(collectionName);
+        // Robust ID matching: check BOTH localId and remoteId
+        // This is critical because a pending 'create' uses localId, 
+        // while 'update' after sync might use remoteId, but both belong to our entity.
+        hasPendingChanges = pendingOps.any((op) => 
+          op.documentId == localRecord.localId || 
+          (localRecord.remoteId != null && op.documentId == localRecord.remoteId)
+        );
+      }
+
+      final firestoreUpdatedAtStr = firestoreData['updatedAt'] as String?;
+      final firestoreUpdatedAt = firestoreUpdatedAtStr != null ? DateTime.tryParse(firestoreUpdatedAtStr) : null;
+      
+      if (firestoreUpdatedAt == null) return null; // Keep local if server has no timestamp
+
+      final localUpdatedAtStr = localData['updatedAt'] as String?;
+      final localUpdatedAtParsed = localUpdatedAtStr != null ? DateTime.tryParse(localUpdatedAtStr) : null;
+
+      // CRITICAL: If has pending changes, we MUST keep local, regardless of timestamp.
+      // The pending change in queue is the absolute truth of user intent.
+      if (hasPendingChanges) {
+        AppLogger.debug(
+          'Keeping local version for $collectionName/${localRecord.localId} due to pending changes in queue',
+          name: 'module.sync',
+        );
+        return null; 
+      }
+
+      if (localUpdatedAtParsed == null) {
+        return (data: firestoreData, updatedAt: DateTime.now());
+      }
+
+      final localIsNewer = localUpdatedAtParsed.isAfter(firestoreUpdatedAt);
+
+      // Soft delete logic (inherited from RealtimeSyncService for consistency)
+      final firestoreDeletedAt = firestoreData['deletedAt'];
+      final localDeletedAt = localData['deletedAt'];
+
+      if (firestoreDeletedAt != null && localDeletedAt == null && !localIsNewer) {
+        final softDeletedData = Map<String, dynamic>.from(localData)
+          ..['deletedAt'] = firestoreDeletedAt
+          ..['deletedBy'] = firestoreData['deletedBy']
+          ..['updatedAt'] = firestoreUpdatedAtStr;
+        return (data: softDeletedData, updatedAt: DateTime.now());
+      }
+
+      if (localDeletedAt != null && firestoreDeletedAt == null && !localIsNewer) {
+        final restoredData = Map<String, dynamic>.from(firestoreData)
+          ..remove('deletedAt')
+          ..remove('deletedBy');
+        return (data: restoredData, updatedAt: DateTime.now());
+      }
+      
+      final resolvedResult = _conflictResolver.resolve(
+        localData: localData,
+        serverData: firestoreData,
+        collectionName: collectionName,
+      );
+
+      // If resolver chose local data and we have pending changes, return null (skip update)
+      if (resolvedResult.resolvedData == localData && hasPendingChanges) {
+        return null;
+      }
+
+      return (
+        data: resolvedResult.resolvedData,
+        updatedAt: localIsNewer ? localRecord.localUpdatedAt : DateTime.now()
+      );
+    } catch (e) {
+      AppLogger.warning('Error resolving conflict for $collectionName: $e');
+      return (data: firestoreData, updatedAt: DateTime.now());
+    }
+  }
+
   /// Synchronise une collection depuis Firestore vers Drift.
   ///
   /// Utilise delta sync (sync incrémentale) si lastSyncAt est fourni,
@@ -264,44 +359,21 @@ class ModuleDataSyncService {
         try {
           final data = doc.data() as Map<String, dynamic>? ?? {};
           final documentId = doc.id;
-          // Ensure the enterpriseId in the JSON payload matches the storage context
-          // to resolve issues with legacy records synced under parent IDs.
           
-          // Ajouter l'ID du document dans les données
           final dataWithId = Map<String, dynamic>.from(data)
             ..['id'] = documentId;
 
-          // Convertir les Timestamp en format JSON-compatible
           final jsonCompatibleData = _convertToJsonCompatible(dataWithId);
-          
-          // Sanitizer et valider les données avant sauvegarde locale
           final sanitizedData = DataSanitizer.sanitizeMap(jsonCompatibleData);
-          final jsonPayload = jsonEncode(sanitizedData);
           
-          // Valider la taille du payload
-          try {
-            DataSanitizer.validateJsonSize(jsonPayload);
-          } on DataSizeException catch (e) {
-            AppLogger.warning(
-              'Document ${doc.id} in collection $collectionName exceeds size limit: ${e.message}. Skipping.',
-              name: 'module.sync',
-              error: e,
-            );
-            continue; // Skip ce document et continuer avec les autres
-          }
-
           String storageEnterpriseId = isShared ? effectivePathEnterpriseId : enterpriseId;
           
-          // Special legacy handling for pointOfSale collection
           if (collectionName == 'pointOfSale') {
             storageEnterpriseId = (sanitizedData['parentEnterpriseId'] as String?) ?? 
                                  (sanitizedData['enterpriseId'] as String?) ?? 
                                  storageEnterpriseId;
           }
           
-          // Vérifier si un enregistrement avec le même localId embarqué existe d'abord
-          // Utiliser les finders Any (sans filtre moduleType) pour trouver même les
-          // anciens enregistrements sauvés avec moduleType vide.
           final embeddedLocalId = sanitizedData['localId'] as String?;
           OfflineRecord? existingRecord;
 
@@ -313,34 +385,58 @@ class ModuleDataSyncService {
             );
           }
 
-          // Si pas trouvé par localId embarqué, chercher par remoteId (sans filtre moduleType)
           existingRecord ??= await driftService.records.findByRemoteIdAny(
               collectionName: collectionName,
               remoteId: documentId,
               enterpriseId: storageEnterpriseId,
             );
 
-          // Si l'existingRecord a un moduleType différent (ex: ''), le supprimer d'abord
-          // pour éviter la violation de contrainte UNIQUE lors de l'upsert.
           if (existingRecord != null && existingRecord.moduleType != moduleId) {
             await driftService.records.deleteById(existingRecord.id);
-            existingRecord = null; // Sera recréé avec le bon moduleType
+            existingRecord = null;
           }
 
-          // Utiliser le localId existant si trouvé, sinon le localId embarqué, sinon utiliser documentId
           final localIdToUse = existingRecord?.localId ?? embeddedLocalId ?? documentId;
-
-          // Si on utilise embeddedLocalId, valider qu'il n'est pas vide
           final finalLocalId = localIdToUse.trim().isEmpty ? documentId : localIdToUse;
 
-          // Crucial : Injecter le finalLocalId déterminé dans les données stockées
-          // Pour que les fromMap() puissent toujours retrouver leur localId.
-          sanitizedData['localId'] = finalLocalId;
-          
-          // Ensure enterpriseId in JSON matches the storage enterpriseId (important for POS isolation)
-          sanitizedData['enterpriseId'] = storageEnterpriseId;
+          Map<String, dynamic> finalData = sanitizedData;
+          DateTime finalUpdatedAt = DateTime.now();
 
-          final updatedJsonPayload = jsonEncode(sanitizedData);
+          // Conflict resolution logic
+          if (existingRecord != null) {
+            final resolution = await _resolveConflict(
+              localRecord: existingRecord,
+              firestoreData: sanitizedData,
+              collectionName: collectionName,
+            );
+
+            if (resolution == null) {
+              // Resolution null means "skip update, keep local"
+              AppLogger.debug(
+                'Skipping update for $collectionName/$finalLocalId to protect local changes',
+                name: 'module.sync',
+              );
+              continue;
+            }
+
+            finalData = resolution.data;
+            finalUpdatedAt = resolution.updatedAt;
+          }
+
+          finalData['localId'] = finalLocalId;
+          finalData['enterpriseId'] = storageEnterpriseId;
+          final jsonPayload = jsonEncode(finalData);
+          
+          try {
+            DataSanitizer.validateJsonSize(jsonPayload);
+          } on DataSizeException catch (e) {
+            AppLogger.warning(
+              'Document ${doc.id} in collection $collectionName exceeds size limit: ${e.message}. Skipping.',
+              name: 'module.sync',
+              error: e,
+            );
+            continue;
+          }
 
           companions.add(OfflineRecordsCompanion.insert(
             collectionName: collectionName,
@@ -348,8 +444,8 @@ class ModuleDataSyncService {
             remoteId: Value(documentId),
             enterpriseId: storageEnterpriseId,
             moduleType: Value(moduleId),
-            dataJson: updatedJsonPayload,
-            localUpdatedAt: DateTime.now(),
+            dataJson: jsonPayload,
+            localUpdatedAt: finalUpdatedAt,
           ));
         } catch (e) {
           AppLogger.warning(

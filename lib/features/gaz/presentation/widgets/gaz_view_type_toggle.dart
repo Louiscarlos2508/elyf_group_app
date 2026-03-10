@@ -23,13 +23,13 @@ class GazViewTypeToggle extends ConsumerWidget {
           _ToggleItem(
             label: 'MON DÉPÔT',
             isSelected: viewType == GazDashboardViewType.local,
-            onTap: () => ref.read(gazDashboardViewTypeProvider.notifier).set(GazDashboardViewType.local),
+            onTap: () => ref.read(gazDashboardViewTypeProvider.notifier).state = GazDashboardViewType.local,
             icon: Icons.storefront_rounded,
           ),
           _ToggleItem(
             label: 'TOUT LE RÉSEAU',
             isSelected: viewType == GazDashboardViewType.consolidated,
-            onTap: () => ref.read(gazDashboardViewTypeProvider.notifier).set(GazDashboardViewType.consolidated),
+            onTap: () => ref.read(gazDashboardViewTypeProvider.notifier).state = GazDashboardViewType.consolidated,
             icon: Icons.hub_rounded,
           ),
         ],

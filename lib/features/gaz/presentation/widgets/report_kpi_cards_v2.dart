@@ -46,70 +46,70 @@ class GazReportKpiCardsV2 extends ConsumerWidget {
             if (constraints.maxWidth > 600) {
               return Row(
                 children: [
-                  Expanded(
-                    child: ElyfStatsCard(
-                      label: "Chiffre d'Affaires",
-                      value: CurrencyFormatter.formatDouble(data.salesRevenue),
-                      subtitle: '${data.salesCount} ventes',
-                      icon: Icons.trending_up,
-                      color: Colors.blue,
+                    Expanded(
+                      child: ElyfStatsCard(
+                        label: data.internalWholesaleRevenue > 0 ? "CA Réel (Excl. Interne)" : "Chiffre d'Affaires",
+                        value: CurrencyFormatter.formatDouble(data.realSalesRevenue),
+                        subtitle: '${data.salesCount} ventes',
+                        icon: Icons.trending_up,
+                        color: Colors.blue,
+                      ),
                     ),
+                    if (!isPOS) ...[
+                      const SizedBox(width: AppSpacing.md),
+                      Expanded(
+                        child: ElyfStatsCard(
+                          label: 'Dépenses',
+                          value: CurrencyFormatter.formatDouble(data.expensesAmount),
+                          subtitle: '${data.expensesCount} charges',
+                          icon: Icons.receipt_long,
+                          color: Colors.red,
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                      Expanded(
+                        child: ElyfStatsCard(
+                          label: 'Bénéfice Net Réel',
+                          value: CurrencyFormatter.formatDouble(data.realProfit),
+                          subtitle: data.realProfit >= 0 ? 'Profit' : 'Déficit',
+                          icon: Icons.account_balance_wallet,
+                          color: data.realProfit >= 0 ? Colors.green : Colors.red,
+                        ),
+                      ),
+                    ],
+                  ],
+                );
+              }
+  
+              return Column(
+                children: [
+                  ElyfStatsCard(
+                    label: data.internalWholesaleRevenue > 0 ? "CA Réel (Excl. Interne)" : "Chiffre d'Affaires",
+                    value: CurrencyFormatter.formatDouble(data.realSalesRevenue),
+                    subtitle: '${data.salesCount} ventes',
+                    icon: Icons.trending_up,
+                    color: Colors.blue,
                   ),
                   if (!isPOS) ...[
-                    const SizedBox(width: AppSpacing.md),
-                    Expanded(
-                      child: ElyfStatsCard(
-                        label: 'Dépenses',
-                        value: CurrencyFormatter.formatDouble(data.expensesAmount),
-                        subtitle: '${data.expensesCount} charges',
-                        icon: Icons.receipt_long,
-                        color: Colors.red,
-                      ),
+                    const SizedBox(height: AppSpacing.md),
+                    ElyfStatsCard(
+                      label: 'Dépenses',
+                      value: CurrencyFormatter.formatDouble(data.expensesAmount),
+                      subtitle: '${data.expensesCount} charges',
+                      icon: Icons.receipt_long,
+                      color: Colors.red,
                     ),
-                    const SizedBox(width: AppSpacing.md),
-                    Expanded(
-                      child: ElyfStatsCard(
-                        label: 'Bénéfice Net',
-                        value: CurrencyFormatter.formatDouble(data.profit),
-                        subtitle: data.profit >= 0 ? 'Profit' : 'Déficit',
-                        icon: Icons.account_balance_wallet,
-                        color: data.profit >= 0 ? Colors.green : Colors.red,
-                      ),
+                    const SizedBox(height: AppSpacing.md),
+                    ElyfStatsCard(
+                      label: 'Bénéfice Net Réel',
+                      value: CurrencyFormatter.formatDouble(data.realProfit),
+                      subtitle: data.realProfit >= 0 ? 'Profit' : 'Déficit',
+                      icon: Icons.account_balance_wallet,
+                      color: data.realProfit >= 0 ? Colors.green : Colors.red,
                     ),
                   ],
                 ],
               );
-            }
-
-            return Column(
-              children: [
-                ElyfStatsCard(
-                  label: "Chiffre d'Affaires",
-                  value: CurrencyFormatter.formatDouble(data.salesRevenue),
-                  subtitle: '${data.salesCount} ventes',
-                  icon: Icons.trending_up,
-                  color: Colors.blue,
-                ),
-                if (!isPOS) ...[
-                  const SizedBox(height: AppSpacing.md),
-                  ElyfStatsCard(
-                    label: 'Dépenses',
-                    value: CurrencyFormatter.formatDouble(data.expensesAmount),
-                    subtitle: '${data.expensesCount} charges',
-                    icon: Icons.receipt_long,
-                    color: Colors.red,
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  ElyfStatsCard(
-                    label: 'Bénéfice Net',
-                    value: CurrencyFormatter.formatDouble(data.profit),
-                    subtitle: data.profit >= 0 ? 'Profit' : 'Déficit',
-                    icon: Icons.account_balance_wallet,
-                    color: data.profit >= 0 ? Colors.green : Colors.red,
-                  ),
-                ],
-              ],
-            );
           },
         );
       },

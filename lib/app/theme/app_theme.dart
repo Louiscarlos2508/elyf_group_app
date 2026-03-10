@@ -17,7 +17,7 @@ class AppTheme {
       surface: AppColors.surfaceLight,
       onSurface: AppColors.textDisplayLight,
       primary: AppColors.primary,
-      secondary: AppColors.accent,
+      secondary: AppColors.accentDark,
       outline: AppColors.borderLight,
     );
     return _buildTheme(scheme, status, AppColors.bgLight);

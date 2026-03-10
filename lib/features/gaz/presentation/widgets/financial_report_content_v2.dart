@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/tenant/tenant_provider.dart';
 import '../../application/providers.dart';
 import '../../domain/entities/expense.dart';
+import '../../domain/entities/report_data.dart';
+import '../../domain/entities/tour.dart';
 import '../../domain/services/gaz_report_calculation_service.dart';
 import 'financial_summary_card.dart';
 import 'package:elyf_groupe_app/shared.dart';
@@ -14,12 +16,12 @@ class GazFinancialReportContentV2 extends ConsumerWidget {
     super.key,
     required this.startDate,
     required this.endDate,
-    required this.totalRevenue,
+    required this.reportData,
   });
 
   final DateTime startDate;
   final DateTime endDate;
-  final double totalRevenue;
+  final GazReportData reportData;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -44,13 +46,13 @@ class GazFinancialReportContentV2 extends ConsumerWidget {
       )),
     );
 
-    // Calculer le reliquat net
+    // Calculer le reliquat net (utilisant le CA Réel pour éviter le double comptage)
     final netAmountFuture = ref.watch(
       financialNetAmountProvider((
         enterpriseId: enterpriseId,
         startDate: startDate,
         endDate: endDate,
-        totalRevenue: totalRevenue,
+        totalRevenue: reportData.realSalesRevenue,
       )),
     );
 
@@ -86,11 +88,23 @@ class GazFinancialReportContentV2 extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  FinancialSummaryCard(
-                    totalRevenue: totalRevenue,
+                   FinancialSummaryCard(
+                    totalRevenue: reportData.realSalesRevenue,
                     totalExpenses: charges.totalExpenses,
                     netAmount: netAmount,
                   ),
+                  if (reportData.internalWholesaleRevenue > 0) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      '* Exclut ${CurrencyFormatter.formatDouble(reportData.internalWholesaleRevenue)} de mouvements internes',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.outline,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 24),
+                  _buildTreasurySection(theme, reportData),
                   const SizedBox(height: 24),
                   Text(
                     'Détail des Charges',
@@ -462,6 +476,98 @@ class GazFinancialReportContentV2 extends ConsumerWidget {
     );
   }
 
+  Widget _buildTreasurySection(ThemeData theme, GazReportData data) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.primary.withValues(alpha: 0.2),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.account_balance, color: theme.colorScheme.primary, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                'Situation de Trésorerie Actuelle',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _buildBalanceItem(
+                  theme,
+                  'Espèces (Cash)',
+                  data.cashBalance,
+                  Icons.money,
+                  Colors.green,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _buildBalanceItem(
+                  theme,
+                  'Orange Money',
+                  data.omBalance,
+                  Icons.phone_android,
+                  Colors.orange,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBalanceItem(
+    ThemeData theme,
+    String label,
+    double amount,
+    IconData icon,
+    Color color,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.1)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 14, color: color),
+              const SizedBox(width: 4),
+              Text(label, style: theme.textTheme.labelSmall),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            CurrencyFormatter.formatDouble(amount),
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   /// Affiche un dialog pour confirmer et enregistrer le versement au siège.
   Future<void> _showTransferDialog(
     BuildContext context,
@@ -509,6 +615,27 @@ class GazFinancialReportContentV2 extends ConsumerWidget {
     );
 
     if (confirmed == true && context.mounted) {
+      // 1. Trouver le tour le plus récent pour ce POS afin de lier le versement
+      String? linkedTourId;
+      try {
+        final activeEnterprise = ref.read(activeEnterpriseProvider).value;
+        final parentId = activeEnterprise?.parentEnterpriseId ?? enterpriseId;
+
+        final toursAsync = ref.read(toursStreamProvider((enterpriseId: parentId, status: TourStatus.closed)));
+        if (toursAsync.hasValue) {
+          final tours = toursAsync.value!;
+          // On cherche un tour fermé qui a visité ce POS
+          final relevantTour = tours.where((t) => 
+            t.siteInteractions.any((i) => i.siteId == enterpriseId)
+          ).toList()
+          ..sort((a, b) => (b.closureDate ?? b.tourDate).compareTo(a.closureDate ?? a.tourDate));
+          
+          if (relevantTour.isNotEmpty) {
+            linkedTourId = relevantTour.first.id;
+          }
+        }
+      } catch (_) {}
+
       // Créer une dépense pour enregistrer le versement
       final expense = GazExpense(
         id: 'transfer-${DateTime.now().millisecondsSinceEpoch}',
@@ -518,6 +645,7 @@ class GazFinancialReportContentV2 extends ConsumerWidget {
         date: DateTime.now(),
         enterpriseId: enterpriseId,
         isFixed: false,
+        tourId: linkedTourId,
         notes: 'Versement automatique depuis le rapport financier - Période: ${startDate.day}/${startDate.month}/${startDate.year} au ${endDate.day}/${endDate.month}/${endDate.year}',
       );
 
@@ -539,7 +667,7 @@ class GazFinancialReportContentV2 extends ConsumerWidget {
             enterpriseId: enterpriseId,
             startDate: startDate,
             endDate: endDate,
-            totalRevenue: totalRevenue,
+            totalRevenue: reportData.realSalesRevenue,
           )),
         );
 

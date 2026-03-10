@@ -75,6 +75,7 @@ class FinishedProductsCard extends StatelessWidget {
                   : 'Produit du catalogue',
               item.quantity,
               item.unit,
+              icon: item.name.toLowerCase().contains(packName.toLowerCase()) ? Icons.local_drink_rounded : Icons.inventory_2_outlined,
             ),
           )),
         ],
@@ -87,11 +88,16 @@ class FinishedProductsCard extends StatelessWidget {
     String name,
     String description,
     double quantity,
-    String unit,
-  ) {
+    String unit, {
+    IconData? icon,
+  }) {
     final theme = Theme.of(context);
     return Row(
       children: [
+        if (icon != null) ...[
+          Icon(icon, size: 20, color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5)),
+          const SizedBox(width: 12),
+        ],
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

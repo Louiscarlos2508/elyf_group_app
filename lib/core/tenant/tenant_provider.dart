@@ -246,6 +246,9 @@ final autoSelectEnterpriseProvider = FutureProvider<void>((ref) async {
 
   return accessibleEnterprisesAsync.when(
     data: (enterprises) async {
+      // Si la liste est vide, on ne fait rien pour l'instant (peut être transitoire au démarrage)
+      if (enterprises.isEmpty) return;
+
       final currentActiveId = activeEnterpriseIdAsync.when(
         data: (id) => id,
         loading: () => null,

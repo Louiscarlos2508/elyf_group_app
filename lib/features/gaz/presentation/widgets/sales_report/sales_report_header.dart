@@ -26,7 +26,9 @@ class SalesReportHeader extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          '${reportData.salesCount} ventes • Total: ${CurrencyFormatter.formatDouble(reportData.salesRevenue)}',
+          reportData.internalWholesaleRevenue > 0
+              ? '${reportData.salesCount} ventes • CA Réel: ${CurrencyFormatter.formatDouble(reportData.realSalesRevenue)} • Interne: ${CurrencyFormatter.formatDouble(reportData.internalWholesaleRevenue)}'
+              : '${reportData.salesCount} ventes • Total: ${CurrencyFormatter.formatDouble(reportData.salesRevenue)}',
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),

@@ -40,6 +40,8 @@ class CollectionNames {
   static const String inventoryAudits = 'inventory_audits';
   static const String wholesalers = 'wholesalers';
   static const String gazTreasuryOperations = 'gaz_treasury_operations';
+  static const String gazPosRemittances = 'gaz_pos_remittances';
+  static const String gazSiteLogisticsRecords = 'gaz_site_logistics_records';
 
   // Collections Orange Money
   static const String transactions = 'transactions';

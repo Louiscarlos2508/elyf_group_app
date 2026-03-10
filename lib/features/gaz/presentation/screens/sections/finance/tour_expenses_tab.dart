@@ -15,7 +15,7 @@ class TourExpensesTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? '';
     final toursAsync = ref.watch(
-      toursProvider((enterpriseId: enterpriseId, status: TourStatus.closed)),
+      toursStreamProvider((enterpriseId: enterpriseId, status: TourStatus.closed)),
     );
 
     return toursAsync.when(
@@ -121,7 +121,7 @@ class TourExpensesTab extends ConsumerWidget {
       error: (e, _) => ErrorDisplayWidget(
         error: e,
         title: 'Erreur de chargement des tournées',
-        onRetry: () => ref.invalidate(toursProvider),
+        onRetry: () => ref.invalidate(toursStreamProvider((enterpriseId: enterpriseId, status: TourStatus.closed))),
       ),
     );
   }
