@@ -47,92 +47,32 @@ class ElyfDrawer extends StatelessWidget {
           _buildHeader(context),
           
           Expanded(
-            child: ListView.builder(
+            child: ListView(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-              itemCount: sections.length,
-              itemBuilder: (context, index) {
-                final section = sections[index];
-                final isSelected = selectedIndex == index;
-                
-                // Header de catégorie
-                final showCategory = index == 0 || (section.category != null && section.category != sections[index - 1].category);
+              children: _groupSections(sections).map((group) {
+                if (group.category == null) {
+                  return Column(
+                    children: group.items.map((item) => _buildTile(context, item)).toList(),
+                  );
+                }
 
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (showCategory && section.category != null)
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                        child: Text(
-                          section.category!.toUpperCase(),
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: theme.colorScheme.primary,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.2,
-                          ),
-                        ),
-                      ),
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 4),
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(12),
-                          onTap: () {
-                             Navigator.pop(context); // Close drawer
-                             onDestinationSelected(index);
-                          },
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: isSelected 
-                                  ? AppColors.getModuleColor(moduleId).withValues(alpha: 0.1)
-                                  : Colors.transparent,
-                              borderRadius: BorderRadius.circular(16),
-                              border: isSelected 
-                                ? Border.all(color: AppColors.getModuleColor(moduleId).withValues(alpha: 0.15))
-                                : null,
-                            ),
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  section.icon,
-                                  color: isSelected 
-                                      ? AppColors.getModuleColor(moduleId)
-                                      : theme.colorScheme.onSurfaceVariant,
-                                  size: 24,
-                                ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: Text(
-                                    section.label,
-                                    style: theme.textTheme.labelLarge?.copyWith(
-                                      color: isSelected 
-                                          ? AppColors.getModuleColor(moduleId)
-                                          : theme.colorScheme.onSurface,
-                                      fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
-                                      fontFamily: 'Outfit',
-                                    ),
-                                  ),
-                                ),
-                                if (isSelected)
-                                  Container(
-                                    width: 6,
-                                    height: 6,
-                                    decoration: BoxDecoration(
-                                      color: AppColors.getModuleColor(moduleId),
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
-                        ),
+                return Theme(
+                  data: theme.copyWith(dividerColor: Colors.transparent),
+                  child: ExpansionTile(
+                    title: Text(
+                      group.category!.toUpperCase(),
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.2,
                       ),
                     ),
-                  ],
+                    initiallyExpanded: group.items.any((item) => sections.indexOf(item) == selectedIndex),
+                    childrenPadding: const EdgeInsets.only(left: 8),
+                    children: group.items.map((item) => _buildTile(context, item)).toList(),
+                  ),
                 );
-              },
+              }).toList(),
             ),
           ),
           
@@ -147,6 +87,94 @@ class ElyfDrawer extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  List<_SectionGroup> _groupSections(List<NavigationSection> sections) {
+    final List<_SectionGroup> groups = [];
+    String? currentCategory;
+    List<NavigationSection> currentItems = [];
+
+    for (var section in sections) {
+      if (section.category != currentCategory) {
+        if (currentItems.isNotEmpty) {
+          groups.add(_SectionGroup(currentCategory, currentItems));
+        }
+        currentCategory = section.category;
+        currentItems = [section];
+      } else {
+        currentItems.add(section);
+      }
+    }
+    if (currentItems.isNotEmpty) {
+      groups.add(_SectionGroup(currentCategory, currentItems));
+    }
+    return groups;
+  }
+
+  Widget _buildTile(BuildContext context, NavigationSection section) {
+    final theme = Theme.of(context);
+    final index = sections.indexOf(section);
+    final isSelected = selectedIndex == index;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () {
+            Navigator.pop(context); // Close drawer
+            onDestinationSelected(index);
+          },
+          child: Container(
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? AppColors.getModuleColor(moduleId).withValues(alpha: 0.1)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(16),
+              border: isSelected
+                  ? Border.all(
+                      color: AppColors.getModuleColor(moduleId).withValues(alpha: 0.15))
+                  : null,
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              children: [
+                Icon(
+                  section.icon,
+                  color: isSelected
+                      ? AppColors.getModuleColor(moduleId)
+                      : theme.colorScheme.onSurfaceVariant,
+                  size: 24,
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    section.label,
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: isSelected
+                          ? AppColors.getModuleColor(moduleId)
+                          : theme.colorScheme.onSurface,
+                      fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
+                      fontFamily: 'Outfit',
+                    ),
+                  ),
+                ),
+                if (isSelected)
+                  Container(
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: AppColors.getModuleColor(moduleId),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -194,7 +222,9 @@ class ElyfDrawer extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            moduleId != null ? '${moduleId![0].toUpperCase()}${moduleId!.substring(1)} Management' : 'Administration',
+            moduleId != null
+                ? '${moduleId![0].toUpperCase()}${moduleId!.substring(1)} Management'
+                : 'Administration',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: Colors.white.withValues(alpha: 0.8),
             ),
@@ -203,4 +233,11 @@ class ElyfDrawer extends StatelessWidget {
       ),
     );
   }
+}
+
+class _SectionGroup {
+  final String? category;
+  final List<NavigationSection> items;
+
+  _SectionGroup(this.category, this.items);
 }

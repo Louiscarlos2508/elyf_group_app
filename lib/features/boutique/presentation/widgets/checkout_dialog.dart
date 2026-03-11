@@ -139,10 +139,8 @@ class _CheckoutDialogState extends ConsumerState<CheckoutDialog>
         final enterpriseId =
             ref.read(activeEnterpriseProvider).value?.id ?? 'default';
 
-        final timestamp = DateTime.now().millisecondsSinceEpoch;
-        final randomPart = (DateTime.now().microsecond % 1000).toString().padLeft(3, '0');
         final sale = Sale(
-          id: 'local_sale_${timestamp}_$randomPart',
+          id: LocalIdGenerator.generate(),
           enterpriseId: enterpriseId,
           date: DateTime.now(),
           items: widget.cartItems.map((item) {

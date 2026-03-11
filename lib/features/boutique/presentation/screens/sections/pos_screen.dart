@@ -20,7 +20,6 @@ import 'package:elyf_groupe_app/core/offline/providers.dart';
 import 'dart:convert';
 import 'package:elyf_groupe_app/features/boutique/domain/entities/category.dart';
 import 'package:elyf_groupe_app/features/boutique/domain/services/product_filter_service.dart';
-import '../../widgets/opening_session_dialog.dart';
 
 class PosScreen extends ConsumerStatefulWidget {
   const PosScreen({super.key});
@@ -57,15 +56,6 @@ class _PosScreenState extends ConsumerState<PosScreen> {
   }
 
   void _addToCart(Product product) {
-    // Session Guard
-    final activeSession = ref.read(activeSessionProvider).value;
-    if (activeSession == null || activeSession.status != ClosingStatus.open) {
-      NotificationService.showWarning(
-        context,
-        'Caisse fermée. Veuillez ouvrir la caisse avant de vendre.',
-      );
-      return;
-    }
 
     setState(() {
       final existingIndex = _cartItems.indexWhere(

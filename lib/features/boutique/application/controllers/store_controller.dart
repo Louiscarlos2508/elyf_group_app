@@ -29,6 +29,8 @@ import 'package:elyf_groupe_app/core/logging/app_logger.dart';
 import 'package:elyf_groupe_app/features/boutique/domain/entities/category.dart';
 import 'package:elyf_groupe_app/features/boutique/domain/repositories/category_repository.dart';
 
+import '../../../../core/offline/offline_repository.dart';
+
 class StoreController {
   StoreController(
     this._productRepository,
@@ -178,7 +180,7 @@ class StoreController {
     // Record Treasury supply
     if (sale.amountPaid > 0) {
       await _treasuryRepository.createOperation(TreasuryOperation(
-        id: '',
+        id: LocalIdGenerator.generate(),
         enterpriseId: sale.enterpriseId,
         userId: _currentUserId,
         amount: sale.amountPaid,
@@ -235,7 +237,7 @@ class StoreController {
     if (sale.amountPaid > 0) {
       // Create a removal operation to cancel the supply
       await _treasuryRepository.createOperation(TreasuryOperation(
-        id: '',
+        id: LocalIdGenerator.generate(),
         enterpriseId: sale.enterpriseId,
         userId: _currentUserId,
         amount: sale.amountPaid,
@@ -289,7 +291,7 @@ class StoreController {
     // 3. Re-apply Treasury
     if (sale.amountPaid > 0) {
       await _treasuryRepository.createOperation(TreasuryOperation(
-        id: '',
+        id: LocalIdGenerator.generate(),
         enterpriseId: sale.enterpriseId,
         userId: _currentUserId,
         amount: sale.amountPaid,
@@ -453,7 +455,7 @@ class StoreController {
     final paid = purchase.paidAmount ?? purchase.totalAmount;
     if (paid > 0) {
       await _treasuryRepository.createOperation(TreasuryOperation(
-        id: '',
+        id: LocalIdGenerator.generate(),
         enterpriseId: purchase.enterpriseId,
         userId: _currentUserId,
         amount: paid,
@@ -522,7 +524,7 @@ class StoreController {
     final paid = purchase.paidAmount ?? purchase.totalAmount;
     if (paid > 0) {
       await _treasuryRepository.createOperation(TreasuryOperation(
-        id: '',
+        id: LocalIdGenerator.generate(),
         enterpriseId: purchase.enterpriseId,
         userId: _currentUserId,
         amount: paid,
@@ -585,7 +587,7 @@ class StoreController {
 
     // Record Treasury removal
     await _treasuryRepository.createOperation(TreasuryOperation(
-      id: '',
+      id: LocalIdGenerator.generate(),
       enterpriseId: expense.enterpriseId,
       userId: _currentUserId,
       amount: expense.amountCfa,
@@ -616,7 +618,7 @@ class StoreController {
 
     // 2. Reverse Treasury
     await _treasuryRepository.createOperation(TreasuryOperation(
-      id: '',
+      id: LocalIdGenerator.generate(),
       enterpriseId: expense.enterpriseId,
       userId: _currentUserId,
       amount: expense.amountCfa,
@@ -731,7 +733,7 @@ class StoreController {
 
     // Record Treasury removal
     await _treasuryRepository.createOperation(TreasuryOperation(
-      id: '',
+      id: LocalIdGenerator.generate(),
       enterpriseId: settlement.enterpriseId,
       userId: _currentUserId,
       amount: settlement.amount,
@@ -762,7 +764,7 @@ class StoreController {
 
     // 2. Reverse Treasury (Supply the amount back)
     await _treasuryRepository.createOperation(TreasuryOperation(
-      id: '',
+      id: LocalIdGenerator.generate(),
       enterpriseId: settlement.enterpriseId,
       userId: _currentUserId,
       amount: settlement.amount,
@@ -811,7 +813,7 @@ class StoreController {
     String? notes,
   }) async {
     final session = Closing(
-      id: '',
+      id: LocalIdGenerator.generate(),
       enterpriseId: enterpriseId,
       userId: _currentUserId,
       date: DateTime.now(), // Placeholder for opening
@@ -845,7 +847,7 @@ class StoreController {
     // Record Initial Treasury Supply/Adjustment to match opening values
     if (openingCash > 0) {
       await _treasuryRepository.createOperation(TreasuryOperation(
-        id: '',
+        id: LocalIdGenerator.generate(),
         enterpriseId: enterpriseId,
         userId: _currentUserId,
         amount: openingCash,
@@ -857,7 +859,7 @@ class StoreController {
     }
     if (openingMM > 0) {
       await _treasuryRepository.createOperation(TreasuryOperation(
-        id: '',
+        id: LocalIdGenerator.generate(),
         enterpriseId: enterpriseId,
         userId: _currentUserId,
         amount: openingMM,
