@@ -12,8 +12,8 @@ import '../../widgets/dashboard_stock_list.dart';
 import '../../widgets/dashboard_today_section.dart';
 import '../../widgets/dashboard_trends_chart.dart';
 import '../../widgets/stock_alert_banner.dart';
-import '../../widgets/supplier_form_dialog.dart';
 import '../../widgets/purchase_entry_dialog.dart';
+import '../../widgets/sale_form.dart';
 
 /// Professional dashboard screen with organized sections and responsive layout.
 class DashboardScreen extends ConsumerWidget {
@@ -79,19 +79,27 @@ class DashboardScreen extends ConsumerWidget {
                   children: [
                     Expanded(
                       child: DashboardActionCard(
-                        label: 'Nouvel Achat',
+                        label: 'Nouvelle Vente',
                         icon: Icons.add_shopping_cart,
-                        color: Colors.blue,
-                        onTap: () => showDialog(context: context, builder: (context) => const PurchaseEntryDialog()),
+                        color: theme.colorScheme.primary,
+                        onTap: () => showDialog(
+                          context: context,
+                          builder: (context) => const Dialog(
+                            child: SaleForm(),
+                          ),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
                       child: DashboardActionCard(
-                        label: 'Nouveau Fournisseur',
-                        icon: Icons.person_add_alt_1,
-                        color: Colors.green,
-                        onTap: () => showDialog(context: context, builder: (context) => const SupplierFormDialog()),
+                        label: 'Nouvel Achat',
+                        icon: Icons.inventory_2_outlined,
+                        color: Colors.orange,
+                        onTap: () => showDialog(
+                          context: context,
+                          builder: (context) => const PurchaseEntryDialog(),
+                        ),
                       ),
                     ),
                   ],

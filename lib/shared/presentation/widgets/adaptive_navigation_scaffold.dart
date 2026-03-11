@@ -17,6 +17,7 @@ class NavigationSection {
     this.isPrimary = false,
     this.enterpriseId,
     this.moduleId,
+    this.category,
   });
 
   final String label;
@@ -25,6 +26,7 @@ class NavigationSection {
   final bool isPrimary;
   final String? enterpriseId;
   final String? moduleId;
+  final String? category;
 }
 
 /// Scaffold avec navigation adaptative pour mobile et desktop

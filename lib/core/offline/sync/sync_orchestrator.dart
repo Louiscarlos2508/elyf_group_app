@@ -12,6 +12,7 @@ import '../drift_service.dart';
 import '../module_data_sync_service.dart';
 import '../sync_paths.dart';
 import '../providers.dart' as offline_providers;
+import '../sync/sync_push_service.dart';
 import '../../../features/administration/application/providers.dart' as admin_providers;
 import '../../tenant/tenant_provider.dart';
 
@@ -25,6 +26,7 @@ class SyncOrchestrator {
   bool _isStopping = false;
   bool _isRunning = false;
   int _currentSessionId = 0;
+  StreamSubscription<SyncTriggerEvent>? _pushSubscription;
 
   Future<void> start(AppUser user) async {
     if (_isRunning) {
@@ -42,6 +44,12 @@ class SyncOrchestrator {
     try {
       final realtimeSyncService = ref.read(offline_providers.realtimeSyncServiceProvider);
       await realtimeSyncService.startRealtimeSync(userId: user.id);
+      
+      // Listen for reactive sync pushes (Silent Pushes)
+      _pushSubscription?.cancel();
+      _pushSubscription = SyncPushService.instance.syncTriggers.listen((event) {
+        _handleSyncTrigger(event, user.id);
+      });
     } catch (e) {
       AppLogger.error('Failed to start admin realtime sync', error: e, name: 'sync.orchestrator');
     }
@@ -67,6 +75,9 @@ class SyncOrchestrator {
     try {
       await ref.read(offline_providers.realtimeSyncServiceProvider).stopRealtimeSync();
       await ref.read(offline_providers.globalModuleRealtimeSyncServiceProvider).stopAllRealtimeSync();
+      
+      await _pushSubscription?.cancel();
+      _pushSubscription = null;
     } catch (e) {
       AppLogger.error('Error stopping sync flows', error: e, name: 'sync.orchestrator');
     }
@@ -247,6 +258,53 @@ class SyncOrchestrator {
     } catch (e, st) {
       AppLogger.error('Critical error during background bootstrap', error: e, stackTrace: st, name: 'sync.orchestrator');
     }
+  }
+
+  /// Traite un événement de déclenchement de synchronisation reçu par Push.
+  Future<void> _handleSyncTrigger(SyncTriggerEvent event, String userId) async {
+    AppLogger.info('SyncOrchestrator: Handling push sync trigger: $event', name: 'sync.orchestrator');
+    
+    final sessionId = _currentSessionId;
+    
+    try {
+      if (event.type == SyncTriggerType.module && event.moduleId != null) {
+        // Déclencher une récupération spécifique pour le module
+        await _syncModuleOnTrigger(event.moduleId!, event.enterpriseId, sessionId);
+      } else {
+        // Déclencher une synchronisation globale (bootstrap partiel)
+        await _syncUserModulesInBackground(userId, sessionId);
+      }
+    } catch (e) {
+      AppLogger.warning('Failed to handle sync trigger: $e', name: 'sync.orchestrator');
+    }
+  }
+
+  Future<void> _syncModuleOnTrigger(String moduleId, String? enterpriseId, int sessionId) async {
+     // Si une entreprise spécifique est ciblée, on s'assure qu'elle est sync
+     // Sinon on utilise l'entreprise active si le module correspond
+     final activeEnterpriseId = ref.read(activeEnterpriseIdProvider).value;
+     final targetEnterpriseId = enterpriseId ?? activeEnterpriseId;
+     
+     if (targetEnterpriseId == null) return;
+
+     AppLogger.info('Triggering pull sync for module $moduleId in enterprise $targetEnterpriseId', name: 'sync.orchestrator');
+
+     final syncService = ModuleDataSyncService(
+        firestore: FirebaseFirestore.instance,
+        driftService: DriftService.instance,
+        collectionPaths: collectionPaths,
+        syncManager: ref.read(offline_providers.syncManagerProvider),
+      );
+
+      // Perform one-time data sync for the module
+      await syncService.syncModuleData(
+        enterpriseId: targetEnterpriseId,
+        moduleId: moduleId,
+        essentialOnly: false, // Push triggers usually mean something specific changed, pull all for that module
+      );
+      
+      // Ensure realtime listeners are also alive
+      await ensureModuleSync(moduleId);
   }
 }
 

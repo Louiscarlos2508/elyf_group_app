@@ -77,98 +77,121 @@ class EauMineraleSectionConfig {
     required this.label,
     required this.icon,
     required this.builder,
+    this.category,
   });
 
   final EauMineraleSection id;
   final String label;
   final IconData icon;
   final Widget Function() builder;
+  final String? category;
 }
 
 final _allSections = [
+  // 📊 PILOTAGE
   EauMineraleSectionConfig(
     id: EauMineraleSection.activity,
-    label: 'Tableau',
+    label: 'Tableau de Bord',
     icon: Icons.dashboard_outlined,
     builder: () => const DashboardScreen(),
-  ),
-  EauMineraleSectionConfig(
-    id: EauMineraleSection.sales,
-    label: 'Ventes',
-    icon: Icons.point_of_sale,
-    builder: () => const SalesScreen(),
-  ),
-  EauMineraleSectionConfig(
-    id: EauMineraleSection.production,
-    label: 'Production',
-    icon: Icons.factory_outlined,
-    builder: () => const ProductionSessionsScreen(),
-  ),
-  EauMineraleSectionConfig(
-    id: EauMineraleSection.stock,
-    label: 'Stock',
-    icon: Icons.inventory_2_outlined,
-    builder: () => const StockScreen(),
-  ),
-  EauMineraleSectionConfig(
-    id: EauMineraleSection.purchases,
-    label: 'Achats',
-    icon: Icons.add_shopping_cart,
-    builder: () => const PurchasesScreen(),
-  ),
-  EauMineraleSectionConfig(
-    id: EauMineraleSection.suppliers,
-    label: 'Fournisseurs',
-    icon: Icons.local_shipping_outlined,
-    builder: () => const SuppliersScreen(),
-  ),
-  EauMineraleSectionConfig(
-    id: EauMineraleSection.treasury,
-    label: 'Trésorerie',
-    icon: Icons.account_balance_wallet_outlined,
-    builder: () => const TreasuryScreen(),
-  ),
-  EauMineraleSectionConfig(
-    id: EauMineraleSection.finances,
-    label: 'Dépenses',
-    icon: Icons.receipt_long,
-    builder: () => const FinancesScreen(),
-  ),
-  EauMineraleSectionConfig(
-    id: EauMineraleSection.clients,
-    label: 'Crédits',
-    icon: Icons.credit_card,
-    builder: () => const ClientsScreen(),
-  ),
-  EauMineraleSectionConfig(
-    id: EauMineraleSection.salaries,
-    label: 'Salaires',
-    icon: Icons.people,
-    builder: () => const SalariesScreen(),
+    category: '📊 PILOTAGE',
   ),
   EauMineraleSectionConfig(
     id: EauMineraleSection.reports,
     label: 'Rapports',
     icon: Icons.description,
     builder: () => const ReportsScreen(),
+    category: '📊 PILOTAGE',
+  ),
+
+  // 💧 OPÉRATIONS
+  EauMineraleSectionConfig(
+    id: EauMineraleSection.sales,
+    label: 'Ventes',
+    icon: Icons.point_of_sale,
+    builder: () => const SalesScreen(),
+    category: '💧 OPÉRATIONS',
+  ),
+  EauMineraleSectionConfig(
+    id: EauMineraleSection.production,
+    label: 'Production',
+    icon: Icons.factory_outlined,
+    builder: () => const ProductionSessionsScreen(),
+    category: '💧 OPÉRATIONS',
+  ),
+  EauMineraleSectionConfig(
+    id: EauMineraleSection.stock,
+    label: 'Stock',
+    icon: Icons.inventory_2_outlined,
+    builder: () => const StockScreen(),
+    category: '💧 OPÉRATIONS',
+  ),
+  EauMineraleSectionConfig(
+    id: EauMineraleSection.purchases,
+    label: 'Achats',
+    icon: Icons.add_shopping_cart,
+    builder: () => const PurchasesScreen(),
+    category: '💧 OPÉRATIONS',
+  ),
+
+  // 💰 FINANCES & CRÉDITS
+  EauMineraleSectionConfig(
+    id: EauMineraleSection.treasury,
+    label: 'Trésorerie',
+    icon: Icons.account_balance_wallet_outlined,
+    builder: () => const TreasuryScreen(),
+    category: '💰 FINANCES & CRÉDITS',
+  ),
+  EauMineraleSectionConfig(
+    id: EauMineraleSection.finances,
+    label: 'Dépenses',
+    icon: Icons.receipt_long,
+    builder: () => const FinancesScreen(),
+    category: '💰 FINANCES & CRÉDITS',
+  ),
+  EauMineraleSectionConfig(
+    id: EauMineraleSection.clients,
+    label: 'Crédits',
+    icon: Icons.credit_card,
+    builder: () => const ClientsScreen(),
+    category: '💰 FINANCES & CRÉDITS',
+  ),
+  EauMineraleSectionConfig(
+    id: EauMineraleSection.salaries,
+    label: 'Salaires',
+    icon: Icons.people,
+    builder: () => const SalariesScreen(),
+    category: '💰 FINANCES & CRÉDITS',
+  ),
+
+  // ⚙️ CONFIGURATION
+  EauMineraleSectionConfig(
+    id: EauMineraleSection.suppliers,
+    label: 'Fournisseurs',
+    icon: Icons.local_shipping_outlined,
+    builder: () => const SuppliersScreen(),
+    category: '⚙️ CONFIGURATION',
   ),
   EauMineraleSectionConfig(
     id: EauMineraleSection.catalog,
     label: 'Catalogue',
     icon: Icons.inventory_2_outlined,
     builder: () => const CatalogScreen(),
+    category: '⚙️ CONFIGURATION',
   ),
   EauMineraleSectionConfig(
     id: EauMineraleSection.profile,
     label: 'Profil',
     icon: Icons.person,
     builder: () => const ProfileScreen(),
+    category: '⚙️ CONFIGURATION',
   ),
   EauMineraleSectionConfig(
     id: EauMineraleSection.settings,
     label: 'Paramètres',
     icon: Icons.settings,
     builder: () => const SettingsScreen(),
+    category: '⚙️ CONFIGURATION',
   ),
 ];
 
@@ -222,6 +245,7 @@ final navigationSectionsProvider = FutureProvider.family<
       label: config.label,
       icon: config.icon,
       builder: config.builder,
+      category: config.category,
       isPrimary: primarySectionIds.contains(config.id),
       enterpriseId: params.enterpriseId,
       moduleId: params.moduleId,

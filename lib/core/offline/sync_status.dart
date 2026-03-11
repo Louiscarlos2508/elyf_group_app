@@ -104,11 +104,12 @@ class SyncOperation {
     String collectionName,
     String operationType,
   ) {
-    // Critical collections
     if (collectionName.contains('sale') ||
         collectionName.contains('payment') ||
         collectionName.contains('transaction') ||
-        collectionName.contains('purchase')) {
+        collectionName.contains('purchase') ||
+        collectionName.contains('treasury') ||
+        collectionName.contains('remittance')) {
       return SyncPriority.critical;
     }
 

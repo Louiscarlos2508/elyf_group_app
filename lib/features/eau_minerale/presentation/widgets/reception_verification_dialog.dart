@@ -83,10 +83,10 @@ class _ReceptionVerificationDialogState extends ConsumerState<ReceptionVerificat
                           ),
                           keyboardType: TextInputType.number,
                           onChanged: (v) {
-                            final newQty = int.tryParse(v) ?? item.quantity;
+                            final newQty = double.tryParse(v.replaceAll(',', '.')) ?? item.quantity.toDouble();
                             setState(() {
                               _verifiedItems[index] = item.copyWith(
-                                quantity: newQty,
+                                quantity: newQty.round(), // Toujours stocké en int dans l'entité
                                 totalPrice: (newQty * item.unitPrice).round(),
                               );
                             });

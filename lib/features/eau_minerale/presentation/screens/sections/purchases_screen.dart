@@ -199,17 +199,23 @@ class _PurchaseCard extends ConsumerWidget {
             child: Column(
               children: [
                 ...purchase.items.map((PurchaseItem item) {
-                  final isInLots = item.metadata['isInLots'] as bool? ?? false;
-                  final quantitySaisie = item.metadata['quantitySaisie'];
-                  final displayQty = isInLots && quantitySaisie != null
-                      ? "$quantitySaisie lots"
-                      : "${item.quantity} ${item.unit}";
+                  final isLotBased = item.metadata['isLotBased'] as bool? ?? false;
+                  final unitsPerLot = item.metadata['unitsPerLot'] as int? ?? 1;
+                  final baseUnit = item.metadata['baseUnit'] as String? ?? "unité";
 
                   return ListTile(
                     dense: true,
-                    title: Text(item.productName),
+                    title: Text(item.productName, style: const TextStyle(fontWeight: FontWeight.w600)),
+                    subtitle: isLotBased 
+                      ? Text(
+                          "P.U. calculé: ${(item.unitPrice / unitsPerLot).toStringAsFixed(1)} CFA / $baseUnit",
+                          style: TextStyle(fontSize: 11, color: theme.colorScheme.secondary),
+                        ) 
+                      : null,
                     trailing: Text(
-                        "$displayQty x ${item.unitPrice} = ${item.totalPrice} CFA"),
+                      "${item.quantity} ${item.unit} x ${item.unitPrice} = ${item.totalPrice} CFA",
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   );
                 }),
                 const Divider(),

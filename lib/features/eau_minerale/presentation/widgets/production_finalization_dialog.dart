@@ -2,12 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
-import 'package:elyf_groupe_app/core/logging/app_logger.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
-import '../../../../core/tenant/tenant_provider.dart';
-import '../../domain/product_roles.dart';
-import '../../domain/entities/production_session.dart';
-import '../../domain/entities/production_session_status.dart';
 import 'time_picker_field.dart';
 
 /// Dialog pour finaliser une production.
@@ -144,95 +139,11 @@ class _ProductionFinalizationDialogState
 
       final controller = ref.read(productionSessionControllerProvider);
 
-      // Vérifier si la session était déjà finalisée avant cette mise à jour
-      final etaitDejaFinalisee =
-          widget.session.effectiveStatus == ProductionSessionStatus.completed;
-
+      // Mise à jour de la session vers le statut "Completed"
+      // Note: Le stock (packs/emballages) est déjà géré lors de l'enregistrement 
+      // journalier via personnel_stock_helper.dart.
+      // Le contrôleur s'occupe de l'audit et de l'installation initiale des matériaux.
       final savedSession = await controller.updateSession(updatedSession);
-
-      // Mise à jour automatique du stock
-      // IMPORTANT: Ne mettre à jour le stock QUE si la session n'était pas déjà finalisée
-      // pour éviter les duplications lors d'une re-finalisation
-      if (!etaitDejaFinalisee) {
-        final stockController = ref.read(stockControllerProvider);
-
-        // Packs et emballages déjà gérés à l'enregistrement journalier → ne pas
-        // ré-enregistrer à la finalisation (évite double produit fini / double
-        // décrément emballages).
-        final aDejaJournalier = savedSession.productionDays.any(
-          (d) => d.producedItems.isNotEmpty || d.consumptions.isNotEmpty,
-        );
-        
-        if (aDejaJournalier) {
-          AppLogger.info(
-            'Stock pack/emballage déjà enregistré en journalier → skip '
-            'finalisation (session ${savedSession.id})',
-            name: 'eau_minerale.production',
-          );
-        }
-
-        // Ajouter les produits finis produits au stock (sauf si déjà fait via journalier)
-        if (!aDejaJournalier) {
-          try {
-            await stockController.recordProductionOutput(
-              producedItems: savedSession.producedItems,
-              productionId: savedSession.id,
-            );
-          } catch (e) {
-            AppLogger.error(
-              'Erreur lors de la mise à jour du stock de produits finis: $e',
-              name: 'eau_minerale.production',
-              error: e,
-            );
-            if (mounted) {
-              NotificationService.showWarning(
-                context,
-                'Attention: Erreur lors de la mise à jour du stock de produits finis: $e',
-              );
-            }
-          }
-        }
-
-        // Enregistrer l'utilisation d'emballages (sauf si déjà fait via journalier)
-        if (!aDejaJournalier &&
-            savedSession.emballagesUtilises != null &&
-            savedSession.emballagesUtilises! > 0) {
-          try {
-            // Dans le nouveau modèle, on cherche le produit ayant le rôle d'emballage principal
-            final products = await ref.read(productsProvider.future);
-            final mainPackaging = products.firstWhere(
-              (p) => p.role == ProductRoles.mainPackaging,
-              orElse: () => products.firstWhere((p) => p.name.toLowerCase().contains('emballage')),
-            );
-
-            await stockController.recordExit(
-              productId: mainPackaging.id,
-              productName: mainPackaging.name,
-              quantite: savedSession.emballagesUtilises!.toDouble(),
-              productionId: savedSession.id,
-              raison: 'Consommation Production',
-            );
-          } catch (e) {
-            AppLogger.error(
-              'Erreur lors de la mise à jour du stock d\'emballages: $e',
-              name: 'eau_minerale.production',
-              error: e,
-            );
-            if (mounted) {
-              NotificationService.showWarning(
-                context,
-                'Attention: Erreur lors de la mise à jour du stock d\'emballages: $e',
-              );
-            }
-          }
-        }
-      } else {
-        // La session était déjà finalisée, les mouvements de stock ont déjà été enregistrés
-        AppLogger.info(
-          'Session déjà finalisée - les mouvements de stock ne seront pas enregistrés à nouveau',
-          name: 'eau_minerale.production',
-        );
-      }
 
       if (mounted) {
         widget.onFinalized(savedSession);

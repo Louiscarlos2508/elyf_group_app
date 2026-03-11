@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+import '../../logging/app_logger.dart';
 
 import 'app_database.dart';
 
@@ -405,9 +406,6 @@ class OfflineRecordDao {
   }
 
   /// Updates the remote ID for a record after successful sync.
-  ///
-  /// Filtre par [enterpriseId] et [moduleType] lorsqu'ils sont fournis pour
-  /// éviter de modifier des lignes d'une autre entreprise/module.
   Future<void> updateRemoteId({
     required String collectionName,
     required String localId,
@@ -433,5 +431,18 @@ class OfflineRecordDao {
             localUpdatedAt: Value(serverUpdatedAt ?? DateTime.now()),
           ),
         );
+  }
+
+  /// Claims orphaned records by assigning them to a user ID.
+  /// This bridges "anonymous" local data to the authenticated owner.
+  Future<int> claimOrphanedRecords(String userId) async {
+    final count = await (_db.update(_db.offlineRecords)
+          ..where((t) => t.userId.isNull()))
+        .write(OfflineRecordsCompanion(userId: Value(userId)));
+    
+    if (count > 0) {
+      AppLogger.info('Claimed $count orphaned offline records for user $userId', name: 'OfflineRecordDao');
+    }
+    return count;
   }
 }

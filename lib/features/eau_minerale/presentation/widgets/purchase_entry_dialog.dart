@@ -8,7 +8,6 @@ import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/purchase.d
 import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/supplier.dart';
 import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers/permission_providers.dart';
-import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/product.dart';
 
 class PurchaseEntryDialog extends ConsumerStatefulWidget {
   const PurchaseEntryDialog({super.key});
@@ -18,7 +17,6 @@ class PurchaseEntryDialog extends ConsumerStatefulWidget {
 }
 
 class _PurchaseEntryDialogState extends ConsumerState<PurchaseEntryDialog> {
-  final _formKey = GlobalKey<FormState>();
   
   // Item entry
   Product? _selectedProduct;
@@ -32,7 +30,7 @@ class _PurchaseEntryDialogState extends ConsumerState<PurchaseEntryDialog> {
   Supplier? _selectedSupplier;
   final _paidAmountController = TextEditingController();
   final _notesController = TextEditingController();
-  PurchaseStatus _status = PurchaseStatus.validated;
+  PurchaseStatus _status = PurchaseStatus.draft;
   PaymentMethod _paymentMethod = PaymentMethod.cash;
   
   bool _isLoading = false;
@@ -56,7 +54,6 @@ class _PurchaseEntryDialogState extends ConsumerState<PurchaseEntryDialog> {
     final priceStr = _priceController.text.trim();
     
     final qty = double.tryParse(qtyStr) ?? 0;
-    final price = int.tryParse(priceStr) ?? 0;
     final unitsPerLot = int.tryParse(_unitsPerLotController.text) ?? (_selectedProduct?.unitsPerLot ?? 1);
 
     if (qty <= 0) {
@@ -64,35 +61,41 @@ class _PurchaseEntryDialogState extends ConsumerState<PurchaseEntryDialog> {
       return;
     }
 
-    // Calculer la quantité finale en unités
-    final finalQty = _useLots ? (qty * unitsPerLot).round() : qty.round();
+    // Calculer la quantité finale à stocker (lots ou unités selon le cas)
+    final qtyToStore = qty; 
     
     int finalTotalPrice;
-    int finalUnitPrice;
+    int finalUnitPrice; // Ceci deviendra le PRIX PAR LOT si _useLots est vrai
 
     if (priceStr.isNotEmpty) {
-      // Prix total saisi manuellement
+      // Prix total saisi manuellement (recommandé par l'utilisateur)
       finalTotalPrice = int.tryParse(priceStr) ?? 0;
-      finalUnitPrice = finalQty > 0 ? (finalTotalPrice / finalQty).round() : 0;
+      finalUnitPrice = qty > 0 ? (finalTotalPrice / qty).round() : 0;
     } else {
-      // Utiliser le prix unitaire du catalogue
-      finalUnitPrice = _selectedProduct!.unitPrice;
-      finalTotalPrice = (finalQty * finalUnitPrice).round();
+      // Utiliser le prix catalogue (attention: le catalogue est en prix unitaire)
+      final unitPriceCatalogue = _selectedProduct!.unitPrice;
+      if (_useLots) {
+        finalUnitPrice = unitPriceCatalogue * unitsPerLot;
+        finalTotalPrice = (qty * finalUnitPrice).round();
+      } else {
+        finalUnitPrice = unitPriceCatalogue;
+        finalTotalPrice = (qty * finalUnitPrice).round();
+      }
     }
 
     setState(() {
       _items.add(PurchaseItem(
         productId: _selectedProduct!.id,
         productName: _selectedProduct!.name,
-        quantity: finalQty,
+        quantity: qtyToStore.round(),
         unitPrice: finalUnitPrice,
         totalPrice: finalTotalPrice,
-        unit: _selectedProduct!.unit,
+        unit: _useLots ? (_selectedProduct!.supplyUnit ?? "lot") : _selectedProduct!.unit,
         metadata: {
-          'isInLots': _useLots,
+          'isLotBased': _useLots,
           'unitsPerLot': unitsPerLot,
+          'baseUnit': _selectedProduct!.unit,
           'quantitySaisie': qty,
-          'prixSaisi': priceStr.isNotEmpty ? int.tryParse(priceStr) : null,
           'isPriceManual': priceStr.isNotEmpty,
         },
       ));
@@ -147,7 +150,7 @@ class _PurchaseEntryDialogState extends ConsumerState<PurchaseEntryDialog> {
         Navigator.pop(context);
       }
     } catch (e) {
-      NotificationService.showError(context, 'Erreur: $e');
+      if (mounted) NotificationService.showError(context, 'Erreur: $e');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -191,12 +194,14 @@ class _PurchaseEntryDialogState extends ConsumerState<PurchaseEntryDialog> {
                     // Item side
                     Expanded(
                       flex: 2,
-                      child: Column(
-                        children: [
-                          _buildItemForm(products, theme),
-                          const SizedBox(height: 16),
-                          _buildItemList(theme),
-                        ],
+                      child: SingleChildScrollView(
+                        child: Column(
+                          children: [
+                            _buildItemForm(products, theme),
+                            const SizedBox(height: 16),
+                            _buildItemList(theme),
+                          ],
+                        ),
                       ),
                     ),
                     const VerticalDivider(width: 32),
@@ -207,7 +212,10 @@ class _PurchaseEntryDialogState extends ConsumerState<PurchaseEntryDialog> {
                         children: [
                           Expanded(
                             child: SingleChildScrollView(
-                              child: _buildPurchaseInfo(suppliers, theme),
+                              child: Padding(
+                                padding: const EdgeInsets.only(bottom: 16),
+                                child: _buildPurchaseInfo(suppliers, theme),
+                              ),
                             ),
                           ),
                           const Divider(),
@@ -215,7 +223,7 @@ class _PurchaseEntryDialogState extends ConsumerState<PurchaseEntryDialog> {
                           const SizedBox(height: 16),
                           FilledButton(
                             onPressed: _isLoading ? null : _submit,
-                            child: _isLoading ? const CircularProgressIndicator() : const Text("ENREGISTRER L'ACHAT"),
+                            child: _isLoading ? const CircularProgressIndicator() : const Text("PASSER LA COMMANDE"),
                           ),
                         ],
                       ),
@@ -341,26 +349,59 @@ class _PurchaseEntryDialogState extends ConsumerState<PurchaseEntryDialog> {
 
   Widget _buildConversionPreview(ThemeData theme) {
     final qty = double.tryParse(_quantityController.text.replaceAll(',', '.')) ?? 0;
-    final price = int.tryParse(_priceController.text) ?? 0;
     final unitsPerLot = int.tryParse(_unitsPerLotController.text) ?? 1000;
     
     final totalUnits = (qty * unitsPerLot).round();
-    final unitPrice = totalUnits > 0 ? (price / unitsPerLot).toStringAsFixed(1) : "0";
+    
+    int totalPrice;
+    if (_priceController.text.isNotEmpty) {
+      totalPrice = int.tryParse(_priceController.text) ?? 0;
+    } else {
+      totalPrice = (totalUnits * (_selectedProduct?.unitPrice ?? 0)).round();
+    }
+
+    final pricePerLot = qty > 0 ? (totalPrice / qty).toStringAsFixed(0) : "0";
+    final pricePerUnit = totalUnits > 0 ? (totalPrice / totalUnits).toStringAsFixed(1) : "0";
 
     final colors = theme.colorScheme;
     return Container(
-      padding: const EdgeInsets.all(8),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: colors.surfaceContainerHighest,
+        color: colors.primaryContainer.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: colors.primary.withValues(alpha: 0.2)),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.info_outline, size: 16, color: colors.primary),
-          const SizedBox(width: 8),
+          Row(
+            children: [
+              Icon(Icons.info_outline, size: 16, color: colors.primary),
+              const SizedBox(width: 8),
+              Text(
+                "Détails de conversion",
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: colors.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
           Text(
-            "= $totalUnits unités (Catalog: ${_selectedProduct?.unitPrice ?? 0} CFA/u)",
-            style: theme.textTheme.bodySmall?.copyWith(color: colors.onSurface),
+            "• Total unités: $totalUnits ${_selectedProduct?.unit ?? 'u'}",
+            style: theme.textTheme.bodySmall,
+          ),
+          Text(
+            "• Coût par lot: $pricePerLot CFA /${_selectedProduct?.supplyUnit ?? 'lot'}",
+            style: theme.textTheme.bodySmall,
+          ),
+          Text(
+            "• Coût par unité: $pricePerUnit CFA /${_selectedProduct?.unit ?? 'u'}",
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: colors.secondary,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ],
       ),
@@ -368,30 +409,45 @@ class _PurchaseEntryDialogState extends ConsumerState<PurchaseEntryDialog> {
   }
 
   Widget _buildItemList(ThemeData theme) {
-    return Expanded(
-      child: ListView.separated(
-        itemCount: _items.length,
-        separatorBuilder: (_, __) => const Divider(),
-        itemBuilder: (context, index) {
-          final PurchaseItem item = _items[index];
-          return ListTile(
-            title: Text(item.productName),
-            subtitle: Text("${item.quantity} x ${item.unitPrice} CFA"),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text("${item.totalPrice} CFA", style: const TextStyle(fontWeight: FontWeight.bold)),
-                IconButton(
-                  onPressed: () => setState(() => _items.removeAt(index)),
-                  icon: Icon(Icons.delete, color: theme.colorScheme.error),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
+    if (_items.isEmpty) return const SizedBox.shrink();
+    
+    return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: _items.length,
+      separatorBuilder: (_, __) => const Divider(),
+      itemBuilder: (context, index) {
+        final PurchaseItem item = _items[index];
+        return ListTile(
+          title: Text(item.productName, style: const TextStyle(fontWeight: FontWeight.w600)),
+          subtitle: isLotBased(item)
+            ? Text(
+                "P.U. calculé: ${(item.unitPrice / getUnitsPerLot(item)).toStringAsFixed(1)} CFA / ${getBaseUnit(item)}",
+                style: TextStyle(fontSize: 11, color: theme.colorScheme.secondary),
+              ) 
+            : null,
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                "${item.quantity} ${item.unit} x ${item.unitPrice} = ${item.totalPrice} CFA",
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              IconButton(
+                onPressed: () => setState(() => _items.removeAt(index)),
+                icon: Icon(Icons.delete, color: theme.colorScheme.error),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
+
+  // Helper methods for metadata
+  bool isLotBased(PurchaseItem item) => item.metadata['isLotBased'] as bool? ?? false;
+  int getUnitsPerLot(PurchaseItem item) => item.metadata['unitsPerLot'] as int? ?? 1;
+  String getBaseUnit(PurchaseItem item) => item.metadata['baseUnit'] as String? ?? "unité";
 
   Widget _buildPurchaseInfo(List<Supplier> suppliers, ThemeData theme) {
     return Column(
@@ -414,7 +470,6 @@ class _PurchaseEntryDialogState extends ConsumerState<PurchaseEntryDialog> {
           decoration: const InputDecoration(labelText: "Type d'opération"),
           items: const [
             DropdownMenuItem(value: PurchaseStatus.draft, child: Text("Bon de Commande (PO)")),
-            DropdownMenuItem(value: PurchaseStatus.validated, child: Text("Achat direct (Reçu)")),
           ],
           onChanged: (v) => setState(() => _status = v!),
         ),

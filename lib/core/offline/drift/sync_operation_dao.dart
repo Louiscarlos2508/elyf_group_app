@@ -441,6 +441,19 @@ class SyncOperationDao {
           ..where((t) => t.enterpriseId.equals(enterpriseId)))
         .go();
   }
+  
+  /// Claims orphaned operations by assigning them to a user ID.
+  /// Used during auth state changes to associate guest data with the logged-in user.
+  Future<int> claimOrphanedOperations(String userId) async {
+    final count = await (_db.update(_db.syncOperations)
+          ..where((t) => t.userId.isNull()))
+        .write(SyncOperationsCompanion(userId: Value(userId)));
+    
+    if (count > 0) {
+      AppLogger.info('Claimed $count orphaned sync operations for user $userId', name: 'SyncOperationDao');
+    }
+    return count;
+  }
 
   /// Converts a Drift SyncOperation to a SyncOperation entity.
   entities.SyncOperation toEntity(SyncOperation data) {

@@ -121,8 +121,13 @@ class ElyfBottomNavigationBar extends StatelessWidget {
 class ElyfNavigationDestination {
   final IconData icon;
   final String label;
+  final String? category;
 
-  const ElyfNavigationDestination({required this.icon, required this.label});
+  const ElyfNavigationDestination({
+    required this.icon,
+    required this.label,
+    this.category,
+  });
 }
 
 /// A premium, glassmorphic side navigation rail for desktop/tablet.
@@ -163,21 +168,42 @@ class ElyfNavigationRail extends StatelessWidget {
         children: [
           const SizedBox(height: 24), // Spacing after AppBar
           Expanded(
-            child: ListView.separated(
+            child: ListView.builder(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               itemCount: destinations.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 4),
               itemBuilder: (context, index) {
                 final item = destinations[index];
                 final isSelected = index == selectedIndex;
+                
+                final showCategory = extended && (index == 0 || (item.category != null && item.category != destinations[index - 1].category));
 
-                return _RailItem(
-                  icon: item.icon,
-                  label: item.label,
-                  isSelected: isSelected,
-                  extended: extended,
-                  onTap: () => onDestinationSelected(index),
-                  moduleId: moduleId,
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (showCategory && item.category != null)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+                        child: Text(
+                          item.category!.toUpperCase(),
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: theme.colorScheme.primary,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                      ),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: _RailItem(
+                        icon: item.icon,
+                        label: item.label,
+                        isSelected: isSelected,
+                        extended: extended,
+                        onTap: () => onDestinationSelected(index),
+                        moduleId: moduleId,
+                      ),
+                    ),
+                  ],
                 );
               },
             ),

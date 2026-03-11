@@ -105,22 +105,11 @@ class ProductionSessionController {
 
     final savedSession = await _repository.updateSession(sessionAvecCout);
 
-    // Finalisation : Enregistrement de la production de produits finis
+    // Finalisation : L'enregistrement des produits finis dans le stock
+    // est désormais géré au niveau des enregistrements journaliers (Daily Logs)
+    // dans personnel_stock_helper.dart pour éviter les doublons.
     if (savedSession.status == ProductionSessionStatus.completed &&
         sessionExistante?.status != ProductionSessionStatus.completed) {
-      
-      // Enregistrer les produits finis dans le stock
-      await _stockController.recordProductionOutput(
-        producedItems: savedSession.producedItems,
-        productionId: savedSession.id,
-      );
-
-      // Enregistrer les consommations (mouvements de sortie)
-      await _stockController.recordMaterialConsumptions(
-        consumptions: savedSession.consumptions,
-        productionId: savedSession.id,
-      );
-
       try {
         await _auditTrailService.logAction(
           enterpriseId: savedSession.enterpriseId,

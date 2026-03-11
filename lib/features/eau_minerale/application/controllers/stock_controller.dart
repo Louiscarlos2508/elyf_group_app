@@ -62,6 +62,7 @@ class StockController {
 
   /// Enregistre une entrée de stock générique.
   Future<void> recordEntry({
+    String? id,
     required String productId,
     required String productName,
     required double quantite,
@@ -73,7 +74,7 @@ class StockController {
     if (quantite <= 0) throw const ValidationException('La quantité doit être positive.');
 
     await _stockRepository.recordMovement(StockMovement(
-      id: '', // Généré par le repo
+      id: id ?? '', // Généré par le repo si vide
       enterpriseId: enterpriseId,
       productId: productId,
       productName: productName,
@@ -88,6 +89,7 @@ class StockController {
 
   /// Enregistre une sortie de stock générique.
   Future<void> recordExit({
+    String? id,
     required String productId,
     required String productName,
     required double quantite,
@@ -105,7 +107,7 @@ class StockController {
     }
 
     await _stockRepository.recordMovement(StockMovement(
-      id: '', 
+      id: id ?? '', 
       enterpriseId: enterpriseId,
       productId: productId,
       productName: productName,
@@ -121,6 +123,7 @@ class StockController {
 
   /// Enregistre une décrémentation lors du chargement d'une machine (Bobine, etc).
   Future<void> recordMachineLoadExit({
+    String? id,
     required String productId,
     required String productName,
     required double quantite,
@@ -130,6 +133,7 @@ class StockController {
     String? notes,
   }) async {
     await recordExit(
+      id: id,
       productId: productId,
       productName: productName,
       quantite: quantite,
@@ -148,7 +152,11 @@ class StockController {
     for (final consumption in consumptions) {
       if (consumption.quantity == 0) continue;
       
+      // Idempotency: Use deterministic ID for material consumption
+      final deterministicId = 'local_stk_cons_${productionId}_${consumption.productId}';
+      
       await recordExit(
+        id: deterministicId,
         productId: consumption.productId,
         productName: consumption.productName,
         quantite: consumption.quantity,
@@ -169,7 +177,11 @@ class StockController {
     for (final item in producedItems) {
       if (item.quantity == 0) continue;
 
+      // Idempotency: Use deterministic ID for production output
+      final deterministicId = 'local_stk_prod_${productionId}_${item.productId}';
+
       await recordEntry(
+        id: deterministicId,
         productId: item.productId,
         productName: item.productName,
         quantite: item.quantity,

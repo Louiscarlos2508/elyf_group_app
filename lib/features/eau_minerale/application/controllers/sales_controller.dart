@@ -57,7 +57,11 @@ class SalesController {
 
       if (isFinishedGood && sale.quantity > 0) {
         try {
+          // Idempotency: Use Sale ID to generate deterministic Stock Movement ID
+          final stockMovementId = 'local_stk_sale_$id';
+          
           await _stockController.recordExit(
+            id: stockMovementId,
             productId: sale.productId,
             productName: sale.productName ?? 'Produit',
             quantite: sale.quantity.toDouble(),
@@ -115,7 +119,11 @@ class SalesController {
 
       if (isFinishedGood && sale.quantity > 0) {
         try {
+          // Idempotency: Use Sale ID for stock restoration ID as well
+          final restorationId = 'local_stk_void_$saleId';
+          
           await _stockController.recordEntry(
+            id: restorationId,
             productId: sale.productId,
             productName: sale.productName ?? 'Produit',
             quantite: sale.quantity.toDouble(),
@@ -153,9 +161,10 @@ class SalesController {
 
   Future<void> _recordReverseTreasuryOperationsForSale(Sale sale, String userId) async {
     try {
+      final saleId = sale.id;
       if (sale.cashAmount > 0) {
         await _treasuryRepository.createOperation(TreasuryOperation(
-          id: '',
+          id: 'local_trs_void_cash_$saleId',
           enterpriseId: sale.enterpriseId,
           userId: userId,
           amount: -sale.cashAmount,
@@ -172,7 +181,7 @@ class SalesController {
 
       if (sale.orangeMoneyAmount > 0) {
         await _treasuryRepository.createOperation(TreasuryOperation(
-          id: '',
+          id: 'local_trs_void_om_$saleId',
           enterpriseId: sale.enterpriseId,
           userId: userId,
           amount: -sale.orangeMoneyAmount,
@@ -193,9 +202,10 @@ class SalesController {
 
   Future<void> _recordTreasuryOperationsForSale(Sale sale, String userId) async {
     try {
+      final saleId = sale.id;
       if (sale.cashAmount > 0) {
         await _treasuryRepository.createOperation(TreasuryOperation(
-          id: '',
+          id: 'local_trs_sale_cash_$saleId',
           enterpriseId: sale.enterpriseId,
           userId: userId,
           amount: sale.cashAmount,
@@ -212,7 +222,7 @@ class SalesController {
 
       if (sale.orangeMoneyAmount > 0) {
         await _treasuryRepository.createOperation(TreasuryOperation(
-          id: '',
+          id: 'local_trs_sale_om_$saleId',
           enterpriseId: sale.enterpriseId,
           userId: userId,
           amount: sale.orangeMoneyAmount,

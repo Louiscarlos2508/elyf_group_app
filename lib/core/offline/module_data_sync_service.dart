@@ -109,8 +109,37 @@ class ModuleDataSyncService {
       'contracts',
       'payments',
       'property_expenses',
-      'immobilier_treasury',
-      'immobilier_settings',
+    ],
+  };
+
+  /// Configuration des collections essentielles (pour sync rapide/mobile).
+  static const Map<String, List<String>> essentialCollections = {
+    'boutique': [
+      'products',
+      'sales',
+      'treasury_operations',
+    ],
+    'eau_minerale': [
+      CollectionNames.products,
+      CollectionNames.sales,
+      CollectionNames.stockItems,
+      CollectionNames.eauMineraleTreasuryOperations,
+      CollectionNames.productionSessions,
+    ],
+    'gaz': [
+      'gas_sales',
+      'cylinder_stocks',
+      'pointOfSale',
+      'gaz_treasury_operations',
+    ],
+    'orange_money': [
+      'transactions',
+      'orange_money_settings',
+    ],
+    'immobilier': [
+      'tenants',
+      'contracts',
+      'payments',
     ],
   };
 
@@ -128,15 +157,28 @@ class ModuleDataSyncService {
     String? parentEnterpriseId,
     List<String>? collections,
     DateTime? lastSyncAt,
+    bool essentialOnly = false,
   }) async {
     if (kIsWeb) return;
     
     // Utiliser la configuration par défaut si collections n'est pas fourni
-    final collectionsToSync = collections ?? moduleCollections[moduleId] ?? [];
+    var collectionsToSync = collections ?? moduleCollections[moduleId] ?? [];
+
+    if (essentialOnly) {
+      final essentials = essentialCollections[moduleId] ?? [];
+      // Intersection entre les collections prévues et les collections essentielles
+      collectionsToSync = collectionsToSync.where((c) => essentials.contains(c)).toList();
+      
+      if (collectionsToSync.isEmpty && essentials.isNotEmpty) {
+        // Si l'intersection est vide mais qu'il y a des essentiels définis,
+        // on prend les essentiels par défaut du module.
+        collectionsToSync = essentials;
+      }
+    }
 
     if (collectionsToSync.isEmpty) {
       AppLogger.info(
-        'No collections configured for module $moduleId, skipping sync',
+        'No collections to sync for module $moduleId (essentialOnly: $essentialOnly), skipping',
         name: 'module.sync',
       );
       return;

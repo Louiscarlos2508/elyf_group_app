@@ -1,6 +1,9 @@
 import 'dart:convert';
 
 import '../logging/app_logger.dart';
+import '../offline/sync/sync_push_service.dart';
+import 'package:workmanager/workmanager.dart';
+import '../offline/sync_worker.dart';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 
@@ -14,11 +17,15 @@ void onForegroundMessage(RemoteMessage message) {
     'Notification reçue en foreground: ${message.messageId}',
     name: 'fcm.handlers',
   );
-  AppLogger.debug(
-    'Titre: ${message.notification?.title}, Corps: ${message.notification?.body}',
-    name: 'fcm.handlers',
-  );
   AppLogger.debug('Données: ${message.data}', name: 'fcm.handlers');
+ 
+  // Handle sync trigger (silent push)
+  if (message.data['type'] == 'sync_trigger') {
+    AppLogger.info('Sync trigger received in foreground', name: 'fcm.handlers');
+    // We will trigger this via a global state or stream that the app listens to
+    _triggerReactiveSync(message.data);
+    return; // Silent push, don't show local notification
+  }
 
   // ✅ TODO résolu: Afficher une notification locale
   final title = message.notification?.title ?? 'Nouvelle notification';
@@ -69,11 +76,14 @@ Future<void> onBackgroundMessage(RemoteMessage message) async {
     'Notification reçue en background: ${message.messageId}',
     name: 'fcm.handlers.background',
   );
-  AppLogger.debug(
-    'Titre: ${message.notification?.title}, Corps: ${message.notification?.body}',
-    name: 'fcm.handlers.background',
-  );
   AppLogger.debug('Données: ${message.data}', name: 'fcm.handlers.background');
+
+  // Handle sync trigger (silent push)
+  if (message.data['type'] == 'sync_trigger') {
+    AppLogger.info('Sync trigger received in background', name: 'fcm.handlers.background');
+    await _handleBackgroundSyncTrigger(message.data);
+    return;
+  }
 
   // ✅ TODO résolu: Traiter la notification en arrière-plan
   // Pour l'instant, on log simplement. Si nécessaire, on peut :
@@ -116,10 +126,37 @@ void _handleNotificationNavigation(Map<String, dynamic> data) {
   // qui sera créé dans la prochaine étape
   // Pour l'instant, on log simplement l'intention
   
-  // Exemples de navigation possibles :
-  // - type: "module", target: "gaz" -> /modules/gaz
-  // - type: "module", target: "orange_money" -> /modules/orange_money
-  // - type: "screen", target: "commissions" -> /modules/orange_money (section commissions)
   // - type: "action", target: "new_tour" -> Ouvrir dialog de création de tour
+}
+
+/// Trigger one-time sync based on FCM data
+void _triggerReactiveSync(Map<String, dynamic> data) {
+  final moduleId = data['moduleId'] as String?;
+  final enterpriseId = data['enterpriseId'] as String?;
+  
+  SyncPushService.instance.triggerSync(
+    type: moduleId != null ? SyncTriggerType.module : SyncTriggerType.global,
+    moduleId: moduleId,
+    enterpriseId: enterpriseId,
+  );
+}
+
+/// Handle sync trigger when app is in background
+Future<void> _handleBackgroundSyncTrigger(Map<String, dynamic> data) async {
+  AppLogger.info('Scheduling background sync from push trigger via Workmanager', name: 'fcm.handlers.background');
+  
+  try {
+    // On lance une tâche unique immédiate pour synchroniser les données
+    await Workmanager().registerOneOffTask(
+      "reactive_sync_${DateTime.now().millisecondsSinceEpoch}",
+      syncTaskName,
+      inputData: data,
+      constraints: Constraints(
+        networkType: NetworkType.connected,
+      ),
+    );
+  } catch (e) {
+    AppLogger.error('Failed to schedule background sync: $e', name: 'fcm.handlers.background');
+  }
 }
 

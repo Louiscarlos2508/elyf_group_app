@@ -172,7 +172,7 @@ class SalaryController {
     try {
       // 1. Enregistrer dans la trésorerie (Défaut: Cash pour les salaires)
       await _treasuryRepository.createOperation(TreasuryOperation(
-        id: '',
+        id: 'local_trs_sal_$referenceId',
         enterpriseId: _enterpriseId,
         userId: _userId,
         amount: amount,
@@ -188,7 +188,7 @@ class SalaryController {
 
       // 2. Enregistrer comme dépense
       await _financeRepository.createExpense(ExpenseRecord(
-        id: '',
+        id: 'local_exp_sal_$referenceId',
         enterpriseId: _enterpriseId,
         label: label,
         amountCfa: amount,

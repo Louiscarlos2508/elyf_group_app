@@ -46,10 +46,10 @@ class FinancesController {
 
     final id = await _repository.createExpense(expense);
     
-    // Record in Treasury
+    // Record in Treasury with deterministic ID for idempotency
     try {
       await _treasuryRepository.createOperation(TreasuryOperation(
-        id: '',
+        id: 'local_trs_exp_$id',
         enterpriseId: _enterpriseId,
         userId: _userId,
         amount: expense.amountCfa,

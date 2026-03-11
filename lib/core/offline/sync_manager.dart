@@ -25,12 +25,14 @@ class SyncConfig {
     this.maxRetryAttempts = 5,
     this.baseRetryDelayMs = 1000,
     this.maxRetryDelayMs = 60000,
-    this.syncIntervalMinutes = 5,
+    this.syncIntervalMinutes = 15,
     this.operationTimeoutMs = 30000,
     this.maxOperationAgeHours = 72,
     this.batchSize = 50,
     this.useBatchOperations = true, // Enable batch operations by default
     this.batchThreshold = 10, // Use batch if >= 10 operations
+    this.selectiveSyncEnabled = true, // Enable WiFi vs Mobile Data optimization
+    this.heartbeatIntervalMinutes = 15, // Longer backup interval if reactive sync is working
   });
 
   final int maxRetryAttempts;
@@ -42,6 +44,8 @@ class SyncConfig {
   final int batchSize;
   final bool useBatchOperations;
   final int batchThreshold; // Minimum operations to use batch
+  final bool selectiveSyncEnabled;
+  final int heartbeatIntervalMinutes;
 }
 
 /// Complete SyncManager with Drift-based queue, auto sync, and retry.
@@ -81,9 +85,13 @@ class SyncManager {
   StreamSubscription<List<SyncOperation>>? _pendingOperationsSubscription;
   bool _isSyncing = false;
   bool _isInitialized = false;
+  DateTime? _lastPushSyncTime;
+  DateTime? _lastPullSyncTime;
 
   Stream<SyncProgress> get syncProgressStream => _syncStatusController.stream;
   bool get isSyncing => _isSyncing;
+  DateTime? get lastPushSyncTime => _lastPushSyncTime;
+  DateTime? get lastPullSyncTime => _lastPullSyncTime;
 
   /// Initializes the sync manager and starts auto-sync if enabled.
   Future<void> initialize() async {
@@ -114,13 +122,26 @@ class SyncManager {
   }
 
   void _startAuthListener() {
-    FirebaseAuth.instance.authStateChanges().listen((user) {
+    FirebaseAuth.instance.authStateChanges().listen((user) async {
       if (_isInitialized) {
         if (user != null) {
-          AppLogger.info('Auth state changed (User logged in), restarting sync listener', name: 'offline.sync');
+          AppLogger.info(
+            'Auth state changed: claiming orphaned data for ${user.uid}', 
+            name: 'offline.sync'
+          );
+          
+          try {
+            // Claim orphaned data before enabling the reactive listener
+            // to ensure pre-login data is assigned to the current user owner.
+            await _driftService.syncOperations.claimOrphanedOperations(user.uid);
+            await _driftService.records.claimOrphanedRecords(user.uid);
+          } catch (e) {
+            AppLogger.error('Data claiming failed: $e', name: 'offline.sync');
+          }
+
           _startPendingOperationsListener();
           
-          // Trigger sync if online
+          // Trigger initial sync if online
           if (_connectivityService.isOnline && !_isSyncing) {
             unawaited(syncPendingOperations());
           }
@@ -134,11 +155,14 @@ class SyncManager {
   }
 
   /// Syncs all pending operations.
-  Future<SyncResult> syncPendingOperations() async {
+  /// [essentialOnly] if true, only sync critical/high priority collections.
+  Future<SyncResult> syncPendingOperations({bool essentialOnly = false}) async {
     if (kIsWeb) return const SyncResult(success: true, message: 'No-op on Web', syncedCount: 0);
     
+    final String syncId = 's-${DateTime.now().millisecondsSinceEpoch.toString().substring(9)}';
+
     if (_isSyncing) {
-      AppLogger.debug('Sync already in progress', name: 'offline.sync');
+      AppLogger.info('Sync skipped: [Session $syncId] Another session is already active', name: 'offline.sync');
       return const SyncResult(
         success: false,
         message: 'Sync already in progress',
@@ -169,9 +193,52 @@ class SyncManager {
       );
     }
 
+    final bool shouldForceEssential = config.selectiveSyncEnabled && 
+                                     !_connectivityService.currentStatus.isFastConnection;
+    final bool finalEssentialOnly = essentialOnly || shouldForceEssential;
+
+    AppLogger.info(
+      'Sync session [$syncId] started: ${finalEssentialOnly ? "ESSENTIAL ONLY" : "FULL SYNC"} '
+      '(Connection: ${_connectivityService.currentStatus.description})',
+      name: 'offline.sync'
+    );
+
     _isSyncing = true;
     _syncStatusController.add(SyncProgress.started());
 
+    try {
+      // Wrap the sync logic in a local function to apply timeout (Watchdog)
+      final result = await _executeSyncLoop(syncId, finalEssentialOnly, userId)
+          .timeout(const Duration(minutes: 5), onTimeout: () {
+        AppLogger.error(
+          'WATCHDOG: Sync session [$syncId] timed out after 5 minutes! Forcing reset.',
+          name: 'offline.sync',
+        );
+        _isSyncing = false;
+        return SyncResult(
+          success: false,
+          message: 'Sync watchdog timeout',
+          syncedCount: 0,
+          errors: ['Watchdog timeout after 5 minutes'],
+        );
+      });
+      return result;
+    } catch (e, stackTrace) {
+      _isSyncing = false;
+      final errorMsg = 'Sync session [$syncId] failed: $e';
+      _syncStatusController.add(SyncProgress.failed(errorMsg));
+      AppLogger.error(errorMsg, name: 'offline.sync', error: e, stackTrace: stackTrace);
+      return SyncResult(
+        success: false,
+        message: errorMsg,
+        syncedCount: 0,
+        errors: [errorMsg],
+      );
+    }
+  }
+
+  /// Internal sync loop implementation (wrapped by Watchdog)
+  Future<SyncResult> _executeSyncLoop(String syncId, bool finalEssentialOnly, String userId) async {
     try {
       final pendingCount = await getPendingCount();
       if (pendingCount == 0) {
@@ -189,8 +256,31 @@ class SyncManager {
         userId: userId,
       );
 
+      // Filter based on priority/essential level if requested
+      final filteredPending = allPending.where((op) {
+        if (!finalEssentialOnly) return true;
+        // Priority: 0=critical, 1=high, 2=normal, 3=low
+        // Essential sync targets critical and high priority (0 and 1)
+        return op.priority <= 1;
+      }).toList();
+
+      if (filteredPending.isEmpty && allPending.isNotEmpty && finalEssentialOnly) {
+        AppLogger.info(
+          'Deferred ${allPending.length} non-essential operations '
+          '(Connection: ${_connectivityService.currentStatus.description})',
+          name: 'offline.sync',
+        );
+        _isSyncing = false;
+        _syncStatusController.add(SyncProgress.completed(0));
+        return const SyncResult(
+          success: true,
+          message: 'Non-essential items deferred',
+          syncedCount: 0,
+        );
+      }
+
       // Filter only "ready" operations (fresh ones or those past their backoff)
-      final operations = allPending.where((data) {
+      final operations = filteredPending.where((data) {
         final operation = _driftService.syncOperations.toEntity(data);
         if (operation.retryCount == 0) return true;
         
@@ -320,6 +410,7 @@ class SyncManager {
 
       _isSyncing = false;
       _syncStatusController.add(SyncProgress.completed(syncedCount));
+      _lastPushSyncTime = DateTime.now();
 
       final result = SyncResult(
         success: failedCount == 0,
@@ -335,40 +426,46 @@ class SyncManager {
       }
 
       AppLogger.info(
-        'Sync completed: ${result.syncedCount} synced, ${result.failedCount} failed',
+        'Sync session [$syncId] completed: ${result.syncedCount} synced, ${result.failedCount} failed',
         name: 'offline.sync',
       );
 
       return result;
-    } catch (e) {
+    } finally {
       _isSyncing = false;
-      final errorMsg = 'Sync failed: $e';
-      _syncStatusController.add(SyncProgress.failed(errorMsg));
-      AppLogger.error(errorMsg, name: 'offline.sync', error: e);
-      return SyncResult(
-        success: false,
-        message: errorMsg,
-        syncedCount: 0,
-        errors: [errorMsg],
-      );
     }
   }
 
-  /// Processes a single sync operation.
+  /// Processes a single sync operation with atomic Drift updates.
   Future<void> _processOperation(SyncOperation operation) async {
-    await _driftService.syncOperations.markProcessing(operation.id);
+    // 1. Mark as processing (Atomic Transaction)
+    await _driftService.db.transaction(() async {
+      await _driftService.syncOperations.markProcessing(operation.id);
+    });
 
     try {
-      await _processor.processOperation(operation);
-      await _driftService.syncOperations.deleteById(operation.id);
+      // 2. Perform Network I/O (Firestore sync)
+      // This is the non-atomic part that can fail or hang
+      await _processor.processOperation(operation).timeout(
+        const Duration(seconds: 45),
+        onTimeout: () => throw TimeoutException('Network operation timeout (45s)'),
+      );
+      
+      // 3. Complete and delete from queue (Atomic Transaction)
+      await _driftService.db.transaction(() async {
+        await _driftService.syncOperations.deleteById(operation.id);
+      });
     } catch (e) {
-      final errorMsg = e.toString();
-      await _driftService.syncOperations.markFailed(operation.id, errorMsg);
+      // 4. Handle failure and reset (Atomic Transaction)
+      await _driftService.db.transaction(() async {
+        final errorMsg = e.toString();
+        await _driftService.syncOperations.markFailed(operation.id, errorMsg);
 
-      // Reset to pending if retries not exceeded
-      if (operation.retryCount < config.maxRetryAttempts) {
-        await _driftService.syncOperations.resetToPending(operation.id);
-      }
+        // Reset to pending if retries not exceeded
+        if (operation.retryCount < config.maxRetryAttempts) {
+          await _driftService.syncOperations.resetToPending(operation.id);
+        }
+      });
 
       rethrow;
     }
@@ -572,8 +669,19 @@ class SyncManager {
     _autoSyncTimer = Timer.periodic(
       Duration(minutes: config.syncIntervalMinutes),
       (_) {
+        // If we recently had a successful push sync (reactive), we can skip this one
+        if (_lastPushSyncTime != null) {
+          final timeSinceLastSync = DateTime.now().difference(_lastPushSyncTime!);
+          if (timeSinceLastSync.inMinutes < config.syncIntervalMinutes) {
+             AppLogger.debug('Skipping auto-sync heartbeat, last push was recent', name: 'offline.sync');
+             return;
+          }
+        }
+
         if (!_isSyncing && _connectivityService.isOnline) {
-          unawaited(syncPendingOperations());
+          unawaited(syncPendingOperations(
+            essentialOnly: !(_connectivityService.currentStatus.isFastConnection)
+          ));
         }
       },
     );
@@ -590,7 +698,9 @@ class SyncManager {
             'Network came back, triggering sync',
             name: 'offline.sync',
           );
-          unawaited(syncPendingOperations());
+          unawaited(syncPendingOperations(
+            essentialOnly: !(status.isFastConnection)
+          ));
         }
       },
       onError: (error) {
@@ -607,17 +717,30 @@ class SyncManager {
   void _startPendingOperationsListener() {
     _pendingOperationsSubscription?.cancel();
     final userId = getUserId();
+    
     _pendingOperationsSubscription = _driftService.syncOperations
         .watchPending(userId: userId)
         .listen((operations) {
-      if (operations.isNotEmpty && 
-          !_isSyncing && 
-          _connectivityService.isOnline) {
-        AppLogger.debug(
-          'Reactive trigger: ${operations.length} operations pending, starting sync',
+      if (operations.isNotEmpty) {
+        if (_isSyncing) {
+          // Normal behavior: wait for current session to finish
+          AppLogger.debug('Reactive trigger: Session already active, trigger deferred', name: 'offline.sync');
+          return;
+        }
+        
+        if (!_connectivityService.isOnline) {
+          AppLogger.info('Reactive trigger: Network offline, trigger deferred', name: 'offline.sync');
+          return;
+        }
+
+        AppLogger.info(
+          'Reactive trigger: Starting sync for ${operations.length} pending operations',
           name: 'offline.sync',
         );
-        unawaited(syncPendingOperations());
+        
+        unawaited(syncPendingOperations(
+           essentialOnly: !(_connectivityService.currentStatus.isFastConnection)
+        ));
       }
     });
   }

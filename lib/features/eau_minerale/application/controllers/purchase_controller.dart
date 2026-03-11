@@ -86,7 +86,7 @@ class PurchaseController {
       final id = await _supplierRepository.recordSettlement(settlement);
 
       await _treasuryRepository.createOperation(TreasuryOperation(
-        id: '',
+        id: 'local_trs_settle_$id',
         enterpriseId: settlement.enterpriseId,
         userId: settlement.createdBy ?? 'system',
         amount: settlement.amount,
@@ -101,7 +101,7 @@ class PurchaseController {
       ));
 
       await _financeRepository.createExpense(ExpenseRecord(
-        id: '',
+        id: 'local_exp_settle_$id',
         enterpriseId: settlement.enterpriseId,
         label: 'Règlement Fournisseur: ${settlement.supplierId}',
         amountCfa: settlement.amount,
@@ -142,7 +142,7 @@ class PurchaseController {
     try {
       if (purchase.paidAmount > 0) {
         await _financeRepository.createExpense(ExpenseRecord(
-          id: '',
+          id: 'local_exp_pur_${purchase.id}',
           enterpriseId: purchase.enterpriseId,
           label: 'Achat: ${purchase.number ?? purchase.id}',
           amountCfa: purchase.paidAmount,
@@ -155,7 +155,7 @@ class PurchaseController {
         ));
 
         await _treasuryRepository.createOperation(TreasuryOperation(
-          id: '',
+          id: 'local_trs_pur_${purchase.id}',
           enterpriseId: purchase.enterpriseId,
           userId: purchase.createdBy ?? 'system',
           amount: purchase.paidAmount,
@@ -188,13 +188,23 @@ class PurchaseController {
   Future<void> _updateStockForPurchase(Purchase purchase) async {
     for (final item in purchase.items) {
       try {
+        final isLotBased = item.metadata['isLotBased'] as bool? ?? false;
+        final unitsPerLot = item.metadata['unitsPerLot'] as int? ?? 1;
+        final baseUnit = item.metadata['baseUnit'] as String? ?? item.unit;
+        
+        final stockQuantity = isLotBased ? (item.quantity * unitsPerLot).toDouble() : item.quantity.toDouble();
+
+        // Idempotency: Use deterministic ID for stock entry
+        final stockMovementId = 'local_stk_pur_item_${purchase.id}_${item.productId}';
+
         await _stockController.recordEntry(
+          id: stockMovementId,
           productId: item.productId,
           productName: item.productName,
-          quantite: item.quantity.toDouble(),
-          unit: item.unit,
+          quantite: stockQuantity,
+          unit: baseUnit,
           raison: 'Achat (Auto)',
-          notes: 'Achat #${purchase.number ?? purchase.id}',
+          notes: 'Achat #${purchase.number ?? purchase.id}${isLotBased ? " (${item.quantity} ${item.unit})" : ""}',
         );
       } catch (e) {
         AppLogger.error('Failed to update stock for item ${item.productName}', error: e);

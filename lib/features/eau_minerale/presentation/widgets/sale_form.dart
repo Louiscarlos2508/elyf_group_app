@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
+import '../../../../core/offline/offline_repository.dart';
 import '../../domain/entities/sale.dart';
 import '../../domain/entities/product.dart';
 import '../../domain/repositories/customer_repository.dart';
@@ -347,8 +348,11 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
         final productName = product.name;
         final enterpriseId = ref.read(activeEnterpriseIdProvider).value ?? '';
 
+        // Idempotency: Generate Sale ID upfront
+        final saleId = LocalIdGenerator.generate();
+
         final sale = Sale(
-          id: '',
+          id: saleId,
           enterpriseId: enterpriseId,
           productId: productId,
           productName: productName,

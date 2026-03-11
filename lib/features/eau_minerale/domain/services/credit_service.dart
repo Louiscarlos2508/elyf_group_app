@@ -45,11 +45,11 @@ class CreditService {
 
     final paymentId = await creditRepository.recordPayment(payment);
 
-    // Record in Treasury
+    // Record in Treasury with deterministic IDs for idempotency
     try {
       if (payment.cashAmount > 0) {
         await treasuryRepository.createOperation(TreasuryOperation(
-          id: '',
+          id: 'local_trs_cred_cash_$paymentId',
           enterpriseId: payment.enterpriseId,
           userId: 'system',
           amount: payment.cashAmount,
@@ -66,7 +66,7 @@ class CreditService {
 
       if (payment.orangeMoneyAmount > 0) {
         await treasuryRepository.createOperation(TreasuryOperation(
-          id: '',
+          id: 'local_trs_cred_om_$paymentId',
           enterpriseId: payment.enterpriseId,
           userId: 'system',
           amount: payment.orangeMoneyAmount,

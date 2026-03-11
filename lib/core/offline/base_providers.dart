@@ -56,6 +56,11 @@ final syncManagerProvider = Provider<SyncManager>((ref) {
     driftService: driftService,
     connectivityService: connectivityService,
     syncHandler: syncHandler,
+    config: const SyncConfig(
+      syncIntervalMinutes: 15, // Heartbeat every 15 mins (was 5)
+      selectiveSyncEnabled: true,
+      batchSize: 50,
+    ),
   );
 
   ref.onDispose(manager.dispose);
