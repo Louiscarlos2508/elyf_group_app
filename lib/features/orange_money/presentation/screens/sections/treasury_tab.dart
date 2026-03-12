@@ -8,7 +8,7 @@ import 'package:elyf_groupe_app/shared/domain/entities/treasury_operation.dart';
 import 'package:elyf_groupe_app/features/orange_money/presentation/widgets/treasury_operation_dialog.dart';
 import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
-import 'package:elyf_groupe_app/features/orange_money/domain/entities/agent.dart' show AgentStatus, Agent;
+import 'package:elyf_groupe_app/features/orange_money/domain/entities/agent.dart' show Agent;
 import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
 
 class TreasuryTab extends ConsumerWidget {

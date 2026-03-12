@@ -23,6 +23,20 @@ class ClientsController {
     return _repository.createCustomer(name, phone, cnib: cnib);
   }
 
+  Future<void> updateCustomer({
+    required String id,
+    String? name,
+    String? phone,
+    String? cnib,
+  }) async {
+    return _repository.updateCustomer(
+      id: id,
+      name: name,
+      phone: phone,
+      cnib: cnib,
+    );
+  }
+
   Stream<List<CreditPayment>> watchAllCreditPayments() {
     return _creditRepository.watchPayments();
   }

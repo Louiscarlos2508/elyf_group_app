@@ -53,6 +53,14 @@ abstract class CommissionRepository {
   /// Obtenir les statistiques des commissions
   Future<Map<String, dynamic>> getStatistics({String? enterpriseId});
 
+  /// Déclare une commission (après calcul par Orange)
+  Future<Commission> declareCommission({
+    required String commissionId,
+    required int declaredAmount,
+    required String smsProofUrl,
+    required String declaredBy,
+  });
+
   /// Obtenir les statistiques globales pour un réseau d'entreprises
   Future<Map<String, dynamic>> fetchNetworkStatistics(
     List<String> enterpriseIds, {

@@ -1,4 +1,3 @@
-import '../../../../core/logging/app_logger.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 
@@ -59,8 +58,6 @@ final productionSessionControllerProvider =
     Provider<ProductionSessionController>(
       (ref) => ProductionSessionController(
         ref.watch(productionSessionRepositoryProvider),
-        ref.watch(stockControllerProvider),
-        ref.watch(eauMineraleProductRepositoryProvider),
         ref.watch(auditTrailServiceProvider),
         ref.watch(machineMaterialCostServiceProvider),
         ref.watch(machineStockManagementServiceProvider),
@@ -74,7 +71,6 @@ final salesControllerProvider = Provider<SalesController>(
     ref.watch(eauMineraleProductRepositoryProvider),
     ref.watch(auditTrailServiceProvider),
     ref.watch(treasuryRepositoryProvider),
-    ref.watch(closingRepositoryProvider),
   ),
 );
 
@@ -87,21 +83,21 @@ final clientsControllerProvider = Provider<ClientsController>(
 
 final financesControllerProvider = Provider<FinancesController>((ref) {
   final enterpriseId = ref.watch(activeEnterpriseIdProvider).value ?? 'default';
-  final userId = ref.watch(currentUserIdProvider) ?? 'unknown';
-
-  return FinancesController(
-    ref.watch(financeRepositoryProvider),
-    ref.watch(treasuryRepositoryProvider),
-    ref.watch(closingRepositoryProvider),
-    enterpriseId,
-    userId,
-  );
-});
+    final userId = ref.watch(currentUserIdProvider);
+    
+    return FinancesController(
+      ref.watch(financeRepositoryProvider),
+      ref.watch(treasuryRepositoryProvider),
+      enterpriseId,
+      userId,
+    );
+  }
+);
 
 final salaryControllerProvider = Provider<SalaryController>(
   (ref) {
     final enterpriseId = ref.watch(activeEnterpriseIdProvider).value ?? 'default';
-    final userId = ref.watch(currentUserIdProvider) ?? 'unknown';
+    final userId = ref.watch(currentUserIdProvider);
     
     return SalaryController(
       ref.watch(salaryRepositoryProvider),
@@ -126,7 +122,6 @@ final supplierControllerProvider = Provider<SupplierController>(
 final purchaseControllerProvider = Provider<PurchaseController>(
   (ref) => PurchaseController(
     ref.watch(purchaseRepositoryProvider),
-    ref.watch(stockRepositoryProvider),
     ref.watch(stockControllerProvider),
     ref.watch(treasuryRepositoryProvider),
     ref.watch(financeRepositoryProvider),
@@ -141,7 +136,7 @@ final closingControllerProvider = Provider<ClosingController>(
 final treasuryControllerProvider = Provider<TreasuryController>(
   (ref) {
     final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
-    final userId = ref.watch(currentUserIdProvider) ?? 'unknown';
+    final userId = ref.watch(currentUserIdProvider);
     
     return TreasuryController(
       ref.watch(treasuryRepositoryProvider),

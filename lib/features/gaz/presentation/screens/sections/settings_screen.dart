@@ -1,15 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/shared.dart';
-import 'package:elyf_groupe_app/core/logging/app_logger.dart';
 import 'package:elyf_groupe_app/core/permissions/modules/gaz_permissions.dart';
 
 
 import '../../../../../../core/tenant/tenant_provider.dart' show activeEnterpriseProvider;
-import 'package:elyf_groupe_app/features/administration/application/providers.dart';
-import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 
-import '../../widgets/point_of_sale_form_dialog.dart';
 import '../../widgets/point_of_sale_table.dart';
 import '../../widgets/gaz_header.dart';
 import '../../widgets/cylinder_management_card.dart';

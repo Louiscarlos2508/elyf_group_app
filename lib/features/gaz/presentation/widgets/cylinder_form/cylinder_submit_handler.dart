@@ -39,7 +39,7 @@ class CylinderSubmitHandler {
       final controller = ref.read(cylinderControllerProvider);
       final stockController = ref.read(cylinderStockControllerProvider);
       final cylinderStockRepo = ref.read(cylinderStockRepositoryProvider);
-      final settingsController = ref.read(gazSettingsControllerProvider(enterpriseId ?? ''));
+      final settingsController = ref.read(gazSettingsControllerProvider(enterpriseId));
       
       final weight = int.tryParse(weightText) ?? selectedWeight;
       final sellPrice = double.tryParse(sellPriceText) ?? 0.0;

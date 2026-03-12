@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../../../core/tenant/tenant_provider.dart';
-import '../../domain/entities/machine.dart';
 
 /// Dialog pour ajouter/modifier une machine.
 class MachineFormDialog extends ConsumerStatefulWidget {

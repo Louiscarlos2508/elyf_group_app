@@ -11,7 +11,6 @@ class SuppliersScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final suppliersAsync = ref.watch(suppliersProvider);
 
     return suppliersAsync.when(

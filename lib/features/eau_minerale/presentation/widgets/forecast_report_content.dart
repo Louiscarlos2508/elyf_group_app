@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
-import '../../domain/entities/report_period.dart';
-import '../../domain/entities/sale.dart';
 import 'forecast_report/forecast_report_helpers.dart';
 import 'forecast_report/forecast_report_alert.dart';
 import 'forecast_report/forecast_report_kpis.dart';

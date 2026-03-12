@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
-import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/product.dart';
 
 
 class SaleProductSelector extends ConsumerWidget {
@@ -18,7 +17,6 @@ class SaleProductSelector extends ConsumerWidget {
 
   Future<void> _selectProduct(BuildContext context, WidgetRef ref) async {
     List<Product> list;
-    const int packStock = 0;
     try {
       final products = await ref.read(productsProvider.future);
       list = products

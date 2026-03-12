@@ -43,9 +43,8 @@ final cylinderStockControllerProvider = Provider<CylinderStockController>((ref) 
 final cylinderLeakControllerProvider = Provider<CylinderLeakController>((ref) {
   final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
   final leakRepo = ref.watch(cylinderLeakRepositoryProvider(enterpriseId));
-  final stockRepo = ref.watch(cylinderStockRepositoryProvider);
   final transactionService = ref.watch(transactionServiceProvider);
-  return CylinderLeakController(leakRepo, stockRepo, transactionService);
+  return CylinderLeakController(leakRepo, transactionService);
 });
 
 final financialReportControllerProvider = Provider<FinancialReportController>((ref) {

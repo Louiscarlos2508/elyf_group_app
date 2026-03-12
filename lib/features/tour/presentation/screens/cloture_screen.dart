@@ -7,10 +7,7 @@ import '../../application/tour_notifier.dart';
 import '../../data/models/tour.dart';
 import '../../../../core/services/sunmi_print_service.dart';
 import '../../data/models/bilan_tour.dart';
-import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
-import 'package:elyf_groupe_app/features/administration/application/providers.dart';
 import 'package:elyf_groupe_app/core/auth/providers.dart';
-import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 
 class ClotureScreen extends ConsumerWidget {
   final String tourId;
@@ -105,9 +102,9 @@ class ClotureScreen extends ConsumerWidget {
                   Container(
                     padding: const EdgeInsets.all(AppDimensions.s16),
                     decoration: BoxDecoration(
-                      color: Colors.green.withOpacity(0.1),
+                      color: Colors.green.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(AppDimensions.r12),
-                      border: Border.all(color: Colors.green.withOpacity(0.5)),
+                      border: Border.all(color: Colors.green.withValues(alpha: 0.5)),
                     ),
                     child: const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -255,7 +252,7 @@ class _BilanRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+
     Color? valueColor;
     if (isPositive) valueColor = Colors.green[700];
     if (isNegative) valueColor = Colors.red[700];

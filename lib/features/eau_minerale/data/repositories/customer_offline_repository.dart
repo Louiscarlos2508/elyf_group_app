@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import '../../../../core/errors/app_exceptions.dart';
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/connectivity_service.dart';
@@ -273,6 +274,54 @@ class CustomerOfflineRepository implements CustomerRepository {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       AppLogger.error(
         'Error deleting customer: $id',
+        name: 'CustomerOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      throw appException;
+    }
+  }
+
+  @override
+  Future<void> updateCustomer({
+    required String id,
+    String? name,
+    String? phone,
+    String? cnib,
+  }) async {
+    try {
+      final existing = await _getCustomerById(id);
+      if (existing == null) throw NotFoundException('Client non trouvé: $id');
+
+      final updatedName = name ?? existing['name'] as String? ?? 'Inconnu';
+      final updatedPhone = phone ?? existing['phone'] as String? ?? existing['phoneNumber'] as String? ?? '';
+      final updatedCnib = cnib ?? existing['cnib'] as String?;
+
+      await _saveCustomerToLocal(
+        id: id,
+        name: updatedName,
+        phone: updatedPhone,
+        cnib: updatedCnib,
+        isLocal: existing['remoteId'] == null,
+      );
+
+      // Queue sync operation
+      await syncManager.queueUpdate(
+        collectionName: collectionName,
+        localId: existing['localId'] as String,
+        remoteId: (existing['remoteId'] as String?) ?? '',
+        data: {
+          'name': updatedName,
+          'phoneNumber': updatedPhone,
+          'cnib': updatedCnib,
+          'updatedAt': DateTime.now().toIso8601String()
+        },
+        enterpriseId: enterpriseId,
+      );
+    } catch (error, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
+      AppLogger.error(
+        'Error updating customer: $id',
         name: 'CustomerOfflineRepository',
         error: error,
         stackTrace: stackTrace,

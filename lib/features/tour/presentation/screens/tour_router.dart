@@ -25,8 +25,8 @@ final tourRouterRoutes = [
   ),
   ShellRoute(
     builder: (context, state, child) => TourShell(
-      child: child,
       tourId: state.pathParameters['tourId'] ?? '',
+      child: child,
     ),
     routes: [
       GoRoute(

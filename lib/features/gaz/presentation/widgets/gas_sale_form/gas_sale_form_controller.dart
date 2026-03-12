@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/gas_sale.dart';
 import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
-import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/services/gaz_financial_calculation_service.dart';
 import 'price_stock_manager.dart';
 import 'gas_sale_submit_handler.dart';

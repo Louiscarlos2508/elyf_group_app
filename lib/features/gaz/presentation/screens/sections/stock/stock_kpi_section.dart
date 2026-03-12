@@ -68,10 +68,6 @@ class StockKpiSection extends ConsumerWidget {
         final issueStocks = GazStockCalculationService.filterIssueStocks(allStocks);
         final issueByWeight = GazStockCalculationService.groupStocksByWeight(issueStocks);
 
-        final totalFull = fullByWeight.values.fold<int>(0, (sum, val) => sum + val);
-        final totalEmpty = emptyByWeight.values.fold<int>(0, (sum, val) => sum + val);
-        final totalIssues = issueByWeight.values.fold<int>(0, (sum, val) => sum + val);
-
         final metrics = StockMetrics(
           fullByWeight: fullByWeight,
           emptyByWeight: emptyByWeight,

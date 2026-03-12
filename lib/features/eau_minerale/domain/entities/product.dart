@@ -51,7 +51,7 @@ class Product {
       enterpriseId: enterpriseId ?? this.enterpriseId,
       name: name ?? this.name,
       type: type ?? this.type,
-      role: role ?? this.role,
+      role: role ?? role,
       unitPrice: unitPrice ?? this.unitPrice,
       unit: unit ?? this.unit,
       supplyUnit: supplyUnit ?? this.supplyUnit,

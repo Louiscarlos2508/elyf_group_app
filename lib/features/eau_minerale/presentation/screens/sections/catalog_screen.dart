@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import '../../../application/providers.dart';
-import '../../../domain/entities/product.dart';
 import '../../widgets/product_form_dialog.dart';
 
 class CatalogScreen extends ConsumerWidget {
@@ -12,7 +11,6 @@ class CatalogScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final productsAsync = ref.watch(productsProvider);
-    final theme = Theme.of(context);
 
     return Scaffold(
       body: productsAsync.when(

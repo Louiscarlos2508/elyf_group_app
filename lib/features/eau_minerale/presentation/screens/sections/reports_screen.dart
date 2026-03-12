@@ -6,7 +6,6 @@ import 'package:open_file/open_file.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/core/pdf/eau_minerale_report_pdf_service.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
-import '../../../domain/entities/report_period.dart';
 import '../../widgets/expense_report_content.dart';
 import '../../widgets/forecast_report_content.dart';
 import '../../widgets/production_report_content.dart';
@@ -116,7 +115,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+
 
     return LayoutBuilder(
         builder: (context, constraints) {

@@ -7,12 +7,10 @@ import '../data/models/livraison_entry.dart';
 import '../data/models/frais_entry.dart';
 import '../data/models/bilan_tour.dart';
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
-import 'package:elyf_groupe_app/features/gaz/domain/entities/tour.dart' as Domain;
+import 'package:elyf_groupe_app/features/gaz/domain/entities/tour.dart' as domain;
 import 'package:elyf_groupe_app/features/gaz/domain/entities/pos_remittance.dart';
-import 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder_leak.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/repositories/tour_repository.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/services/tour_service.dart';
-import 'package:elyf_groupe_app/features/gaz/domain/services/transaction_service.dart';
 import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 import 'package:elyf_groupe_app/core/auth/providers.dart';
 import 'package:elyf_groupe_app/core/offline/providers.dart';
@@ -182,7 +180,7 @@ class TourNotifier extends AsyncNotifier<TourState> {
     return _mapDomainToState(tour, formats);
   }
 
-  TourState _mapDomainToState(Domain.Tour tour, List<FormatBouteille> formats) {
+  TourState _mapDomainToState(domain.Tour tour, List<FormatBouteille> formats) {
 
     // 1. Collectes
     final collectes = tour.siteInteractions
@@ -190,7 +188,7 @@ class TourNotifier extends AsyncNotifier<TourState> {
         .map((i) => CollecteEntry(
               siteId: i.siteId,
               siteName: i.siteName,
-              siteType: i.siteType == Domain.SiteType.pos ? TypeSite.pos : TypeSite.grossiste,
+              siteType: i.siteType == domain.SiteType.pos ? TypeSite.pos : TypeSite.grossiste,
               quantitesVides: _mapWeightToFormat(i.emptyBottlesCollected, formats),
               timestamp: i.timestamp,
             ))
@@ -213,7 +211,7 @@ class TourNotifier extends AsyncNotifier<TourState> {
         .map((i) => LivraisonEntry(
               siteId: i.siteId,
               siteName: i.siteName,
-              typeSite: i.siteType == Domain.SiteType.pos ? TypeSite.pos : TypeSite.grossiste,
+              typeSite: i.siteType == domain.SiteType.pos ? TypeSite.pos : TypeSite.grossiste,
               montantEncaisse: i.cashCollected.toInt(),
               timestamp: i.timestamp,
               lignes: i.fullBottlesDelivered.entries.map((e) {
@@ -276,7 +274,7 @@ class TourNotifier extends AsyncNotifier<TourState> {
     };
   }
 
-  TourStatus _mapDomainStatusToUI(Domain.Tour tour) {
+  TourStatus _mapDomainStatusToUI(domain.Tour tour) {
     return TourStatusExtension.fromDomain(tour);
   }
 
@@ -287,11 +285,11 @@ class TourNotifier extends AsyncNotifier<TourState> {
       final activeEnterprise = ref.read(activeEnterpriseProvider).value;
       if (activeEnterprise == null) throw Exception('Aucune entreprise active');
 
-      final tour = Domain.Tour(
+      final tour = domain.Tour(
         id: '', 
         enterpriseId: activeEnterprise.id,
         tourDate: DateTime.now(),
-        status: Domain.TourStatus.open,
+        status: domain.TourStatus.open,
       );
 
       final newId = await _repository.createTour(tour);
@@ -390,7 +388,7 @@ class TourNotifier extends AsyncNotifier<TourState> {
       if (ref.mounted) {
         state = AsyncData(s.copyWith(status: TourStatus.closed));
       }
-    } catch (e, stack) {
+    } catch (e) {
       // Ne pas laisser le notifier dans un état indéfini en cas d'erreur de clôture
       // Mais on re-throw pour que l'UI puisse afficher l'erreur
       rethrow;
@@ -407,11 +405,11 @@ class TourNotifier extends AsyncNotifier<TourState> {
       for (final f in formats) _getWeightFromLabel(f.label): f.id
     };
 
-    final siteInteraction = Domain.TourSiteInteraction(
+    final siteInteraction = domain.TourSiteInteraction(
       id: LocalIdGenerator.generate(),
       siteId: entry.siteId,
       siteName: entry.siteName,
-      siteType: entry.siteType == TypeSite.pos ? Domain.SiteType.pos : Domain.SiteType.wholesaler,
+      siteType: entry.siteType == TypeSite.pos ? domain.SiteType.pos : domain.SiteType.wholesaler,
       emptyBottlesCollected: _mapFormatToWeight(entry.quantitesVides),
       fullBottlesDelivered: {},
       timestamp: entry.timestamp,
@@ -468,11 +466,11 @@ class TourNotifier extends AsyncNotifier<TourState> {
 
       if (diffEmpty.isNotEmpty) {
         // Appliquer la correction via une interaction technique
-        final correction = Domain.TourSiteInteraction(
+        final correction = domain.TourSiteInteraction(
           id: 'correction_${LocalIdGenerator.generate()}',
           siteId: siteId,
           siteName: updated.siteName,
-          siteType: updated.siteType == TypeSite.pos ? Domain.SiteType.pos : Domain.SiteType.wholesaler,
+          siteType: updated.siteType == TypeSite.pos ? domain.SiteType.pos : domain.SiteType.wholesaler,
           emptyBottlesCollected: diffEmpty,
           fullBottlesDelivered: {},
           timestamp: DateTime.now(),
@@ -540,11 +538,11 @@ class TourNotifier extends AsyncNotifier<TourState> {
       }
 
       if (diffFull.isNotEmpty) {
-        final correction = Domain.TourSiteInteraction(
+        final correction = domain.TourSiteInteraction(
           id: 'correction_${LocalIdGenerator.generate()}',
           siteId: siteId,
           siteName: updated.siteName,
-          siteType: updated.typeSite == TypeSite.grossiste ? Domain.SiteType.wholesaler : Domain.SiteType.pos,
+          siteType: updated.typeSite == TypeSite.grossiste ? domain.SiteType.wholesaler : domain.SiteType.pos,
           emptyBottlesCollected: {},
           fullBottlesDelivered: diffFull,
           timestamp: DateTime.now(),
@@ -587,11 +585,11 @@ class TourNotifier extends AsyncNotifier<TourState> {
 
     await _service.addSiteInteraction(
       tourId: s.tourId,
-      record: Domain.TourSiteInteraction(
+      record: domain.TourSiteInteraction(
         id: LocalIdGenerator.generate(),
         siteId: entry.siteId,
         siteName: entry.siteName,
-        siteType: entry.typeSite == TypeSite.grossiste ? Domain.SiteType.wholesaler : Domain.SiteType.pos,
+        siteType: entry.typeSite == TypeSite.grossiste ? domain.SiteType.wholesaler : domain.SiteType.pos,
         emptyBottlesCollected: {},
         fullBottlesDelivered: _mapFormatToWeight(
           entry.lignes.fold<Map<FormatBouteille, int>>({}, (map, ligne) {
@@ -620,8 +618,8 @@ class TourNotifier extends AsyncNotifier<TourState> {
     // Ajout persistant dans le domaine
     final tour = await _repository.getTourById(s.tourId);
     if (tour != null) {
-      final updatedExpenses = List<Domain.TransportExpense>.from(tour.transportExpenses)
-        ..add(Domain.TransportExpense(
+      final updatedExpenses = List<domain.TransportExpense>.from(tour.transportExpenses)
+        ..add(domain.TransportExpense(
           id: frais.id,
           category: frais.categorie.name,
           amount: frais.montant.toDouble(),
@@ -629,7 +627,7 @@ class TourNotifier extends AsyncNotifier<TourState> {
           expenseDate: DateTime.now(),
         ));
       
-      final newStatus = tour.status == Domain.TourStatus.open ? Domain.TourStatus.collecting : tour.status;
+      final newStatus = tour.status == domain.TourStatus.open ? domain.TourStatus.collecting : tour.status;
     
     await _repository.updateTour(tour.copyWith(
       transportExpenses: updatedExpenses,
@@ -702,7 +700,7 @@ class TourNotifier extends AsyncNotifier<TourState> {
 }
 
 // Providers
-final tourNotifierProvider = AsyncNotifierProvider.family.autoDispose<TourNotifier, TourState, String>((id) => TourNotifier(id));
+final tourNotifierProvider = AsyncNotifierProvider.family.autoDispose<TourNotifier, TourState, String>(TourNotifier.new);
 
 final truckStateProvider = Provider.family.autoDispose<TruckState, String>((ref, tourId) {
   return ref.watch(tourNotifierProvider(tourId)).value?.truckState ?? TruckState.empty();
@@ -730,7 +728,7 @@ final enhancedBilanProvider = FutureProvider.family<BilanTour?, String>((ref, to
   if (tour == null) return basicBilan;
 
   // Si le tour n'est pas clôturé, on s'arrête au bilan de base
-  if (tour.status != Domain.TourStatus.closed || tour.closureDate == null) {
+  if (tour.status != domain.TourStatus.closed || tour.closureDate == null) {
     return basicBilan;
   }
 
@@ -738,7 +736,7 @@ final enhancedBilanProvider = FutureProvider.family<BilanTour?, String>((ref, to
   final allTours = await tourRepository.getTours(tour.enterpriseId);
   final nextTour = allTours
       .where((t) => t.tourDate.isAfter(tour.closureDate!))
-      .fold<Domain.Tour?>(null, (prev, curr) => (prev == null || curr.tourDate.isBefore(prev.tourDate)) ? curr : prev);
+      .fold<domain.Tour?>(null, (prev, curr) => (prev == null || curr.tourDate.isBefore(prev.tourDate)) ? curr : prev);
   
   final startDateForSearch = tour.closureDate!;
   final endDateForSearch = nextTour?.tourDate ?? DateTime.now();

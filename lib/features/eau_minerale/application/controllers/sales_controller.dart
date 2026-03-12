@@ -1,8 +1,7 @@
 import 'stock_controller.dart';
 import '../../domain/entities/sale.dart';
-import '../../domain/entities/closing.dart';
 import '../../domain/repositories/product_repository.dart';
-import '../../domain/repositories/closing_repository.dart';
+
 import '../../domain/repositories/sale_repository.dart';
 import '../../domain/repositories/treasury_repository.dart';
 import '../../../audit_trail/domain/services/audit_trail_service.dart';
@@ -18,7 +17,6 @@ class SalesController {
     this._productRepository,
     this._auditTrailService,
     this._treasuryRepository,
-    this._closingRepository,
   );
 
   final SaleRepository _saleRepository;
@@ -26,7 +24,6 @@ class SalesController {
   final ProductRepository _productRepository;
   final AuditTrailService _auditTrailService;
   final TreasuryRepository _treasuryRepository;
-  final ClosingRepository _closingRepository;
 
   Future<SalesState> fetchRecentSales() async {
     final sales = await _saleRepository.fetchSales();
@@ -63,7 +60,7 @@ class SalesController {
           await _stockController.recordExit(
             id: stockMovementId,
             productId: sale.productId,
-            productName: sale.productName ?? 'Produit',
+            productName: sale.productName,
             quantite: sale.quantity.toDouble(),
             raison: 'Vente',
             notes: 'Vente ${sale.productName}',
@@ -98,6 +95,128 @@ class SalesController {
     }
   }
 
+  /// Met à jour une vente existante.
+  Future<void> updateSale(Sale oldSale, Sale newSale, String userId) async {
+    try {
+      // 1. Mettre à jour la vente dans le dépôt
+      await _saleRepository.updateSale(newSale);
+
+      // 2. Ajuster le stock si nécessaire
+      bool isFinishedGood = false;
+      try {
+        final product = await _productRepository.getProduct(newSale.productId);
+        isFinishedGood = product?.isFinishedGood == true;
+      } catch (e) {
+        AppLogger.error('Error checking product type: $e', name: 'SalesController');
+      }
+
+      if (isFinishedGood) {
+        final double qtyDiff = newSale.quantity.toDouble() - oldSale.quantity.toDouble();
+        if (qtyDiff != 0) {
+          final adjustmentId = 'local_stk_adj_${newSale.id}_${DateTime.now().millisecondsSinceEpoch}';
+          if (qtyDiff > 0) {
+            // Plus vendu = Sortie supplémentaire
+            await _stockController.recordExit(
+              id: adjustmentId,
+              productId: newSale.productId,
+              productName: newSale.productName,
+              quantite: qtyDiff,
+              raison: 'Ajustement Vente (Augmentation)',
+              notes: 'Correction quantité vente ${newSale.id}',
+            );
+          } else {
+            // Moins vendu = Entrée (restauration)
+            await _stockController.recordEntry(
+              id: adjustmentId,
+              productId: newSale.productId,
+              productName: newSale.productName,
+              quantite: -qtyDiff,
+              raison: 'Ajustement Vente (Diminution)',
+              notes: 'Correction quantité vente ${newSale.id}',
+            );
+          }
+        }
+      }
+
+      // 3. Ajuster la trésorerie si nécessaire
+      // Approche simple: Annuler les anciennes opérations de trésorerie et en créer de nouvelles
+      // Ou mieux: Ajuster la différence. Pour la simplicité et la traçabilité:
+      await _adjustTreasuryForSaleUpdate(oldSale, newSale, userId);
+
+      // 4. Audit
+      try {
+        await _auditTrailService.logAction(
+          enterpriseId: newSale.enterpriseId,
+          userId: userId,
+          action: 'UPDATE_SALE',
+          module: 'eau_minerale',
+          entityId: newSale.id,
+          entityType: 'sale',
+          metadata: {
+            'saleId': newSale.id,
+            'oldQuantity': oldSale.quantity,
+            'newQuantity': newSale.quantity,
+            'oldTotal': oldSale.totalPrice,
+            'newTotal': newSale.totalPrice,
+          },
+        );
+      } catch (e) {
+        AppLogger.error('Failed to log update sale audit', error: e);
+      }
+
+    } catch (e, st) {
+      AppLogger.error('Error in updateSale: $e', name: 'SalesController', error: e, stackTrace: st);
+      rethrow;
+    }
+  }
+
+  Future<void> _adjustTreasuryForSaleUpdate(Sale oldSale, Sale newSale, String userId) async {
+    try {
+      final saleId = newSale.id;
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+
+      // Cash Adjustment
+      final int cashDiff = newSale.cashAmount - oldSale.cashAmount;
+      if (cashDiff != 0) {
+        await _treasuryRepository.createOperation(TreasuryOperation(
+          id: 'local_trs_adj_cash_${saleId}_$timestamp',
+          enterpriseId: newSale.enterpriseId,
+          userId: userId,
+          amount: cashDiff,
+          type: TreasuryOperationType.supply, // 'supply' est utilisé pour les entrées de caisse dans ce module
+          toAccount: PaymentMethod.cash,
+          date: DateTime.now(),
+          reason: 'Ajustement Vente ${newSale.id}',
+          referenceEntityId: newSale.id,
+          referenceEntityType: 'sale_adjustment',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ));
+      }
+
+      // Orange Money Adjustment
+      final int omDiff = newSale.orangeMoneyAmount - oldSale.orangeMoneyAmount;
+      if (omDiff != 0) {
+        await _treasuryRepository.createOperation(TreasuryOperation(
+          id: 'local_trs_adj_om_${saleId}_$timestamp',
+          enterpriseId: newSale.enterpriseId,
+          userId: userId,
+          amount: omDiff,
+          type: TreasuryOperationType.supply,
+          toAccount: PaymentMethod.mobileMoney,
+          date: DateTime.now(),
+          reason: 'Ajustement Vente ${newSale.id} (Orange Money)',
+          referenceEntityId: newSale.id,
+          referenceEntityType: 'sale_adjustment',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ));
+      }
+    } catch (e) {
+      AppLogger.error('Failed to adjust treasury for sale update ${newSale.id}', error: e);
+    }
+  }
+
   /// Annule une vente et restaure le stock.
   Future<void> voidSale(String saleId, String userId) async {
 
@@ -125,7 +244,7 @@ class SalesController {
           await _stockController.recordEntry(
             id: restorationId,
             productId: sale.productId,
-            productName: sale.productName ?? 'Produit',
+            productName: sale.productName,
             quantite: sale.quantity.toDouble(),
             raison: 'Annulation Vente',
             notes: 'Annulation vente ${sale.id}',

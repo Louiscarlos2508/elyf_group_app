@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/boutique/application/providers.dart';
-import '../../../../core/printing/printer_provider.dart';
 
 class BoutiqueShellScreen extends BaseModuleShellScreen {
   const BoutiqueShellScreen({
@@ -50,8 +49,4 @@ class _BoutiqueShellScreenState
     return [];
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return super.build(context);
-  }
 }

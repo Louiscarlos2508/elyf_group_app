@@ -4,8 +4,6 @@ import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
-import '../../domain/entities/credit_payment.dart';
-import '../../domain/entities/sale.dart';
 import 'invoice_print/invoice_print_button.dart';
 import 'invoice_print/invoice_print_service.dart';
 

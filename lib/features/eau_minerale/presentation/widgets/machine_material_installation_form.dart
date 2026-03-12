@@ -5,10 +5,8 @@ import 'package:uuid/uuid.dart';
 import 'package:elyf_groupe_app/core/logging/app_logger.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../domain/entities/machine_material_usage.dart';
-import '../../domain/entities/machine.dart';
 import 'machine_material_usage_form_field.dart' show machineMaterialsDisponiblesProvider;
 import 'package:elyf_groupe_app/shared.dart';
-import '../../domain/entities/product.dart';
 
 /// Formulaire pour installer une matière sur une machine.
 /// (Anciennement BobineInstallationForm).

@@ -111,7 +111,6 @@ class BoutiqueCalculationService {
     DateTime? referenceDate,
   }) {
     final monthStart = getMonthStart(referenceDate);
-    final reference = referenceDate ?? DateTime.now();
     
     final monthSales = sales.where((s) => s.date.isAfter(monthStart.subtract(const Duration(days: 1)))).toList();
     final monthExpenses = expenses.where((e) => e.date.isAfter(monthStart.subtract(const Duration(days: 1)))).toList();

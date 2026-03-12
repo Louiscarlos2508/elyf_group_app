@@ -2,18 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
+import 'package:elyf_groupe_app/core/logging/app_logger.dart';
 import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../../../core/offline/offline_repository.dart';
-import '../../domain/entities/sale.dart';
-import '../../domain/entities/product.dart';
-import '../../domain/repositories/customer_repository.dart';
 import 'sale_product_selector.dart';
 import 'sale_customer_selector.dart';
 
 /// Form for creating/editing a sale record.
 class SaleForm extends ConsumerStatefulWidget {
-  const SaleForm({super.key});
+  const SaleForm({super.key, this.initialSale});
+
+  final Sale? initialSale;
 
   @override
   ConsumerState<SaleForm> createState() => SaleFormState();
@@ -27,6 +27,8 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
   final _unitPriceController = TextEditingController();
   final _amountPaidController = TextEditingController();
   final _notesController = TextEditingController();
+  final _scrollController = ScrollController();
+  final _phoneFocusNode = FocusNode();
 
   Product? _selectedProduct;
   CustomerSummary? _selectedCustomer;
@@ -34,6 +36,80 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
   int _orangeMoneyAmount = 0;
   PaymentMethod _paymentMethod = PaymentMethod.cash;
   bool _showNewCustomerFields = false;
+  bool _isInitialProductSelected = false;
+  bool _submitted = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialSale != null) {
+      _populateFromSale(widget.initialSale!);
+    } else {
+      _loadInitialData();
+    }
+  }
+
+  void _populateFromSale(Sale sale) {
+    _selectedProduct = Product(
+      id: sale.productId,
+      name: sale.productName,
+      type: ProductType.finishedGood,
+      unitPrice: sale.unitPrice,
+      unit: 'unité',
+      enterpriseId: sale.enterpriseId,
+      createdAt: sale.date,
+      updatedAt: sale.date,
+    );
+    
+    _customerNameController.text = sale.customerName;
+    _customerPhoneController.text = sale.customerPhone;
+    _quantityController.text = sale.quantity.toString();
+    _unitPriceController.text = sale.unitPrice.toString();
+    _amountPaidController.text = sale.amountPaid.toString();
+    _notesController.text = sale.notes ?? '';
+    
+    _cashAmount = sale.cashAmount;
+    _orangeMoneyAmount = sale.orangeMoneyAmount;
+    
+    if (sale.cashAmount > 0 && sale.orangeMoneyAmount > 0) {
+      _paymentMethod = PaymentMethod.both;
+    } else if (sale.orangeMoneyAmount > 0) {
+      _paymentMethod = PaymentMethod.orangeMoney;
+    } else {
+      _paymentMethod = PaymentMethod.cash;
+    }
+
+    if (!sale.customerId.startsWith('anonymous')) {
+      _selectedCustomer = CustomerSummary(
+        id: sale.customerId,
+        name: sale.customerName,
+        phone: sale.customerPhone,
+        totalCredit: 0,
+        purchaseCount: 0,
+        lastPurchaseDate: sale.date,
+      );
+      _showNewCustomerFields = false;
+    } else {
+      _selectedCustomer = null;
+      _showNewCustomerFields = (sale.customerName != 'Client Anonyme');
+    }
+  }
+
+  Future<void> _loadInitialData() async {
+    try {
+      final products = await ref.read(productsProvider.future);
+      if (mounted && products.isNotEmpty && !_isInitialProductSelected) {
+        final firstFinishedGood = products.firstWhere(
+          (p) => p.isFinishedGood,
+          orElse: () => products.first,
+        );
+        _handleProductSelected(firstFinishedGood);
+        _isInitialProductSelected = true;
+      }
+    } catch (e) {
+      AppLogger.error('Error loading initial products: $e');
+    }
+  }
 
   @override
   void dispose() {
@@ -43,6 +119,8 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
     _unitPriceController.dispose();
     _amountPaidController.dispose();
     _notesController.dispose();
+    _scrollController.dispose();
+    _phoneFocusNode.dispose();
     super.dispose();
   }
 
@@ -74,6 +152,12 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
       if (customer != null) {
         _customerNameController.text = customer.name;
         _customerPhoneController.text = customer.phone;
+        _showNewCustomerFields = false;
+      } else {
+        // "Nouveau client" signal
+        _customerNameController.clear();
+        _customerPhoneController.clear();
+        _showNewCustomerFields = true;
       }
     });
   }
@@ -265,6 +349,29 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
 
 
   Future<void> submit() async {
+    setState(() => _submitted = true);
+    final formValid = _formKey.currentState?.validate() ?? false;
+    
+    if (!formValid) {
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+      
+      String message = 'Veuillez corriger les erreurs en rouge';
+      
+      // Message plus spécifique pour le crédit
+      if (_isCredit && _selectedCustomer == null) {
+        if (_customerNameController.text.trim().isEmpty) {
+          message = 'Nom requis pour la vente à crédit';
+        }
+      }
+
+      NotificationService.showWarning(context, message);
+      return;
+    }
+
     if (_selectedProduct == null) {
       NotificationService.showWarning(
         context,
@@ -301,8 +408,8 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
       totalPrice: _totalPrice,
       amountPaid: _amountPaid,
       customerId: _selectedCustomer?.id,
-      customerName: _customerNameController.text,
-      customerPhone: _customerPhoneController.text,
+      customerName: _selectedCustomer?.name ?? (_customerNameController.text.isEmpty ? 'Client Anonyme' : _customerNameController.text),
+      customerPhone: _selectedCustomer?.phone ?? _customerPhoneController.text,
       stockOverride: stock,
     );
 
@@ -319,13 +426,23 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
       onSubmit: () async {
         // Si pas de client sélectionné mais nom renseigné, créer un nouveau client
         String customerId = _selectedCustomer?.id ?? '';
-        final customerName = _customerNameController.text.trim();
-        final rawPhone = _customerPhoneController.text.trim();
+        final customerName = _selectedCustomer?.name ?? _customerNameController.text.trim();
+        final rawPhone = _selectedCustomer?.phone ?? _customerPhoneController.text.trim();
         final customerPhone = rawPhone.isEmpty
             ? ''
             : (PhoneUtils.normalizeBurkina(rawPhone) ?? rawPhone);
 
-        if (customerId.isEmpty && customerName.isNotEmpty) {
+        if (customerId.isNotEmpty && _selectedCustomer != null) {
+          // Si le client existe déjà, vérifier s'il faut mettre à jour le téléphone
+          final existingPhone = _selectedCustomer?.phone ?? '';
+          if (customerPhone.isNotEmpty && customerPhone != existingPhone) {
+            final clientsController = ref.read(clientsControllerProvider);
+            await clientsController.updateCustomer(
+              id: customerId,
+              phone: customerPhone,
+            );
+          }
+        } else if (customerId.isEmpty && customerName.isNotEmpty) {
           // Créer le nouveau client via le controller (logique métier dans le controller)
           final clientsController = ref.read(clientsControllerProvider);
           customerId = await clientsController.createCustomer(
@@ -344,37 +461,36 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
         );
 
         final product = _selectedProduct!;
-        final productId = product.id;
-        final productName = product.name;
         final enterpriseId = ref.read(activeEnterpriseIdProvider).value ?? '';
-
-        // Idempotency: Generate Sale ID upfront
-        final saleId = LocalIdGenerator.generate();
+        final userId = ref.read(currentUserIdProvider);
 
         final sale = Sale(
-          id: saleId,
+          id: widget.initialSale?.id ?? LocalIdGenerator.generate(),
           enterpriseId: enterpriseId,
-          productId: productId,
-          productName: productName,
+          productId: product.id,
+          productName: product.name,
           quantity: _quantity!,
           unitPrice: _unitPrice!,
           totalPrice: _totalPrice!,
           amountPaid: _amountPaid!,
-          customerName: customerName,
+          customerName: customerName.isEmpty ? 'Client Anonyme' : customerName,
           customerPhone: customerPhone,
           customerId: customerId,
-          customerCnib: null,
-          date: DateTime.now(),
+          date: widget.initialSale?.date ?? DateTime.now(),
           status: saleStatus,
-          createdBy: 'user-1',
+          createdBy: widget.initialSale?.createdBy ?? userId,
           notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
           cashAmount: _cashAmount,
           orangeMoneyAmount: _orangeMoneyAmount,
+          createdAt: widget.initialSale?.createdAt ?? DateTime.now(),
+          updatedAt: DateTime.now(),
         );
 
-        final userId = ref.read(currentUserIdProvider);
-
-        await ref.read(salesControllerProvider).createSale(sale, userId);
+        if (widget.initialSale != null) {
+          await ref.read(salesControllerProvider).updateSale(widget.initialSale!, sale, userId);
+        } else {
+          await ref.read(salesControllerProvider).createSale(sale, userId);
+        }
 
         if (mounted) {
           // Invalider les providers pour rafraîchir les données
@@ -383,7 +499,7 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
           ref.invalidate(clientsStateProvider);
         }
 
-        return 'Vente enregistrée';
+        return widget.initialSale != null ? 'Vente modifiée' : 'Vente enregistrée';
       },
     );
   }
@@ -392,7 +508,13 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
   Widget build(BuildContext context) {
     return Form(
       key: _formKey,
-      child: LayoutBuilder(
+      autovalidateMode: _submitted
+          ? AutovalidateMode.always
+          : AutovalidateMode.disabled,
+      child: SingleChildScrollView(
+        controller: _scrollController,
+        padding: const EdgeInsets.only(bottom: 24),
+        child: LayoutBuilder(
         builder: (context, constraints) {
           final isWide = constraints.maxWidth >= 700;
           if (isWide) {
@@ -429,6 +551,7 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
           }
         },
       ),
+    ),
     );
   }
 
@@ -454,32 +577,87 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
                     color: colors.primary,
                   ),
                 ),
-                const Spacer(),
-                IconButton.filledTonal(
-                  onPressed: () => setState(() => _showNewCustomerFields = !_showNewCustomerFields),
-                  style: IconButton.styleFrom(
-                    visualDensity: VisualDensity.compact,
-                    padding: EdgeInsets.zero,
-                  ),
-                  icon: Icon(
-                    _showNewCustomerFields ? Icons.remove_rounded : Icons.add_rounded,
-                    size: 18,
-                  ),
-                ),
               ],
             ),
             const SizedBox(height: 20),
-            SaleProductSelector(
-              selectedProduct: _selectedProduct,
-              onProductSelected: _handleProductSelected,
+            FormField<Product?>(
+              initialValue: _selectedProduct,
+              validator: (v) => v == null ? 'Produit requis' : null,
+              builder: (state) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      decoration: state.hasError
+                          ? BoxDecoration(
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: colors.error, width: 2),
+                            )
+                          : null,
+                      child: SaleProductSelector(
+                        selectedProduct: _selectedProduct,
+                        onProductSelected: (p) {
+                          _handleProductSelected(p);
+                          state.didChange(p);
+                        },
+                      ),
+                    ),
+                    if (state.hasError)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 12, top: 4),
+                        child: Text(
+                          state.errorText!,
+                          style: theme.textTheme.labelSmall?.copyWith(color: colors.error),
+                        ),
+                      ),
+                  ],
+                );
+              },
             ),
             const SizedBox(height: 16),
-            SaleCustomerSelector(
-              selectedCustomer: _selectedCustomer,
-              onCustomerSelected: _handleCustomerSelected,
+            FormField<CustomerSummary?>(
+              initialValue: _selectedCustomer,
+              validator: (v) {
+                if (_isCredit) {
+                  if (v == null && _selectedCustomer == null && _customerNameController.text.trim().isEmpty) {
+                    return 'Nom requis pour le crédit';
+                  }
+                }
+                return null;
+              },
+              builder: (state) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      decoration: state.hasError
+                          ? BoxDecoration(
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: colors.error, width: 2),
+                            )
+                          : null,
+                      child: SaleCustomerSelector(
+                        selectedCustomer: _selectedCustomer,
+                        onCustomerSelected: (c) {
+                          _handleCustomerSelected(c);
+                          state.didChange(c);
+                        },
+                      ),
+                    ),
+                    if (state.hasError)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 12, top: 4),
+                        child: Text(
+                          state.errorText!,
+                          style: theme.textTheme.labelSmall?.copyWith(color: colors.error),
+                        ),
+                      ),
+                  ],
+                );
+              },
             ),
             const SizedBox(height: 16),
-            if (_showNewCustomerFields || _isCredit) ...[
+            if (_showNewCustomerFields || (_isCredit && _selectedCustomer == null)) ...[
               TextFormField(
                 controller: _customerNameController,
                 decoration: _buildInputDecoration(
@@ -489,8 +667,10 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
                   helperText: _isCredit ? 'Obligatoire pour le crédit' : 'Laisser vide pour client anonyme',
                 ),
                 validator: (v) {
-                  if (_isCredit && (v == null || v.trim().isEmpty)) {
-                    return 'Nom obligatoire pour le crédit';
+                  if ((_showNewCustomerFields || _isCredit) && _selectedCustomer == null) {
+                    if (v == null || v.trim().isEmpty) {
+                      return 'Nom obligatoire';
+                    }
                   }
                   return null;
                 },
@@ -498,17 +678,15 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _customerPhoneController,
+                focusNode: _phoneFocusNode,
                 decoration: _buildInputDecoration(
                   context,
-                  label: 'Téléphone${_isCredit ? ' (Requis)' : ''}',
+                  label: 'Téléphone',
                   icon: Icons.phone_android_rounded,
                   hintText: '70 00 00 00',
                 ),
                 keyboardType: TextInputType.phone,
                 validator: (v) {
-                  if (_isCredit && (v == null || v.trim().isEmpty)) {
-                    return 'Téléphone obligatoire pour le crédit';
-                  }
                   if (v != null && v.trim().isNotEmpty) {
                     return Validators.phoneBurkina(v);
                   }

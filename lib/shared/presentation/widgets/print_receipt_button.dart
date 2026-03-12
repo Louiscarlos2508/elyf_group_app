@@ -2,14 +2,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/shared.dart';
-import 'package:elyf_groupe_app/features/boutique/application/providers.dart';
 import '../../../core/printing/printer_provider.dart';
 import 'package:elyf_groupe_app/features/boutique/domain/entities/sale.dart';
 import 'package:elyf_groupe_app/features/immobilier/domain/entities/payment.dart';
 import 'package:elyf_groupe_app/core/printing/templates/payment_receipt_template.dart';
 import 'package:elyf_groupe_app/features/immobilier/presentation/widgets/payment_card_helpers.dart';
-import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
-import 'package:elyf_groupe_app/shared/utils/date_formatter.dart';
 import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
 
 /// Bouton d'impression de facture supportant plusieurs types d'imprimantes via activePrinterProvider.

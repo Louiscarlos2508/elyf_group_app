@@ -3,8 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../application/providers.dart';
 import '../../../../../shared/utils/notification_service.dart';
-import '../../../domain/entities/production_session.dart';
-import '../../../domain/entities/production_session_status.dart';
 
 /// Widget pour l'étape "Draft" (brouillon) de la session de production.
 class DraftStep extends ConsumerWidget {

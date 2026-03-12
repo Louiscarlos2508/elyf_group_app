@@ -83,6 +83,7 @@ class SyncManager {
   Timer? _autoSyncTimer;
   StreamSubscription<ConnectivityStatus>? _connectivitySubscription;
   StreamSubscription<List<SyncOperation>>? _pendingOperationsSubscription;
+  StreamSubscription<User?>? _authSubscription;
   bool _isSyncing = false;
   bool _isInitialized = false;
   DateTime? _lastPushSyncTime;
@@ -122,7 +123,8 @@ class SyncManager {
   }
 
   void _startAuthListener() {
-    FirebaseAuth.instance.authStateChanges().listen((user) async {
+    _authSubscription?.cancel();
+    _authSubscription = FirebaseAuth.instance.authStateChanges().listen((user) async {
       if (_isInitialized) {
         if (user != null) {
           AppLogger.info(
@@ -158,6 +160,7 @@ class SyncManager {
   /// [essentialOnly] if true, only sync critical/high priority collections.
   Future<SyncResult> syncPendingOperations({bool essentialOnly = false}) async {
     if (kIsWeb) return const SyncResult(success: true, message: 'No-op on Web', syncedCount: 0);
+    if (!_isInitialized) return const SyncResult(success: false, message: 'SyncManager not initialized', syncedCount: 0);
     
     final String syncId = 's-${DateTime.now().millisecondsSinceEpoch.toString().substring(9)}';
 
@@ -204,7 +207,7 @@ class SyncManager {
     );
 
     _isSyncing = true;
-    _syncStatusController.add(SyncProgress.started());
+    _safeAdd(SyncProgress.started());
 
     try {
       // Wrap the sync logic in a local function to apply timeout (Watchdog)
@@ -215,7 +218,7 @@ class SyncManager {
           name: 'offline.sync',
         );
         _isSyncing = false;
-        return SyncResult(
+        return const SyncResult(
           success: false,
           message: 'Sync watchdog timeout',
           syncedCount: 0,
@@ -226,7 +229,7 @@ class SyncManager {
     } catch (e, stackTrace) {
       _isSyncing = false;
       final errorMsg = 'Sync session [$syncId] failed: $e';
-      _syncStatusController.add(SyncProgress.failed(errorMsg));
+      _safeAdd(SyncProgress.failed(errorMsg));
       AppLogger.error(errorMsg, name: 'offline.sync', error: e, stackTrace: stackTrace);
       return SyncResult(
         success: false,
@@ -243,7 +246,7 @@ class SyncManager {
       final pendingCount = await getPendingCount();
       if (pendingCount == 0) {
         _isSyncing = false;
-        _syncStatusController.add(SyncProgress.completed(0));
+        _safeAdd(SyncProgress.completed(0));
         return const SyncResult(
           success: true,
           message: 'No pending operations',
@@ -271,7 +274,7 @@ class SyncManager {
           name: 'offline.sync',
         );
         _isSyncing = false;
-        _syncStatusController.add(SyncProgress.completed(0));
+        _safeAdd(SyncProgress.completed(0));
         return const SyncResult(
           success: true,
           message: 'Non-essential items deferred',
@@ -298,7 +301,7 @@ class SyncManager {
           name: 'offline.sync',
         );
         _isSyncing = false;
-        _syncStatusController.add(SyncProgress.completed(0));
+        _safeAdd(SyncProgress.completed(0));
         return const SyncResult(
           success: true,
           message: 'Retrying later...',
@@ -325,8 +328,8 @@ class SyncManager {
           errors.add('Sync stopped: Too many consecutive failures');
           break;
         }
-
-        _syncStatusController.add(
+        
+        _safeAdd(
           SyncProgress.inProgress(
             current: i + 1,
             total: operations.length,
@@ -409,7 +412,7 @@ class SyncManager {
       }
 
       _isSyncing = false;
-      _syncStatusController.add(SyncProgress.completed(syncedCount));
+      _safeAdd(SyncProgress.completed(syncedCount));
       _lastPushSyncTime = DateTime.now();
 
       final result = SyncResult(
@@ -808,6 +811,8 @@ class SyncManager {
     _connectivitySubscription = null;
     await _pendingOperationsSubscription?.cancel();
     _pendingOperationsSubscription = null;
+    await _authSubscription?.cancel();
+    _authSubscription = null;
     await _syncStatusController.close();
     
     // Log des métriques finales avant de disposer
@@ -815,6 +820,12 @@ class SyncManager {
     
     _isInitialized = false;
     AppLogger.info('SyncManager disposed', name: 'offline.sync');
+  }
+
+  void _safeAdd(SyncProgress progress) {
+    if (!_syncStatusController.isClosed) {
+      _syncStatusController.add(progress);
+    }
   }
 }
 

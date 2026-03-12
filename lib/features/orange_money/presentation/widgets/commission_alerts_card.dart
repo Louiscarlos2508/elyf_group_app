@@ -92,14 +92,14 @@ class CommissionAlertsCard extends ConsumerWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: alert.color.withOpacity(0.3)),
+          border: Border.all(color: alert.color.withValues(alpha: 0.3)),
         ),
         child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: alert.color.withOpacity(0.1),
+                color: alert.color.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Icon(alert.icon, color: alert.color, size: 20),
@@ -165,6 +165,5 @@ class CommissionAlertsCard extends ConsumerWidget {
     return alerts;
 
 
-    return alerts;
   }
 }

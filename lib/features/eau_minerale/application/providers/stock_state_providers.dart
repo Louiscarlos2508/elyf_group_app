@@ -4,7 +4,6 @@ import 'package:elyf_groupe_app/features/eau_minerale/application/controllers/st
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers/controller_providers.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers/service_providers.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/stock_movement.dart';
-import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/stock_item.dart';
 
 export 'package:elyf_groupe_app/features/eau_minerale/domain/entities/stock_item.dart';
 

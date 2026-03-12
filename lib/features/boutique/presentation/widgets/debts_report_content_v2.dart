@@ -39,7 +39,7 @@ class DebtsReportContentV2 extends ConsumerWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.red.withOpacity(0.3),
+            color: Colors.red.withValues(alpha: 0.3),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -150,7 +150,7 @@ class DebtsReportContentV2 extends ConsumerWidget {
         ...topSuppliers.map((s) => Card(
           margin: const EdgeInsets.only(bottom: 8),
           elevation: 0,
-          color: Colors.grey.withOpacity(0.05),
+          color: Colors.grey.withValues(alpha: 0.05),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           child: ListTile(
             title: Text(s.supplierName, style: const TextStyle(fontWeight: FontWeight.w600)),

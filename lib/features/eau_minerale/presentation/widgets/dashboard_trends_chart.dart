@@ -4,8 +4,6 @@ import 'package:fl_chart/fl_chart.dart';
 
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import 'package:elyf_groupe_app/shared.dart';
-import '../../domain/entities/production_session.dart';
-import '../../domain/entities/sale.dart';
 
 /// Chart displaying sales and production trends for the last 7 days.
 class DashboardTrendsChart extends ConsumerWidget {

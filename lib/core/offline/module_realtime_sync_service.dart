@@ -321,9 +321,16 @@ class ModuleRealtimeSyncService {
       
       // Déterminer l'ID de l'entreprise à utiliser pour le chemin Firestore
       final isShared = ModuleDataSyncService.sharedCollections[moduleId]?.contains(collectionName) ?? false;
-      final effectivePathEnterpriseId = (isShared && parentEnterpriseId != null) 
-          ? parentEnterpriseId 
-          : enterpriseId;
+      
+      if (isShared && parentEnterpriseId == null) {
+        AppLogger.warning(
+          'SYNC WARNING: Collection $collectionName is shared but parentEnterpriseId is null for enterprise $enterpriseId. Skipping realtime sync to avoid permission errors.',
+          name: 'module.realtime.sync',
+        );
+        return;
+      }
+
+      final effectivePathEnterpriseId = isShared ? parentEnterpriseId! : enterpriseId;
 
       final fullPath = pathBuilder(effectivePathEnterpriseId);
       final collectionRef = firestore.collection(fullPath);

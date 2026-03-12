@@ -45,7 +45,6 @@ class _WholesalerFormDialogState extends ConsumerState<WholesalerFormDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final isEditing = widget.wholesaler != null;
 
     return AlertDialog(

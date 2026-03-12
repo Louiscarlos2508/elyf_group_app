@@ -5,7 +5,6 @@ import '../repositories/gaz_settings_repository.dart';
 import '../repositories/gas_repository.dart';
 import '../../../administration/domain/repositories/enterprise_repository.dart';
 import '../entities/site_logistics_record.dart';
-import '../entities/tour.dart';
 import '../entities/pos_remittance.dart';
 import '../entities/cylinder_leak.dart';
 

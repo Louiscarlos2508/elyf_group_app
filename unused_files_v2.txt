@@ -1,0 +1,24 @@
+Unused files:
+lib/shared/widgets/actionable_empty_state.dart
+lib/core/offline/drift/app_database.g.dart
+lib/core/firebase/firestore_service.dart
+lib/core/firebase/functions_service.dart
+lib/core/errors/error_logger.dart
+lib/core/errors/error_widget.dart
+lib/features/administration/presentation/screens/sections/admin_roles_section.dart
+lib/features/administration/presentation/widgets/enterprises/enterprise_tree_view.dart
+lib/features/administration/application/tenant_providers.dart
+lib/features/modules/presentation/widgets/module_home_scaffold.dart
+lib/features/orange_money/presentation/widgets/agents/agent_account_table_row.dart
+lib/features/orange_money/presentation/widgets/agents/agencies_table_row.dart
+lib/features/orange_money/presentation/widgets/new_customer_form/transaction_info_card.dart
+lib/features/orange_money/presentation/widgets/new_customer_form/id_type_field.dart
+lib/features/orange_money/domain/services/customer_service.dart
+lib/features/eau_minerale/presentation/widgets/enhanced_kpi_card.dart
+lib/features/gaz/presentation/widgets/enhanced_kpi_card.dart
+lib/features/gaz/presentation/widgets/expenses_empty_state.dart
+lib/features/gaz/presentation/widgets/dashboard_point_of_sale_performance.dart
+lib/features/gaz/presentation/widgets/wholesale_price/wholesale_price_header.dart
+lib/features/gaz/presentation/widgets/wholesale_price/wholesale_price_row.dart
+lib/features/gaz/presentation/widgets/point_of_sale_table/pos_associate_cylinders_dialog.dart
+lib/features/immobilier/presentation/widgets/reports_helpers.dart

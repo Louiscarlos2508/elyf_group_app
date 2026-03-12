@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import '../../../application/providers.dart';
-import '../../../domain/entities/production_day.dart';
 import '../../../domain/services/payment_reconciliation_service.dart';
 import 'package:intl/intl.dart';
 

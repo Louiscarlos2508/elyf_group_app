@@ -4,8 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
-import '../../domain/entities/stock_item.dart';
-import '../../domain/entities/product.dart';
 
 class StockAdjustmentForm extends ConsumerStatefulWidget {
   const StockAdjustmentForm({
@@ -50,7 +48,6 @@ class StockAdjustmentFormState extends ConsumerState<StockAdjustmentForm> {
     setState(() => _isLoading = true);
     try {
       final stockController = ref.read(stockControllerProvider);
-      final quantite = double.parse(_quantityController.text);
       final justificatif = _justificatifController.text.trim();
 
       if (justificatif.isEmpty) {
@@ -61,7 +58,7 @@ class StockAdjustmentFormState extends ConsumerState<StockAdjustmentForm> {
       final isAddition = _direction == _AdjustmentDirection.addition;
       final prefix = isAddition ? '[AJOUT]' : '[RETRAIT]';
       
-      double inputQuantite = double.parse(_quantityController.text);
+      final double inputQuantite = double.parse(_quantityController.text);
       double quantiteFinale = inputQuantite;
       String lotContext = '';
 
@@ -95,11 +92,15 @@ class StockAdjustmentFormState extends ConsumerState<StockAdjustmentForm> {
       ref.invalidate(stockStateProvider);
       ref.invalidate(stockMovementsProvider);
       
-      NotificationService.showSuccess(context, 'Stock mis à jour');
+      if (mounted) {
+        NotificationService.showSuccess(context, 'Stock mis à jour');
+      }
       if (widget.onSuccess != null) widget.onSuccess!();
       return true;
     } catch (e) {
-      NotificationService.showError(context, e.toString());
+      if (mounted) {
+        NotificationService.showError(context, e.toString());
+      }
       return false;
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -153,7 +154,7 @@ class StockAdjustmentFormState extends ConsumerState<StockAdjustmentForm> {
               return ElyfCard(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: DropdownButtonFormField<Product>(
-                  value: _selectedProduct,
+                  initialValue: _selectedProduct,
                   decoration: const InputDecoration(
                     labelText: 'Produit à ajuster',
                     border: InputBorder.none,
@@ -195,7 +196,7 @@ class StockAdjustmentFormState extends ConsumerState<StockAdjustmentForm> {
                   ),
                   value: _isEntryByLot,
                   onChanged: (val) => setState(() => _isEntryByLot = val),
-                  activeColor: colorTheme,
+                  activeThumbColor: colorTheme,
                   secondary: Icon(Icons.layers_outlined, color: _isEntryByLot ? colorTheme : colors.onSurfaceVariant),
                 ),
               ),
@@ -241,7 +242,7 @@ class StockAdjustmentFormState extends ConsumerState<StockAdjustmentForm> {
 
           if (widget.showSubmitButton) 
             ElevatedButton(
-              onPressed: _isLoading ? null : () => submit(),
+              onPressed: _isLoading ? null : submit,
               style: ElevatedButton.styleFrom(
                 backgroundColor: colorTheme,
                 foregroundColor: Colors.white,

@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
-import '../../domain/repositories/customer_repository.dart';
 
 
 class SaleCustomerSelector extends ConsumerWidget {
@@ -19,17 +18,14 @@ class SaleCustomerSelector extends ConsumerWidget {
   Future<void> _selectCustomer(BuildContext context, WidgetRef ref) async {
     final customers = await ref.read(customerRepositoryProvider).fetchCustomers();
 
-    if (customers.isEmpty) {
-      if (!context.mounted) return;
-      NotificationService.showInfo(context, 'Aucun client disponible');
-      return;
-    }
+
+    if (!context.mounted) return;
 
     if (!context.mounted) return;
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
 
-    final selected = await showDialog<CustomerSummary>(
+    final selected = await showDialog<dynamic>(
       context: context,
       builder: (context) => Dialog(
         backgroundColor: Colors.transparent,
@@ -96,7 +92,7 @@ class SaleCustomerSelector extends ConsumerWidget {
                           borderRadius: 20,
                           backgroundColor: colors.primary.withValues(alpha: 0.05),
                           borderColor: colors.primary.withValues(alpha: 0.2),
-                          onTap: () => Navigator.of(context).pop<CustomerSummary?>(null),
+                          onTap: () => Navigator.of(context).pop('NEW'),
                           child: Padding(
                             padding: const EdgeInsets.all(16),
                             child: Row(
@@ -209,7 +205,13 @@ class SaleCustomerSelector extends ConsumerWidget {
       ),
     );
 
-    if (selected != null) onCustomerSelected(selected);
+    if (selected != null) {
+      if (selected == 'NEW') {
+        onCustomerSelected(null);
+      } else if (selected is CustomerSummary) {
+        onCustomerSelected(selected);
+      }
+    }
   }
 
   @override

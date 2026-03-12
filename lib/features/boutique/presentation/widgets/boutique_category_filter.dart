@@ -70,7 +70,7 @@ class BoutiqueCategoryFilter extends StatelessWidget {
           side: BorderSide(
             color: isSelected 
                 ? (color ?? colorScheme.primary) 
-                : colorScheme.outline.withOpacity(0.5),
+                : colorScheme.outline.withValues(alpha: 0.5),
           ),
         ),
       ),

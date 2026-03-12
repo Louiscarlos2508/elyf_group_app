@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../core/printing/printer_provider.dart';
 import '../../../features/boutique/domain/entities/closing.dart';
-import '../../../features/boutique/application/providers.dart';
 
 /// Bouton d'impression de Z-Report (clôture) avec détection automatique Sunmi.
 class PrintZReportButton extends ConsumerStatefulWidget {

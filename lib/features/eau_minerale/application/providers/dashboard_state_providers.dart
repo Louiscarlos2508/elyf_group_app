@@ -8,7 +8,6 @@ import 'package:elyf_groupe_app/features/eau_minerale/application/providers/serv
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers/credit_state_providers.dart' show salaryStateProvider;
 import 'package:elyf_groupe_app/features/eau_minerale/application/controllers/sales_controller.dart' show SalesState;
 import 'package:elyf_groupe_app/features/eau_minerale/application/controllers/finances_controller.dart' show FinancesState;
-import 'package:elyf_groupe_app/features/eau_minerale/application/controllers/clients_controller.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/expense_record.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/controllers/salary_controller.dart' show SalaryState;
 import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/production_session.dart';
@@ -20,7 +19,6 @@ import 'package:elyf_groupe_app/core/domain/entities/expense_balance_data.dart';
 import 'package:elyf_groupe_app/shared/domain/entities/treasury_operation.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/machine.dart';
 
-import 'state_providers.dart' show electricityMeterTypeProvider, electricityRateProvider;
 
 export 'package:elyf_groupe_app/features/eau_minerale/domain/entities/machine.dart';
 export 'package:elyf_groupe_app/features/eau_minerale/domain/entities/expense_report_data.dart';

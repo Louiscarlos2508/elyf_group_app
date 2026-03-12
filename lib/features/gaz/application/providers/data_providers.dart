@@ -3,7 +3,6 @@ import 'package:rxdart/rxdart.dart';
 import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 import 'package:elyf_groupe_app/features/administration/application/providers.dart';
 import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
-import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
 import 'package:elyf_groupe_app/shared/domain/entities/treasury_operation.dart';
 
 import '../../domain/entities/cylinder.dart';
@@ -20,7 +19,6 @@ import '../../domain/entities/stock_alert.dart';
 import '../../domain/entities/stock_movement.dart';
 import '../../domain/entities/tour.dart';
 import '../../domain/entities/wholesaler.dart';
-import '../../domain/entities/report_data.dart';
 import '../../domain/entities/gaz_settings.dart';
 import '../../domain/entities/gaz_treasury_synthesis.dart';
 import '../../domain/entities/gaz_inventory_audit.dart';
@@ -274,7 +272,7 @@ final gazYearlyToursProvider = Provider<AsyncValue<List<Tour>>>((ref) {
       final yearTours = tours.where((t) => !t.tourDate.isBefore(yearStart)).toList()..sort((a, b) => b.tourDate.compareTo(a.tourDate));
       if (yearTours.isEmpty && tours.isNotEmpty) return AsyncData(tours..sort((a, b) => b.tourDate.compareTo(a.tourDate)));
       return AsyncData(yearTours);
-    }, loading: () => const AsyncLoading(), error: (e, s) => AsyncError(e, s));
+    }, loading: () => const AsyncLoading(), error: AsyncError.new);
   } catch (e, stackTrace) {
     return AsyncError(e, stackTrace);
   }

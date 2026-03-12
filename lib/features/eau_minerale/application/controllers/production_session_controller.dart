@@ -3,24 +3,18 @@ import '../../domain/entities/production_session.dart';
 import '../../domain/entities/production_session_status.dart';
 import '../../domain/repositories/production_session_repository.dart';
 import '../../../audit_trail/domain/services/audit_trail_service.dart';
-import '../../domain/repositories/product_repository.dart';
 import '../../domain/services/machine_material_cost_service.dart';
 import '../../domain/services/machine_stock_management_service.dart';
-import 'stock_controller.dart';
 
 class ProductionSessionController {
   ProductionSessionController(
     this._repository,
-    this._stockController,
-    this._productRepository,
     this._auditTrailService,
     this._costCalculatorService,
     this._stockManagementService,
   );
 
   final ProductionSessionRepository _repository;
-  final StockController _stockController;
-  final ProductRepository _productRepository;
   final AuditTrailService _auditTrailService;
   final MachineMaterialCostService _costCalculatorService;
   final MachineStockManagementService _stockManagementService;

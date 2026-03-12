@@ -1,11 +1,9 @@
 import '../../domain/entities/purchase.dart';
 import '../../domain/entities/supplier_settlement.dart';
 import '../../domain/repositories/purchase_repository.dart';
-import '../../domain/repositories/stock_repository.dart';
 import '../../domain/repositories/treasury_repository.dart';
 import '../../domain/repositories/finance_repository.dart';
 import '../../domain/repositories/supplier_repository.dart';
-import '../../domain/entities/stock_movement.dart';
 import '../../domain/entities/expense_record.dart';
 import '../../../../shared/domain/entities/treasury_operation.dart';
 import '../../../../core/logging/app_logger.dart';
@@ -14,7 +12,6 @@ import '../controllers/stock_controller.dart';
 class PurchaseController {
   PurchaseController(
     this._purchaseRepository,
-    this._stockRepository,
     this._stockController,
     this._treasuryRepository,
     this._financeRepository,
@@ -22,7 +19,6 @@ class PurchaseController {
   );
 
   final PurchaseRepository _purchaseRepository;
-  final StockRepository _stockRepository;
   final StockController _stockController;
   final TreasuryRepository _treasuryRepository;
   final FinanceRepository _financeRepository;

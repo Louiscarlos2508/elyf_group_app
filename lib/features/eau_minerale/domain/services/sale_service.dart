@@ -51,13 +51,14 @@ class SaleService {
       return 'Veuillez remplir tous les champs';
     }
 
-    // Validation du crédit : informations client obligatoires
+    // Validation du crédit : informations client minimales (nom)
     if (amountPaid < totalPrice) {
-      final hasName = customerName != null && customerName.trim().isNotEmpty && customerName.trim().toLowerCase() != 'inconnu';
-      final hasPhone = customerPhone != null && customerPhone.trim().isNotEmpty && customerPhone.trim() != 'Aucun numéro';
+      final hasName = customerName != null && customerName.trim().isNotEmpty && 
+                     customerName.trim().toLowerCase() != 'inconnu' &&
+                     customerName.trim().toLowerCase() != 'client anonyme';
       
-      if (!hasName || !hasPhone) {
-        return 'Le nom et le numéro de téléphone sont obligatoires pour une vente à crédit.';
+      if (!hasName) {
+        return 'Le nom du client est obligatoire pour une vente à crédit.';
       }
     }
 

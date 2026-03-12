@@ -54,7 +54,7 @@ class ConnectivityService {
             stackTrace: stackTrace,
           );
           _currentStatus = ConnectivityStatus.unknown;
-          _controller.add(_currentStatus);
+          _safeAdd(_currentStatus);
         },
       );
     } catch (error) {
@@ -71,7 +71,7 @@ class ConnectivityService {
     final newStatus = _mapResultsToStatus(results);
     if (newStatus != _currentStatus) {
       _currentStatus = newStatus;
-      _controller.add(_currentStatus);
+      _safeAdd(_currentStatus);
       AppLogger.debug(
         'Connectivity changed: $_currentStatus',
         name: 'offline.connectivity',
@@ -126,10 +126,15 @@ class ConnectivityService {
     }
   }
 
-  /// Disposes resources.
   Future<void> dispose() async {
     await _subscription?.cancel();
     await _controller.close();
+  }
+
+  void _safeAdd(ConnectivityStatus status) {
+    if (!_controller.isClosed) {
+      _controller.add(status);
+    }
   }
 }
 

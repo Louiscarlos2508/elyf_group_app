@@ -177,7 +177,7 @@ class _ImmobilierSettingsScreenState extends ConsumerState<ImmobilierSettingsScr
                       const SizedBox(width: 16),
                       Expanded(
                         child: DropdownButtonFormField<String>(
-                          value: _penaltyType,
+                          initialValue: _penaltyType,
                           decoration: const InputDecoration(
                             labelText: 'Type de pénalité',
                             border: OutlineInputBorder(),

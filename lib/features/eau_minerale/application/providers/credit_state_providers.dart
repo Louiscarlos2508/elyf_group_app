@@ -2,13 +2,11 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/eau_minerale/application/controllers/salary_controller.dart' show SalaryState;
-import 'package:elyf_groupe_app/features/eau_minerale/application/controllers/clients_controller.dart' show ClientsState;
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers/legacy_state_providers.dart' show clientsStateProvider;
 import 'package:elyf_groupe_app/features/eau_minerale/domain/repositories/customer_repository.dart' show CustomerSummary;
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers/controller_providers.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers/repository_providers.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers/service_providers.dart';
-import 'package:elyf_groupe_app/features/eau_minerale/application/providers/dashboard_state_providers.dart' show dashboardCalculationServiceProvider;
 import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/sale.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/credit_payment.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/customer_credit.dart';

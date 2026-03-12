@@ -14,7 +14,6 @@ import '../../presentation/screens/sections/reports_screen.dart';
 import '../../presentation/screens/sections/tenants_screen.dart';
 import '../../presentation/screens/sections/maintenance_screen.dart';
 import '../../presentation/screens/sections/treasury_screen.dart';
-import '../../presentation/screens/sections/z_report_screen.dart';
 import 'permission_providers.dart';
 
 import '../../presentation/screens/settings/immobilier_settings_screen.dart';
@@ -40,6 +39,7 @@ final accessibleImmobilierSectionsProvider =
         isPrimary: true,
         enterpriseId: enterpriseId,
         moduleId: moduleId,
+        category: '👁️ Vue d\'Ensemble',
       ),
       requiredPermissions: {ImmobilierPermissions.viewDashboard.id},
     ),
@@ -51,6 +51,7 @@ final accessibleImmobilierSectionsProvider =
         isPrimary: true,
         enterpriseId: enterpriseId,
         moduleId: moduleId,
+        category: '💰 Finances & Comptabilité',
       ),
       requiredPermissions: {ImmobilierPermissions.viewPayments.id},
     ),
@@ -61,6 +62,7 @@ final accessibleImmobilierSectionsProvider =
         builder: () => const MaintenanceScreen(),
         enterpriseId: enterpriseId,
         moduleId: moduleId,
+        category: '⚡ Opérations & Maintenance',
       ),
       requiredPermissions: {ImmobilierPermissions.viewMaintenance.id},
     ),
@@ -71,6 +73,7 @@ final accessibleImmobilierSectionsProvider =
         builder: () => const TreasuryScreen(),
         enterpriseId: enterpriseId,
         moduleId: moduleId,
+        category: '💰 Finances & Comptabilité',
       ),
       requiredPermissions: {ImmobilierPermissions.viewTreasury.id},
     ),
@@ -82,6 +85,7 @@ final accessibleImmobilierSectionsProvider =
         isPrimary: true,
         enterpriseId: enterpriseId,
         moduleId: moduleId,
+        category: '🏢 Gestion Immobilière',
       ),
       requiredPermissions: {ImmobilierPermissions.viewTenants.id},
     ),
@@ -93,6 +97,7 @@ final accessibleImmobilierSectionsProvider =
         isPrimary: true,
         enterpriseId: enterpriseId,
         moduleId: moduleId,
+        category: '🏢 Gestion Immobilière',
       ),
       requiredPermissions: {ImmobilierPermissions.viewContracts.id},
     ),
@@ -104,6 +109,7 @@ final accessibleImmobilierSectionsProvider =
         isPrimary: true,
         enterpriseId: enterpriseId,
         moduleId: moduleId,
+        category: '🏢 Gestion Immobilière',
       ),
       requiredPermissions: {ImmobilierPermissions.viewProperties.id},
     ),
@@ -114,19 +120,11 @@ final accessibleImmobilierSectionsProvider =
         builder: () => const ReportsScreen(),
         enterpriseId: enterpriseId,
         moduleId: moduleId,
+        category: '📊 Rapports & Analyses',
       ),
       requiredPermissions: {ImmobilierPermissions.viewReports.id},
     ),
-    (
-      section: NavigationSection(
-        label: 'Rapport Z',
-        icon: Icons.history_edu_outlined,
-        builder: () => const ZReportScreen(),
-        enterpriseId: enterpriseId,
-        moduleId: moduleId,
-      ),
-      requiredPermissions: {ImmobilierPermissions.viewTreasury.id},
-    ),
+
     (
       section: NavigationSection(
         label: 'Paramètres',
@@ -134,6 +132,7 @@ final accessibleImmobilierSectionsProvider =
         builder: () => const ImmobilierSettingsScreen(),
         enterpriseId: enterpriseId,
         moduleId: moduleId,
+        category: '⚙️ Configuration',
       ),
       requiredPermissions: {ImmobilierPermissions.manageSettings.id},
     ),
@@ -144,6 +143,7 @@ final accessibleImmobilierSectionsProvider =
         builder: () => const shared.ProfileScreen(),
         enterpriseId: enterpriseId,
         moduleId: moduleId,
+        category: '⚙️ Configuration',
       ),
       requiredPermissions: {ImmobilierPermissions.viewProfile.id},
     ),

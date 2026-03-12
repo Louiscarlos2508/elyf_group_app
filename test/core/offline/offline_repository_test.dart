@@ -77,6 +77,7 @@ void main() {
       final movement = StockMovement(
         id: '',
         enterpriseId: 'test_enterprise',
+        productId: 'test_product_id',
         date: DateTime.now(),
         productName: 'Test Product',
         type: StockMovementType.entry,
@@ -96,6 +97,7 @@ void main() {
       final movement1 = StockMovement(
         id: '',
         enterpriseId: 'test_enterprise',
+        productId: 'product_a',
         date: DateTime.now(),
         productName: 'Product A',
         type: StockMovementType.entry,
@@ -107,6 +109,7 @@ void main() {
       final movement2 = StockMovement(
         id: '',
         enterpriseId: 'test_enterprise',
+        productId: 'product_b',
         date: DateTime.now(),
         productName: 'Product B',
         type: StockMovementType.entry,
@@ -127,6 +130,7 @@ void main() {
       final entry = StockMovement(
         id: '',
         enterpriseId: 'test_enterprise',
+        productId: 'test_product',
         date: DateTime.now(),
         productName: 'Test Product',
         type: StockMovementType.entry,
@@ -138,6 +142,7 @@ void main() {
       final exit = StockMovement(
         id: '',
         enterpriseId: 'test_enterprise',
+        productId: 'test_product',
         date: DateTime.now(),
         productName: 'Test Product',
         type: StockMovementType.exit,

@@ -56,7 +56,7 @@ class _GasPrintReceiptButtonState extends ConsumerState<GasPrintReceiptButton> {
     setState(() => _isPrinting = true);
 
     // Show full-screen blurred overlay (Story 5.3)
-    final overlay = showDialog(
+    showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => BackdropFilter(

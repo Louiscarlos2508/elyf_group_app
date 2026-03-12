@@ -15,7 +15,6 @@ export 'navigation_state_providers.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/electricity_meter_type.dart';
-import '../../domain/services/electricity_meter_config_service.dart';
 import 'service_providers.dart';
 
 // Legacy providers kept here to avoid breaking changes if they don't fit perfectly elsewhere,

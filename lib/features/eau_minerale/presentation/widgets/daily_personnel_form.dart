@@ -3,12 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
-import '../../domain/entities/daily_worker.dart';
-import '../../domain/entities/production_day.dart';
-import '../../domain/entities/production_session.dart';
 import 'daily_worker_form_dialog.dart';
 import '../../domain/entities/material_consumption.dart';
-import '../../domain/entities/product.dart';
 
 /// Formulaire pour enregistrer le personnel journalier pour un jour de production.
 class DailyPersonnelForm extends ConsumerStatefulWidget {

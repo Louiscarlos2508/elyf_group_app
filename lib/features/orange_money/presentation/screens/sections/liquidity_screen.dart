@@ -5,8 +5,6 @@ import 'package:intl/intl.dart';
 import '../../widgets/liquidity/liquidity_tabs.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
-import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
-import 'package:elyf_groupe_app/shared/domain/entities/treasury_operation.dart';
 import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
 import 'package:elyf_groupe_app/features/orange_money/application/providers.dart';
 import '../../../domain/entities/liquidity_checkpoint.dart';
@@ -104,9 +102,7 @@ class _LiquidityScreenState extends ConsumerState<LiquidityScreen> {
       dailyTransactionStatsProvider(dailyStatsKey),
     );
 
-    final operationsAsync = ref.watch(
-      orangeMoneyTreasuryOperationsStreamProvider(enterpriseKey),
-    );
+
 
     return ElyfCard(
       padding: const EdgeInsets.all(24),
@@ -428,7 +424,9 @@ class _LiquidityScreenState extends ConsumerState<LiquidityScreen> {
         justification: result,
       );
       _invalidateProviders();
-      NotificationService.showSuccess(context, 'Justification enregistrée');
+      if (context.mounted) {
+        NotificationService.showSuccess(context, 'Justification enregistrée');
+      }
     }
   }
 

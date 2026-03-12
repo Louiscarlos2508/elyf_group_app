@@ -103,7 +103,6 @@ class _CylinderFormDialogState extends ConsumerState<CylinderFormDialog> {
       final retailPrice = settings.getRetailPrice(weight);
       final wholesalePrice = settings.getWholesalePrice(weight);
       final purchasePrice = settings.getPurchasePrice(weight);
-      final lowStockThreshold = settings.getLowStockThreshold(weight);
 
       if (retailPrice != null) {
         _sellPriceController.text = retailPrice.toStringAsFixed(0);

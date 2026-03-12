@@ -111,7 +111,6 @@ class DashboardKpiSection extends ConsumerWidget {
 
       return toursAsync.when(
         data: (tours) {
-          final openToursCount = tours.where((t) => t.status == TourStatus.open).length;
           
           final annualTourExpenses = tours.fold<double>(0, (sum, t) => sum + t.totalExpenses);
           final annualBottlesReceived = tours
@@ -127,7 +126,7 @@ class DashboardKpiSection extends ConsumerWidget {
                   value: CurrencyFormatter.formatDouble(totalAnnualIncoming),
                   subtitle: "${annualSales.length} ventes • ${annualRemittances.length} versements",
                   icon: Icons.trending_up_rounded,
-                  color: AppColors.primary,
+                  color: theme.colorScheme.primary,
                   isWide: isWide,
                 ),
                 _buildSpacer(isWide),
@@ -154,7 +153,7 @@ class DashboardKpiSection extends ConsumerWidget {
                   value: CurrencyFormatter.formatDouble(annualExpensesAmount),
                   subtitle: "Charges de structure",
                   icon: Icons.account_balance_wallet_outlined,
-                  color: const Color(0xFFF59E0B), // Warm yellow/orange for fixed costs
+                  color: theme.colorScheme.secondary, // Replaced orange with theme secondary for consistency
                   isWide: isWide,
                 ),
               ];

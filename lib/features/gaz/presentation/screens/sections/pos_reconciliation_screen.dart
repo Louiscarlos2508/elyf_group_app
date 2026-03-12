@@ -24,7 +24,7 @@ class GazPOSReconciliationScreen extends ConsumerWidget {
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          GazHeader(
+          const GazHeader(
             title: 'GAZ',
             subtitle: 'Suivi Financier des POS',
             showViewToggle: false,
@@ -182,7 +182,7 @@ class GazPOSReconciliationScreen extends ConsumerWidget {
               ),
               const SizedBox(height: AppSpacing.md),
               DropdownButtonFormField<PaymentMethod>(
-                value: selectedMethod,
+                initialValue: selectedMethod,
                 decoration: const InputDecoration(
                   labelText: 'Mode de Paiement',
                   prefixIcon: Icon(Icons.payment),
@@ -192,9 +192,9 @@ class GazPOSReconciliationScreen extends ConsumerWidget {
                     value: PaymentMethod.cash,
                     child: Text(PaymentMethod.cash.label),
                   ),
-                  DropdownMenuItem(
+                  const DropdownMenuItem(
                     value: PaymentMethod.mobileMoney,
-                    child: const Text('Orange Money'), // Label explicite pour OM
+                    child: Text('Orange Money'), // Label explicite pour OM
                   ),
                 ],
                 onChanged: (val) {

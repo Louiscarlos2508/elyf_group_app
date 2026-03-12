@@ -37,11 +37,11 @@ class DashboardScreen extends ConsumerWidget {
     // SIM = Start + CashOut (Customer gives SIM, Agent gets SIM?? NO. Agent sends SIM)
     // Agent SIM Balance decreases on CashIn (sends to customer)
     // Agent SIM Balance increases on CashOut (receives from customer)
-    final currentSim = startSim - cashInTotal + cashOutTotal;
+    final currentSim = startSim - totalCashIn + totalCashOut;
     
     // Agent Cash Balance increases on CashIn (receives cash)
     // Agent Cash Balance decreases on CashOut (gives cash)
-    final currentCash = startCash + cashInTotal - cashOutTotal;
+    final currentCash = startCash + totalCashIn - totalCashOut;
 
     return CustomScrollView(
         slivers: [
@@ -147,7 +147,7 @@ class DashboardScreen extends ConsumerWidget {
                   child: _buildBalanceCard(
                     context, 
                     'Solde SIM (Estimé)', 
-                    currentSim, 
+                    currentSim.toInt(), 
                     Icons.sim_card, 
                     theme.colorScheme.primary,
                   ),
@@ -157,7 +157,7 @@ class DashboardScreen extends ConsumerWidget {
                   child: _buildBalanceCard(
                     context, 
                     'En Caisse', 
-                    currentCash, 
+                    currentCash.toInt(), 
                     Icons.account_balance_wallet, 
                     const Color(0xFF00C897),
                   ),

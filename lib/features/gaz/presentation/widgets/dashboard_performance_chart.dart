@@ -196,11 +196,11 @@ class DashboardPerformanceChart extends StatelessWidget {
                       ),
                       belowBarData: BarAreaData(show: false),
                     ),
-                  // Ventes (Emerald)
+                  // Ventes (Emerald - using tertiary for theme consistency)
                   LineChartBarData(
                     spots: salesSpots,
                     isCurved: true,
-                    color: const Color(0xFF10B981),
+                    color: theme.colorScheme.tertiary,
                     barWidth: 3,
                     isStrokeCapRound: true,
                     dotData: FlDotData(
@@ -210,7 +210,7 @@ class DashboardPerformanceChart extends StatelessWidget {
                           radius: 3,
                           color: theme.colorScheme.surface,
                           strokeWidth: 2,
-                          strokeColor: const Color(0xFF10B981),
+                          strokeColor: theme.colorScheme.tertiary,
                         );
                       },
                     ),
@@ -231,7 +231,7 @@ class DashboardPerformanceChart extends StatelessWidget {
                 _LegendItem(color: theme.colorScheme.primary, label: 'Bénéfice'),
                 _LegendItem(color: theme.colorScheme.error, label: 'Dépenses'),
               ],
-              const _LegendItem(color: Color(0xFF10B981), label: 'Ventes'),
+              _LegendItem(color: theme.colorScheme.tertiary, label: 'Ventes'),
             ],
           ),
         ],

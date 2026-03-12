@@ -108,10 +108,6 @@ class _TransactionsV2ScreenState extends ConsumerState<TransactionsV2Screen>
     String? town,
     String? reference,
   }) async {
-    final phoneNumber = _phoneController.text.trim();
-    final amountStr = _amountController.text.trim();
-    final customerName = '$firstName $lastName';
-    
     await _handleSaveCustomer(
       firstName: firstName,
       lastName: lastName,
@@ -193,7 +189,6 @@ class _TransactionsV2ScreenState extends ConsumerState<TransactionsV2Screen>
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Container(
       color: Colors.transparent,
       child: NestedScrollView(
@@ -344,32 +339,6 @@ class _TransactionsV2ScreenState extends ConsumerState<TransactionsV2Screen>
     );
   }
 
-  Widget _buildHeader() {
-    return const Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Nouvelle transaction',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.normal,
-            color: Color(0xFF101828),
-            height: 1.5,
-          ),
-        ),
-        SizedBox(height: 4),
-        Text(
-          'Enregistrez rapidement vos dépôts et retraits',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.normal,
-            color: Color(0xFF4A5565),
-            height: 1.43,
-          ),
-        ),
-      ],
-    );
-  }
 
   Widget _buildSearchClientCard(ThemeData theme) {
     return ElyfCard(

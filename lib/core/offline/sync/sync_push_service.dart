@@ -52,7 +52,13 @@ class SyncPushService {
     );
     
     AppLogger.info('Triggering sync event: $event', name: 'sync.push_service');
-    _syncTriggerController.add(event);
+    _safeAdd(event);
+  }
+
+  void _safeAdd(SyncTriggerEvent event) {
+    if (!_syncTriggerController.isClosed) {
+      _syncTriggerController.add(event);
+    }
   }
 
   /// Ferme le stream.

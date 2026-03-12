@@ -2,7 +2,7 @@ import '../../domain/entities/customer.dart';
 import '../../domain/entities/transaction.dart';
 import '../../domain/repositories/transaction_repository.dart';
 import '../../domain/repositories/liquidity_repository.dart';
-import '../../domain/repositories/settings_repository.dart';
+
 import '../../domain/repositories/commission_repository.dart';
 import '../../domain/services/transaction_service.dart';
 import '../../../audit_trail/domain/services/audit_trail_service.dart';
@@ -20,7 +20,6 @@ class OrangeMoneyController {
   OrangeMoneyController(
     this._repository,
     this._liquidityRepository,
-    this._settingsRepository,
     this._commissionRepository,
     this._treasuryRepository,
     this._auditTrailService,
@@ -31,7 +30,7 @@ class OrangeMoneyController {
 
   final TransactionRepository _repository;
   final LiquidityRepository _liquidityRepository;
-  final SettingsRepository _settingsRepository;
+
   final CommissionRepository _commissionRepository;
   final OrangeMoneyTreasuryRepository _treasuryRepository;
   final AuditTrailService _auditTrailService;
@@ -94,7 +93,6 @@ class OrangeMoneyController {
     final amount = int.parse(amountStr.trim());
 
     // 2. Validation de la liquidité et seuils (PRD Compliance)
-    final settings = await _settingsRepository.getSettings(enterpriseId);
     
     // PRD: Montant minimum 100 FCFA
     if (amount < 100) {

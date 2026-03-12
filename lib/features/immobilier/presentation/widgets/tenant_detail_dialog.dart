@@ -429,7 +429,6 @@ class _PaymentsTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final paymentsAsync = ref.watch(paymentsByTenantProvider((tenantId)));
-    final theme = Theme.of(context);
 
     return paymentsAsync.when(
       data: (payments) {
@@ -726,7 +725,7 @@ class _BulkPaymentDialogState extends ConsumerState<_BulkPaymentDialog> {
                     await ref
                         .read(paymentControllerProvider)
                         .settlePayments(widget.payments, _method);
-                    if (mounted) {
+                    if (context.mounted) {
                       ref.invalidate(paymentsByTenantProvider);
                       ref.invalidate(paymentsWithRelationsProvider);
                       Navigator.pop(context);
@@ -734,12 +733,14 @@ class _BulkPaymentDialogState extends ConsumerState<_BulkPaymentDialog> {
                           context, 'Paiements enregistrés avec succès');
                     }
                   } catch (e) {
-                    if (mounted) {
+                    if (context.mounted) {
                       NotificationService.showError(
                           context, 'Erreur lors du règlement : $e');
                     }
                   } finally {
-                    if (mounted) setState(() => _isSaving = false);
+                    if (context.mounted) {
+                      setState(() => _isSaving = false);
+                    }
                   }
                 },
                 child: const Text('Confirmer le paiement'),

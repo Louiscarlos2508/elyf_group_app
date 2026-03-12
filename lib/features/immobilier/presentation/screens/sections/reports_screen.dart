@@ -67,7 +67,6 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       final contracts = await ref.read(contractsProvider.future);
       final payments = await ref.read(paymentsWithRelationsProvider.future);
       final expenses = await ref.read(expensesProvider.future);
-      final settings = ref.read(immobilierSettingsServiceProvider);
       final activeEnterprise = ref.read(activeEnterpriseProvider).value;
 
       final periodPayments = payments.where((p) {

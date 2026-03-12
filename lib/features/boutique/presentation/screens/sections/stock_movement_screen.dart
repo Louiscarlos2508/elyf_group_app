@@ -70,7 +70,9 @@ class _StockMovementScreenState extends ConsumerState<StockMovementScreen> {
       final file = await ref.read(boutiqueExportServiceProvider).exportStockMovements(_movements);
       await OpenFile.open(file.path);
     } catch (e) {
-      NotificationService.showError(context, 'Erreur lors de l\'export: $e');
+      if (mounted) {
+        NotificationService.showError(context, 'Erreur lors de l\'export: $e');
+      }
     }
   }
 

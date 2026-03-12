@@ -9,9 +9,6 @@ import '../../domain/entities/gas_sale.dart';
 import 'gas_print_receipt_button.dart';
 import '../../domain/services/gaz_sale_pdf_service.dart';
 import 'package:open_file/open_file.dart';
-import 'package:share_plus/share_plus.dart';
-import 'package:elyf_groupe_app/shared/utils/notification_service.dart';
-import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 
 class WholesaleSaleCard extends ConsumerWidget {
   const WholesaleSaleCard({super.key, required this.sales});
@@ -165,7 +162,7 @@ class WholesaleSaleCard extends ConsumerWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          '${cyl?.label ?? "${cyl?.weight}kg"}',
+                          cyl?.label ?? "${cyl?.weight}kg",
                           style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
                         ),
                         Text(

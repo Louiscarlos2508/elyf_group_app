@@ -1,6 +1,6 @@
 import 'package:elyf_groupe_app/features/gaz/domain/entities/transport_expense.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/tour_site_interaction.dart';
-import 'package:elyf_groupe_app/features/gaz/domain/entities/site_logistics_record.dart'; // Pour compatibilité si besoin
+// Pour compatibilité si besoin
 
 export 'transport_expense.dart';
 export 'tour_site_interaction.dart';

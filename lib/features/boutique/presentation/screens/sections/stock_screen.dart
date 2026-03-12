@@ -99,7 +99,7 @@ class StockScreen extends ConsumerWidget {
                     child: ListTile(
                       contentPadding: const EdgeInsets.all(16),
                       leading: CircleAvatar(
-                        backgroundColor: (isOut ? Colors.red : (isLow ? Colors.orange : Colors.green)).withOpacity(0.1),
+                        backgroundColor: (isOut ? Colors.red : (isLow ? Colors.orange : Colors.green)).withValues(alpha: 0.1),
                         child: Icon(
                           isOut ? Icons.block : (isLow ? Icons.warning : Icons.check_circle),
                           color: isOut ? Colors.red : (isLow ? Colors.orange : Colors.green),
@@ -204,9 +204,9 @@ class _StatCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.05),
+        color: color.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.2)),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

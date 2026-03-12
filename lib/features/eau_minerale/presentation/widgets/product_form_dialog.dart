@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/providers.dart';
-import '../../domain/entities/product.dart';
 import '../../../../shared/utils/notification_service.dart';
 import '../../../../core/tenant/tenant_provider.dart';
 

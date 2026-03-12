@@ -56,7 +56,6 @@ class _TenantBalanceReportDialogState extends ConsumerState<TenantBalanceReportD
     try {
       final contracts = await ref.read(contractsProvider.future);
       final payments = await ref.read(paymentsWithRelationsProvider.future);
-      final settings = ref.read(immobilierSettingsServiceProvider);
       final activeEnterprise = ref.read(activeEnterpriseProvider).value;
 
       final pdfService = ImmobilierReportPdfService.instance;

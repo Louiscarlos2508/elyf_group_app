@@ -8,7 +8,6 @@ import '../../data/models/tour.dart';
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import 'package:elyf_groupe_app/features/administration/application/providers.dart';
 import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
-import 'package:elyf_groupe_app/features/gaz/domain/entities/wholesaler.dart';
 import 'frais_screen.dart';
 
 class LivraisonScreen extends ConsumerStatefulWidget {
@@ -37,7 +36,6 @@ class _LivraisonScreenState extends ConsumerState<LivraisonScreen> with SingleTi
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final state = ref.watch(tourNotifierProvider(widget.tourId)).value;
 
     if (state == null) return const Scaffold(body: Center(child: CircularProgressIndicator()));
@@ -77,8 +75,11 @@ class _LivraisonScreenState extends ConsumerState<LivraisonScreen> with SingleTi
           padding: const EdgeInsets.all(AppDimensions.s16),
           child: FilledButton(
             onPressed: state.livraisons.isNotEmpty 
-                ? () => ref.read(tourNotifierProvider(widget.tourId).notifier).startClosing().then((_) => 
-                    context.goNamed('cloture', pathParameters: {'tourId': widget.tourId}))
+                ? () => ref.read(tourNotifierProvider(widget.tourId).notifier).startClosing().then((_) {
+                    if (context.mounted) {
+                      context.goNamed('cloture', pathParameters: {'tourId': widget.tourId});
+                    }
+                  })
                 : null,
             child: const Text('ALLER AU BILAN FINAL'),
           ),

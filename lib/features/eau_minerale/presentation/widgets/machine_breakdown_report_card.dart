@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/machine_material_usage.dart';
-import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/machine.dart';
 import 'machine_breakdown_dialog.dart';
 import 'machine_resume_dialog.dart';
 import 'package:elyf_groupe_app/shared.dart';

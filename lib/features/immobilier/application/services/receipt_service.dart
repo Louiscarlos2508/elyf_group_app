@@ -12,16 +12,14 @@ import '../../../../shared/domain/entities/payment_method.dart';
 import '../../domain/entities/payment.dart';
 import '../../domain/entities/property.dart';
 import '../../domain/entities/tenant.dart';
-import '../providers.dart';
 
 final receiptServiceProvider = Provider<ReceiptService>((ref) {
-  return ReceiptService(ref);
+  return ReceiptService();
 });
 
 class ReceiptService {
-  ReceiptService(this._ref);
+  ReceiptService();
 
-  final Ref _ref;
   final _sunmi = SunmiV3Service.instance;
 
   /// Vérifie si l'imprimante Sunmi est disponible.

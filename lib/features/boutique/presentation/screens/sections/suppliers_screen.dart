@@ -319,7 +319,9 @@ class _SuppliersScreenState extends ConsumerState<SuppliersScreen> {
 
     if (confirm == true) {
       await ref.read(storeControllerProvider).deleteSupplier(supplier.id);
-      if (mounted) NotificationService.showSuccess(context, 'Fournisseur supprimé');
+      if (mounted) {
+        NotificationService.showSuccess(this.context, 'Fournisseur supprimé');
+      }
     }
   }
 }

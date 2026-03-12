@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import '../../domain/entities/pos_remittance.dart';
-import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 
 class WholesaleRemittanceCard extends StatelessWidget {
   const WholesaleRemittanceCard({super.key, required this.remittance});

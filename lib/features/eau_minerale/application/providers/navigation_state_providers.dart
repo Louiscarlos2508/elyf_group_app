@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../domain/entities/eau_minerale_section.dart';
 
 /// Notifier pour suivre la section active du module Eau Minérale.
 class CurrentSectionNotifier extends Notifier<String> {

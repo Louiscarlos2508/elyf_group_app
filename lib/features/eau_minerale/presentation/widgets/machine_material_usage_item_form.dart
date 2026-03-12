@@ -6,7 +6,6 @@ import 'package:elyf_groupe_app/shared.dart';
 import '../../../../../shared/utils/notification_service.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../domain/entities/machine_material_usage.dart';
-import '../../domain/entities/machine.dart';
 
 /// Formulaire pour ajouter une matière utilisée sur une machine.
 /// (Anciennement BobineUsageItemForm).
@@ -140,7 +139,7 @@ class _MachineMaterialUsageItemFormState extends ConsumerState<MachineMaterialUs
             ),
           const SizedBox(height: 16),
           DropdownButtonFormField<Machine>(
-            value: _machineSelectionnee,
+            initialValue: _machineSelectionnee,
             decoration: const InputDecoration(
               labelText: 'Machine',
               prefixIcon: Icon(Icons.precision_manufacturing),

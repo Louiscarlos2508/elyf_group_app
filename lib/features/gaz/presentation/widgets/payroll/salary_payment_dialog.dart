@@ -95,7 +95,7 @@ class _GazSalaryPaymentDialogState extends ConsumerState<GazSalaryPaymentDialog>
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<PaymentMethod>(
-                value: _selectedPaymentMethod,
+                initialValue: _selectedPaymentMethod,
                 decoration: const InputDecoration(
                   labelText: 'Mode de Paiement',
                   prefixIcon: Icon(Icons.account_balance_wallet_outlined),
@@ -105,9 +105,9 @@ class _GazSalaryPaymentDialogState extends ConsumerState<GazSalaryPaymentDialog>
                     value: PaymentMethod.cash,
                     child: Text(PaymentMethod.cash.label),
                   ),
-                  DropdownMenuItem(
+                  const DropdownMenuItem(
                     value: PaymentMethod.mobileMoney,
-                    child: const Text('Orange Money'),
+                    child: Text('Orange Money'),
                   ),
                 ],
                 onChanged: (val) {
@@ -150,7 +150,7 @@ class _GazSalaryPaymentDialogState extends ConsumerState<GazSalaryPaymentDialog>
     );
 
     try {
-      final userId = ref.read(currentUserIdProvider) ?? 'system';
+      final userId = ref.read(currentUserIdProvider);
       await ref.read(gazSalaryPaymentControllerProvider).recordPayment(payment, userId);
       if (mounted) Navigator.pop(context);
     } catch (e) {

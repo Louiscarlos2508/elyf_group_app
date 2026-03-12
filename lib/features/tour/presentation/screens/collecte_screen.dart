@@ -8,8 +8,6 @@ import '../../data/models/tour.dart';
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
 import 'package:elyf_groupe_app/features/administration/application/providers.dart';
 import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
-import 'package:elyf_groupe_app/features/gaz/domain/entities/wholesaler.dart';
-import '../../../../shared/presentation/widgets/elyf_ui/atoms/elyf_button.dart';
 import '../../../gaz/presentation/widgets/wholesaler_form_dialog.dart';
 
 class CollecteScreen extends ConsumerWidget {
@@ -93,7 +91,7 @@ class CollecteScreen extends ConsumerWidget {
                   child: ListTile(
                     contentPadding: const EdgeInsets.all(AppDimensions.s12),
                     leading: CircleAvatar(
-                      backgroundColor: site.type == TypeSite.pos ? Colors.blue.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
+                      backgroundColor: site.type == TypeSite.pos ? Colors.blue.withValues(alpha: 0.1) : Colors.orange.withValues(alpha: 0.1),
                       child: Icon(
                         site.type == TypeSite.pos ? Icons.shop : Icons.warehouse,
                         color: site.type == TypeSite.pos ? Colors.blue : Colors.orange,

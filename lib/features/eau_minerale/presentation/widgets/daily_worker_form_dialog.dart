@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../../../core/tenant/tenant_provider.dart';
-import '../../domain/entities/daily_worker.dart';
 
 /// Dialog pour ajouter ou modifier un ouvrier journalier.
 class DailyWorkerFormDialog extends ConsumerStatefulWidget {

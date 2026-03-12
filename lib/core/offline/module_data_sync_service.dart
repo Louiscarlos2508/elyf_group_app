@@ -167,7 +167,7 @@ class ModuleDataSyncService {
     if (essentialOnly) {
       final essentials = essentialCollections[moduleId] ?? [];
       // Intersection entre les collections prévues et les collections essentielles
-      collectionsToSync = collectionsToSync.where((c) => essentials.contains(c)).toList();
+      collectionsToSync = collectionsToSync.where(essentials.contains).toList();
       
       if (collectionsToSync.isEmpty && essentials.isNotEmpty) {
         // Si l'intersection est vide mais qu'il y a des essentiels définis,
@@ -363,9 +363,16 @@ class ModuleDataSyncService {
       
       // Déterminer l'ID de l'entreprise à utiliser pour le chemin Firestore
       final isShared = sharedCollections[moduleId]?.contains(collectionName) ?? false;
-      final effectivePathEnterpriseId = (isShared && parentEnterpriseId != null) 
-          ? parentEnterpriseId 
-          : enterpriseId;
+      
+      if (isShared && parentEnterpriseId == null) {
+        AppLogger.warning(
+          'SYNC WARNING: Collection $collectionName is shared but parentEnterpriseId is null for enterprise $enterpriseId. Skipping sync to avoid permission errors.',
+          name: 'module.sync',
+        );
+        return;
+      }
+
+      final effectivePathEnterpriseId = isShared ? parentEnterpriseId! : enterpriseId;
 
       final fullPath = pathBuilder(effectivePathEnterpriseId);
       final collectionRef = firestore.collection(fullPath);

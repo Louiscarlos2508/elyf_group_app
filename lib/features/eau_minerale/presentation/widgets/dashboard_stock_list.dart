@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import 'package:elyf_groupe_app/shared.dart';
 
-import '../../domain/entities/stock_item.dart';
 
 /// Widget displaying finished goods stock list.
 class DashboardStockList extends ConsumerWidget {

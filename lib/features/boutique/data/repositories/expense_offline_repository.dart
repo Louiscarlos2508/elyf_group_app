@@ -43,26 +43,7 @@ class ExpenseOfflineRepository extends OfflineRepository<Expense>
     return entity.toMap();
   }
 
-  ExpenseCategory _parseCategory(String? categoryStr) {
-    if (categoryStr == null) return ExpenseCategory.other;
-    switch (categoryStr.toLowerCase()) {
-      case 'stock':
-      case 'achats':
-        return ExpenseCategory.stock;
-      case 'rent':
-      case 'loyer':
-        return ExpenseCategory.rent;
-      case 'utilities':
-      case 'services publics':
-        return ExpenseCategory.utilities;
-      case 'maintenance':
-        return ExpenseCategory.maintenance;
-      case 'marketing':
-        return ExpenseCategory.marketing;
-      default:
-        return ExpenseCategory.other;
-    }
-  }
+
 
   @override
   String getLocalId(Expense entity) {

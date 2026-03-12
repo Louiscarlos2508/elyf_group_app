@@ -3,7 +3,6 @@ import 'package:uuid/uuid.dart';
 import '../../domain/entities/production_session.dart';
 import '../../domain/entities/production_session_status.dart';
 import '../../domain/entities/machine.dart';
-import '../../domain/entities/product.dart';
 import '../../domain/entities/machine_material_usage.dart';
 
 /// Result of loading unfinished machine materials.

@@ -13,7 +13,6 @@ class ReportKpiCards extends StatelessWidget {
     final cashInTotal = stats['totalCashIn'] as int? ?? 0;
     final cashOutTotal = stats['totalCashOut'] as int? ?? 0;
     final totalTransactions = stats['totalTransactions'] as int? ?? 0;
-    final totalCommission = stats['totalCommission'] as int? ?? 0;
     final depositsCount = stats['depositsCount'] as int? ?? 0;
     final withdrawalsCount = stats['withdrawalsCount'] as int? ?? 0;
 

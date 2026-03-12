@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:open_file/open_file.dart';
 
 import '../../../../core/pdf/unified_payment_pdf_service.dart';
-import '../../application/providers.dart';
 import '../../domain/entities/payment.dart';
 import 'immobilier_print_receipt_button.dart';
 import 'package:elyf_groupe_app/shared.dart';

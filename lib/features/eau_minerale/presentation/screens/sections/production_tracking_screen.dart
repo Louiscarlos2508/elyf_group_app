@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import 'package:elyf_groupe_app/shared.dart';
-import '../../../domain/entities/production_session.dart';
 import '../../widgets/production_tracking/production_tracking_progress.dart';
 import '../../widgets/production_tracking/production_tracking_session_info.dart';
 import '../../widgets/production_tracking/tracking_step_content.dart';

@@ -6,7 +6,6 @@ import 'package:elyf_groupe_app/core/offline/drift_service.dart';
 import 'package:elyf_groupe_app/core/offline/sync_manager.dart';
 import 'package:elyf_groupe_app/core/offline/connectivity_service.dart';
 import 'package:drift/native.dart';
-import 'package:elyf_groupe_app/core/offline/handlers/firebase_sync_handler.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/data/repositories/stock_offline_repository.dart';
 import 'package:mockito/mockito.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/domain/repositories/product_repository.dart';

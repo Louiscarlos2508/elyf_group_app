@@ -3,9 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../domain/entities/enterprise.dart';
 import '../../../application/providers.dart';
+import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
+import 'package:elyf_groupe_app/core/auth/services/firestore_permission_service.dart';
 import 'strategies/dashboard_strategy.dart';
+import 'package:elyf_groupe_app/core/permissions/data/predefined_roles.dart';
 
-class AdminEnterpriseManagementSection extends ConsumerWidget {
+import 'package:elyf_groupe_app/core/offline/sync/sync_orchestrator.dart';
+
+class AdminEnterpriseManagementSection extends ConsumerStatefulWidget {
   const AdminEnterpriseManagementSection({
     super.key,
     required this.enterpriseId,
@@ -14,19 +19,45 @@ class AdminEnterpriseManagementSection extends ConsumerWidget {
   final String enterpriseId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // Utilisation directe de l'ID passé en paramètre
-    final enterpriseAsync = ref.watch(enterpriseByIdProvider(enterpriseId));
+  ConsumerState<AdminEnterpriseManagementSection> createState() => _AdminEnterpriseManagementSectionState();
+}
+
+class _AdminEnterpriseManagementSectionState extends ConsumerState<AdminEnterpriseManagementSection> {
+  @override
+  void initState() {
+    super.initState();
+    // Trigger on-demand sync for module data when viewing as admin monitoring
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _triggerSync();
+    });
+  }
+
+  Future<void> _triggerSync() async {
+    final enterprise = ref.read(enterpriseByIdProvider(widget.enterpriseId)).value;
+    if (enterprise != null) {
+      final moduleId = enterprise.type.module.id;
+      try {
+        await ref.read(syncOrchestratorProvider).ensureModuleSync(moduleId, enterpriseId: widget.enterpriseId);
+      } catch (e) {
+        // Log error but don't block UI
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final enterpriseAsync = ref.watch(enterpriseByIdProvider(widget.enterpriseId));
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: theme.colorScheme.surface,
       body: SafeArea(
         child: enterpriseAsync.when(
           data: (enterprise) {
             if (enterprise == null) {
               return const Center(child: Text('Entreprise introuvable'));
             }
-            return _buildDashboard(context, ref, enterprise);
+            return _buildDashboard(context, enterprise);
           },
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (e, s) => Center(child: Text('Erreur: $e')),
@@ -35,27 +66,53 @@ class AdminEnterpriseManagementSection extends ConsumerWidget {
     );
   }
 
-  Widget _buildDashboard(BuildContext context, WidgetRef ref, Enterprise enterprise) {
+  Widget _buildDashboard(BuildContext context, Enterprise enterprise) {
     final module = enterprise.type.module;
     final strategy = EnterpriseDashboardStrategy.fromEnterprise(enterprise);
-    final tabs = strategy.getTabs();
+    
+    final personaRoles = PredefinedRoles.getRolesForEnterpriseType(enterprise.type);
+    final Set<String> personaPermissions = personaRoles.isNotEmpty 
+        ? personaRoles.first.permissions 
+        : {'*'};
+
+    final tabs = strategy.getTabs(personaPermissions);
 
     return DefaultTabController(
       length: tabs.length,
       child: Column(
         children: [
-          // Header avec bouton retour et infos entreprise
           _buildHeader(context, enterprise),
-
-          // TabBar
           _buildTabBar(context, module.color, tabs),
-
-          // Content
           Expanded(
             child: TabBarView(
               children: List.generate(
                 tabs.length,
-                (index) => strategy.buildTabContent(context, ref, index, enterprise),
+                (index) => ProviderScope(
+                  overrides: [
+                    activeEnterpriseIdProvider.overrideWith(
+                      () => _ActiveEnterpriseOverrideNotifier(widget.enterpriseId),
+                    ),
+                    activeEnterpriseProvider.overrideWith((ref) async => enterprise),
+                    unifiedPermissionServiceProvider.overrideWith((ref) {
+                      final adminRepository = ref.watch(adminRepositoryProvider);
+                      return _AdminMonitoringPermissionService(
+                        adminRepository: adminRepository,
+                        getActiveEnterpriseId: () => widget.enterpriseId,
+                      );
+                    }),
+                  ],
+                  child: Consumer(
+                    builder: (context, scopedRef, _) {
+                      return strategy.buildTabContent(
+                        context, 
+                        scopedRef, // Use scopedRef to ensure overrides are respected
+                        index, 
+                        enterprise, 
+                        personaPermissions,
+                      );
+                    },
+                  ),
+                ),
               ),
             ),
           ),
@@ -140,7 +197,9 @@ class AdminEnterpriseManagementSection extends ConsumerWidget {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: enterprise.isActive ? Colors.green : Colors.grey,
+                          color: enterprise.isActive 
+                              ? Colors.green.withValues(alpha: 0.8) 
+                              : theme.colorScheme.outline.withValues(alpha: 0.8),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
@@ -174,14 +233,14 @@ class AdminEnterpriseManagementSection extends ConsumerWidget {
         ],
       ),
       child: TabBar(
-        isScrollable: tabs.length > 3, // Scrollable if many tabs
+        isScrollable: tabs.length > 3,
         indicator: BoxDecoration(
           color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: color, width: 2),
         ),
         labelColor: color,
-        unselectedLabelColor: Colors.grey,
+        unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
         indicatorSize: TabBarIndicatorSize.tab,
         dividerColor: Colors.transparent,
         tabs: tabs,
@@ -189,4 +248,44 @@ class AdminEnterpriseManagementSection extends ConsumerWidget {
     );
   }
 
+}
+
+class _ActiveEnterpriseOverrideNotifier extends ActiveEnterpriseIdNotifier {
+  _ActiveEnterpriseOverrideNotifier(this.overriddenId);
+  final String overriddenId;
+
+  @override
+  Future<String?> build() async => overriddenId;
+
+  @override
+  Future<void> setActiveEnterpriseId(String enterpriseId) async {
+    // No-op for admin monitor mode
+  }
+}
+
+/// A permission service that allows everything for admin monitoring mode.
+class _AdminMonitoringPermissionService extends FirestorePermissionService {
+  _AdminMonitoringPermissionService({
+    required super.adminRepository,
+    required super.getActiveEnterpriseId,
+  });
+
+  @override
+  Future<bool> hasPermission(
+    String userId,
+    String moduleId,
+    String permissionId, {
+    String? enterpriseId,
+  }) async => true;
+
+  @override
+  Future<bool> hasEnterpriseAccess(String userId, String enterpriseId) async => true;
+
+  @override
+  Future<bool> hasModuleAccess(String userId, String enterpriseId, String moduleId) async => true;
+
+  @override
+  Future<Set<String>> getUserPermissions(String userId, String moduleId, {String? enterpriseId}) async {
+    return {'*'};
+  }
 }

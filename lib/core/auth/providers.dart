@@ -9,8 +9,9 @@ export 'services/auth_service.dart'
         currentUserIdProvider,
         isAuthenticatedProvider,
         currentUserProvider,
-        isAdminProvider,
-        unifiedPermissionServiceProvider;
+        isAdminProvider;
+
+export 'package:elyf_groupe_app/features/administration/application/providers.dart' show unifiedPermissionServiceProvider;
 
 // Providers pour le profil utilisateur
 export 'providers/user_profile_provider.dart' show currentUserProfileProvider;

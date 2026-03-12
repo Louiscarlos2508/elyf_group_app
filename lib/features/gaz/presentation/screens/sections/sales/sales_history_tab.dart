@@ -13,7 +13,6 @@ import '../../../widgets/gaz_kpi_card.dart';
 
 import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
-import 'package:elyf_groupe_app/features/gaz/domain/services/gaz_sales_calculation_service.dart';
 
 class SalesHistoryTab extends ConsumerStatefulWidget {
   const SalesHistoryTab({super.key});

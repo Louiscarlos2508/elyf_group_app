@@ -6,7 +6,6 @@ import 'package:intl/intl.dart';
 import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../../../boutique/presentation/screens/sections/widgets/treasury_operation_dialog.dart';
-import '../../../domain/entities/treasury_movement.dart';
 import 'package:elyf_groupe_app/shared/domain/entities/treasury_operation.dart';
 
 class TreasuryScreen extends ConsumerWidget {
@@ -16,7 +15,6 @@ class TreasuryScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final dailySummaryAsync = ref.watch(dailyDashboardSummaryProvider);
     final historyAsync = ref.watch(treasuryHistoryProvider);
-    final sessionAsync = ref.watch(currentClosingSessionProvider);
     final balancesAsync = ref.watch(absoluteTreasuryBalanceProvider);
 
     return CustomScrollView(

@@ -1488,7 +1488,7 @@ class TransactionService {
             .where((l) => l.weight == weight && l.cylinderId == cylinder.id)
             .toList();
         
-        int leaksToConsume = totalQuantity < reportedLeaks.length ? totalQuantity : reportedLeaks.length;
+        final int leaksToConsume = totalQuantity < reportedLeaks.length ? totalQuantity : reportedLeaks.length;
         
         if (leaksToConsume > 0) {
           // Déplacer les fuites : leak -> emptyInTransit

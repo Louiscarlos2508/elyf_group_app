@@ -3,8 +3,6 @@ import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/services/transaction_service.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/tour.dart';
-import 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder.dart';
-import 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder_stock.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/repositories/gas_repository.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/repositories/cylinder_stock_repository.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/repositories/treasury_repository.dart';

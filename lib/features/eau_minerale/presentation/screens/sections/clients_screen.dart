@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../application/controllers/clients_controller.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
-import '../../../domain/entities/sale.dart';
 import '../../widgets/credit_history_dialog.dart';
 import '../../widgets/credit_payment_dialog.dart';
 import '../../widgets/credits_customers_list.dart';

@@ -10,12 +10,10 @@ import '../../domain/entities/expense.dart';
 import '../../domain/entities/gas_sale.dart';
 import '../../domain/entities/report_data.dart';
 import '../../domain/entities/pos_remittance.dart';
-import '../../domain/entities/gaz_treasury_synthesis.dart';
 
 import 'controller_providers.dart';
 import 'data_providers.dart';
 
-import 'ui_providers.dart';
 
 final gazDashboardDataProviderComplete = StreamProvider<({List<GasSale> sales, List<GazExpense> expenses, List<Cylinder> cylinders, List<CylinderStock> stocks, List<GazPOSRemittance> remittances, List<Enterprise> pointsOfSale})>((ref) {
   final salesAsync = ref.watch(gasSalesProvider);

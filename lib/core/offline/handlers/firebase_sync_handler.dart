@@ -256,19 +256,7 @@ class FirebaseSyncHandler implements SyncOperationHandler {
     }
   }
 
-  /// Convertit les données Firestore en format JSON-compatible.
-  dynamic _convertToJsonCompatible(dynamic value) {
-    if (value is Timestamp) {
-      return value.toDate().toIso8601String();
-    } else if (value is Map) {
-      return value.map(
-        (key, val) => MapEntry(key as String, _convertToJsonCompatible(val)),
-      );
-    } else if (value is List) {
-      return value.map(_convertToJsonCompatible).toList();
-    }
-    return value;
-  }
+
 
   Future<void> _handleDelete(
     CollectionReference collection,

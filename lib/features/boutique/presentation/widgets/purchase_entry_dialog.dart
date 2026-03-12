@@ -17,7 +17,7 @@ class PurchaseEntryDialog extends ConsumerStatefulWidget {
 }
 
 class _PurchaseEntryDialogState extends ConsumerState<PurchaseEntryDialog> {
-  final _formKey = GlobalKey<FormState>();
+
   
   // Item Entry State
   Product? _selectedProduct;

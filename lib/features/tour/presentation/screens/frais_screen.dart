@@ -101,7 +101,7 @@ class _AddFraisSheetState extends State<_AddFraisSheet> {
             Text('Nouvelle Dépense', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 16),
             DropdownButtonFormField<CategorieFrais>(
-              value: _selectedCat,
+              initialValue: _selectedCat,
               items: CategorieFrais.values.map((c) => DropdownMenuItem(value: c, child: Text('${c.icon} ${c.label}'))).toList(),
               onChanged: (v) => setState(() => _selectedCat = v!),
               decoration: const InputDecoration(labelText: 'Catégorie'),

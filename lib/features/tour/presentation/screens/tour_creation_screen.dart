@@ -71,7 +71,9 @@ class _TourCreationScreenState extends ConsumerState<TourCreationScreen> {
         final state = ref.read(tourNotifierProvider('')).value;
         if (state != null && state.tourId.isNotEmpty) {
            // 3. Naviguer vers la première étape réelle
-          context.goNamed('collecte', pathParameters: {'tourId': state.tourId});
+          if (mounted) {
+            context.goNamed('collecte', pathParameters: {'tourId': state.tourId});
+          }
         }
       } catch (e) {
         if (mounted) {

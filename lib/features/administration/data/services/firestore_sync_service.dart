@@ -904,14 +904,25 @@ class FirestoreSyncService {
             i, 
             i + 10 > allowedEnterpriseIds.length ? allowedEnterpriseIds.length : i + 10,
           );
-          final chunkSnapshot = await firestore
-              .collection(_enterprisesCollection)
-              .where(FieldPath.documentId, whereIn: chunk)
-              .get();
           
-          for (final doc in chunkSnapshot.docs) {
-            result.add(Enterprise.fromMap(doc.data()));
-            foundIds.add(doc.id);
+          try {
+            final chunkSnapshot = await firestore
+                .collection(_enterprisesCollection)
+                .where(FieldPath.documentId, whereIn: chunk)
+                .get();
+            
+            for (final doc in chunkSnapshot.docs) {
+              result.add(Enterprise.fromMap(doc.data()));
+              foundIds.add(doc.id);
+            }
+          } on FirebaseException catch (e) {
+            if (e.code == 'permission-denied') {
+              developer.log('Permission denied fetching chunk $chunk from root enterprises collection. This is expected for subtenants. Will resolve remaining via Strategy A/B.', name: 'admin.firestore.sync');
+            } else {
+              AppLogger.warning('Error fetching enterprise chunk $chunk: ${e.message}', name: 'admin.firestore.sync');
+            }
+          } catch (e) {
+             AppLogger.warning('Unexpected error fetching enterprise chunk $chunk: $e', name: 'admin.firestore.sync');
           }
         }
       } else {

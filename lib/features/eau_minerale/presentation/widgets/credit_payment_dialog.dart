@@ -5,8 +5,6 @@ import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../../../../core/offline/offline_repository.dart';
 import '../../../../core/tenant/tenant_provider.dart';
-import '../../domain/entities/credit_payment.dart';
-import '../../domain/entities/sale.dart';
 import 'credit_payment/credit_payment_footer.dart';
 import 'credit_payment/credit_payment_form_fields.dart';
 import 'credit_payment/credit_payment_header.dart';

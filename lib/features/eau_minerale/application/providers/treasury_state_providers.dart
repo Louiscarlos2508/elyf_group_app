@@ -4,13 +4,10 @@ import 'package:rxdart/rxdart.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers/controller_providers.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers/repository_providers.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers/service_providers.dart';
-import 'package:elyf_groupe_app/features/eau_minerale/application/controllers/salary_controller.dart' show SalaryState;
-import 'package:elyf_groupe_app/features/eau_minerale/application/controllers/clients_controller.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/expense_record.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/sale.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/credit_payment.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/treasury_movement.dart';
-import 'package:elyf_groupe_app/features/eau_minerale/domain/services/treasury_movement_mapper.dart';
 import 'package:elyf_groupe_app/shared/domain/entities/treasury_operation.dart';
 
 import '../controllers/finances_controller.dart';

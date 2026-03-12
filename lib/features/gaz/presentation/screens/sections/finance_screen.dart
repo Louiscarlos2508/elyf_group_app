@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:elyf_groupe_app/shared.dart';
-import 'package:elyf_groupe_app/core/logging/app_logger.dart';
 import '../../widgets/gaz_header.dart';
-import '../../widgets/expense_form_dialog.dart';
 import 'finance/finance_tab_bar.dart';
 import 'finance/expenses_tab.dart';
 import 'finance/treasury_tab.dart';
@@ -43,23 +40,6 @@ class _GazFinanceScreenState extends ConsumerState<GazFinanceScreen>
     setState(() {});
   }
 
-  void _showNewExpenseDialog() {
-    try {
-      showDialog(
-        context: context,
-        builder: (_) => const GazExpenseFormDialog(),
-      );
-    } catch (e) {
-      AppLogger.error(
-        'Erreur lors de l\'ouverture du dialog de dépense: $e',
-        name: 'gaz.finance',
-        error: e,
-      );
-      if (mounted) {
-        NotificationService.showError(context, 'Erreur: $e');
-      }
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -84,7 +64,7 @@ class _GazFinanceScreenState extends ConsumerState<GazFinanceScreen>
             title: 'FINANCES',
             subtitle: _getSubtitle(isPOS),
             asSliver: true,
-            actions: [],
+            actions: const [],
             bottom: FinanceTabBar(
               tabController: _tabController,
               isPOS: isPOS,

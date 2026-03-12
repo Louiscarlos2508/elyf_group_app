@@ -25,7 +25,7 @@ class QuantityCounter extends StatelessWidget {
         horizontal: AppDimensions.s12,
       ),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(AppDimensions.r12),
       ),
       child: Row(
@@ -82,7 +82,7 @@ class _ControlButton extends StatelessWidget {
           height: AppDimensions.touchTarget,
           decoration: BoxDecoration(
             border: Border.all(
-              color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+              color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
             ),
             borderRadius: BorderRadius.circular(AppDimensions.r8),
           ),

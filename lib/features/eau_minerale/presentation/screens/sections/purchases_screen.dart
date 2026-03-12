@@ -14,7 +14,6 @@ class PurchasesScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final purchasesAsync = ref.watch(purchasesProvider);
 
     return purchasesAsync.when(

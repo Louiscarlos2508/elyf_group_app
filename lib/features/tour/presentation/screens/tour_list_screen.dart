@@ -5,11 +5,9 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_dimensions.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../gaz/presentation/widgets/gaz_header.dart';
-import '../../application/tour_notifier.dart';
 import '../../data/models/tour.dart';
 import 'package:elyf_groupe_app/features/gaz/application/providers.dart';
-import 'package:elyf_groupe_app/features/gaz/domain/entities/tour.dart' as Domain;
-import 'package:elyf_groupe_app/features/administration/application/providers.dart';
+import 'package:elyf_groupe_app/features/gaz/domain/entities/tour.dart' as domain;
 
 import 'package:elyf_groupe_app/features/gaz/presentation/widgets/wholesale/logistics_empty_state.dart';
 
@@ -18,7 +16,6 @@ class TourListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final activeEnterprise = ref.watch(activeEnterpriseProvider).value;
     
     // On observe les tours réels de l'entreprise active
@@ -75,7 +72,7 @@ class TourListScreen extends ConsumerWidget {
 }
 
 class _TourCard extends ConsumerWidget {
-  final Domain.Tour tour;
+  final domain.Tour tour;
   final VoidCallback onTap;
 
   const _TourCard({
@@ -87,13 +84,9 @@ class _TourCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final status = TourStatusExtension.fromDomain(tour);
-    final statusColor = _getStatusColor(theme, status);
-    
-    final activeEnterprise = ref.watch(activeEnterpriseProvider).value;
-    final entId = activeEnterprise?.id ?? '';
+    final statusColor = _getStatusColor(Theme.of(context), status);
     
     // Récupérer les prix d'achat pour l'estimation des dépenses
-    final settingsAsync = ref.watch(gazSettingsProvider((enterpriseId: entId, moduleId: 'gaz')));
     final leaksAsync = ref.watch(tourLeaksProvider(tour.id));
 
     return Card(
@@ -187,9 +180,9 @@ class _StatusChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.5)),
+        border: Border.all(color: color.withValues(alpha: 0.5)),
       ),
       child: Text(
         status.name.toUpperCase(),

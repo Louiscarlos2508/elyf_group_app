@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import '../../../../../core/permissions/modules/eau_minerale_permissions.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
-import '../../../domain/entities/sale.dart';
 import '../../widgets/centralized_permission_guard.dart';
 // Already imported via widgets.dart
 import '../../widgets/sale_detail_dialog.dart';
@@ -15,14 +14,14 @@ import '../../widgets/sales_table.dart';
 class SalesScreen extends ConsumerWidget {
   const SalesScreen({super.key});
 
-  void _showForm(BuildContext context) {
+  void _showForm(BuildContext context, {Sale? initialSale}) {
     final formKey = GlobalKey<SaleFormState>();
     showDialog(
       context: context,
       barrierDismissible: true,
       builder: (context) => FormDialog(
-        title: 'Nouvelle vente',
-        child: SaleForm(key: formKey),
+        title: initialSale == null ? 'Nouvelle vente' : 'Modifier la vente',
+        child: SaleForm(key: formKey, initialSale: initialSale),
         onSave: () async {
           final state = formKey.currentState;
           if (state != null) {
@@ -47,7 +46,9 @@ class SalesScreen extends ConsumerWidget {
         context: context,
         builder: (context) => SaleDetailDialog(sale: sale),
       );
-    } else if (action == 'edit' || action == 'void') {
+    } else if (action == 'edit') {
+      _showForm(context, initialSale: sale);
+    } else if (action == 'void') {
       _showVoidConfirmation(context, ref, sale);
     }
   }

@@ -181,7 +181,7 @@ class _CommissionDeclarationDialogState
                             borderRadius: BorderRadius.circular(12),
                           ),
                           filled: true,
-                          fillColor: Colors.blue.shade50.withOpacity(0.3),
+                          fillColor: Colors.blue.shade50.withValues(alpha: 0.3),
                           contentPadding: isKeyboardOpen ? const EdgeInsets.symmetric(horizontal: 12, vertical: 8) : null,
                         ),
                         validator: (value) {

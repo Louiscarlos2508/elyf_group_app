@@ -83,34 +83,34 @@ class SyncOrchestrator {
     }
   }
 
-  /// S'assure que la synchronisation d'un module spécifique est active pour l'entreprise courante.
+  /// S'assure que la synchronisation d'un module spécifique est active pour l'entreprise cible.
   /// Seule autorité pour démarrer une synchronisation de module en temps réel.
-  Future<void> ensureModuleSync(String moduleId) async {
+  Future<void> ensureModuleSync(String moduleId, {String? enterpriseId}) async {
     if (_isStopping) return;
 
-    final activeEnterpriseId = ref.read(activeEnterpriseIdProvider).value;
-    if (activeEnterpriseId == null) {
+    final targetEnterpriseId = enterpriseId ?? ref.read(activeEnterpriseIdProvider).value;
+    if (targetEnterpriseId == null) {
       AppLogger.warning('SyncOrchestrator: Cannot ensure module sync, no active enterprise ID', name: 'sync.orchestrator');
       return;
     }
 
     final globalModuleSync = ref.read(offline_providers.globalModuleRealtimeSyncServiceProvider);
     
-    AppLogger.info('SyncOrchestrator: Ensuring realtime sync for module $moduleId in enterprise $activeEnterpriseId', name: 'sync.orchestrator');
+    AppLogger.info('SyncOrchestrator: Ensuring realtime sync for module $moduleId in enterprise $targetEnterpriseId', name: 'sync.orchestrator');
 
     try {
       final adminController = ref.read(admin_providers.adminControllerProvider);
       
       // Get the enterprise and its hierarchy info
-      final enterprise = await adminController.getEnterpriseById(activeEnterpriseId);
+      final enterprise = await adminController.getEnterpriseById(targetEnterpriseId);
       final parentEnterpriseId = enterprise?.parentEnterpriseId;
 
       if (_isStopping) return;
 
       // Start realtime sync for the main enterprise
-      if (!globalModuleSync.isListeningTo(activeEnterpriseId, moduleId)) {
+      if (!globalModuleSync.isListeningTo(targetEnterpriseId, moduleId)) {
         await globalModuleSync.startRealtimeSync(
-          enterpriseId: activeEnterpriseId,
+          enterpriseId: targetEnterpriseId,
           moduleId: moduleId,
           parentEnterpriseId: parentEnterpriseId,
         );
@@ -122,10 +122,10 @@ class SyncOrchestrator {
       if (currentUser != null) {
         final assignments = await adminController.getUserEnterpriseModuleUsers(currentUser.id);
         final activeAssignment = assignments.firstWhere(
-          (a) => a.enterpriseId == activeEnterpriseId && a.moduleId == moduleId && a.isActive,
+          (a) => a.enterpriseId == targetEnterpriseId && a.moduleId == moduleId && a.isActive,
           orElse: () => assignments.firstWhere(
-            (a) => a.enterpriseId == activeEnterpriseId && a.isActive,
-            orElse: () => EnterpriseModuleUser(userId: currentUser.id, enterpriseId: activeEnterpriseId, moduleId: moduleId, roleIds: []),
+            (a) => a.enterpriseId == targetEnterpriseId && a.isActive,
+            orElse: () => EnterpriseModuleUser(userId: currentUser.id, enterpriseId: targetEnterpriseId, moduleId: moduleId, roleIds: []),
           ),
         );
 
@@ -133,7 +133,7 @@ class SyncOrchestrator {
           AppLogger.info('SyncOrchestrator: Parent access detected, synchronizing child enterprises for module $moduleId', name: 'sync.orchestrator');
           final enterpriseController = ref.read(admin_providers.enterpriseControllerProvider);
           final allEnterprises = await enterpriseController.getAllEnterprises();
-          final children = allEnterprises.where((e) => e.parentEnterpriseId == activeEnterpriseId).toList();
+          final children = allEnterprises.where((e) => e.parentEnterpriseId == targetEnterpriseId).toList();
           
           for (final child in children) {
             if (_isStopping) break;
@@ -141,7 +141,7 @@ class SyncOrchestrator {
               await globalModuleSync.startRealtimeSync(
                 enterpriseId: child.id,
                 moduleId: moduleId,
-                parentEnterpriseId: activeEnterpriseId, // Active parent
+                parentEnterpriseId: targetEnterpriseId, // Active parent
               );
             }
           }

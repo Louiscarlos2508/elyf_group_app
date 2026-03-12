@@ -15,7 +15,6 @@ class StockHistoryTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final recordsAsync = ref.watch(_stockAuditRecordsProvider(enterpriseId));
 
     return recordsAsync.when(

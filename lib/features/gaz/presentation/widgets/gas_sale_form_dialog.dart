@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/shared/domain/entities/payment_method.dart';
-import 'package:elyf_groupe_app/features/gaz/domain/entities/gaz_settings.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/gas_sale.dart';
 import 'gas_sale_form/customer_info_widget.dart';
@@ -196,7 +194,7 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
                     _PaymentMethodSelector(
                       selected: state.paymentMethod,
                       isMixed: state.isMixedPayment,
-                      onChanged: (method, isMixed) => notifier.updatePaymentMethod(method, isMixed),
+                      onChanged: notifier.updatePaymentMethod,
                     ),
                     if (state.isMixedPayment) ...[
                       const SizedBox(height: 12),
@@ -211,7 +209,7 @@ class _GasSaleFormDialogState extends ConsumerState<GasSaleFormDialog> {
                     if (widget.saleType == SaleType.retail) ...[
                       const SizedBox(height: 8),
                       InkWell(
-                        onTap: () => notifier.toggleAdvancedOptions(),
+                        onTap: notifier.toggleAdvancedOptions,
                         borderRadius: BorderRadius.circular(8),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(vertical: 8),

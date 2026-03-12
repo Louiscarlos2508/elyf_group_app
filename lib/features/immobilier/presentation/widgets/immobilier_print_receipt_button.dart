@@ -53,7 +53,7 @@ class _ImmobilierPrintReceiptButtonState extends ConsumerState<ImmobilierPrintRe
     setState(() => _isPrinting = true);
 
     // Afficher l'overlay flou (identique au module Gaz)
-    final overlay = showDialog(
+    showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => BackdropFilter(

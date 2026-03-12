@@ -4,13 +4,11 @@ import 'package:intl/intl.dart';
 
 import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 
-import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/daily_worker.dart';
 import '../../../../shared/utils/notification_service.dart';
 import '../../../../core/tenant/tenant_provider.dart';
 import '../../application/providers/repository_providers.dart';
 
 import '../../application/providers/state_providers.dart';
-import '../../domain/entities/worker_monthly_stat.dart';
 
 /// Widget affichant les analyses de salaires (Rapports ouvriers).
 class SalaryAnalysisContent extends ConsumerStatefulWidget {

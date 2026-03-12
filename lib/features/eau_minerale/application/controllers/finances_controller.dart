@@ -1,24 +1,19 @@
-import '../../domain/repositories/closing_repository.dart';
 import '../../domain/repositories/finance_repository.dart';
 import '../../domain/repositories/treasury_repository.dart';
-import '../../domain/entities/closing.dart';
 import '../../domain/entities/expense_record.dart';
 import '../../../../shared/domain/entities/treasury_operation.dart';
-import '../../../../core/errors/app_exceptions.dart';
 import '../../../../core/logging/app_logger.dart';
 
 class FinancesController {
   FinancesController(
     this._repository,
     this._treasuryRepository,
-    this._closingRepository,
     this._enterpriseId,
     this._userId,
   );
 
   final FinanceRepository _repository;
   final TreasuryRepository _treasuryRepository;
-  final ClosingRepository _closingRepository;
   final String _enterpriseId;
   final String _userId;
 

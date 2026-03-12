@@ -1,14 +1,13 @@
 import '../../domain/entities/cylinder_leak.dart';
 import '../../domain/repositories/cylinder_leak_repository.dart';
-import '../../domain/repositories/cylinder_stock_repository.dart';
+
 import '../../domain/services/transaction_service.dart';
 
 /// Contrôleur pour la gestion des bouteilles avec fuites.
 class CylinderLeakController {
-  CylinderLeakController(this._leakRepository, this._stockRepository, this._transactionService);
+  CylinderLeakController(this._leakRepository, this._transactionService);
 
   final CylinderLeakRepository _leakRepository;
-  final CylinderStockRepository _stockRepository;
   final TransactionService _transactionService;
 
   /// Récupère les fuites.

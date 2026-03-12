@@ -70,7 +70,7 @@ final transactionRepositoryProvider = Provider<TransactionRepository>((ref) {
   final syncManager = ref.watch(syncManagerProvider);
   final connectivityService = ref.watch(connectivityServiceProvider);
   final auditTrailRepository = ref.watch(auditTrailRepositoryProvider);
-  final userId = ref.watch(currentUserIdProvider) ?? 'system';
+  final userId = ref.watch(currentUserIdProvider);
 
   return TransactionOfflineRepository(
     driftService: driftService,
@@ -87,11 +87,10 @@ final orangeMoneyControllerProvider = Provider<OrangeMoneyController>(
   (ref) => OrangeMoneyController(
     ref.watch(transactionRepositoryProvider),
     ref.watch(liquidityRepositoryProvider),
-    ref.watch(settingsRepositoryProvider),
     ref.watch(commissionRepositoryProvider),
     ref.watch(orangeMoneyTreasuryRepositoryProvider),
     ref.watch(auditTrailServiceProvider),
-    ref.watch(currentUserIdProvider) ?? 'system',
+    ref.watch(currentUserIdProvider),
     ref.watch(orangeMoneyPermissionAdapterProvider),
     ref.watch(activeEnterpriseProvider).value?.id ?? 'default',
   ),
@@ -160,7 +159,7 @@ final agentRepositoryProvider = Provider<AgentRepository>((ref) {
   final syncManager = ref.watch(syncManagerProvider);
   final connectivityService = ref.watch(connectivityServiceProvider);
   final auditTrailRepository = ref.watch(auditTrailRepositoryProvider);
-  final userId = ref.watch(currentUserIdProvider) ?? 'system';
+  final userId = ref.watch(currentUserIdProvider);
 
   return AgentOfflineRepository(
     driftService: driftService,
@@ -179,7 +178,7 @@ final agentsControllerProvider = Provider<AgentsController>(
     ref.watch(agentRepositoryProvider),
     ref.watch(orangeMoneyTreasuryRepositoryProvider),
     ref.watch(auditTrailServiceProvider),
-    ref.watch(currentUserIdProvider) ?? 'system',
+    ref.watch(currentUserIdProvider),
     ref.watch(orangeMoneyPermissionAdapterProvider),
     ref.watch(activeEnterpriseProvider).value?.id ?? 'default',
     ref.watch(tenantContextServiceProvider),
@@ -194,7 +193,7 @@ final commissionRepositoryProvider = Provider<CommissionRepository>((ref) {
   final syncManager = ref.watch(syncManagerProvider);
   final connectivityService = ref.watch(connectivityServiceProvider);
   final auditTrailRepository = ref.watch(auditTrailRepositoryProvider);
-  final userId = ref.watch(currentUserIdProvider) ?? 'system';
+  final userId = ref.watch(currentUserIdProvider);
 
   return CommissionOfflineRepository(
     driftService: driftService,
@@ -212,7 +211,7 @@ final commissionsControllerProvider = Provider<CommissionsController>(
   (ref) => CommissionsController(
     ref.watch(commissionRepositoryProvider),
     ref.watch(orangeMoneyTreasuryRepositoryProvider),
-    ref.watch(currentUserIdProvider) ?? 'system',
+    ref.watch(currentUserIdProvider),
     ref.watch(orangeMoneyPermissionAdapterProvider),
     ref.watch(activeEnterpriseProvider).value?.id ?? 'default',
   ),
@@ -226,7 +225,7 @@ final settingsRepositoryProvider = Provider<SettingsRepository>((ref) {
   final syncManager = ref.watch(syncManagerProvider);
   final connectivityService = ref.watch(connectivityServiceProvider);
   final auditTrailRepository = ref.watch(auditTrailRepositoryProvider);
-  final userId = ref.watch(currentUserIdProvider) ?? 'system';
+  final userId = ref.watch(currentUserIdProvider);
 
   return SettingsOfflineRepository(
     driftService: driftService,
@@ -243,7 +242,7 @@ final settingsRepositoryProvider = Provider<SettingsRepository>((ref) {
 final settingsControllerProvider = Provider<SettingsController>(
   (ref) => SettingsController(
     ref.watch(settingsRepositoryProvider),
-    ref.watch(currentUserIdProvider) ?? 'system',
+    ref.watch(currentUserIdProvider),
   ),
 );
 
@@ -303,7 +302,7 @@ final liquidityRepositoryProvider = Provider<LiquidityRepository>((ref) {
   final syncManager = ref.watch(syncManagerProvider);
   final connectivityService = ref.watch(connectivityServiceProvider);
   final auditTrailRepository = ref.watch(auditTrailRepositoryProvider);
-  final userId = ref.watch(currentUserIdProvider) ?? 'system';
+  final userId = ref.watch(currentUserIdProvider);
 
   return LiquidityOfflineRepository(
     driftService: driftService,
@@ -330,7 +329,7 @@ final liquidityControllerProvider = Provider<LiquidityController>(
   (ref) => LiquidityController(
     ref.watch(liquidityRepositoryProvider),
     ref.watch(auditTrailServiceProvider),
-    ref.watch(currentUserIdProvider) ?? 'system',
+    ref.watch(currentUserIdProvider),
     ref.watch(orangeMoneyPermissionAdapterProvider),
     ref.watch(activeEnterpriseProvider).value?.id ?? 'default',
     ref.watch(liquidityServiceProvider),

@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/boutique/application/providers.dart';
 import 'package:elyf_groupe_app/core/permissions/modules/boutique_permissions.dart';
-import 'package:elyf_groupe_app/features/boutique/domain/entities/closing.dart';
 import 'package:elyf_groupe_app/features/boutique/domain/entities/cart_item.dart';
 import 'package:elyf_groupe_app/features/boutique/domain/entities/product.dart';
 import 'package:elyf_groupe_app/features/boutique/presentation/widgets/cart_summary.dart';
@@ -175,15 +174,6 @@ class _PosScreenState extends ConsumerState<PosScreen> {
   }
 
   void _showCheckout(BuildContext context) async {
-    // Session Guard
-    final activeSession = ref.read(activeSessionProvider).value;
-    if (activeSession == null || activeSession.status != ClosingStatus.open) {
-      NotificationService.showWarning(
-        context,
-        'Caisse fermée. Veuillez ouvrir la caisse avant de procéder au paiement.',
-      );
-      return;
-    }
 
     if (_cartItems.isEmpty) {
       NotificationService.showInfo(context, 'Le panier est vide');
@@ -284,9 +274,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final productsAsync = ref.watch(activeProductsProvider);
-    final activeSessionAsync = ref.watch(activeSessionProvider);
     final categoriesAsync = ref.watch(categoriesProvider);
-    final isSessionOpen = activeSessionAsync.value?.status == ClosingStatus.open;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -296,45 +284,6 @@ class _PosScreenState extends ConsumerState<PosScreen> {
           children: [
             Column(
               children: [
-                if (!isSessionOpen)
-                  Container(
-                    width: double.infinity,
-                    color: Colors.orange[800],
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 8,
-                      horizontal: 16,
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.warning_amber_rounded,
-                          color: Colors.white,
-                        ),
-                        const SizedBox(width: 12),
-                        const Expanded(
-                          child: Text(
-                            'CAISSE FERMÉE. Veuillez ouvrir une session sur le Dashboard pour vendre.',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            showDialog(
-                              context: context,
-                              builder: (context) => const OpeningSessionDialog(),
-                            );
-                          },
-                          child: const Text(
-                            'OUVRIR',
-                            style: TextStyle(color: Colors.white),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                 Expanded(
                   child: Row(
                     children: [
@@ -482,7 +431,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                                         final product = filteredProducts[index];
                                         return ProductTile(
                                           product: product,
-                                          isEnabled: isSessionOpen,
+                                          isEnabled: true,
                                           onTap: () => _addToCart(product),
                                         );
                                       },

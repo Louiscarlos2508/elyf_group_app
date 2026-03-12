@@ -31,7 +31,6 @@ class _CollecteSiteScreenState extends ConsumerState<CollecteSiteScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final formats = ref.watch(formatsActifsProvider);
     final state = ref.watch(tourNotifierProvider(widget.tourId)).value;
 

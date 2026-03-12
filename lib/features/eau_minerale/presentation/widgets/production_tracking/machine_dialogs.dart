@@ -9,8 +9,6 @@ import 'machine_add_helpers.dart';
 import 'machine_installation_form_dialog.dart';
 import 'machine_selection_dialog.dart';
 import '../../../domain/entities/machine_material_usage.dart';
-import '../../../domain/entities/production_session.dart';
-import '../../../domain/entities/machine.dart';
 
 /// Dialogs pour la gestion des machines.
 class MachineDialogs {

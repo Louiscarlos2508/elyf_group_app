@@ -62,7 +62,6 @@ class _SalariesScreenState extends ConsumerState<SalariesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
 
     return CustomScrollView(
         slivers: [

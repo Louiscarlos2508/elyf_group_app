@@ -5,8 +5,6 @@ import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart
 import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
 import '../../../../core/logging/app_logger.dart';
 import '../../domain/entities/machine_material_usage.dart';
-import '../../domain/entities/production_day.dart';
-import '../../domain/entities/production_session.dart';
 import '../../domain/services/production_session_builder.dart';
 import '../../domain/services/production_session_status_calculator.dart';
 import '../../domain/services/validation/production_validation_service.dart';

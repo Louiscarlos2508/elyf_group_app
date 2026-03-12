@@ -228,6 +228,6 @@ class SunmiPrintService {
 
   String _truncate(String text, int length) {
     if (text.length <= length) return text.padRight(length);
-    return text.substring(0, length - 1) + ".";
+    return "${text.substring(0, length - 1)}.";
   }
 }

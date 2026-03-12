@@ -68,27 +68,27 @@ class RawMaterialsCard extends StatelessWidget {
 
             // Libellé de quantité
             String quantityDisplay;
-            if ((product.unitsPerLot ?? 1) > 1) {
-              final lots = totalQuantity / (product.unitsPerLot ?? 1);
-              quantityDisplay = '${lots.toStringAsFixed(1)} lots (${totalQuantity.toInt()} ${product.unit ?? ''})';
+            if (product.unitsPerLot > 1) {
+              final lots = totalQuantity / product.unitsPerLot;
+              quantityDisplay = '${lots.toStringAsFixed(1)} lots (${totalQuantity.toInt()} ${product.unit})';
             } else {
-              quantityDisplay = '${totalQuantity.toInt()} ${product.unit ?? ''}';
+              quantityDisplay = '${totalQuantity.toInt()} ${product.unit}';
             }
 
             return Padding(
               padding: const EdgeInsets.only(bottom: 20),
               child: _buildPackagingItem(
                 context,
-                product.name ?? 'Inconnu',
-                product.description ?? ((product.unitsPerLot ?? 1) > 1 
-                  ? 'Format: ${product.unitsPerLot} ${product.unit ?? ''}/lot' 
+                product.name,
+                product.description ?? (product.unitsPerLot > 1 
+                  ? 'Format: ${product.unitsPerLot} ${product.unit}/lot' 
                   : 'Géré à l\'unité'),
                 totalQuantity,
-                product.unit ?? '',
+                product.unit,
                 false, // Disable low stock warning logic on raw materials temporarily
                 null,
                 customQuantityLabel: quantityDisplay,
-                icon: _getIconForName(product.name ?? 'Inconnu'),
+                icon: _getIconForName(product.name),
               ),
             );
           }),

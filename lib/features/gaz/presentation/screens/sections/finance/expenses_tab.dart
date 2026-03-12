@@ -195,7 +195,7 @@ class _ExpensesTabState extends ConsumerState<ExpensesTab> {
                             onPressed: () {
                               showDialog(
                                 context: context,
-                                builder: (_) => GazExpenseFormDialog(),
+                                builder: (_) => const GazExpenseFormDialog(),
                               );
                             },
                             icon: const Icon(Icons.add_circle_outline),

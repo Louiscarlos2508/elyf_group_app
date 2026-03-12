@@ -25,7 +25,7 @@ class TourProgressBar extends StatelessWidget {
         color: theme.colorScheme.surface,
         border: Border(
           bottom: BorderSide(
-            color: theme.colorScheme.outline.withOpacity(0.1),
+            color: theme.colorScheme.outline.withValues(alpha: 0.1),
           ),
         ),
       ),
@@ -80,7 +80,7 @@ class _StepIndicator extends StatelessWidget {
     final theme = Theme.of(context);
     final color = isCompleted || isActive 
         ? theme.colorScheme.primary 
-        : theme.colorScheme.onSurface.withOpacity(0.3);
+        : theme.colorScheme.onSurface.withValues(alpha: 0.3);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -93,7 +93,7 @@ class _StepIndicator extends StatelessWidget {
             shape: BoxShape.circle,
             boxShadow: isActive ? [
               BoxShadow(
-                color: color.withOpacity(0.4),
+                color: color.withValues(alpha: 0.4),
                 blurRadius: 8,
                 spreadRadius: 2,
               )

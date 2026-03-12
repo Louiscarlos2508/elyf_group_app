@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
-import '../../domain/entities/production_day.dart';
 import '../../domain/entities/payment_status.dart';
 import '../../domain/entities/production_payment_person.dart';
 import 'production_payment_person_row.dart';

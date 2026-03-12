@@ -5,8 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
-import '../../domain/entities/employee.dart';
-import '../../domain/entities/salary_payment.dart';
 import '../../domain/exceptions/duplicate_payment_exception.dart';
 import '../../domain/exceptions/invalid_payment_date_exception.dart';
 import '../../domain/exceptions/invalid_payment_amount_exception.dart';

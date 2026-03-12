@@ -3,10 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/auth/providers.dart'
-    show
-        authControllerProvider,
-        currentUserProfileProvider,
-        currentUserProvider;
+    show authControllerProvider;
 
 /// Logout card for profile screen.
 class ProfileLogoutCard extends ConsumerWidget {

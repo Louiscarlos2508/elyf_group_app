@@ -59,17 +59,20 @@ class _SupplierFormDialogState extends ConsumerState<SupplierFormDialog> {
         } else {
           await controller.updateSupplier(supplier);
         }
-        if (mounted) Navigator.pop(context);
-        NotificationService.showSuccess(context, 'Fournisseur enregistré avec succès');
+        if (mounted) {
+          Navigator.pop(context);
+          NotificationService.showSuccess(context, 'Fournisseur enregistré avec succès');
+        }
       } catch (e) {
-        NotificationService.showError(context, 'Erreur lors de l\'enregistrement : $e');
+        if (mounted) {
+          NotificationService.showError(context, 'Erreur lors de l\'enregistrement : $e');
+        }
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
 
     return AlertDialog(
       title: Text(widget.supplier == null ? "Nouveau Fournisseur" : "Modifier Fournisseur"),

@@ -4,9 +4,6 @@ import 'package:elyf_groupe_app/shared/utils/currency_formatter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
-import '../../domain/entities/production_session.dart';
-import '../../domain/entities/report_period.dart';
-import '../../domain/entities/sale.dart';
 import '../../domain/services/profitability_calculation_service.dart';
 import 'production_period_formatter.dart';
 import 'profitability/financial_summary_card.dart';

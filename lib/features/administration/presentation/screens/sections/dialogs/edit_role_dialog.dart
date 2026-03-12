@@ -150,7 +150,7 @@ class _EditRoleDialogState extends ConsumerState<EditRoleDialog>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final rolesAsync = ref.watch(rolesProvider);
+
     final mediaQuery = MediaQuery.of(context);
     final screenWidth = mediaQuery.size.width;
     final screenHeight = mediaQuery.size.height;

@@ -298,6 +298,6 @@ final treasuryRepositoryProvider = Provider<TreasuryRepository>((ref) {
     enterpriseId: enterpriseId,
     moduleType: 'eau_minerale',
     auditTrailRepository: auditTrailRepo,
-    userId: userId ?? 'unknown',
+    userId: userId,
   );
 });

@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../domain/entities/production_event.dart';
-import '../../../domain/entities/production_session.dart';
-import '../../../domain/entities/production_session_status.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import '../production_event_dialog.dart';
 import '../production_finalization_dialog.dart';

@@ -1,11 +1,9 @@
-import '../../../../core/logging/app_logger.dart';
 import '../../../../core/errors/app_exceptions.dart';
 import '../../domain/entities/stock_item.dart';
 import '../../domain/entities/stock_movement.dart';
 import '../../domain/repositories/stock_repository.dart';
 import '../../domain/entities/material_consumption.dart';
 import '../../domain/repositories/product_repository.dart';
-import '../../domain/product_roles.dart';
 
 class StockController {
   StockController(

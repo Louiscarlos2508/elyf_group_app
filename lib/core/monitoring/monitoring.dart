@@ -7,6 +7,7 @@
 /// - [DriftMonitorExtension]: `monitoring.monitoredQuery(...)` extension.
 /// - [FirebaseMonitorExtension]: `monitoring.monitoredFirebaseCall(...)` extension.
 /// - [monitoringServiceProvider] / [syncMonitorServiceProvider]: Riverpod DI.
+library;
 
 export 'analytics_service.dart' show AnalyticsService, FirebaseAnalyticsService;
 export 'crash_service.dart' show CrashService, FirebaseCrashService;

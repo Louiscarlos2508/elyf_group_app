@@ -10,7 +10,6 @@ import '../../../../features/administration/domain/entities/enterprise.dart';
 import '../../domain/entities/report_data.dart';
 import 'sales_report/sales_report_cylinder_stats.dart';
 import 'sales_report/sales_report_header.dart';
-import 'sales_report/sales_report_recent_sales.dart';
 import 'sales_report/sales_report_retail_stats.dart';
 import 'sales_report/sales_report_type_cards.dart';
 import 'sales_report/sales_report_wholesale_stats.dart';
@@ -40,7 +39,6 @@ class GazSalesReportContentV2 extends ConsumerWidget {
         }
         
         final enterpriseId = enterprise.id;
-        const moduleId = 'gaz';
         
         final salesAsync = ref.watch(gasSalesProvider);
         final cylindersAsync = ref.watch(cylindersProvider);

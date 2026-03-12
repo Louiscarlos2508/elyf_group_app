@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:elyf_groupe_app/features/administration/domain/entities/enterprise.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:intl/intl.dart';
 import 'package:elyf_groupe_app/shared.dart';
-import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
+
 import 'package:elyf_groupe_app/features/boutique/application/providers.dart';
 import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
 import '../../widgets/dashboard_low_stock_list.dart';
@@ -21,7 +20,7 @@ class DashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final activeEnterprise = ref.watch(activeEnterpriseProvider).value;
+
     final salesAsync = ref.watch(recentSalesProvider);
     final lowStockAsync = ref.watch(lowStockProductsProvider);
 

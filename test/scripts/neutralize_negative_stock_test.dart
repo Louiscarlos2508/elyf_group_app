@@ -1,7 +1,8 @@
+// ignore_for_file: avoid_print
 import 'package:flutter_test/flutter_test.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:elyf_group_app/firebase_options.dart';
+import 'package:elyf_groupe_app/firebase_options.dart';
 
 // Run this with: flutter test test/scripts/neutralize_negative_stock_test.dart
 void main() {

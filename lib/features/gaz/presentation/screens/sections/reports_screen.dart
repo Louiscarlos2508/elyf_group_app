@@ -294,8 +294,6 @@ class _GazReportsScreenState extends ConsumerState<GazReportsScreen> {
           startDate: _startDate,
           endDate: _endDate,
         );
-      default:
-        return const SizedBox.shrink();
     }
   }
 }

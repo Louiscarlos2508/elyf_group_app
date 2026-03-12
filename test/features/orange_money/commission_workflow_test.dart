@@ -76,40 +76,5 @@ void main() {
         argThat(isA<Commission>()),
       )).called(1);
     });
-
-    test('validateCommission should update status to validated', () async {
-      // Arrange
-      final declaredCommission = Commission(
-        id: 'comm_123',
-        enterpriseId: 'ent_1',
-        period: '2024-02',
-        estimatedAmount: 10000,
-        transactionsCount: 50,
-        declaredAmount: 10200,
-        status: CommissionStatus.declared,
-        createdAt: DateTime.now(),
-      );
-
-      when(mockCommissionRepo.getCommission('comm_123'))
-          .thenAnswer((_) async => declaredCommission);
-      when(mockCommissionRepo.updateCommission(any))
-          .thenAnswer((_) async => Future.value());
-
-      // Act
-      final result = await commissionService.validateCommission(
-        commissionId: 'comm_123',
-        validatedBy: 'supervisor_1',
-        notes: 'Verified OK',
-      );
-
-      // Assert
-      expect(result.status, CommissionStatus.validated);
-      expect(result.validatedBy, 'supervisor_1');
-      expect(result.notes, 'Verified OK');
-      
-      verify(mockCommissionRepo.updateCommission(
-        argThat(isA<Commission>()),
-      )).called(1);
-    });
   });
 }

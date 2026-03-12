@@ -1,3 +1,4 @@
+// ignore_for_file: avoid_print
 import 'dart:io';
 
 void main() {
@@ -18,6 +19,7 @@ void main() {
           ? map['localId'] as String 
           : (map['id'] as String? ?? ''),
       ''';
+
 
   int modified = 0;
   for (var file in files) {
@@ -42,5 +44,5 @@ void main() {
       print('Modified: \${file.path}');
     }
   }
-  print('Total files modified: \$modified');
+  print('Total files modified: $modified');
 }

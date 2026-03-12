@@ -5,8 +5,6 @@ import 'tracking_dialogs.dart';
 import 'machine_installation_form_dialog.dart';
 
 import '../../../domain/entities/machine_material_usage.dart';
-import '../../../domain/entities/production_session.dart';
-import '../../../domain/entities/machine.dart';
 
 /// Liste des états des matières machine par machine.
 /// (Anciennement BobinesStatusList).

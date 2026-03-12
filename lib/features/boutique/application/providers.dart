@@ -47,7 +47,6 @@ import 'package:elyf_groupe_app/features/boutique/domain/entities/sale.dart';
 import 'package:elyf_groupe_app/features/boutique/domain/entities/purchase.dart';
 import 'package:elyf_groupe_app/features/boutique/domain/entities/expense.dart';
 import 'package:elyf_groupe_app/shared/domain/entities/treasury_operation.dart';
-import 'package:elyf_groupe_app/features/boutique/domain/entities/closing.dart';
 import 'package:elyf_groupe_app/features/boutique/domain/entities/supplier.dart';
 import 'package:elyf_groupe_app/features/boutique/domain/entities/category.dart';
 import '../domain/services/calculation/cart_calculation_service.dart';
@@ -63,7 +62,6 @@ import '../domain/entities/cart_item.dart';
 import 'controllers/cart_controller.dart';
 import 'controllers/store_controller.dart';
 import '../domain/services/supplier_settlement_service.dart';
-import '../../../../core/printing/printer_provider.dart';
 
 /// Provider for BoutiqueCalculationService.
 final boutiqueCalculationServiceProvider =
@@ -375,10 +373,6 @@ final expensesProvider = StreamProvider(
 
 final closingsProvider = StreamProvider.autoDispose(
   (ref) => ref.watch(storeControllerProvider).watchClosings(),
-);
-
-final activeSessionProvider = StreamProvider.autoDispose<Closing?>(
-  (ref) => ref.watch(storeControllerProvider).watchActiveSession(),
 );
 
 final treasuryOperationsProvider = StreamProvider.autoDispose<List<TreasuryOperation>>(

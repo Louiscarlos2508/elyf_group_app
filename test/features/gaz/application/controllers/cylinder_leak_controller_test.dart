@@ -4,7 +4,6 @@ import 'package:mockito/annotations.dart';
 
 import 'package:elyf_groupe_app/features/gaz/application/controllers/cylinder_leak_controller.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/repositories/cylinder_leak_repository.dart';
-import 'package:elyf_groupe_app/features/gaz/domain/repositories/cylinder_stock_repository.dart';
 import 'package:elyf_groupe_app/features/gaz/domain/entities/cylinder_leak.dart';
 import '../../../../helpers/test_helpers.dart';
 
@@ -12,18 +11,16 @@ import 'cylinder_leak_controller_test.mocks.dart';
 
 import 'package:elyf_groupe_app/features/gaz/domain/services/transaction_service.dart';
 
-@GenerateMocks([CylinderLeakRepository, CylinderStockRepository, TransactionService])
+@GenerateMocks([CylinderLeakRepository, TransactionService])
 void main() {
   late CylinderLeakController controller;
   late MockCylinderLeakRepository mockLeakRepository;
-  late MockCylinderStockRepository mockStockRepository;
   late MockTransactionService mockTransactionService;
 
   setUp(() {
     mockLeakRepository = MockCylinderLeakRepository();
-    mockStockRepository = MockCylinderStockRepository();
     mockTransactionService = MockTransactionService();
-    controller = CylinderLeakController(mockLeakRepository, mockStockRepository, mockTransactionService);
+    controller = CylinderLeakController(mockLeakRepository, mockTransactionService);
   });
 
   group('CylinderLeakController', () {

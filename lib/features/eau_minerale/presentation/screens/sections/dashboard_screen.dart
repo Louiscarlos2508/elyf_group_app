@@ -3,10 +3,9 @@ import 'package:elyf_groupe_app/features/administration/domain/entities/enterpri
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
-import 'package:elyf_groupe_app/core/tenant/tenant_provider.dart';
+
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
 import 'package:elyf_groupe_app/app/theme/app_spacing.dart';
-import '../../../domain/entities/stock_item.dart';
 import '../../widgets/dashboard_month_kpis.dart';
 import '../../widgets/dashboard_stock_list.dart';
 import '../../widgets/dashboard_today_section.dart';
@@ -22,7 +21,6 @@ class DashboardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final activeEnterprise = ref.watch(activeEnterpriseProvider).value;
 
     return CustomScrollView(
           slivers: [
@@ -169,7 +167,7 @@ class DashboardStockAlerts extends ConsumerWidget {
           productName: lowStockItems.first.name,
           onTap: () {
             // Appelle le provider de navigation modulaire pour changer de section.
-            ref.read(currentModuleSectionIdProvider.notifier).state = 'stock';
+            ref.read(currentModuleSectionIdProvider.notifier).setSection('stock');
           },
         );
       },

@@ -6,6 +6,12 @@ abstract class CustomerRepository {
   Future<CustomerSummary?> getCustomer(String id);
   Future<String> createCustomer(String name, String phone, {String? cnib});
   Future<void> deleteCustomer(String id);
+  Future<void> updateCustomer({
+    required String id,
+    String? name,
+    String? phone,
+    String? cnib,
+  });
   Future<List<Sale>> fetchCustomerHistory(String customerId);
 }
 

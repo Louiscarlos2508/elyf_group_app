@@ -70,7 +70,7 @@ class _LivraisonGrossisteScreenState extends ConsumerState<LivraisonGrossisteScr
           
           Container(
             padding: const EdgeInsets.all(AppDimensions.s16),
-            color: theme.colorScheme.surfaceVariant.withOpacity(0.5),
+            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
             child: Column(
               children: [
                 Row(

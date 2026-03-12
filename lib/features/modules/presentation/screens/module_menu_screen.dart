@@ -20,7 +20,7 @@ class _ModuleMenuScreenState extends ConsumerState<ModuleMenuScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final activeEnterpriseAsync = ref.watch(activeEnterpriseProvider);
-    final hierarchicalEnterprisesAsync = ref.watch(hierarchicalEnterprisesProvider);
+
     final accessibleModulesAsync = ref.watch(
       userAccessibleModulesForActiveEnterpriseProvider,
     );
@@ -55,7 +55,11 @@ class _ModuleMenuScreenState extends ConsumerState<ModuleMenuScreen> {
             final moduleId = moduleIds.first;
             final module = EnterpriseModule.values.firstWhere((e) => e.id == moduleId);
             developer.log('🚀 Auto-navigating (listener) to: ${module.id}', name: 'ModuleMenuScreen');
-            Future.microtask(() => _navigateToModule(context, module));
+            Future.microtask(() {
+              if (context.mounted) {
+                _navigateToModule(context, module);
+              }
+            });
           } catch (e) {
             developer.log('❌ Error during auto-navigation: $e', name: 'ModuleMenuScreen');
           }
@@ -267,41 +271,6 @@ class _ModuleMenuScreenState extends ConsumerState<ModuleMenuScreen> {
     );
   }
 
-  Widget _buildEmptyState(ThemeData theme) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.business_outlined,
-            size: 80,
-            color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'Aucune organisation accessible',
-            style: theme.textTheme.titleLarge?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Contactez votre administrateur pour obtenir un accès',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 32),
-          FilledButton.icon(
-            onPressed: () => ref.read(authControllerProvider).signOut(),
-            icon: const Icon(Icons.logout),
-            label: const Text('Se déconnecter'),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildErrorView(ThemeData theme, Object error) {
     return Center(
