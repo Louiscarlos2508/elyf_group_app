@@ -138,6 +138,19 @@ class TreasuryOfflineRepository extends OfflineRepository<TreasuryOperation> imp
     
     return id;
   }
+  @override
+  Future<void> deleteOperation(TreasuryOperation operation) async {
+    await delete(operation);
+    
+    await _logAudit(
+      action: 'delete_treasury_operation',
+      entityId: operation.id,
+      metadata: {
+        'type': operation.type.name, 
+        'amount': operation.amount,
+      },
+    );
+  }
 
   @override
   Stream<List<TreasuryOperation>> watchOperations({int limit = 50}) {

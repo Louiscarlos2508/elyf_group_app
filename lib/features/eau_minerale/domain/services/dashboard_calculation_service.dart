@@ -20,7 +20,8 @@ class DashboardCalculationService {
   int calculateMonthlyRevenue(List<Sale> sales, DateTime monthStart) {
     final monthSales = sales
         .where((s) =>
-            s.date.isAfter(monthStart) || s.date.isAtSameMomentAs(monthStart))
+            s.status != SaleStatus.voided &&
+            (s.date.isAfter(monthStart) || s.date.isAtSameMomentAs(monthStart)))
         .toList();
     return monthSales.fold(0, (sum, s) => sum + s.totalPrice);
   }
@@ -30,30 +31,24 @@ class DashboardCalculationService {
     final today = DateTime.now();
     final todayStart = DateTime(today.year, today.month, today.day);
     final todaySales = sales.where((s) {
+      if (s.status == SaleStatus.voided) return false;
       final saleDate = DateTime(s.date.year, s.date.month, s.date.day);
       return saleDate.isAtSameMomentAs(todayStart);
     }).toList();
-    return todaySales.fold(0, (sum, s) => sum + s.cashAmount + s.orangeMoneyAmount);
+    return todaySales.fold(0, (sum, s) => sum + s.amountPaid);
   }
 
   /// Calculates monthly collections (all payments made this month).
-  /// Now includes credit recoveries.
+  /// Now strictly using amountPaid from the sales collection.
   int calculateMonthlyCollections({
     required List<Sale> sales,
-    required List<CreditPayment> creditPayments,
     required DateTime monthStart,
   }) {
-    final monthSalesPayments = sales
+    return sales
         .where((s) =>
-            s.date.isAfter(monthStart) || s.date.isAtSameMomentAs(monthStart))
+            s.status != SaleStatus.voided &&
+            (s.date.isAfter(monthStart) || s.date.isAtSameMomentAs(monthStart)))
         .fold(0, (sum, s) => sum + s.amountPaid);
-
-    final monthCreditRecoveries = creditPayments
-        .where((p) =>
-            p.date.isAfter(monthStart) || p.date.isAtSameMomentAs(monthStart))
-        .fold(0, (sum, p) => sum + p.amount);
-
-    return monthSalesPayments + monthCreditRecoveries;
   }
 
   /// Calculates collection rate (collections / revenue * 100).
@@ -72,9 +67,9 @@ class DashboardCalculationService {
     return customers.where((c) => c.outstandingCredit > 0).length;
   }
 
-  /// Calculates monthly result (collections - expenses).
-  int calculateMonthlyResult(int collections, int expenses) {
-    return collections - expenses;
+  /// Calculates monthly result (revenue - expenses) for an accrual view.
+  int calculateMonthlyResult(int revenue, int expenses) {
+    return revenue - expenses;
   }
 
   /// Calculates monthly expenses.
@@ -93,37 +88,11 @@ class DashboardCalculationService {
     List<ProductionSession> sessions = const [],
     required DateTime monthStart,
   }) {
-    final generalExpenses = expenses
-        .where((e) {
-          final isInMonth = e.date.isAfter(monthStart) || e.date.isAtSameMomentAs(monthStart);
-          // Exclude 'Salaires' because they are aggregated separately below from salaryPayments/productionPayments
-          return isInMonth && e.category != ExpenseCategory.salaires;
-        })
+    // ExpenseRecords are the source of truth for all cash outflows (including salaries and purchases)
+    // to avoid double counting.
+    return expenses
+        .where((e) => e.date.isAfter(monthStart) || e.date.isAtSameMomentAs(monthStart))
         .fold<int>(0, (sum, e) => sum + e.amountCfa);
-
-    final fixedSalaries = salaryPayments
-        .where((p) =>
-            p.date.isAfter(monthStart) || p.date.isAtSameMomentAs(monthStart))
-        .fold<int>(0, (sum, p) => sum + p.amount);
-
-    final prodSalaries = productionPayments
-        .where((p) =>
-            p.paymentDate.isAfter(monthStart) ||
-            p.paymentDate.isAtSameMomentAs(monthStart))
-        .fold<int>(0, (sum, p) => sum + p.totalAmount);
-
-    // Calculate direct session costs (Bobines + Electricity) for sessions in this month
-    final sessionCosts = sessions
-        .where((s) =>
-            (s.date.isAfter(monthStart) || s.date.isAtSameMomentAs(monthStart)) &&
-            s.status != ProductionSessionStatus.cancelled)
-        .fold<int>(0, (sum, s) {
-          final bobines = s.coutBobines ?? 0;
-          final elec = s.coutElectricite ?? 0;
-          return sum + bobines + elec;
-        });
-
-    return generalExpenses + fixedSalaries + prodSalaries + sessionCosts;
   }
 
   /// Counts monthly expenses.
@@ -143,7 +112,7 @@ class DashboardCalculationService {
   }
 
   /// Calculates monthly production volume, excluding cancelled sessions.
-  int calculateMonthlyProduction(
+  double calculateMonthlyProduction(
     List<ProductionSession> sessions,
     DateTime monthStart,
   ) {
@@ -151,7 +120,7 @@ class DashboardCalculationService {
         .where((s) =>
             (s.date.isAfter(monthStart) || s.date.isAtSameMomentAs(monthStart)) &&
             s.status != ProductionSessionStatus.cancelled)
-        .fold<int>(0, (sum, s) {
+        .fold<double>(0, (sum, s) {
           // Use daily production sum if available (more granular/real-time), 
           // otherwise fallback to finalized quantity.
           final dailySum = s.totalPacksProduitsJournalier;
@@ -179,18 +148,18 @@ class DashboardCalculationService {
     final revenue = calculateMonthlyRevenue(sales, monthStart);
     final collections = calculateMonthlyCollections(
       sales: sales,
-      creditPayments: creditPayments,
       monthStart: monthStart,
     );
     final collectionRate = calculateCollectionRate(revenue, collections);
     final totalCredits = calculateTotalCredits(customers);
     final creditCustomersCount = countCreditCustomers(customers);
     final monthExpenses = calculateMonthlyExpenses(expenses, monthStart);
-    final monthResult = calculateMonthlyResult(collections, monthExpenses);
+    final monthResult = calculateMonthlyResult(revenue, monthExpenses);
 
     final monthSales = sales
         .where((s) =>
-            s.date.isAfter(monthStart) || s.date.isAtSameMomentAs(monthStart))
+            s.status != SaleStatus.voided &&
+            (s.date.isAfter(monthStart) || s.date.isAtSameMomentAs(monthStart)))
         .toList();
     final monthExpensesList = expenses
         .where((e) =>
@@ -207,7 +176,7 @@ class DashboardCalculationService {
       result: monthResult,
       salesCount: monthSales.length,
       expensesCount: monthExpensesList.length,
-      productionVolume: 0, // Not available in old method
+      productionVolume: 0.0, // Not available in old method
       sessionsCount: 0, // Not available in old method
     );
   }
@@ -221,17 +190,20 @@ class DashboardCalculationService {
     required List<SalaryPayment> salaryPayments,
     required List<ProductionPayment> productionPayments,
     required List<ProductionSession> sessions,
+    List<TreasuryOperation> treasuryOperations = const [],
     DateTime? referenceDate,
   }) {
     final now = referenceDate ?? DateTime.now();
     final monthStart = getMonthStart(now);
 
     final revenue = calculateMonthlyRevenue(sales, monthStart);
-    final collections = calculateMonthlyCollections(
+    
+    // Strictly using Sales collection for monthly collections
+    final int collections = calculateMonthlyCollections(
       sales: sales,
-      creditPayments: creditPayments,
       monthStart: monthStart,
     );
+
     final collectionRate = calculateCollectionRate(revenue, collections);
     final totalCredits = calculateTotalCredits(customers);
     final creditCustomersCount = countCreditCustomers(customers);
@@ -245,17 +217,18 @@ class DashboardCalculationService {
       monthStart: monthStart,
     );
     
-    final monthResult = calculateMonthlyResult(collections, monthExpenses);
+    final monthResult = calculateMonthlyResult(revenue, monthExpenses);
 
     final monthSales = sales
         .where((s) =>
-            s.date.isAfter(monthStart) || s.date.isAtSameMomentAs(monthStart))
+            s.status != SaleStatus.voided &&
+            (s.date.isAfter(monthStart) || s.date.isAtSameMomentAs(monthStart)))
         .toList();
         
     final monthExpensesListCount = countMonthlyExpensesFromRecords(expenses, monthStart);
 
     // Calculate production volume using daily updates for accuracy
-    final productionVolume = calculateMonthlyProduction(sessions, monthStart);
+    final double productionVolume = calculateMonthlyProduction(sessions, monthStart);
 
     return DashboardMonthlyMetrics(
       revenue: revenue,
@@ -292,7 +265,8 @@ class DashboardCalculationService {
     // Filter for today
     final todaySales = sales.where((s) {
       final sDate = s.date;
-      return sDate.isAfter(startOfDay.subtract(const Duration(milliseconds: 1))) && 
+      return s.status != SaleStatus.voided &&
+             sDate.isAfter(startOfDay.subtract(const Duration(milliseconds: 1))) && 
              sDate.isBefore(endOfDay);
     }).toList();
 
@@ -318,13 +292,13 @@ class DashboardCalculationService {
     final revenue = todaySales.fold<int>(0, (sum, s) => sum + s.totalPrice);
 
     // 2. Collections (Breakdown)
-    final cashCollectionsFromSales = todaySales.fold<int>(0, (sum, s) => sum + s.cashAmount);
-    final mmCollectionsFromSales = todaySales.fold<int>(0, (sum, s) => sum + s.orangeMoneyAmount);
+    // We now strictly use amountPaid from the sales collection for the "Collections" KPI
+    final totalCollections = todaySales.fold<int>(0, (sum, s) => sum + s.amountPaid);
+    
+    final totalCashCollections = todaySales.fold<int>(0, (sum, s) => sum + s.cashAmount);
+    final totalMMCollections = todaySales.fold<int>(0, (sum, s) => sum + s.orangeMoneyAmount);
 
-    final cashCollectionsFromCredit = todayPayments.fold<int>(0, (sum, p) => sum + p.cashAmount);
-    final mmCollectionsFromCredit = todayPayments.fold<int>(0, (sum, p) => sum + p.orangeMoneyAmount);
-
-    // Manual Operations: Apport (Supply)
+    // Manual Operations (Apport/Supply) are tracked separately in apports metric below
     final cashApport = todayOps
         .where((op) => op.type == TreasuryOperationType.supply && 
                        op.toAccount == PaymentMethod.cash &&
@@ -336,18 +310,13 @@ class DashboardCalculationService {
                        op.referenceEntityType == null)
         .fold<int>(0, (sum, op) => sum + op.amount);
 
-    final totalCashCollections = cashCollectionsFromSales + cashCollectionsFromCredit + cashApport;
-
-    final totalMMCollections = mmCollectionsFromSales + mmCollectionsFromCredit + mmApport;
-    final totalCollections = totalCashCollections + totalMMCollections;
-
     // 3. Production Volume Today
     final productionVolume = sessions.where((s) {
       final sDate = s.date;
       return sDate.isAfter(startOfDay.subtract(const Duration(milliseconds: 1))) && 
              sDate.isBefore(endOfDay) &&
              s.status != ProductionSessionStatus.cancelled;
-    }).fold<int>(0, (sum, s) {
+    }).fold<double>(0.0, (sum, s) {
       final dailySum = s.totalPacksProduitsJournalier;
       final finalQty = s.quantiteProduite;
       return sum + (dailySum > 0 ? dailySum : finalQty);
@@ -395,40 +364,12 @@ class DashboardCalculationService {
 
   /// Calculates cumulative treasury balances from all historical data.
   Map<String, int> calculateCumulativeBalances({
-    required List<Sale> sales,
-    required List<CreditPayment> creditPayments,
-    required List<ExpenseRecord> expenses,
     required List<TreasuryOperation> treasuryOperations,
   }) {
     int cash = 0;
     int mm = 0;
 
-    // 1. Incomes from Sales
-    for (final sale in sales) {
-      if (sale.status == SaleStatus.voided) continue;
-      cash += sale.cashAmount;
-      mm += sale.orangeMoneyAmount;
-    }
-
-    // 2. Incomes from Credit Recoveries
-    for (final p in creditPayments) {
-      cash += p.cashAmount;
-      mm += p.orangeMoneyAmount;
-    }
-
-    // 3. Outgoings from Expenses
-    for (final e in expenses) {
-      if (e.paymentMethod == PaymentMethod.cash) cash -= e.amountCfa;
-      if (e.paymentMethod == PaymentMethod.mobileMoney) mm -= e.amountCfa;
-    }
-
-    // 4. Manual Operations (Apports, Retraits, Transferts)
     for (final op in treasuryOperations) {
-      // Ignore operations already linked to sales or expenses to avoid double counting
-      if (op.referenceEntityId != null && op.referenceEntityId!.isNotEmpty) {
-        continue;
-      }
-
       switch (op.type) {
         case TreasuryOperationType.supply:
           if (op.toAccount == PaymentMethod.cash) cash += op.amount;
@@ -472,7 +413,7 @@ class DailyDashboardMetrics {
     this.retraits = 0,
     required this.salesCount,
     required this.sales,
-    this.productionVolume = 0,
+    this.productionVolume = 0.0,
   });
 
   final int revenue;
@@ -486,7 +427,7 @@ class DailyDashboardMetrics {
   final int retraits;
   final int salesCount;
   final List<Sale> sales;
-  final int productionVolume;
+  final double productionVolume;
 }
 
 /// Monthly dashboard metrics.
@@ -514,7 +455,7 @@ class DashboardMonthlyMetrics {
   final int result;
   final int salesCount;
   final int expensesCount;
-  final int productionVolume;
+  final double productionVolume;
   final int sessionsCount;
 
   bool get isProfit => result >= 0;

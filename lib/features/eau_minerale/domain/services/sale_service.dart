@@ -18,7 +18,7 @@ class SaleService {
   final ProductRepository? productRepository;
 
   /// Stock pour un produit.
-  Future<int> getCurrentStock(String productId) async {
+  Future<double> getCurrentStock(String productId) async {
     try {
       return await stockRepository.getStock(productId);
     } catch (e, st) {
@@ -38,13 +38,13 @@ class SaleService {
   /// Valide les données de vente.
   Future<String?> validateSale({
     required String? productId,
-    required int? quantity,
+    required num? quantity,
     required int? totalPrice,
     required int? amountPaid,
     String? customerId,
     String? customerName,
     String? customerPhone,
-    int? stockOverride,
+    double? stockOverride,
   }) async {
     if (productId == null) return 'Veuillez sélectionner un produit';
     if (quantity == null || totalPrice == null || amountPaid == null) {

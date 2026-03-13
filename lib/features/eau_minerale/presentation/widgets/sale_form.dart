@@ -125,9 +125,9 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
   }
 
   int? get _unitPrice => int.tryParse(_unitPriceController.text);
-  int? get _quantity => int.tryParse(_quantityController.text);
+  double? get _quantity => double.tryParse(_quantityController.text);
   int? get _totalPrice =>
-      _unitPrice != null && _quantity != null ? _unitPrice! * _quantity! : null;
+      _unitPrice != null && _quantity != null ? (_unitPrice! * _quantity!).toInt() : null;
   int? get _amountPaid => int.tryParse(_amountPaidController.text);
   bool get _isCredit => (_totalPrice ?? 0) > (_amountPaid ?? 0);
 
@@ -284,7 +284,7 @@ class SaleFormState extends ConsumerState<SaleForm> with FormHelperMixin {
           onChanged: (_) => setState(_updateTotalAndPayment),
           validator: (v) {
             if (v == null || v.isEmpty) return 'Requis';
-            final qty = int.tryParse(v);
+            final qty = double.tryParse(v);
             if (qty == null || qty <= 0) return 'Quantité invalide';
             if (qty > stock) return 'Stock insuffisant';
             return null;

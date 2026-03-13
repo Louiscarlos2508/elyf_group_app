@@ -53,7 +53,7 @@ class PersonnelDayCard extends ConsumerWidget {
                   const SizedBox(height: 4),
                   Text(
                     day.producedItems.isNotEmpty 
-                      ? day.producedItems.map((p) => '${p.quantity.toInt()} ${p.productName}').join(' • ')
+                      ? day.producedItems.map((p) => '${p.quantity.toStringAsFixed(0)} ${p.productName}').join(' • ')
                       : '${day.packsProduits} packs produits',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.primary,

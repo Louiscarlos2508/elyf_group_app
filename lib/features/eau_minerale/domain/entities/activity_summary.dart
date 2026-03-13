@@ -9,7 +9,7 @@ class ActivitySummary {
   });
 
   final DateTime date;
-  final int totalProduction;
+  final double totalProduction;
   final int totalSales;
   final int pendingCredits;
   final double rawMaterialDays;

@@ -15,6 +15,8 @@ import '../controllers/supplier_controller.dart';
 import '../controllers/purchase_controller.dart';
 import '../controllers/closing_controller.dart';
 import '../controllers/treasury_controller.dart';
+import '../../domain/entities/product.dart';
+import '../../domain/product_roles.dart';
 import 'permission_providers.dart' show currentUserIdProvider;
 import '../../../../core/tenant/tenant_provider.dart';
 import '../../../../features/audit_trail/application/providers.dart';
@@ -28,10 +30,16 @@ final productControllerProvider = Provider<ProductController>(
     final enterpriseId = ref.watch(activeEnterpriseProvider).value?.id ?? 'default';
     return ProductController(
       ref.watch(eauMineraleProductRepositoryProvider),
+      ref.watch(stockRepositoryProvider),
       enterpriseId,
     );
   },
 );
+
+final eauMineraleMainProductProvider = FutureProvider<Product?>((ref) async {
+  final controller = ref.watch(productControllerProvider);
+  return controller.getProductByRole(ProductRoles.mainFinishedGood);
+});
 
 final activityControllerProvider = Provider<ActivityController>(
   (ref) => ActivityController(ref.watch(activityRepositoryProvider)),
@@ -66,18 +74,18 @@ final productionSessionControllerProvider =
 
 final salesControllerProvider = Provider<SalesController>(
   (ref) => SalesController(
-    ref.watch(saleRepositoryProvider),
-    ref.watch(stockControllerProvider),
-    ref.watch(eauMineraleProductRepositoryProvider),
-    ref.watch(auditTrailServiceProvider),
-    ref.watch(treasuryRepositoryProvider),
+    saleRepository: ref.watch(saleRepositoryProvider),
+    stockController: ref.watch(stockControllerProvider),
+    productRepository: ref.watch(eauMineraleProductRepositoryProvider),
+    auditTrailService: ref.watch(auditTrailServiceProvider),
+    treasuryRepository: ref.watch(treasuryRepositoryProvider),
   ),
 );
 
 final clientsControllerProvider = Provider<ClientsController>(
   (ref) => ClientsController(
     ref.watch(customerRepositoryProvider),
-    ref.watch(creditRepositoryProvider),
+    ref.watch(eauMineraleCreditRepositoryProvider),
   ),
 );
 

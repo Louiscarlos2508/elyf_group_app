@@ -14,7 +14,7 @@ class ProfitabilityCalculationService {
     required int totalExpenses,
     double? electricityRate,
   }) {
-    final totalProduction = sessions.fold<int>(
+    final totalProduction = sessions.fold<double>(
       0,
       (sum, s) => sum + s.quantiteProduite,
     );
@@ -39,7 +39,7 @@ class ProfitabilityCalculationService {
     );
 
     final totalRevenue = sales.fold<int>(0, (sum, s) => sum + s.totalPrice);
-    final totalSalesQuantity = sales.fold<int>(0, (sum, s) => sum + s.quantity);
+    final totalSalesQuantity = sales.fold<double>(0.0, (sum, s) => sum + s.quantity);
 
     final costPerUnit = totalProduction > 0
         ? totalProductionCost / totalProduction
@@ -75,10 +75,10 @@ class ProfitabilityCalculationService {
     for (final sale in sales) {
       final name = sale.productName;
       if (!byProduct.containsKey(name)) {
-        byProduct[name] = {'name': name, 'quantity': 0, 'revenue': 0};
+        byProduct[name] = {'name': name, 'quantity': 0.0, 'revenue': 0};
       }
       byProduct[name]!['quantity'] =
-          (byProduct[name]!['quantity'] as int) + sale.quantity;
+          (byProduct[name]!['quantity'] as double) + sale.quantity;
       byProduct[name]!['revenue'] =
           (byProduct[name]!['revenue'] as int) + sale.totalPrice;
     }
@@ -91,7 +91,7 @@ class ProfitabilityCalculationService {
 
       return ProductProfitAnalysis(
         productName: product['name'] as String,
-        quantity: product['quantity'] as int,
+        quantity: product['quantity'] as double,
         revenue: revenue,
         estimatedCost: estimatedCost,
         margin: margin,
@@ -119,10 +119,10 @@ class ProfitabilityMetrics {
     required this.grossMarginPercent,
   });
 
-  final int totalProduction;
+  final double totalProduction;
   final int totalProductionCost;
   final int totalRevenue;
-  final int totalSalesQuantity;
+  final double totalSalesQuantity;
   final double costPerUnit;
   final double avgSalePrice;
   final double marginPerUnit;
@@ -143,7 +143,7 @@ class ProductProfitAnalysis {
   });
 
   final String productName;
-  final int quantity;
+  final double quantity;
   final int revenue;
   final int estimatedCost;
   final int margin;

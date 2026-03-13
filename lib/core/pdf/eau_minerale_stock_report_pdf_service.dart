@@ -11,7 +11,7 @@ class EauMineraleStockReportPdfService extends BaseStockReportPdfService {
   /// Inclut : produits finis, matières premières, emballages, et bobines.
   Future<File> generateReport({
     required List<StockItem> stockItems,
-    required int availableMachineMaterials,
+    required double availableMachineMaterials,
     DateTime? reportDate,
   }) async {
     final date = reportDate ?? DateTime.now();

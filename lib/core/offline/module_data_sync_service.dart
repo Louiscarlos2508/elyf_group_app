@@ -75,6 +75,10 @@ class ModuleDataSyncService {
       CollectionNames.bobineStockMovements,
       CollectionNames.packagingStockMovements,
       CollectionNames.eauMineraleTreasuryOperations,
+      CollectionNames.suppliers,
+      CollectionNames.supplierSettlements,
+      CollectionNames.purchases,
+      CollectionNames.closings,
     ],
     'gaz': [
       'cylinders',
@@ -125,6 +129,7 @@ class ModuleDataSyncService {
       CollectionNames.stockItems,
       CollectionNames.eauMineraleTreasuryOperations,
       CollectionNames.productionSessions,
+      CollectionNames.suppliers,
     ],
     'gaz': [
       'gas_sales',

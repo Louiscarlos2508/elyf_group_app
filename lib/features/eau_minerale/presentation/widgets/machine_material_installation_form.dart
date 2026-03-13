@@ -422,7 +422,7 @@ class _MachineMaterialInstallationFormState
 
     if (filteredStocks.isEmpty) return _buildEmptyStockWarning(theme, colors);
 
-    final total = filteredStocks.fold<int>(0, (sum, stock) => sum + (stock.quantity as num).toInt());
+    final total = filteredStocks.fold<double>(0, (sum, stock) => sum + (stock.quantity as num).toDouble());
     return ElyfCard(
       padding: const EdgeInsets.all(16),
       borderRadius: 16,
@@ -433,7 +433,7 @@ class _MachineMaterialInstallationFormState
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              '$total unité(s) disponible(s) en stock.',
+              '${total.toStringAsFixed(0)} unité(s) disponible(s) en stock.',
               style: theme.textTheme.bodySmall?.copyWith(color: colors.primary, fontWeight: FontWeight.bold),
             ),
           ),

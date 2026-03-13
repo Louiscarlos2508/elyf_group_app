@@ -97,11 +97,6 @@ mixin ModuleSyncMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
               'Widget disposed during sync start, but sync will continue globally',
               name: 'module.sync.mixin',
             );
-          } else {
-            developer.log(
-              'Realtime sync requested for module $moduleId (delegated to orchestrator)',
-              name: 'module.sync.mixin',
-            );
           }
         })
         .catchError((error, stackTrace) {

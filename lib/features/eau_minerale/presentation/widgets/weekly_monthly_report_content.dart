@@ -58,7 +58,7 @@ class WeeklyMonthlyReportContent extends ConsumerWidget {
 
         // Calculs
         final totalProduction = sessions.length;
-        final totalQuantity = sessions.fold<int>(
+        final totalQuantity = sessions.fold<double>(
           0,
           (sum, s) => sum + s.quantiteProduite,
         );
@@ -112,7 +112,7 @@ class WeeklyMonthlyReportContent extends ConsumerWidget {
                   ),
                   _KpiItem(
                     label: 'Quantité produite',
-                    value: '$totalQuantity unités',
+                    value: '${totalQuantity.toStringAsFixed(0)} unités',
                     icon: Icons.inventory_2,
                     color: Colors.green,
                   ),

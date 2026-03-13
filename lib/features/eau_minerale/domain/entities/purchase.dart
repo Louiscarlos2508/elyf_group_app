@@ -157,7 +157,7 @@ class PurchaseItem {
 
   final String productId;
   final String productName;
-  final int quantity;
+  final double quantity;
   final int unitPrice;
   final int totalPrice;
   final String unit;
@@ -167,7 +167,7 @@ class PurchaseItem {
     return PurchaseItem(
       productId: map['productId'] as String? ?? '',
       productName: map['productName'] as String? ?? '',
-      quantity: (map['quantity'] as num).toInt(),
+      quantity: (map['quantity'] as num).toDouble(),
       unitPrice: (map['unitPrice'] as num).toInt(),
       totalPrice: (map['totalPrice'] as num).toInt(),
       unit: map['unit'] as String? ?? 'unité',
@@ -190,7 +190,7 @@ class PurchaseItem {
   PurchaseItem copyWith({
     String? productId,
     String? productName,
-    int? quantity,
+    double? quantity,
     int? unitPrice,
     int? totalPrice,
     String? unit,

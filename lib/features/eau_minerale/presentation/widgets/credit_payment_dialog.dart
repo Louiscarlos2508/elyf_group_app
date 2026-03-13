@@ -122,7 +122,7 @@ class _CreditPaymentDialogState extends ConsumerState<CreditPaymentDialog>
     }
 
     try {
-      final creditRepo = ref.read(creditRepositoryProvider);
+      final creditRepo = ref.read(eauMineraleCreditRepositoryProvider);
       final sales = await creditRepo.fetchCustomerCredits(widget.customerId);
       setState(() {
         _creditSales = sales.where((s) => s.isCredit).toList();
@@ -170,6 +170,7 @@ class _CreditPaymentDialogState extends ConsumerState<CreditPaymentDialog>
       onSubmit: () async {
         final creditService = ref.read(creditServiceProvider);
         final enterpriseId = ref.read(activeEnterpriseProvider).value?.id ?? 'default';
+        final userId = ref.read(currentUserIdProvider);
         
         // Idempotency: Generate payment ID upfront
         final paymentId = LocalIdGenerator.generate();
@@ -183,6 +184,7 @@ class _CreditPaymentDialogState extends ConsumerState<CreditPaymentDialog>
           notes: _notesController.text.isEmpty ? null : _notesController.text,
           cashAmount: cash,
           orangeMoneyAmount: om,
+          createdBy: userId,
         );
 
         await creditService.recordPayment(payment);

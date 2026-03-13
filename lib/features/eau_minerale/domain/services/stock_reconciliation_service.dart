@@ -32,7 +32,7 @@ class StockReconciliationService {
     
     // Si on veut sauvegarder cette valeur quelque part :
     try {
-      await _stockRepository.updateStock(productId, expected.toInt());
+      await _stockRepository.updateStock(productId, expected);
       return true;
     } catch (_) {
       return false;

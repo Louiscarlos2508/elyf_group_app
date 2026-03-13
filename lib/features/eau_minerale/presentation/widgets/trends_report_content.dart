@@ -86,11 +86,11 @@ class TrendsReportContent extends ConsumerWidget {
     );
     final revenueChange = _calculateChange(currentRevenue, previousRevenue);
 
-    final currentProduction = currentSessions.fold<int>(
+    final currentProduction = currentSessions.fold<double>(
       0,
       (sum, s) => sum + s.quantiteProduite,
     );
-    final previousProduction = previousSessions.fold<int>(
+    final previousProduction = previousSessions.fold<double>(
       0,
       (sum, s) => sum + s.quantiteProduite,
     );
@@ -145,8 +145,8 @@ class TrendsReportContent extends ConsumerWidget {
               ),
               _ComparisonItem(
                 label: 'Production',
-                currentValue: '$currentProduction packs',
-                previousValue: '$previousProduction packs',
+                currentValue: '${currentProduction.toStringAsFixed(0)} packs',
+                previousValue: '${previousProduction.toStringAsFixed(0)} packs',
                 changePercent: productionChange,
                 icon: Icons.factory,
               ),
@@ -187,7 +187,7 @@ class TrendsReportContent extends ConsumerWidget {
     );
   }
 
-  double _calculateChange(int current, int previous) {
+  double _calculateChange(num current, num previous) {
     if (previous == 0) return current > 0 ? 100.0 : 0.0;
     return ((current - previous) / previous) * 100;
   }

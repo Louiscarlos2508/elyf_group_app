@@ -176,7 +176,7 @@ class StockMovementTable extends StatelessWidget {
     String unit = '',
   ]) {
     final theme = Theme.of(context);
-    final displayValue = unit.isEmpty ? value.toInt().toString() : '${value.toInt()} $unit';
+    final displayValue = unit.isEmpty ? value.toStringAsFixed(0) : '${value.toStringAsFixed(0)} $unit';
     
     return Column(
       children: [
@@ -324,7 +324,7 @@ class StockMovementTable extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        m.quantityLabel ?? '${m.quantity.toInt()} ${m.unit}',
+                        m.quantityLabel ?? '${m.quantity.toStringAsFixed(0)} ${m.unit}',
                         style: TextStyle(
                           color: m.type == StockMovementType.entry ? Colors.green : Colors.red,
                           fontWeight: FontWeight.bold,

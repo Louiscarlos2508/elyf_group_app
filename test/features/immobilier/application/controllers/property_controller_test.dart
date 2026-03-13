@@ -10,34 +10,10 @@ import '../../../../helpers/test_helpers.dart';
 
 import 'property_controller_test.mocks.dart';
 
+import 'package:elyf_groupe_app/core/errors/app_exceptions.dart';
 import 'package:elyf_groupe_app/features/audit_trail/domain/services/audit_trail_service.dart';
 
-class MockAuditTrailService extends Mock implements AuditTrailService {
-  @override
-  Future<String> logAction({
-    required String enterpriseId,
-    required String userId,
-    required String module,
-    required String action,
-    required String entityId,
-    required String entityType,
-    Map<String, dynamic>? metadata,
-  }) =>
-      super.noSuchMethod(
-        Invocation.method(#logAction, [], {
-          #enterpriseId: enterpriseId,
-          #userId: userId,
-          #module: module,
-          #action: action,
-          #entityId: entityId,
-          #entityType: entityType,
-          #metadata: metadata,
-        }),
-        returnValue: Future.value('test-log-id'),
-      );
-}
-
-@GenerateMocks([PropertyRepository, ImmobilierValidationService])
+@GenerateMocks([PropertyRepository, ImmobilierValidationService, AuditTrailService])
 void main() {
   late PropertyController controller;
   late MockPropertyRepository mockRepository;
@@ -48,6 +24,18 @@ void main() {
     mockRepository = MockPropertyRepository();
     mockValidationService = MockImmobilierValidationService();
     mockAuditService = MockAuditTrailService();
+    
+    // Default stub for logAction
+    when(mockAuditService.logAction(
+      enterpriseId: anyNamed('enterpriseId'),
+      userId: anyNamed('userId'),
+      module: anyNamed('module'),
+      action: anyNamed('action'),
+      entityId: anyNamed('entityId'),
+      entityType: anyNamed('entityType'),
+      metadata: anyNamed('metadata'),
+    )).thenAnswer((_) async => 'test-log-id');
+
     controller = PropertyController(
       mockRepository,
       mockValidationService,
@@ -163,19 +151,19 @@ void main() {
         );
         final newProperty = createTestProperty(
           id: 'property-1',
-          status: PropertyStatus.available,
+          status: PropertyStatus.rented,
         );
         when(mockRepository.getPropertyById('property-1'))
             .thenAnswer((_) async => oldProperty);
         when(mockValidationService.validatePropertyStatusUpdate(
           'property-1',
-          PropertyStatus.available,
+          PropertyStatus.rented,
         )).thenAnswer((_) async => 'Validation error');
 
         // Act & Assert
         expect(
           () => controller.updateProperty(newProperty),
-          throwsA(isA<Exception>().having(
+          throwsA(isA<AppException>().having(
             (e) => e.toString(),
             'message',
             contains('Validation error'),

@@ -14,7 +14,7 @@ class ProductionReportData {
     this.totalPersonnelCost = 0,
   });
 
-  final int totalQuantity; // Total quantity produced
+  final double totalQuantity; // Total quantity produced
   final int totalBatches; // Number of production batches
   final double averageQuantityPerBatch; // Average quantity per batch
   final List<ProductionSession>

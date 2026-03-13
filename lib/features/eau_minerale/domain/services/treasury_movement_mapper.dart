@@ -20,102 +20,25 @@ class TreasuryMovementMapper {
   /// - [expenses] : operational expenses
   /// - [manualOps] : manually entered treasury operations (supply, removal, transfer)
   /// - [limit] : optional cap on the returned list length (default 100)
-  List<TreasuryMovement> mapToMovements({
-    required List<Sale> sales,
-    required List<CreditPayment> payments,
-    required List<ExpenseRecord> expenses,
-    required List<TreasuryOperation> manualOps,
+  List<TreasuryMovement> mapToMovements(
+    List<TreasuryOperation> treasuryOperations, {
     int limit = 100,
   }) {
     final movements = <TreasuryMovement>[];
 
-    // 1. Sales — may be split into Cash and Mobile Money
-    for (final sale in sales) {
-      if (sale.cashAmount > 0) {
-        movements.add(TreasuryMovement(
-          id: 'sale_cash_${sale.id}',
-          date: sale.date,
-          amount: sale.cashAmount,
-          label: 'Vente: ${sale.customerName}',
-          category: 'Vente',
-          method: PaymentMethod.cash,
-          isIncome: true,
-          originalEntity: sale,
-        ));
-      }
-      if (sale.orangeMoneyAmount > 0) {
-        movements.add(TreasuryMovement(
-          id: 'sale_mm_${sale.id}',
-          date: sale.date,
-          amount: sale.orangeMoneyAmount,
-          label: 'Vente: ${sale.customerName}',
-          category: 'Vente',
-          method: PaymentMethod.mobileMoney,
-          isIncome: true,
-          originalEntity: sale,
-        ));
-      }
-    }
-
-    // 2. Credit recoveries
-    for (final payment in payments) {
-      if (payment.cashAmount > 0) {
-        movements.add(TreasuryMovement(
-          id: 'pay_cash_${payment.id}',
-          date: payment.date,
-          amount: payment.cashAmount,
-          label: 'Recouvrement',
-          category: 'Crédit',
-          method: PaymentMethod.cash,
-          isIncome: true,
-          originalEntity: payment,
-        ));
-      }
-      if (payment.orangeMoneyAmount > 0) {
-        movements.add(TreasuryMovement(
-          id: 'pay_mm_${payment.id}',
-          date: payment.date,
-          amount: payment.orangeMoneyAmount,
-          label: 'Recouvrement',
-          category: 'Crédit',
-          method: PaymentMethod.mobileMoney,
-          isIncome: true,
-          originalEntity: payment,
-        ));
-      }
-    }
-
-    // 3. Expenses
-    for (final expense in expenses) {
-      movements.add(TreasuryMovement(
-        id: 'exp_${expense.id}',
-        date: expense.date,
-        amount: expense.amountCfa,
-        label: expense.label,
-        category: 'Dépense',
-        method: expense.paymentMethod,
-        isIncome: false,
-        originalEntity: expense,
-      ));
-    }
-
-    // 4. Manual operations — skip those linked to a business entity to avoid duplicates
-    for (final op in manualOps) {
-      if (op.referenceEntityId != null && op.referenceEntityId!.isNotEmpty) {
-        continue;
-      }
-
+    for (final op in treasuryOperations) {
       final isIncome = op.type == TreasuryOperationType.supply ||
+          op.type == TreasuryOperationType.adjustment ||
           (op.type == TreasuryOperationType.transfer &&
               op.toAccount != null &&
               op.fromAccount == null);
 
       movements.add(TreasuryMovement(
-        id: 'manual_${op.id}',
+        id: op.id,
         date: op.date,
         amount: op.amount,
         label: op.reason ?? _labelForOperationType(op.type),
-        category: 'Trésorerie',
+        category: _categoryForReferenceType(op.referenceEntityType),
         method: op.toAccount ?? op.fromAccount ?? PaymentMethod.cash,
         isIncome: isIncome,
         originalEntity: op,
@@ -125,6 +48,22 @@ class TreasuryMovementMapper {
     // Sort by date descending and cap
     movements.sort((a, b) => b.date.compareTo(a.date));
     return movements.take(limit).toList();
+  }
+
+  String _categoryForReferenceType(String? type) {
+    if (type == null) return 'Trésorerie';
+    switch (type) {
+      case 'sale':
+        return 'Vente';
+      case 'expense':
+        return 'Dépense';
+      case 'credit_payment':
+        return 'Crédit';
+      case 'sale_void':
+        return 'Annulation';
+      default:
+        return 'Trésorerie';
+    }
   }
 
   String _labelForOperationType(TreasuryOperationType type) {

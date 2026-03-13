@@ -38,8 +38,25 @@ import '../../domain/repositories/purchase_repository.dart';
 import '../../domain/repositories/closing_repository.dart';
 import '../../domain/repositories/treasury_repository.dart';
 import '../../data/repositories/treasury_offline_repository.dart';
+import '../../domain/repositories/settings_repository.dart';
+import '../../data/repositories/settings_offline_repository.dart';
 
 // Repository Providers
+final eauMineraleSettingsRepositoryProvider =
+    Provider<EauMineraleSettingsRepository>((ref) {
+  final enterpriseId = ref.watch(activeEnterpriseIdProvider).value ?? 'default';
+  final driftService = DriftService.instance;
+  final syncManager = ref.watch(syncManagerProvider);
+  final connectivityService = ref.watch(connectivityServiceProvider);
+
+  return SettingsOfflineRepository(
+    driftService: driftService,
+    syncManager: syncManager,
+    connectivityService: connectivityService,
+    enterpriseId: enterpriseId,
+  );
+});
+
 final saleRepositoryProvider = Provider<SaleRepository>((ref) {
   final enterpriseIdValue = ref.watch(activeEnterpriseIdProvider);
   final enterpriseId = enterpriseIdValue.value ?? 'default';
@@ -77,7 +94,7 @@ final stockRepositoryProvider = Provider<StockRepository>((ref) {
   );
 });
 
-final creditRepositoryProvider = Provider<CreditRepository>((ref) {
+final eauMineraleCreditRepositoryProvider = Provider<CreditRepository>((ref) {
   final enterpriseId =
       ref.watch(activeEnterpriseIdProvider).value ?? 'default';
   final driftService = DriftService.instance;
@@ -110,6 +127,7 @@ final customerRepositoryProvider = Provider<CustomerRepository>((ref) {
     connectivityService: connectivityService,
     enterpriseId: enterpriseId,
     saleRepository: saleRepo,
+    moduleType: 'eau_minerale',
   );
 });
 
@@ -149,6 +167,7 @@ final eauMineraleProductRepositoryProvider =
     syncManager: syncManager,
     connectivityService: connectivityService,
     enterpriseId: enterpriseId,
+    moduleType: 'eau_minerale',
   );
 });
 
@@ -156,7 +175,7 @@ final eauMineraleProductRepositoryProvider =
 final activityRepositoryProvider = Provider<ActivityRepository>((ref) {
   final saleRepo = ref.watch(saleRepositoryProvider);
   final sessionRepo = ref.watch(productionSessionRepositoryProvider);
-  final creditRepo = ref.watch(creditRepositoryProvider);
+  final creditRepo = ref.watch(eauMineraleCreditRepositoryProvider);
 
   return ActivityOfflineRepository(
     saleRepository: saleRepo,
@@ -183,6 +202,7 @@ final productionSessionRepositoryProvider =
         syncManager: syncManager,
         connectivityService: connectivityService,
         enterpriseId: enterpriseId,
+        moduleType: 'eau_minerale',
       );
     });
 
@@ -239,7 +259,7 @@ final reportRepositoryProvider = Provider<ReportRepository>((ref) {
   final sessionRepo = ref.watch(productionSessionRepositoryProvider);
   final financeRepo = ref.watch(financeRepositoryProvider);
   final salaryRepo = ref.watch(salaryRepositoryProvider);
-  final creditRepo = ref.watch(creditRepositoryProvider);
+  final creditRepo = ref.watch(eauMineraleCreditRepositoryProvider);
 
   return ReportOfflineRepository(
     saleRepository: saleRepo,

@@ -4,6 +4,7 @@ import '../../domain/entities/stock_movement.dart';
 import '../../domain/repositories/stock_repository.dart';
 import '../../domain/entities/material_consumption.dart';
 import '../../domain/repositories/product_repository.dart';
+import '../../domain/product_roles.dart';
 
 class StockController {
   StockController(
@@ -22,13 +23,13 @@ class StockController {
     final products = await _productRepository.fetchProducts();
     
     final List<StockItem> items = [];
-    int totalMachineMaterials = 0;
+    double totalMachineMaterials = 0;
 
     for (final product in products) {
       final stockQty = await _stockRepository.getStock(product.id);
       
       StockType type = StockType.finishedGoods;
-      if (product.isRawMaterial || product.role == 'mainBobine') {
+      if (product.isRawMaterial || product.role == ProductRoles.mainBobine) {
         type = StockType.rawMaterial;
       }
 
@@ -42,7 +43,7 @@ class StockController {
         updatedAt: DateTime.now(),
       ));
       
-      if (product.role == 'mainBobine' || product.isRawMaterial) {
+      if (product.role == ProductRoles.mainBobine || product.isRawMaterial) {
         totalMachineMaterials += stockQty;
       }
     }
@@ -54,7 +55,7 @@ class StockController {
   }
 
   /// Retourne le stock actuel pour un produit.
-  Future<int> getStock(String productId) async {
+  Future<double> getStock(String productId) async {
     return _stockRepository.getStock(productId);
   }
 
@@ -191,7 +192,6 @@ class StockController {
   }
 
 
-  /// Récupère l'historique des mouvements pour un produit.
   Future<List<StockMovement>> fetchMovements({
     String? productId,
     DateTime? startDate,
@@ -203,6 +203,15 @@ class StockController {
       endDate: endDate,
     );
   }
+
+  /// Synchronise le stock "stocké" (snapshot) avec la somme des mouvements.
+  Future<void> syncStoredQuantity(String productId) async {
+    await _stockRepository.syncStoredQuantity(productId);
+  }
+
+  Future<void> deleteMovement(String movementId) async {
+    await _stockRepository.deleteMovement(movementId);
+  }
 }
 
 class StockState {
@@ -212,9 +221,9 @@ class StockState {
   });
 
   final List<StockItem> items;
-  final int availableMachineMaterials;
+  final double availableMachineMaterials;
 
-  int get totalStockQuantity =>
-      items.fold(0, (sum, item) => sum + item.quantity.toInt());
+  double get totalStockQuantity =>
+      items.fold(0.0, (sum, item) => sum + item.quantity);
 }
 

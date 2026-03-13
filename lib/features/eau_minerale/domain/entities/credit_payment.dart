@@ -11,6 +11,7 @@ class CreditPayment {
     this.orangeMoneyAmount = 0,
     this.updatedAt,
     this.createdAt,
+    this.createdBy,
     this.deletedAt,
     this.deletedBy,
   });
@@ -25,6 +26,7 @@ class CreditPayment {
   final int orangeMoneyAmount;
   final DateTime? updatedAt;
   final DateTime? createdAt;
+  final String? createdBy;
   final DateTime? deletedAt;
   final String? deletedBy;
 
@@ -41,6 +43,7 @@ class CreditPayment {
     int? orangeMoneyAmount,
     DateTime? updatedAt,
     DateTime? createdAt,
+    String? createdBy,
     DateTime? deletedAt,
     String? deletedBy,
   }) {
@@ -55,6 +58,7 @@ class CreditPayment {
       orangeMoneyAmount: orangeMoneyAmount ?? this.orangeMoneyAmount,
       updatedAt: updatedAt ?? this.updatedAt,
       createdAt: createdAt ?? this.createdAt,
+      createdBy: createdBy ?? this.createdBy,
       deletedAt: deletedAt ?? this.deletedAt,
       deletedBy: deletedBy ?? this.deletedBy,
     );
@@ -74,6 +78,7 @@ class CreditPayment {
       orangeMoneyAmount: (map['orangeMoneyAmount'] as num?)?.toInt() ?? 0,
       updatedAt: map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : null,
       createdAt: map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : null,
+      createdBy: map['createdBy'] as String?,
       deletedAt: map['deletedAt'] != null ? DateTime.parse(map['deletedAt'] as String) : null,
       deletedBy: map['deletedBy'] as String?,
     );
@@ -91,6 +96,7 @@ class CreditPayment {
       'orangeMoneyAmount': orangeMoneyAmount,
       'updatedAt': updatedAt?.toIso8601String(),
       'createdAt': createdAt?.toIso8601String(),
+      'createdBy': createdBy,
       'deletedAt': deletedAt?.toIso8601String(),
       'deletedBy': deletedBy,
     };

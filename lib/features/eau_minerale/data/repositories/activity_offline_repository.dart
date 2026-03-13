@@ -43,7 +43,7 @@ class ActivityOfflineRepository implements ActivityRepository {
         0,
         (sum, s) => sum + s.totalPrice,
       );
-      final totalProduction = sessions.fold<int>(
+      final totalProduction = sessions.fold<double>(
         0,
         (sum, s) => sum + s.quantiteProduite,
       );
@@ -88,7 +88,7 @@ class ActivityOfflineRepository implements ActivityRepository {
         0,
         (sum, s) => sum + s.totalPrice,
       );
-      final totalProduction = sessions.fold<int>(
+      final totalProduction = sessions.fold<double>(
         0,
         (sum, s) => sum + s.quantiteProduite,
       );

@@ -44,7 +44,7 @@ final todayPaymentsStreamProvider =
       .add(const Duration(days: 1))
       .subtract(const Duration(milliseconds: 1));
 
-  return ref.watch(creditRepositoryProvider).watchPayments(
+  return ref.watch(eauMineraleCreditRepositoryProvider).watchPayments(
         startDate: startOfDay,
         endDate: endOfDay,
       );
@@ -57,7 +57,7 @@ final monthCreditPaymentsStreamProvider =
   final calculationService = ref.watch(dashboardCalculationServiceProvider);
   final monthStart = calculationService.getMonthStart(now);
 
-  return ref.watch(creditRepositoryProvider).watchPayments(
+  return ref.watch(eauMineraleCreditRepositoryProvider).watchPayments(
         startDate: monthStart,
       );
 });
@@ -70,7 +70,7 @@ final customerCreditsProvider =
   final timer = Timer(const Duration(minutes: 3), link.close);
   ref.onDispose(timer.cancel);
 
-  return ref.read(creditRepositoryProvider).fetchCustomerAllCredits(customerId);
+  return ref.read(eauMineraleCreditRepositoryProvider).fetchCustomerAllCredits(customerId);
 });
 
 final customerCreditHistoryProvider = FutureProvider.autoDispose
@@ -83,7 +83,7 @@ final customerCreditHistoryProvider = FutureProvider.autoDispose
   final timer = Timer(const Duration(minutes: 3), link.close);
   ref.onDispose(timer.cancel);
 
-  final creditRepo = ref.read(creditRepositoryProvider);
+  final creditRepo = ref.read(eauMineraleCreditRepositoryProvider);
   final customerRepo = ref.read(customerRepositoryProvider);
   final saleRepo = ref.read(saleRepositoryProvider);
 
@@ -138,7 +138,7 @@ final salePaymentsProvider =
   final timer = Timer(const Duration(minutes: 3), link.close);
   ref.onDispose(timer.cancel);
 
-  return ref.read(creditRepositoryProvider).fetchSalePayments(saleId);
+  return ref.read(eauMineraleCreditRepositoryProvider).fetchSalePayments(saleId);
 });
 
 final workerMonthlyStatsProvider =
@@ -175,7 +175,7 @@ final creditsDashboardProvider =
   final timer = Timer(const Duration(minutes: 3), link.close);
   ref.onDispose(timer.cancel);
 
-  final creditRepo = ref.read(creditRepositoryProvider);
+  final creditRepo = ref.read(eauMineraleCreditRepositoryProvider);
   final customerRepo = ref.read(customerRepositoryProvider);
 
   // 1. Get base customers (if available)

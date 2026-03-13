@@ -87,7 +87,7 @@ class _PurchaseEntryDialogState extends ConsumerState<PurchaseEntryDialog> {
       _items.add(PurchaseItem(
         productId: _selectedProduct!.id,
         productName: _selectedProduct!.name,
-        quantity: qtyToStore.round(),
+        quantity: qtyToStore,
         unitPrice: finalUnitPrice,
         totalPrice: finalTotalPrice,
         unit: _useLots ? (_selectedProduct!.supplyUnit ?? "lot") : _selectedProduct!.unit,

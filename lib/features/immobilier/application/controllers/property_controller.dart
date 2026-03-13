@@ -1,8 +1,8 @@
-import '../../../audit_trail/domain/services/audit_trail_service.dart';
-import '../../../../core/errors/app_exceptions.dart';
-import '../../domain/entities/property.dart';
-import '../../domain/repositories/property_repository.dart';
-import '../../domain/services/immobilier_validation_service.dart';
+import 'package:elyf_groupe_app/features/audit_trail/domain/services/audit_trail_service.dart';
+import 'package:elyf_groupe_app/core/errors/app_exceptions.dart';
+import 'package:elyf_groupe_app/features/immobilier/domain/entities/property.dart';
+import 'package:elyf_groupe_app/features/immobilier/domain/repositories/property_repository.dart';
+import 'package:elyf_groupe_app/features/immobilier/domain/services/immobilier_validation_service.dart';
 
 class PropertyController {
   PropertyController(

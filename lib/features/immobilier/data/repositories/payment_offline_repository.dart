@@ -1,7 +1,7 @@
-import 'package:drift/drift.dart';
+import 'dart:convert';
 
 import '../../../../core/errors/error_handler.dart';
-import '../../../../core/offline/drift/app_database.dart';
+import '../../../../core/offline/collection_names.dart';
 import '../../../../core/offline/offline_repository.dart';
 import '../../../../shared/domain/entities/payment_method.dart';
 import '../../domain/entities/payment.dart';
@@ -20,7 +20,7 @@ class PaymentOfflineRepository extends OfflineRepository<Payment>
   final String enterpriseId;
 
   @override
-  String get collectionName => 'payments';
+  String get collectionName => CollectionNames.payments;
 
   String get moduleType => 'immobilier';
 
@@ -48,127 +48,101 @@ class PaymentOfflineRepository extends OfflineRepository<Payment>
   @override
   Future<void> saveToLocal(Payment entity, {String? userId}) async {
     final localId = getLocalId(entity);
-    final companion = ImmobilierPaymentsTableCompanion(
-      id: Value(localId),
-      enterpriseId: Value(enterpriseId),
-      contractId: Value(entity.contractId),
-      amount: Value(entity.amount),
-      paidAmount: Value(entity.paidAmount),
-      paymentDate: Value(entity.paymentDate),
-      paymentMethod: Value(entity.paymentMethod.name),
-      status: Value(entity.status.name),
-      month: Value(entity.month),
-      year: Value(entity.year),
-      receiptNumber: Value(entity.receiptNumber),
-      notes: Value(entity.notes),
-      paymentType: Value(entity.paymentType?.name),
-      cashAmount: Value(entity.cashAmount),
-      mobileMoneyAmount: Value(entity.mobileMoneyAmount),
-      penaltyAmount: Value(entity.penaltyAmount),
-      createdAt: Value(entity.createdAt ?? DateTime.now()),
-      updatedAt: Value(DateTime.now()),
-      deletedAt: Value(entity.deletedAt),
-      deletedBy: Value(entity.deletedBy),
-    );
+    final map = toMap(entity);
+    map['localId'] = localId;
 
-    await driftService.db.into(driftService.db.immobilierPaymentsTable).insertOnConflictUpdate(companion);
+    await driftService.records.upsert(
+      userId: syncManager.getUserId() ?? '',
+      collectionName: collectionName,
+      localId: localId,
+      remoteId: getRemoteId(entity),
+      enterpriseId: enterpriseId,
+      moduleType: moduleType,
+      dataJson: jsonEncode(map),
+      localUpdatedAt: DateTime.now(),
+    );
   }
 
   @override
   Future<void> deleteFromLocal(Payment entity, {String? userId}) async {
     final localId = getLocalId(entity);
-    await (driftService.db.delete(driftService.db.immobilierPaymentsTable)
-          ..where((t) => t.id.equals(localId)))
-        .go();
+    // Soft-delete
+    final deletedPayment = entity.copyWith(
+      deletedAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+      deletedBy: 'system',
+    );
+    await saveToLocal(deletedPayment, userId: userId);
   }
 
   @override
   Future<Payment?> getByLocalId(String localId) async {
-    final query = driftService.db.select(driftService.db.immobilierPaymentsTable)
-      ..where((t) => t.id.equals(localId));
-    final row = await query.getSingleOrNull();
-
-    if (row == null) return null;
-    return _fromEntity(row);
-  }
-
-  Payment _fromEntity(ImmobilierPaymentEntity entity) {
-    return Payment(
-      id: entity.id,
-      enterpriseId: entity.enterpriseId,
-      contractId: entity.contractId,
-      amount: entity.amount,
-      paidAmount: entity.paidAmount,
-      paymentDate: entity.paymentDate,
-      paymentMethod: PaymentMethod.values.firstWhere(
-        (e) => e.name == entity.paymentMethod,
-        orElse: () => PaymentMethod.cash,
-      ),
-      status: PaymentStatus.values.firstWhere(
-        (e) => e.name == entity.status,
-        orElse: () => PaymentStatus.paid,
-      ),
-      month: entity.month,
-      year: entity.year,
-      receiptNumber: entity.receiptNumber,
-      notes: entity.notes,
-      paymentType: entity.paymentType != null
-          ? PaymentType.values.firstWhere(
-              (e) => e.name == entity.paymentType,
-              orElse: () => PaymentType.rent,
-            )
-          : null,
-      cashAmount: entity.cashAmount,
-      mobileMoneyAmount: entity.mobileMoneyAmount,
-      penaltyAmount: entity.penaltyAmount,
-      createdAt: entity.createdAt,
-      updatedAt: entity.updatedAt,
-      deletedAt: entity.deletedAt,
-      deletedBy: entity.deletedBy,
+    final byRemote = await driftService.records.findByRemoteId(
+      collectionName: collectionName,
+      remoteId: localId,
+      enterpriseId: enterpriseId,
+      moduleType: moduleType,
     );
+    if (byRemote != null) {
+      final payment = fromMap(jsonDecode(byRemote.dataJson) as Map<String, dynamic>);
+      return payment.isDeleted ? null : payment;
+    }
+
+    final byLocal = await driftService.records.findByLocalId(
+      collectionName: collectionName,
+      localId: localId,
+      enterpriseId: enterpriseId,
+      moduleType: moduleType,
+    );
+    if (byLocal == null) return null;
+    return fromMap(jsonDecode(byLocal.dataJson) as Map<String, dynamic>);
   }
 
   @override
   Future<List<Payment>> getAllPayments({bool? isDeleted = false}) async {
-    final query = driftService.db.select(driftService.db.immobilierPaymentsTable)
-      ..where((t) => t.enterpriseId.equals(enterpriseId));
-
-    if (isDeleted != null) {
-      if (isDeleted) {
-        query.where((t) => t.deletedAt.isNotNull());
-      } else {
-        query.where((t) => t.deletedAt.isNull());
-      }
-    }
-
-    final rows = await query.get();
-    return rows.map<Payment>(_fromEntity).toList();
+    final rows = await driftService.records.listForEnterprise(
+      collectionName: collectionName,
+      enterpriseId: enterpriseId,
+      moduleType: moduleType,
+    );
+    return rows
+        .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+        .where((p) {
+      if (isDeleted == null) return true;
+      return p.isDeleted == isDeleted;
+    }).toList();
   }
 
   @override
   Future<List<Payment>> getAllForEnterprise(String enterpriseId) async {
-    final query = driftService.db.select(driftService.db.immobilierPaymentsTable)
-      ..where((t) => t.enterpriseId.equals(enterpriseId));
-    final rows = await query.get();
-    return rows.map<Payment>(_fromEntity).toList();
+    final rows = await driftService.records.listForEnterprise(
+      collectionName: collectionName,
+      enterpriseId: enterpriseId,
+      moduleType: moduleType,
+    );
+    return rows
+        .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+        .toList();
   }
 
   // PaymentRepository interface implementation
 
   @override
   Stream<List<Payment>> watchPayments({bool? isDeleted = false}) {
-    final query = driftService.db.select(driftService.db.immobilierPaymentsTable)
-      ..where((t) => t.enterpriseId.equals(enterpriseId));
-
-    if (isDeleted != null) {
-      if (isDeleted) {
-        query.where((t) => t.deletedAt.isNotNull());
-      } else {
-        query.where((t) => t.deletedAt.isNull());
-      }
-    }
-
-    return query.watch().map((rows) => rows.map<Payment>(_fromEntity).toList());
+    return driftService.records
+        .watchForEnterprise(
+          collectionName: collectionName,
+          enterpriseId: enterpriseId,
+          moduleType: moduleType,
+        )
+        .map((rows) {
+      return rows
+          .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+          .where((p) {
+        if (isDeleted == null) return true;
+        return p.isDeleted == isDeleted;
+      }).toList();
+    });
   }
 
   @override
@@ -197,10 +171,7 @@ class PaymentOfflineRepository extends OfflineRepository<Payment>
 
   @override
   Stream<List<Payment>> watchDeletedPayments() {
-    final query = driftService.db.select(driftService.db.immobilierPaymentsTable)
-      ..where((t) => t.enterpriseId.equals(enterpriseId))
-      ..where((t) => t.deletedAt.isNotNull());
-    return query.watch().map((rows) => rows.map<Payment>(_fromEntity).toList());
+    return watchPayments(isDeleted: true);
   }
 
   @override
@@ -251,11 +222,7 @@ class PaymentOfflineRepository extends OfflineRepository<Payment>
     try {
       final payment = await getPaymentById(id);
       if (payment != null) {
-        await save(payment.copyWith(
-          deletedAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          deletedBy: 'system',
-        ));
+        await delete(payment);
       }
     } catch (error, stackTrace) {
       throw ErrorHandler.instance.handleError(error, stackTrace);

@@ -1,51 +1,64 @@
-import 'package:shared_preferences/shared_preferences.dart';
+import '../entities/eau_minerale_settings.dart';
 import '../entities/electricity_meter_type.dart';
+import '../repositories/settings_repository.dart';
 
 /// Service pour gérer la configuration de l'électricité (type de compteur et taux).
 class ElectricityMeterConfigService {
-  static final ElectricityMeterConfigService instance =
-      ElectricityMeterConfigService._();
-  ElectricityMeterConfigService._();
+  ElectricityMeterConfigService({
+    required EauMineraleSettingsRepository settingsRepository,
+    required String enterpriseId,
+  })  : _settingsRepository = settingsRepository,
+        _enterpriseId = enterpriseId;
 
-  static const String _typeKey = 'electricity_meter_type';
-  static const String _rateKey = 'electricity_rate';
-  
+  final EauMineraleSettingsRepository _settingsRepository;
+  final String _enterpriseId;
+
   /// Type de compteur par défaut
   static const ElectricityMeterType _defaultType = ElectricityMeterType.classic;
   static const double _defaultRate = 125.0; // CFA par kWh
 
+  /// Récupère les paramètres complets
+  Future<EauMineraleSettings> _getSettings() async {
+    final settings = await _settingsRepository.getSettings();
+    return settings ?? EauMineraleSettings.defaultSettings(_enterpriseId);
+  }
+
   /// Récupère le type de compteur configuré
   Future<ElectricityMeterType> getMeterType() async {
-    final prefs = await SharedPreferences.getInstance();
-    final typeIndex = prefs.getInt(_typeKey);
-    if (typeIndex != null && typeIndex >= 0 && typeIndex < ElectricityMeterType.values.length) {
-      return ElectricityMeterType.values[typeIndex];
-    }
-    return _defaultType;
+    final settings = await _getSettings();
+    return settings.meterType;
   }
 
   /// Définit le type de compteur
   Future<void> setMeterType(ElectricityMeterType type) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_typeKey, type.index);
+    final current = await _getSettings();
+    await _settingsRepository.saveSettings(current.copyWith(
+      meterType: type,
+      updatedAt: DateTime.now(),
+    ));
   }
 
   /// Récupère le taux d'électricité (CFA/kWh)
   Future<double> getElectricityRate() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getDouble(_rateKey) ?? _defaultRate;
+    final settings = await _getSettings();
+    return settings.electricityRate;
   }
 
   /// Définit le taux d'électricité
   Future<void> setElectricityRate(double rate) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setDouble(_rateKey, rate);
+    final current = await _getSettings();
+    await _settingsRepository.saveSettings(current.copyWith(
+      electricityRate: rate,
+      updatedAt: DateTime.now(),
+    ));
   }
 
   /// Réinitialise à la valeur par défaut
   Future<void> resetToDefault() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_typeKey);
-    await prefs.remove(_rateKey);
+    await _settingsRepository.saveSettings(
+      EauMineraleSettings.defaultSettings(_enterpriseId).copyWith(
+        updatedAt: DateTime.now(),
+      ),
+    );
   }
 }

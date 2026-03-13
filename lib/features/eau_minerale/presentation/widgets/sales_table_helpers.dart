@@ -86,17 +86,6 @@ class SalesTableHelpers {
           ),
         ),
         PopupMenuItem(
-          value: 'edit',
-          enabled: sale.status != SaleStatus.voided,
-          child: const ListTile(
-            leading: Icon(Icons.edit_outlined, size: 20),
-            title: Text('Modifier la vente'),
-            contentPadding: EdgeInsets.zero,
-            visualDensity: VisualDensity.compact,
-            dense: true,
-          ),
-        ),
-        PopupMenuItem(
           value: 'void',
           enabled: sale.status != SaleStatus.voided,
           child: ListTile(

@@ -4,6 +4,7 @@ import '../../../../core/errors/error_handler.dart';
 import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/offline_repository.dart';
 import '../../../../core/offline/drift/app_database.dart';
+import '../../../../core/offline/collection_names.dart';
 import '../../domain/entities/sale.dart';
 import '../../domain/repositories/sale_repository.dart';
 
@@ -20,7 +21,7 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
   final String enterpriseId;
 
   @override
-  String get collectionName => 'sales';
+  String get collectionName => CollectionNames.sales;
 
   String get moduleType => 'eau_minerale';
 
@@ -206,8 +207,10 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
             .toList();
       }
 
-      // Already deduplicated by listForEnterprise/WithJsonFilter indirectly if we use deduplicateByRemoteId
-      return deduplicateByRemoteId(sales);
+      // Deduplicate and Sort (Most recent first)
+      final deduplicated = deduplicateByRemoteId(sales);
+      deduplicated.sort((a, b) => b.date.compareTo(a.date));
+      return deduplicated;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       AppLogger.error(
@@ -282,7 +285,10 @@ class SaleOfflineRepository extends OfflineRepository<Sale>
             .toList();
       }
 
-      return deduplicateByRemoteId(sales);
+      // Deduplicate and Sort (Most recent first)
+      final deduplicated = deduplicateByRemoteId(sales);
+      deduplicated.sort((a, b) => b.date.compareTo(a.date));
+      return deduplicated;
     });
   }
   @override

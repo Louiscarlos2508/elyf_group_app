@@ -3,6 +3,7 @@ import 'dart:convert';
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/offline_repository.dart';
+import '../../../../core/offline/collection_names.dart';
 import '../../domain/entities/employee.dart';
 import '../../domain/entities/production_payment.dart';
 import '../../domain/entities/salary_payment.dart';
@@ -23,10 +24,10 @@ class SalaryOfflineRepository extends OfflineRepository<Employee>
   final String moduleType;
 
   @override
-  String get collectionName => 'employees';
+  String get collectionName => CollectionNames.employees;
 
-  String get salaryPaymentsCollection => 'salary_payments';
-  String get productionPaymentsCollection => 'production_payments';
+  String get salaryPaymentsCollection => CollectionNames.salaryPayments;
+  String get productionPaymentsCollection => CollectionNames.productionPayments;
 
   @override
   Employee fromMap(Map<String, dynamic> map) => Employee.fromMap(map);
@@ -249,7 +250,8 @@ class SalaryOfflineRepository extends OfflineRepository<Employee>
         final payment = ProductionPayment.fromMap(map);
         final deletedPayment = payment.copyWith(deletedAt: DateTime.now(), updatedAt: DateTime.now());
         
-        await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
+        await driftService.records.upsert(
+          userId: syncManager.getUserId() ?? '', 
           collectionName: productionPaymentsCollection,
           localId: paymentId,
           remoteId: record.remoteId,
@@ -258,6 +260,8 @@ class SalaryOfflineRepository extends OfflineRepository<Employee>
           dataJson: jsonEncode(deletedPayment.toMap()),
           localUpdatedAt: DateTime.now(),
         );
+
+        AppLogger.info('Soft-deleted production payment: $paymentId', name: 'SalaryOfflineRepository');
       }
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
@@ -286,7 +290,8 @@ class SalaryOfflineRepository extends OfflineRepository<Employee>
 
       await driftService.db.transaction(() async {
         // 1. Sauvegarder localement
-        await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
+        await driftService.records.upsert(
+          userId: syncManager.getUserId() ?? '', 
           collectionName: productionPaymentsCollection,
           localId: localId,
           remoteId: null,
@@ -307,6 +312,7 @@ class SalaryOfflineRepository extends OfflineRepository<Employee>
         }
       });
 
+      AppLogger.info('Created production payment: $localId', name: 'SalaryOfflineRepository');
       return localId;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
@@ -357,7 +363,8 @@ class SalaryOfflineRepository extends OfflineRepository<Employee>
 
       await driftService.db.transaction(() async {
         // 1. Sauvegarder localement
-        await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
+        await driftService.records.upsert(
+          userId: syncManager.getUserId() ?? '', 
           collectionName: salaryPaymentsCollection,
           localId: localId,
           remoteId: null,
@@ -378,6 +385,7 @@ class SalaryOfflineRepository extends OfflineRepository<Employee>
         }
       });
 
+      AppLogger.info('Created monthly salary payment: $localId', name: 'SalaryOfflineRepository');
       return localId;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);

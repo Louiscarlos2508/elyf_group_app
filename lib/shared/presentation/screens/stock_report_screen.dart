@@ -18,7 +18,7 @@ class StockReportScreen extends ConsumerStatefulWidget {
 
   final String moduleName;
   final List<StockItem> stockItems;
-  final int availableMachineMaterials;
+  final double availableMachineMaterials;
 
   @override
   ConsumerState<StockReportScreen> createState() => _StockReportScreenState();
@@ -50,16 +50,14 @@ class _StockReportScreenState extends ConsumerState<StockReportScreen> {
     }).toList();
 
     // Ajouter les matières disponibles
-    if (widget.availableMachineMaterials > 0) {
       stockData.add(
         StockItemData(
           name: 'Matières disponibles',
-          quantity: widget.availableMachineMaterials.toDouble(),
+          quantity: widget.availableMachineMaterials,
           unit: 'unité',
           updatedAt: DateTime.now(),
         ),
       );
-    }
 
     return stockData;
   }

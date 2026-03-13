@@ -7,6 +7,6 @@ class ProductSalesSummary {
   });
 
   final String productName;
-  final int quantity;
+  final double quantity;
   final int revenue;
 }

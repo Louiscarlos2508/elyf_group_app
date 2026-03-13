@@ -214,37 +214,122 @@ class _StockIntegrityCheckDialogState
                               : theme.colorScheme.error,
                         ),
                         title: Text(
-                          result.stockId,
+                          result.productName,
                           style: theme.textTheme.bodyLarge?.copyWith(
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const SizedBox(height: 4),
                             Text(
-                              'Type: ${result.stockType}',
-                              style: theme.textTheme.bodySmall,
-                            ),
-                            Text(
-                              'Stocké: ${result.storedQuantity} • '
-                              'Calculé: ${result.calculatedQuantity}',
-                              style: theme.textTheme.bodySmall,
-                            ),
-                            if (result.movementsCount != null)
-                              Text(
-                                'Mouvements: ${result.movementsCount}',
-                                style: theme.textTheme.bodySmall,
+                              'ID: ${result.productId}',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                                fontStyle: FontStyle.italic,
                               ),
-                            if (!result.isValid && result.discrepancy != null)
-                              Text(
-                                'Différence: ${result.discrepancy}',
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: theme.colorScheme.error,
-                                  fontWeight: FontWeight.bold,
+                            ),
+                            const SizedBox(height: 8),
+                            _buildAuditRow(
+                              theme,
+                              'Mouvements cumulés',
+                              '(+) ${result.totalEntries} | (-) ${result.totalExits}',
+                              isHeader: false,
+                            ),
+                            const Divider(height: 8),
+                            _buildAuditRow(
+                              theme,
+                              'Solde Calculé (Σ Entrées - Σ Sorties)',
+                              '${result.calculatedQuantity}',
+                              isBold: true,
+                            ),
+                            if (result.hasPotentialDuplicate)
+                              Container(
+                                margin: const EdgeInsets.only(bottom: 12),
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: Colors.orange.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 20),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        "Attention: Des mouvements existent peut-être sous un autre ID pour ce produit.",
+                                        style: theme.textTheme.bodySmall?.copyWith(color: Colors.orange.shade900),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
+
+                            _buildAuditRow(
+                              theme,
+                              'Stock Actuel (Base de données)',
+                              '${result.storedQuantity}',
+                              trailing: !result.hasStoredRecord && result.calculatedQuantity != 0
+                                ? const Tooltip(
+                                    message: "Snapshot manquant dans la base locale",
+                                    child: Icon(Icons.sync_problem, color: Colors.orange, size: 16),
+                                  )
+                                : null,
+                            ),
+                            if (!result.isValid) ...[
+                              _buildAuditRow(
+                                theme,
+                                'Écart (Discrepancy)',
+                                result.discrepancy?.toStringAsFixed(2) ?? '0.00',
+                                color: theme.colorScheme.error,
+                                isBold: true,
+                              ),
+                            ],
+                            if (result.hasPotentialDuplicate) ...[
+                              const SizedBox(height: 8),
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.orange.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: Colors.orange.withValues(alpha: 0.5)),
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.warning_amber_rounded, size: 16, color: Colors.orange),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        'Attention: Des mouvements avec le même nom mais un ID différent ont été détectés. Cela peut fausser le stock affiché.',
+                                        style: theme.textTheme.bodySmall?.copyWith(
+                                          color: Colors.orange.shade900,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                            if (result.hadNegativeBalance) ...[
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  Icon(Icons.warning_amber_rounded, size: 14, color: theme.colorScheme.error),
+                                  const SizedBox(width: 4),
+                                  Expanded(
+                                    child: Text(
+                                      'Alerte: Solde négatif détecté dans l\'historique',
+                                      style: theme.textTheme.bodySmall?.copyWith(
+                                        color: theme.colorScheme.error,
+                                        fontStyle: FontStyle.italic,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ],
                         ),
                         trailing: result.isValid
@@ -286,6 +371,48 @@ class _StockIntegrityCheckDialogState
             ],
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildAuditRow(
+    ThemeData theme,
+    String label,
+    String value, {
+    Color? color,
+    bool isBold = false,
+    bool isHeader = false,
+    Widget? trailing,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: isHeader ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
+              fontWeight: isHeader ? FontWeight.bold : null,
+            ),
+          ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                value,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontWeight: isBold || isHeader ? FontWeight.bold : FontWeight.w500,
+                  color: color ?? (isBold ? theme.colorScheme.primary : theme.colorScheme.onSurface),
+                ),
+              ),
+              if (trailing != null) ...[
+                const SizedBox(width: 4),
+                trailing,
+              ],
+            ],
+          ),
+        ],
       ),
     );
   }

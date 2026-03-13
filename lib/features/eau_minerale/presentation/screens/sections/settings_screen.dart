@@ -30,43 +30,24 @@ class SettingsScreen extends ConsumerWidget {
         // Section: Production & Prix
         const SettingsSectionHeader(
           title: 'Production & Tarification',
-          icon: Icons.analytics_outlined,
+          subtitle: 'Configurez vos compteurs et tarifs énergétiques',
+          icon: Icons.bolt_rounded,
         ),
         SliverPadding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
-          sliver: SliverLayoutBuilder(
-            builder: (context, constraints) {
-              final isWide = constraints.crossAxisExtent > 600;
-              if (isWide) {
-                return SliverGrid.count(
-                  crossAxisCount: 2,
-                  mainAxisSpacing: 16,
-                  crossAxisSpacing: 16,
-                  childAspectRatio: 1.1, // Increased height to prevent overflow
-                  children: const [
-                    EauMineralePermissionGuard(
-                      permission: EauMineralePermissions.configureProduction,
-                      child: ElectricityMeterConfigCard(),
-                    ),
-                  ],
-                );
-              }
-              return SliverList(
-                delegate: SliverChildListDelegate(const [
-                  EauMineralePermissionGuard(
-                    permission: EauMineralePermissions.configureProduction,
-                    child: ElectricityMeterConfigCard(),
-                  ),
-                ]),
-              );
-            },
+          sliver: SliverToBoxAdapter(
+            child: EauMineralePermissionGuard(
+              permission: EauMineralePermissions.configureProduction,
+              child: const ElectricityMeterConfigCard(),
+            ),
           ),
         ),
 
         // Section: Infrastructure
         const SettingsSectionHeader(
           title: 'Infrastructure',
-          icon: Icons.settings_input_component_outlined,
+          subtitle: 'Gérez votre parc de machines et équipements',
+          icon: Icons.precision_manufacturing_rounded,
         ),
         const SliverPadding(
           padding: EdgeInsets.symmetric(horizontal: 20),
@@ -81,7 +62,8 @@ class SettingsScreen extends ConsumerWidget {
         // Section: Maintenance
         const SettingsSectionHeader(
           title: 'Maintenance & Alertes',
-          icon: Icons.build_circle_outlined,
+          subtitle: 'Signalez les pannes et suivez l\'état du parc',
+          icon: Icons.build_circle_rounded,
         ),
         const SliverPadding(
           padding: EdgeInsets.symmetric(horizontal: 20),
@@ -93,7 +75,7 @@ class SettingsScreen extends ConsumerWidget {
           ),
         ),
 
-        const SliverToBoxAdapter(child: SizedBox(height: 40)),
+        const SliverToBoxAdapter(child: SizedBox(height: 60)),
       ],
     );
   }
@@ -104,9 +86,11 @@ class SettingsSectionHeader extends StatelessWidget {
     super.key,
     required this.title,
     required this.icon,
+    this.subtitle,
   });
 
   final String title;
+  final String? subtitle;
   final IconData icon;
 
   @override
@@ -115,23 +99,43 @@ class SettingsSectionHeader extends StatelessWidget {
 
     return SliverToBoxAdapter(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 32, 24, 16),
-        child: Row(
+        padding: const EdgeInsets.fromLTRB(24, 40, 24, 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(
-              icon,
-              size: 20,
-              color: theme.colorScheme.primary.withValues(alpha: 0.7),
+            Row(
+              children: [
+                Icon(
+                  icon,
+                  size: 20,
+                  color: theme.colorScheme.primary,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  title.toUpperCase(),
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: theme.colorScheme.primary,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(width: 12),
-            Text(
-              title.toUpperCase(),
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.2,
+            if (subtitle != null) ...[
+              const SizedBox(height: 4),
+              Padding(
+                padding: const EdgeInsets.only(left: 32),
+                child: Text(
+                  subtitle!,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
               ),
-            ),
+            ],
+            const SizedBox(height: 8),
+            const Divider(height: 1),
           ],
         ),
       ),

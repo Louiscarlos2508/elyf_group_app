@@ -49,9 +49,9 @@ class ProductionSession {
   final double consommationCourant;
   final List<String> machinesUtilisees;
   final List<MachineMaterialUsage> machineMaterials;
-  final int quantiteProduite;
+  final double quantiteProduite;
   final String quantiteProduiteUnite;
-  final int? emballagesUtilises;
+  final double? emballagesUtilises;
   final int? machineMaterialCost;
   final int? coutEmballages;
   final int? coutElectricite;
@@ -130,16 +130,16 @@ class ProductionSession {
         machinesUtilisees.length == machineMaterials.length;
   }
 
-  int get totalPacksProduitsJournalier {
+  double get totalPacksProduitsJournalier {
     if (productionDays.isEmpty) return 0;
     final hasDetailedProduction = productionDays.any((d) => d.producedItems.isNotEmpty);
     if (hasDetailedProduction) {
-      return productionDays.fold<int>(
+      return productionDays.fold<double>(
         0,
-        (sum, day) => sum + day.producedItems.fold<int>(0, (s, item) => s + item.quantity.toInt()),
+        (sum, day) => sum + day.producedItems.fold<double>(0, (s, item) => s + item.quantity),
       );
     }
-    return productionDays.fold<int>(
+    return productionDays.fold<double>(
       0,
       (sum, day) => sum + day.packsProduits,
     );
@@ -179,11 +179,11 @@ class ProductionSession {
     return totals.values.toList();
   }
 
-  int get totalEmballagesUtilisesJournalier {
+  double get totalEmballagesUtilisesJournalier {
     if (consumptions.isNotEmpty) {
-      return consumptions.fold<int>(0, (sum, c) => sum + c.quantity.toInt());
+      return consumptions.fold<double>(0, (sum, c) => sum + c.quantity);
     }
-    return productionDays.fold<int>(
+    return productionDays.fold<double>(
       0,
       (sum, day) => sum + day.emballagesUtilises,
     );
@@ -218,9 +218,9 @@ class ProductionSession {
     double? consommationCourant,
     List<String>? machinesUtilisees,
     List<MachineMaterialUsage>? machineMaterials,
-    int? quantiteProduite,
+    double? quantiteProduite,
     String? quantiteProduiteUnite,
-    int? emballagesUtilises,
+    double? emballagesUtilises,
     int? machineMaterialCost,
     int? coutEmballages,
     int? coutElectricite,
@@ -375,9 +375,9 @@ class ProductionSession {
       machineMaterials: (map['machineMaterials'] as List? ?? (map['bobinesUtilisees'] as List? ?? []))
           .map((e) => MachineMaterialUsage.fromMap(e as Map<String, dynamic>))
           .toList(),
-      quantiteProduite: (map['quantiteProduite'] as num?)?.toInt() ?? 0,
+      quantiteProduite: (map['quantiteProduite'] as num?)?.toDouble() ?? 0.0,
       quantiteProduiteUnite: map['quantiteProduiteUnite'] as String? ?? '',
-      emballagesUtilises: (map['emballagesUtilises'] as num?)?.toInt(),
+      emballagesUtilises: (map['emballagesUtilises'] as num?)?.toDouble(),
       machineMaterialCost: (map['machineMaterialCost'] as num? ?? (map['coutBobines'] as num?))?.toInt(),
       coutEmballages: (map['coutEmballages'] as num?)?.toInt(),
       coutElectricite: (map['coutElectricite'] as num?)?.toInt(),

@@ -36,6 +36,7 @@ class Product {
     String? enterpriseId,
     String? name,
     ProductType? type,
+    String? role,
     int? unitPrice,
     String? unit,
     String? supplyUnit,
@@ -51,7 +52,7 @@ class Product {
       enterpriseId: enterpriseId ?? this.enterpriseId,
       name: name ?? this.name,
       type: type ?? this.type,
-      role: role ?? role,
+      role: role ?? this.role,
       unitPrice: unitPrice ?? this.unitPrice,
       unit: unit ?? this.unit,
       supplyUnit: supplyUnit ?? this.supplyUnit,
@@ -66,9 +67,9 @@ class Product {
 
   factory Product.fromMap(Map<String, dynamic> map, String defaultEnterpriseId) {
     return Product(
-      id: (map['localId'] as String?)?.trim().isNotEmpty == true 
-          ? map['localId'] as String 
-          : (map['id'] as String? ?? ''),
+      id: (map['id'] as String?)?.trim().isNotEmpty == true 
+          ? map['id'] as String 
+          : (map['localId'] as String? ?? ''),
       enterpriseId: map['enterpriseId'] as String? ?? defaultEnterpriseId,
       name: map['name'] as String? ?? '',
       type: _parseType(map['type']),

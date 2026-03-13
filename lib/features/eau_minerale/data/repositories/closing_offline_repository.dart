@@ -4,6 +4,7 @@ import '../../../../core/offline/connectivity_service.dart';
 import '../../../../core/offline/drift_service.dart';
 import '../../../../core/offline/offline_repository.dart';
 import '../../../../core/offline/sync_manager.dart';
+import '../../../../core/offline/collection_names.dart';
 import '../../../audit_trail/domain/entities/audit_record.dart';
 import '../../../audit_trail/domain/repositories/audit_trail_repository.dart';
 import '../../domain/entities/closing.dart';
@@ -18,9 +19,10 @@ class ClosingOfflineRepository implements ClosingRepository {
     required this.enterpriseId,
     required this.auditTrailRepository,
     this.userId = 'system',
+    this.moduleType = 'eau_minerale',
   });
 
-  String get moduleType => 'eau_minerale';
+  final String moduleType;
 
   final DriftService driftService;
   final SyncManager syncManager;
@@ -29,7 +31,7 @@ class ClosingOfflineRepository implements ClosingRepository {
   final AuditTrailRepository auditTrailRepository;
   final String userId;
 
-  String get collectionName => 'closings';
+  String get collectionName => CollectionNames.closings;
 
   Closing _recordToEntity(String dataJson) {
     return Closing.fromMap(jsonDecode(dataJson) as Map<String, dynamic>, enterpriseId);

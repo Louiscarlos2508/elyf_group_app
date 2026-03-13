@@ -3,6 +3,7 @@ import 'dart:convert';
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/offline_repository.dart';
+import '../../../../core/offline/collection_names.dart';
 import '../../domain/entities/expense_record.dart';
 import '../../domain/repositories/finance_repository.dart';
 
@@ -21,7 +22,7 @@ class FinanceOfflineRepository extends OfflineRepository<ExpenseRecord>
   final String moduleType;
 
   @override
-  String get collectionName => 'expense_records';
+  String get collectionName => CollectionNames.expenseRecords;
 
   @override
   ExpenseRecord fromMap(Map<String, dynamic> map) =>

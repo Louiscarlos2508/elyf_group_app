@@ -52,7 +52,7 @@ class ProductionReportContent extends ConsumerWidget {
                     child: _SummaryCard(
                       label: 'Quantité Totale',
                       value:
-                          '${CurrencyFormatter.formatFCFA(data.totalQuantity)} unités',
+                          '${data.totalQuantity.toStringAsFixed(0)} unités',
                       icon: Icons.inventory_2,
                       color: Colors.blue,
                     ),

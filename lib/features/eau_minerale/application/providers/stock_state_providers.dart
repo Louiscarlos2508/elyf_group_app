@@ -18,7 +18,7 @@ final historicalStockStateProvider = FutureProvider.autoDispose
 
 /// Stock d'un produit spécifique par son ID (recommandé).
 final productStockQuantityProvider =
-    FutureProvider.autoDispose.family<int, String>((ref, productId) async {
+    FutureProvider.autoDispose.family<double, String>((ref, productId) async {
   if (productId.isEmpty) return 0;
   return ref.watch(stockControllerProvider).getStock(productId);
 });

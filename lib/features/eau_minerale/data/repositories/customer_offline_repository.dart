@@ -7,6 +7,7 @@ import '../../../../core/offline/connectivity_service.dart';
 import '../../../../core/offline/drift_service.dart';
 import '../../../../core/offline/offline_repository.dart';
 import '../../../../core/offline/sync_manager.dart';
+import '../../../../core/offline/collection_names.dart';
 import '../../domain/entities/sale.dart';
 import '../../domain/repositories/customer_repository.dart';
 import '../../domain/repositories/sale_repository.dart';
@@ -22,17 +23,17 @@ class CustomerOfflineRepository implements CustomerRepository {
     required this.connectivityService,
     required this.enterpriseId,
     required this.saleRepository,
+    this.moduleType = 'eau_minerale',
   });
-
-  String get moduleType => 'eau_minerale';
 
   final DriftService driftService;
   final SyncManager syncManager;
   final ConnectivityService connectivityService;
   final String enterpriseId;
+  final String moduleType;
   final SaleRepository saleRepository;
 
-  String get collectionName => 'customers';
+  String get collectionName => CollectionNames.customers;
 
   Map<String, dynamic> _recordToMap(String dataJson) {
     return jsonDecode(dataJson) as Map<String, dynamic>;

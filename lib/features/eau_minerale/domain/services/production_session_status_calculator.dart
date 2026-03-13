@@ -13,7 +13,7 @@ class ProductionSessionStatusCalculator {
   /// - started: startTime is before now
   /// - draft: default
   static ProductionSessionStatus calculateStatus({
-    required int quantiteProduite,
+    required double quantiteProduite,
     required DateTime? heureFin,
     required DateTime heureDebut,
     required List<String> machinesUtilisees,
@@ -42,7 +42,7 @@ class ProductionSessionStatusCalculator {
 
   /// Determines if a session can be completed.
   static bool canComplete({
-    required int quantiteProduite,
+    required double quantiteProduite,
     required DateTime? heureFin,
     required DateTime heureDebut,
   }) {

@@ -221,13 +221,6 @@ class _StockContentWithFiltersState
                       case 'report':
                         _showStockReport(context);
                         break;
-                      case 'integrity':
-                        showDialog(
-                          context: context,
-                          builder: (context) =>
-                              const StockIntegrityCheckDialog(),
-                        );
-                        break;
                     }
                   },
                   itemBuilder: (context) => [
@@ -238,16 +231,6 @@ class _StockContentWithFiltersState
                           Icon(Icons.analytics_outlined, size: 20),
                           SizedBox(width: 12),
                           Text('Générer Rapport'),
-                        ],
-                      ),
-                    ),
-                    const PopupMenuItem(
-                      value: 'integrity',
-                      child: Row(
-                        children: [
-                          Icon(Icons.security_outlined, size: 20),
-                          SizedBox(width: 12),
-                          Text('Vérifier Intégrité'),
                         ],
                       ),
                     ),

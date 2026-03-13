@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:elyf_groupe_app/shared.dart';
 import 'package:elyf_groupe_app/features/eau_minerale/application/providers.dart';
+import 'package:elyf_groupe_app/features/eau_minerale/domain/entities/electricity_meter_type.dart';
 import 'time_picker_field.dart';
 
 /// Dialog pour finaliser une production.
@@ -394,7 +395,7 @@ class _ProductionFinalizationDialogState
                   child: Text(c.productName, style: theme.textTheme.bodySmall),
                 ),
                 Text(
-                  '${c.quantity.toInt()} units',
+                  '${c.quantity.toStringAsFixed(0)} units',
                   style: theme.textTheme.bodySmall?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),

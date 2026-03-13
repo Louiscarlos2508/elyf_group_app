@@ -1,4 +1,5 @@
 import 'dart:convert';
+import '../../../../core/offline/collection_names.dart';
 import '../../../../core/offline/offline_repository.dart';
 import '../../../../shared/domain/entities/payment_method.dart';
 import '../../../audit_trail/domain/entities/audit_record.dart';
@@ -21,7 +22,7 @@ class TreasuryOfflineRepository extends OfflineRepository<TreasuryOperation> imp
   final String userId;
 
   @override
-  String get collectionName => 'immobilier_treasury';
+  String get collectionName => CollectionNames.immobilierTreasury;
 
   String get moduleType => 'immobilier';
 

@@ -216,11 +216,22 @@ final userAccessibleModulesForActiveEnterpriseProvider = StreamProvider<List<Str
       }
 
       // 2. Accès via les assignations explicites (EnterpriseModuleUser)
-      final activeAccesses = userAccesses
-          .where((access) => access.enterpriseId == activeEnterpriseId && access.isActive)
-          .toList();
+      // On inclut les accès directs ET les accès via parent (si includesChildren)
+      final activeEnterprise = enterprises.where((e) => e.id == activeEnterpriseId).firstOrNull;
+      final parentId = activeEnterprise?.parentEnterpriseId;
 
-      moduleIds.addAll(activeAccesses.map((access) => access.moduleId));
+      for (final access in userAccesses) {
+        if (!access.isActive) continue;
+
+        // Accès direct
+        if (access.enterpriseId == activeEnterpriseId) {
+          moduleIds.add(access.moduleId);
+        } 
+        // Accès via parent
+        else if (parentId != null && access.enterpriseId == parentId && access.includesChildren) {
+          moduleIds.add(access.moduleId);
+        }
+      }
 
       return moduleIds.toList()..sort();
     },

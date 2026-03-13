@@ -63,9 +63,9 @@ class HistoricalStockService {
     );
     
     // Calculer le total des bobines
-    final totalBobines = items.where((i) => i.type == StockType.rawMaterial).fold<int>(
+    final totalBobines = items.where((i) => i.type == StockType.rawMaterial).fold<double>(
       0,
-      (sum, item) => sum + item.quantity.toInt(),
+      (sum, item) => sum + item.quantity,
     );
 
     return StockState(

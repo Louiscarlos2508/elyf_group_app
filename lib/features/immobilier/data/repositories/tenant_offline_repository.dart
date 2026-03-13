@@ -1,7 +1,7 @@
-import 'package:drift/drift.dart';
+import 'dart:convert';
 
 import '../../../../core/errors/error_handler.dart';
-import '../../../../core/offline/drift/app_database.dart';
+import '../../../../core/offline/collection_names.dart';
 import '../../../../core/offline/offline_repository.dart';
 import '../../domain/entities/tenant.dart';
 import '../../domain/repositories/tenant_repository.dart';
@@ -19,7 +19,7 @@ class TenantOfflineRepository extends OfflineRepository<Tenant>
   final String enterpriseId;
 
   @override
-  String get collectionName => 'tenants';
+  String get collectionName => CollectionNames.tenants;
 
   String get moduleType => 'immobilier';
 
@@ -47,59 +47,54 @@ class TenantOfflineRepository extends OfflineRepository<Tenant>
   @override
   Future<void> saveToLocal(Tenant entity, {String? userId}) async {
     final localId = getLocalId(entity);
-    final companion = TenantsTableCompanion(
-      id: Value(localId),
-      enterpriseId: Value(enterpriseId),
-      fullName: Value(entity.fullName),
-      phone: Value(entity.phone),
-      address: Value(entity.address),
-      idNumber: Value(entity.idNumber),
-      emergencyContact: Value(entity.emergencyContact),
-      idCardPath: Value(entity.idCardPath),
-      notes: Value(entity.notes),
-      createdAt: Value(entity.createdAt ?? DateTime.now()),
-      updatedAt: Value(DateTime.now()),
-      deletedAt: Value(entity.deletedAt),
-      deletedBy: Value(entity.deletedBy),
-    );
+    final map = toMap(entity);
+    map['localId'] = localId;
 
-    await driftService.db.into(driftService.db.tenantsTable).insertOnConflictUpdate(companion);
+    await driftService.records.upsert(
+      userId: syncManager.getUserId() ?? '',
+      collectionName: collectionName,
+      localId: localId,
+      remoteId: getRemoteId(entity),
+      enterpriseId: enterpriseId,
+      moduleType: moduleType,
+      dataJson: jsonEncode(map),
+      localUpdatedAt: DateTime.now(),
+    );
   }
 
   @override
   Future<void> deleteFromLocal(Tenant entity, {String? userId}) async {
     final localId = getLocalId(entity);
-    await (driftService.db.delete(driftService.db.tenantsTable)
-          ..where((t) => t.id.equals(localId)))
-        .go();
+    // Soft-delete
+    final deletedTenant = entity.copyWith(
+      deletedAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+      deletedBy: 'system',
+    );
+    await saveToLocal(deletedTenant, userId: userId);
   }
 
   @override
   Future<Tenant?> getByLocalId(String localId) async {
-    final query = driftService.db.select(driftService.db.tenantsTable)
-      ..where((t) => t.id.equals(localId));
-    final row = await query.getSingleOrNull();
-
-    if (row == null) return null;
-    return _fromEntity(row);
-  }
-
-  Tenant _fromEntity(TenantEntity entity) {
-    return Tenant(
-      id: entity.id,
-      enterpriseId: entity.enterpriseId,
-      fullName: entity.fullName,
-      phone: entity.phone,
-      address: entity.address,
-      idNumber: entity.idNumber,
-      emergencyContact: entity.emergencyContact,
-      idCardPath: entity.idCardPath,
-      notes: entity.notes,
-      createdAt: entity.createdAt,
-      updatedAt: entity.updatedAt,
-      deletedAt: entity.deletedAt,
-      deletedBy: entity.deletedBy,
+    final byRemote = await driftService.records.findByRemoteId(
+      collectionName: collectionName,
+      remoteId: localId,
+      enterpriseId: enterpriseId,
+      moduleType: moduleType,
     );
+    if (byRemote != null) {
+      final tenant = fromMap(jsonDecode(byRemote.dataJson) as Map<String, dynamic>);
+      return tenant.isDeleted ? null : tenant;
+    }
+
+    final byLocal = await driftService.records.findByLocalId(
+      collectionName: collectionName,
+      localId: localId,
+      enterpriseId: enterpriseId,
+      moduleType: moduleType,
+    );
+    if (byLocal == null) return null;
+    return fromMap(jsonDecode(byLocal.dataJson) as Map<String, dynamic>);
   }
 
   @override
@@ -109,28 +104,35 @@ class TenantOfflineRepository extends OfflineRepository<Tenant>
 
   @override
   Future<List<Tenant>> getAllForEnterprise(String enterpriseId) async {
-    final query = driftService.db.select(driftService.db.tenantsTable)
-      ..where((t) => t.enterpriseId.equals(enterpriseId));
-    final rows = await query.get();
-    return rows.map(_fromEntity).toList();
+    final rows = await driftService.records.listForEnterprise(
+      collectionName: collectionName,
+      enterpriseId: enterpriseId,
+      moduleType: moduleType,
+    );
+    return rows
+        .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+        .where((t) => !t.isDeleted)
+        .toList();
   }
 
   // TenantRepository interface implementation
 
   @override
   Stream<List<Tenant>> watchTenants({bool? isDeleted = false}) {
-    final query = driftService.db.select(driftService.db.tenantsTable)
-      ..where((t) => t.enterpriseId.equals(enterpriseId));
-
-    if (isDeleted != null) {
-      if (isDeleted) {
-        query.where((t) => t.deletedAt.isNotNull());
-      } else {
-        query.where((t) => t.deletedAt.isNull());
-      }
-    }
-
-    return query.watch().map((rows) => rows.map(_fromEntity).toList());
+    return driftService.records
+        .watchForEnterprise(
+          collectionName: collectionName,
+          enterpriseId: enterpriseId,
+          moduleType: moduleType,
+        )
+        .map((rows) {
+      return rows
+          .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
+          .where((t) {
+        if (isDeleted == null) return true;
+        return t.isDeleted == isDeleted;
+      }).toList();
+    });
   }
 
   @override
@@ -185,11 +187,7 @@ class TenantOfflineRepository extends OfflineRepository<Tenant>
     try {
       final tenant = await getTenantById(id);
       if (tenant != null) {
-        await save(tenant.copyWith(
-          deletedAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          deletedBy: 'system',
-        ));
+        await delete(tenant);
       }
     } catch (error, stackTrace) {
       throw ErrorHandler.instance.handleError(error, stackTrace);

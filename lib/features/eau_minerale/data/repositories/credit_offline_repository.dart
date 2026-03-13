@@ -3,6 +3,7 @@ import 'dart:convert';
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/offline_repository.dart';
+import '../../../../core/offline/collection_names.dart';
 import '../../domain/entities/credit_payment.dart';
 import '../../domain/entities/sale.dart';
 import '../../domain/repositories/credit_repository.dart';
@@ -25,7 +26,7 @@ class CreditOfflineRepository extends OfflineRepository<CreditPayment>
   final SaleRepository saleRepository;
 
   @override
-  String get collectionName => 'credit_payments';
+  String get collectionName => CollectionNames.creditPayments;
 
   @override
   CreditPayment fromMap(Map<String, dynamic> map) =>

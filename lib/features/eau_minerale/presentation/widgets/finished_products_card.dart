@@ -59,12 +59,15 @@ class FinishedProductsCard extends StatelessWidget {
           
           // Afficher chaque produit fini du catalogue
           ...finishedGoodProducts.map((product) {
-            final stockItem = items.cast<StockItem?>().firstWhere(
-              (i) => i?.id == product.id,
-              orElse: () => null,
-            );
+            final productId = product.id;
             
-            final quantity = stockItem?.quantity ?? 0.0;
+            // Chercher la quantité totale via l'ID OU le Nom
+            double totalQuantity = 0;
+
+            final matchedItems = items.where((i) => i.id == productId || i.name.toLowerCase() == product.name.toLowerCase());
+            for (final i in matchedItems) {
+              totalQuantity += i.quantity;
+            }
 
             return Padding(
               padding: const EdgeInsets.only(bottom: 12.0),
@@ -72,7 +75,7 @@ class FinishedProductsCard extends StatelessWidget {
                 context,
                 product.name,
                 product.description ?? 'Stock disponible pour la vente',
-                quantity,
+                totalQuantity,
                 product.unit,
                 icon: Icons.local_drink_rounded,
               ),
@@ -81,9 +84,22 @@ class FinishedProductsCard extends StatelessWidget {
 
           // Optionnel: Articles hors catalogue
           ...() {
-            final catalogIds = finishedGoodProducts.map((p) => p.id).toSet();
+            final displayedIds = <String>{};
+            final displayedNames = <String>{};
+            
+            for (final product in finishedGoodProducts) {
+              final productId = product.id;
+              final matchedItems = items.where((i) => i.id == productId || i.name.toLowerCase() == product.name.toLowerCase());
+              for (final i in matchedItems) {
+                displayedIds.add(i.id);
+                displayedNames.add(i.name.toLowerCase());
+              }
+            }
+
             final legacyItems = items.where((i) => 
-               i.type == StockType.finishedGoods && !catalogIds.contains(i.id)
+               i.type == StockType.finishedGoods && 
+               !displayedIds.contains(i.id) &&
+               !displayedNames.contains(i.name.toLowerCase())
             ).toList();
             
             if (legacyItems.isEmpty) return <Widget>[];

@@ -3,6 +3,7 @@ import 'dart:convert';
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/offline_repository.dart';
+import '../../../../core/offline/collection_names.dart';
 import '../../domain/entities/daily_worker.dart';
 import '../../domain/repositories/daily_worker_repository.dart';
 
@@ -21,7 +22,7 @@ class DailyWorkerOfflineRepository extends OfflineRepository<DailyWorker>
   final String moduleType;
 
   @override
-  String get collectionName => 'daily_workers';
+  String get collectionName => CollectionNames.dailyWorkers;
 
   @override
   DailyWorker fromMap(Map<String, dynamic> map) =>

@@ -14,7 +14,7 @@ class ProductProfitCard extends StatelessWidget {
   });
 
   final String productName;
-  final int quantity;
+  final double quantity;
   final int revenue;
   final int estimatedCost;
   final int margin;

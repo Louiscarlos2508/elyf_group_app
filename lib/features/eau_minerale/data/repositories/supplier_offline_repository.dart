@@ -5,6 +5,7 @@ import '../../../../core/offline/connectivity_service.dart';
 import '../../../../core/offline/drift_service.dart';
 import '../../../../core/offline/offline_repository.dart';
 import '../../../../core/offline/sync_manager.dart';
+import '../../../../core/offline/collection_names.dart';
 import '../../../audit_trail/domain/entities/audit_record.dart';
 import '../../../audit_trail/domain/repositories/audit_trail_repository.dart';
 import '../../domain/entities/supplier.dart';
@@ -20,18 +21,18 @@ class SupplierOfflineRepository implements SupplierRepository {
     required this.enterpriseId,
     required this.auditTrailRepository,
     this.userId = 'system',
+    this.moduleType = 'eau_minerale',
   });
-
-  String get moduleType => 'eau_minerale';
 
   final DriftService driftService;
   final SyncManager syncManager;
   final ConnectivityService connectivityService;
   final String enterpriseId;
+  final String moduleType;
   final AuditTrailRepository auditTrailRepository;
   final String userId;
 
-  String get collectionName => 'suppliers';
+  String get collectionName => CollectionNames.suppliers;
 
   Supplier _recordToEntity(String dataJson) {
     return Supplier.fromMap(jsonDecode(dataJson) as Map<String, dynamic>, enterpriseId);
@@ -212,7 +213,7 @@ class SupplierOfflineRepository implements SupplierRepository {
       final map = entity.toMap()..['localId'] = localId;
 
       await driftService.records.upsert(userId: syncManager.getUserId() ?? '', 
-        collectionName: 'supplier_settlements',
+        collectionName: CollectionNames.supplierSettlements,
         localId: localId,
         enterpriseId: enterpriseId,
         moduleType: moduleType,
@@ -221,7 +222,7 @@ class SupplierOfflineRepository implements SupplierRepository {
       );
 
       await syncManager.queueCreate(
-        collectionName: 'supplier_settlements',
+        collectionName: CollectionNames.supplierSettlements,
         localId: localId,
         data: map,
         enterpriseId: enterpriseId,
@@ -246,7 +247,7 @@ class SupplierOfflineRepository implements SupplierRepository {
   Future<List<SupplierSettlement>> fetchSettlements(String supplierId) async {
     try {
       final rows = await driftService.records.listForEnterprise(
-        collectionName: 'supplier_settlements',
+        collectionName: CollectionNames.supplierSettlements,
         enterpriseId: enterpriseId,
         moduleType: moduleType,
       );

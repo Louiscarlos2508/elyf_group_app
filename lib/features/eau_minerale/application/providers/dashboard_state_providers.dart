@@ -64,7 +64,7 @@ final dailyDashboardSummaryProvider =
         startDate: startOfDay,
         endDate: endOfDay,
       );
-  final paymentsStream = ref.watch(creditRepositoryProvider).watchPayments(
+  final paymentsStream = ref.watch(eauMineraleCreditRepositoryProvider).watchPayments(
         startDate: startOfDay,
         endDate: endOfDay,
       );
@@ -114,7 +114,7 @@ class MonthlyDashboardSummary {
 
   final int revenue;
   final int collections;
-  final int production;
+  final double production;
   final int expenses;
   final int result;
   final int salesCount;
@@ -134,24 +134,27 @@ final monthlyDashboardSummaryProvider =
   final financesStream = ref.watch(financeRepositoryProvider).watchExpenses();
   final sessionsStream =
       ref.watch(productionSessionRepositoryProvider).watchSessions();
-  final creditPaymentsStream = ref.watch(creditRepositoryProvider).watchPayments(
+  final creditPaymentsStream = ref.watch(eauMineraleCreditRepositoryProvider).watchPayments(
         startDate: monthStart,
       );
+  final treasuryStream = ref.watch(treasuryControllerProvider).watchOperations();
 
   // For salaryState, we use ref.watch and convert to stream to include it in combineLatest
   final salaryStream =
       Stream.fromFuture(ref.watch(salaryStateProvider.future));
 
-  return Rx.combineLatest5(
+  return Rx.combineLatest6(
     salesStream,
     financesStream,
     sessionsStream,
     salaryStream,
     creditPaymentsStream,
+    treasuryStream,
     (List<Sale> sales, List<ExpenseRecord> expenses,
         List<ProductionSession> sessions,
         SalaryState salaryState,
-        List<CreditPayment> creditPayments) {
+        List<CreditPayment> creditPayments,
+        List<TreasuryOperation> treasuryOperations) {
       return _calculateMonthlySummary(
         ref,
         SalesState(sales: sales),
@@ -159,6 +162,7 @@ final monthlyDashboardSummaryProvider =
         sessions,
         salaryState,
         creditPayments,
+        treasuryOperations,
       );
     },
   ).debounceTime(const Duration(milliseconds: 500));
@@ -172,6 +176,7 @@ MonthlyDashboardSummary _calculateMonthlySummary(
   List<ProductionSession> sessions,
   SalaryState salaryState,
   List<CreditPayment> creditPayments,
+  List<TreasuryOperation> treasuryOperations,
 ) {
   final calculationService = ref.read(dashboardCalculationServiceProvider);
   final now = DateTime.now();
@@ -185,6 +190,7 @@ MonthlyDashboardSummary _calculateMonthlySummary(
     salaryPayments: salaryState.monthlySalaryPayments,
     productionPayments: salaryState.productionPayments,
     sessions: sessions,
+    treasuryOperations: treasuryOperations,
     referenceDate: now,
   );
 

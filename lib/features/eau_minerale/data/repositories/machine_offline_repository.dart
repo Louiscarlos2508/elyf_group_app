@@ -4,6 +4,7 @@ import '../../../../core/errors/app_exceptions.dart';
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/offline_repository.dart';
+import '../../../../core/offline/collection_names.dart';
 import '../../domain/entities/machine.dart';
 import '../../domain/repositories/machine_repository.dart';
 
@@ -15,14 +16,14 @@ class MachineOfflineRepository extends OfflineRepository<Machine>
     required super.syncManager,
     required super.connectivityService,
     required this.enterpriseId,
+    this.moduleType = 'eau_minerale',
   });
 
   final String enterpriseId;
+  final String moduleType;
 
   @override
-  String get collectionName => 'machines';
-
-  String get moduleType => 'eau_minerale';
+  String get collectionName => CollectionNames.machines;
 
   @override
   Machine fromMap(Map<String, dynamic> map) =>

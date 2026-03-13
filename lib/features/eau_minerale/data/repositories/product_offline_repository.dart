@@ -3,6 +3,7 @@ import 'dart:convert';
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/offline_repository.dart';
+import '../../../../core/offline/collection_names.dart';
 import '../../domain/entities/product.dart';
 import '../../domain/repositories/product_repository.dart';
 
@@ -14,14 +15,22 @@ class ProductOfflineRepository extends OfflineRepository<Product>
     required super.syncManager,
     required super.connectivityService,
     required this.enterpriseId,
+    this.moduleType = 'eau_minerale',
   });
 
   final String enterpriseId;
+  final String moduleType;
 
-  String get moduleType => 'eau_minerale';
+  /// IDs de produits "historiques" (codés en dur au début) à ignorer 
+  /// maintenant que tout vient du catalogue Firestore.
+  static const _legacyIds = {
+    'pf_main_eau',
+    'mp_roll_default',
+    'mp_pkg_default',
+  };
 
   @override
-  String get collectionName => 'products';
+  String get collectionName => CollectionNames.products;
 
   @override
   Product fromMap(Map<String, dynamic> map) =>
@@ -111,7 +120,7 @@ class ProductOfflineRepository extends OfflineRepository<Product>
     );
     final entities = rows
         .map((r) => fromMap(jsonDecode(r.dataJson) as Map<String, dynamic>))
-        .where((product) => !product.isDeleted)
+        .where((product) => !product.isDeleted && !_legacyIds.contains(product.id))
         .toList();
 
     // Dédupliquer par remoteId pour éviter les doublons
@@ -127,6 +136,9 @@ class ProductOfflineRepository extends OfflineRepository<Product>
         'Fetching products for enterprise: $enterpriseId',
         name: 'ProductOfflineRepository',
       );
+      
+      // Cleanup one-time: find if legacy products exist and hide them if they have no movements
+      // (This is a simplified "soft" removal for now to avoid side-effects)
       return await getAllForEnterprise(enterpriseId);
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);

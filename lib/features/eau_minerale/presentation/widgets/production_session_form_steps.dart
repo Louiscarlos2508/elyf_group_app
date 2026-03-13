@@ -141,7 +141,7 @@ class ProductionSessionFormStepsState
       final config = await ref.read(productionPeriodConfigProvider.future);
 
       final status = ProductionSessionStatusCalculator.calculateStatus(
-        quantiteProduite: int.tryParse(_quantiteController.text) ?? 0,
+        quantiteProduite: double.tryParse(_quantiteController.text) ?? 0,
         heureFin: null,
         heureDebut: _heureDebut,
         machinesUtilisees: _machinesSelectionnees,
@@ -164,6 +164,8 @@ class ProductionSessionFormStepsState
       }
 
       final enterpriseId = ref.read(activeEnterpriseIdProvider).value ?? '';
+      final userId = ref.read(currentUserIdProvider);
+      final mainProduct = await ref.read(eauMineraleMainProductProvider.future);
 
       final session = ProductionSessionBuilder.buildFromForm(
         sessionId: sessionId,
@@ -180,17 +182,19 @@ class ProductionSessionFormStepsState
             0.0,
         machinesUtilisees: _machinesSelectionnees,
         machineMaterials: _machineMaterials,
-        quantiteProduite: int.tryParse(_quantiteController.text) ?? 0,
+        quantiteProduite: double.tryParse(_quantiteController.text) ?? 0,
         emballagesUtilises: _emballagesController.text.trim().isNotEmpty
-            ? int.tryParse(_emballagesController.text.trim())
+            ? double.tryParse(_emballagesController.text.trim())
             : null,
         notes: _notesController.text.isEmpty ? null : _notesController.text,
         status: status,
         productionDays: _productionDays,
         period: config.getPeriodForDate(_selectedDate),
+        quantiteProduiteUnite: widget.session?.quantiteProduiteUnite ?? mainProduct?.unit ?? 'unité',
         machineMaterialCost: widget.session?.machineMaterialCost,
         coutEmballages: widget.session?.coutEmballages,
         coutElectricite: widget.session?.coutElectricite,
+        userId: userId,
       );
 
       final controller = ref.read(productionSessionControllerProvider);
@@ -228,7 +232,7 @@ class ProductionSessionFormStepsState
       final config = await ref.read(productionPeriodConfigProvider.future);
       final status = ProductionSessionFormActions.calculateStatus(
         ref: ref,
-        quantiteProduite: int.tryParse(_quantiteController.text) ?? 0,
+        quantiteProduite: double.tryParse(_quantiteController.text) ?? 0,
         heureFin: widget.session?.heureFin,
         heureDebut: _heureDebut,
         machinesUtilisees: _machinesSelectionnees,
@@ -249,6 +253,7 @@ class ProductionSessionFormStepsState
       }
 
       final enterpriseId = ref.read(activeEnterpriseIdProvider).value ?? '';
+      final userId = ref.read(currentUserIdProvider);
 
       final session = ProductionSessionFormActions.buildSession(
         sessionId: existingSessionId,
@@ -262,14 +267,15 @@ class ProductionSessionFormStepsState
             double.tryParse(_consommationController.text) ?? 0.0,
         machinesUtilisees: _machinesSelectionnees,
         machineMaterials: _machineMaterials,
-        quantiteProduite: int.tryParse(_quantiteController.text) ?? 0,
+        quantiteProduite: double.tryParse(_quantiteController.text) ?? 0,
         emballagesUtilises: _emballagesController.text.trim().isNotEmpty
-            ? int.tryParse(_emballagesController.text.trim())
+            ? double.tryParse(_emballagesController.text.trim())
             : null,
         notes: _notesController.text.isEmpty ? null : _notesController.text,
         status: status,
         productionDays: _productionDays,
         period: config.getPeriodForDate(_selectedDate),
+        createdBy: userId,
       );
 
       final controller = ref.read(productionSessionControllerProvider);

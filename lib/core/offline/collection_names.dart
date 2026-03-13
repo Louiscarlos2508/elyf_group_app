@@ -24,7 +24,12 @@ class CollectionNames {
   static const String creditPayments = 'credit_payments';
   static const String dailyWorkers = 'daily_workers';
   static const String expenseRecords = 'expense_records';
-  static const String eauMineraleTreasuryOperations = 'eau_minerale_treasury_operations';
+  static const String eauMineraleTreasuryOperations = 'eauMineraleTreasuryOperations';
+  static const String suppliers = 'suppliers';
+  static const String purchases = 'purchases';
+  static const String supplierSettlements = 'supplier_settlements';
+  static const String closings = 'closings';
+  static const String eauMineraleSettings = 'settings';
 
   // Collections Gaz
   static const String cylinders = 'cylinders';
@@ -56,12 +61,11 @@ class CollectionNames {
   static const String contracts = 'contracts';
   static const String payments = 'payments';
   static const String propertyExpenses = 'property_expenses';
+  static const String maintenanceTickets = 'maintenance_tickets';
+  static const String immobilierTreasury = 'immobilier_treasury';
+  static const String immobilierSettings = 'immobilier_settings';
 
-  // Collections Boutique
-  static const String purchases = 'purchases';
+  // Collections Boutique (using generic names for now)
   static const String expenses = 'expenses';
-  static const String suppliers = 'suppliers';
-  static const String supplierSettlements = 'supplier_settlements';
   static const String treasuryOperations = 'treasury_operations';
-  static const String closings = 'closings';
 }

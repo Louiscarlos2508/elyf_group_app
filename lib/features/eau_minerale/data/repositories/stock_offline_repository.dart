@@ -117,21 +117,29 @@ class StockOfflineRepository extends OfflineRepository<StockMovement>
   // StockRepository implementation
 
   @override
-  Future<int> getStock(String productId) async {
+  Future<double> getStock(String productId) async {
     try {
-      final movements = await fetchMovements(productId: productId);
-      AppLogger.debug('Found ${movements.length} movements for product $productId', name: 'StockOfflineRepository');
-      
-      double total = 0;
-      for (final m in movements) {
-        if (m.type == StockMovementType.entry) {
-          total += m.quantity;
-        } else {
-          total -= m.quantity;
-        }
+      // 1. Tenter de lire le snapshot pré-calculé (Optimisation Audit)
+      final storedQty = await getStoredQuantity(productId);
+      if (storedQty != null) {
+        return storedQty;
       }
-      AppLogger.debug('Calculated total stock for $productId: $total', name: 'StockOfflineRepository');
-      return total.toInt();
+
+      // 2. Fallback: Calcul complet si le snapshot est absent
+      AppLogger.info('Snapshot missing for $productId, performing full movement calculation...', name: 'StockOfflineRepository');
+      final total = await _calculateStockFromMovements(productId);
+      
+      // Mettre à jour le snapshot pour la prochaine fois sans récurrence
+      final product = await productRepository.getProduct(productId);
+      await _updateStockSnapshot(
+        productId, 
+        total,
+        productName: product?.name,
+        unit: product?.unit,
+        isRawMaterial: product?.isRawMaterial,
+      );
+      
+      return total;
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       AppLogger.error(
@@ -144,8 +152,73 @@ class StockOfflineRepository extends OfflineRepository<StockMovement>
     }
   }
 
+  Future<double> _calculateStockFromMovements(String productId) async {
+    final product = await productRepository.getProduct(productId);
+    final productName = product?.name;
+
+    final allMovements = await fetchMovements();
+    
+    final movements = allMovements.where((m) => 
+      m.productId == productId || 
+      (productName != null && m.productName.toLowerCase() == productName.toLowerCase())
+    ).toList();
+
+    double total = 0;
+    for (final m in movements) {
+      if (m.type == StockMovementType.entry) {
+        total += m.quantity;
+      } else {
+        total -= m.quantity;
+      }
+    }
+    return total;
+  }
+
   @override
-  Future<void> updateStock(String productId, int quantity) async {
+  Future<double?> getStoredQuantity(String productId) async {
+    try {
+      // 1. Essayer par localId direct (optimisé)
+      final record = await driftService.records.findByLocalId(
+        collectionName: CollectionNames.stockItems,
+        localId: productId,
+        enterpriseId: enterpriseId,
+        moduleType: moduleType,
+      );
+      
+      if (record != null) {
+        final data = jsonDecode(record.dataJson) as Map<String, dynamic>;
+        return (data['quantity'] as num?)?.toDouble() ?? 0.0;
+      }
+
+      // 2. Si non trouvé par ID direct, chercher par champ 'productId' dans le JSON
+      final records = await driftService.records.listForEnterpriseWithJsonFilter(
+        collectionName: CollectionNames.stockItems,
+        enterpriseId: enterpriseId,
+        moduleType: moduleType,
+        jsonFilters: {'productId': productId},
+      );
+
+      if (records.isNotEmpty) {
+        final data = jsonDecode(records.first.dataJson) as Map<String, dynamic>;
+        return (data['quantity'] as num?)?.toDouble() ?? 0.0;
+      }
+      
+      AppLogger.warning('No stored stock item found for product $productId (checked ID and productId field)', name: 'StockOfflineRepository');
+      return null;
+    } catch (error, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
+      AppLogger.error(
+        'Error getting stored quantity for product: $productId - ${appException.message}',
+        name: 'StockOfflineRepository',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return null;
+    }
+  }
+
+  @override
+  Future<void> updateStock(String productId, double quantity) async {
     try {
       final currentStock = await getStock(productId);
       final diff = quantity - currentStock;
@@ -162,7 +235,7 @@ class StockOfflineRepository extends OfflineRepository<StockMovement>
         date: DateTime.now(),
         type: diff > 0 ? StockMovementType.entry : StockMovementType.exit,
         reason: 'Ajustement manuel de stock',
-        quantity: diff.abs().toDouble(),
+        quantity: diff.abs(),
         unit: product?.unit ?? 'unite',
       ));
     } catch (error, stackTrace) {
@@ -194,6 +267,22 @@ class StockOfflineRepository extends OfflineRepository<StockMovement>
       
       AppLogger.info('Recording movement: ${movementWithAudit.type.name} of ${movementWithAudit.quantity} for ${movementWithAudit.productId}', name: 'StockOfflineRepository');
       await save(movementWithAudit);
+
+      // --- NEW: Mise à jour du stock cumulé dans 'stock_items' pour la cohérence locale ---
+      // On calcule le nouveau stock en appliquant le mouvement actuel au stock mémorisé
+      final oldStock = await getStoredQuantity(movement.productId) ?? 0.0;
+      final stockDiff = movementWithAudit.type == StockMovementType.entry 
+          ? movementWithAudit.quantity 
+          : -movementWithAudit.quantity;
+      final newTotalStock = oldStock + stockDiff;
+      
+      await _updateStockSnapshot(
+        movement.productId, 
+        newTotalStock,
+        productName: movement.productName,
+        unit: movement.unit,
+      );
+      
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       AppLogger.error(
@@ -257,9 +346,80 @@ class StockOfflineRepository extends OfflineRepository<StockMovement>
   }
 
   @override
+  Future<void> deleteMovement(String movementId) async {
+    final movement = await getByLocalId(movementId);
+    if (movement != null) {
+      await delete(movement);
+    }
+  }
+
+  @override
   Future<List<String>> getLowStockAlerts(int thresholdPercent) async {
-    // This could involve fetching all products and checking their stock
-    // For now, keep it simple or implement as needed.
     return [];
+  }
+
+  @override
+  Future<void> syncStoredQuantity(String productId) async {
+    try {
+      final currentStock = await _calculateStockFromMovements(productId);
+      final product = await productRepository.getProduct(productId);
+      
+      await _updateStockSnapshot(
+        productId, 
+        currentStock,
+        productName: product?.name,
+        unit: product?.unit,
+        isRawMaterial: product?.isRawMaterial,
+      );
+      
+      AppLogger.info('Successfully synced stock snapshot for $productId (Qty: $currentStock)', name: 'StockOfflineRepository');
+    } catch (error, stackTrace) {
+      final appException = ErrorHandler.instance.handleError(error, stackTrace);
+      AppLogger.error('Failed to sync stock snapshot for $productId: ${appException.message}', name: 'StockOfflineRepository', error: error, stackTrace: stackTrace);
+    }
+  }
+
+  Future<void> _updateStockSnapshot(
+    String productId, 
+    double quantity, {
+    String? productName, 
+    String? unit, 
+    bool? isRawMaterial,
+  }) async {
+    final existingRecord = await driftService.records.findByLocalId(
+      collectionName: CollectionNames.stockItems,
+      localId: productId,
+      enterpriseId: enterpriseId,
+      moduleType: moduleType,
+    );
+
+    Map<String, dynamic> stockData;
+    if (existingRecord != null) {
+      stockData = jsonDecode(existingRecord.dataJson) as Map<String, dynamic>;
+      stockData['quantity'] = quantity;
+      stockData['updatedAt'] = DateTime.now().toIso8601String();
+    } else {
+      stockData = {
+        'id': productId,
+        'productId': productId,
+        'name': productName ?? 'Produit inconnu',
+        'quantity': quantity,
+        'unit': unit ?? 'Unité',
+        'type': isRawMaterial == true ? 'rawMaterial' : 'finishedGood',
+        'enterpriseId': enterpriseId,
+        'updatedAt': DateTime.now().toIso8601String(),
+        'createdAt': DateTime.now().toIso8601String(),
+      };
+    }
+
+    await driftService.records.upsert(
+      userId: syncManager.getUserId() ?? '',
+      collectionName: CollectionNames.stockItems,
+      localId: productId,
+      enterpriseId: enterpriseId,
+      moduleType: moduleType,
+      dataJson: jsonEncode(stockData),
+      localUpdatedAt: DateTime.now(),
+    );
   }
 }

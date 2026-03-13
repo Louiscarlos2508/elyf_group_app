@@ -22,8 +22,9 @@ class ProductionSessionBuilder {
     required double consommationCourant,
     required List<String> machinesUtilisees,
     required List<MachineMaterialUsage> machineMaterials,
-    required int quantiteProduite,
-    int? emballagesUtilises,
+    required double quantiteProduite,
+    double? emballagesUtilises,
+    String quantiteProduiteUnite = 'unité',
     String? notes,
     ProductionSessionStatus? status,
     List<ProductionDay>? productionDays,
@@ -31,6 +32,7 @@ class ProductionSessionBuilder {
     int? coutEmballages,
     int? coutElectricite,
     required int period,
+    String? userId,
   }) {
     // Calculate status if not provided
     final calculatedStatus =
@@ -56,7 +58,7 @@ class ProductionSessionBuilder {
       machinesUtilisees: machinesUtilisees,
       machineMaterials: machineMaterials,
       quantiteProduite: quantiteProduite,
-      quantiteProduiteUnite: 'pack',
+      quantiteProduiteUnite: quantiteProduiteUnite,
       emballagesUtilises: emballagesUtilises,
       machineMaterialCost: machineMaterialCost,
       coutEmballages: coutEmballages,
@@ -64,6 +66,7 @@ class ProductionSessionBuilder {
       notes: notes,
       status: calculatedStatus,
       productionDays: productionDays ?? const [],
+      createdBy: userId,
     );
   }
 
@@ -77,7 +80,7 @@ class ProductionSessionBuilder {
     required List<MachineMaterialUsage> machineMaterials,
     required int period,
     double consommationCourant = 0.0,
-    int quantiteProduite = 0,
+    double quantiteProduite = 0.0,
     int? machineMaterialCost,
     int? coutEmballages,
     int? coutElectricite,

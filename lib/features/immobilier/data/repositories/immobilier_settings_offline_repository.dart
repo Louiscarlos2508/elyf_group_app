@@ -1,5 +1,5 @@
-
 import 'dart:convert';
+import '../../../../core/offline/collection_names.dart';
 import '../../../../core/offline/offline_repository.dart';
 import '../../domain/entities/immobilier_settings.dart';
 import '../../domain/repositories/immobilier_settings_repository.dart';
@@ -16,7 +16,7 @@ class ImmobilierSettingsOfflineRepository extends OfflineRepository<ImmobilierSe
   final String currentEnterpriseId;
 
   @override
-  String get collectionName => 'immobilier_settings';
+  String get collectionName => CollectionNames.immobilierSettings;
 
   @override
   ImmobilierSettings fromMap(Map<String, dynamic> map) => ImmobilierSettings.fromMap(map);

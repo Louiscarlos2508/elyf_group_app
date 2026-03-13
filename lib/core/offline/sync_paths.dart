@@ -23,6 +23,13 @@ final collectionPaths = <String, String Function(String?)>{
       'enterprises/${enterpriseId!}/treasuryOperations',
   'closings': (enterpriseId) => 'enterprises/${enterpriseId!}/closings',
   'boutique_settings': (enterpriseId) => 'enterprises/${enterpriseId!}/boutiqueSettings',
+  'sales': (enterpriseId) => 'enterprises/${enterpriseId!}/sales',
+  'products': (enterpriseId) => 'enterprises/${enterpriseId!}/products',
+  'suppliers': (enterpriseId) => 'enterprises/${enterpriseId!}/suppliers',
+  'purchases': (enterpriseId) => 'enterprises/${enterpriseId!}/purchases',
+  'supplier_settlements': (enterpriseId) => 'enterprises/${enterpriseId!}/supplierSettlements',
+  'stock_items': (enterpriseId) => 'enterprises/${enterpriseId!}/stockItems',
+  'stock_movements': (enterpriseId) => 'enterprises/${enterpriseId!}/stockMovements',
 
   // Eau Minérale module
   'customers': (enterpriseId) => 'enterprises/${enterpriseId!}/customers',
@@ -44,7 +51,7 @@ final collectionPaths = <String, String Function(String?)>{
   'bobine_stock_movements': (enterpriseId) =>
       'enterprises/${enterpriseId!}/bobineStockMovements',
   'expense_records': (enterpriseId) =>
-      'enterprises/${enterpriseId!}/expenseRecords',
+      'enterprises/${enterpriseId!}/expenses',
   'stock_items': (enterpriseId) => 'enterprises/${enterpriseId!}/stockItems',
   'stock_movements': (enterpriseId) =>
       'enterprises/${enterpriseId!}/stockMovements',
@@ -52,8 +59,10 @@ final collectionPaths = <String, String Function(String?)>{
       'enterprises/${enterpriseId!}/packagingStocks',
   'packaging_stock_movements': (enterpriseId) =>
       'enterprises/${enterpriseId!}/packagingStockMovements',
-  'eau_minerale_treasury_operations': (enterpriseId) =>
+  'eauMineraleTreasuryOperations': (enterpriseId) =>
       'enterprises/${enterpriseId!}/eauMineraleTreasuryOperations',
+  'closings': (enterpriseId) => 'enterprises/${enterpriseId!}/closings',
+  'settings': (enterpriseId) => 'enterprises/${enterpriseId!}/eauMineraleSettings',
 
   // Orange Money module
   'agences': (enterpriseId) => 'enterprises/${enterpriseId!}/agences',

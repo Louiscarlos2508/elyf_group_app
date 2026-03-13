@@ -46,8 +46,6 @@ class SalesScreen extends ConsumerWidget {
         context: context,
         builder: (context) => SaleDetailDialog(sale: sale),
       );
-    } else if (action == 'edit') {
-      _showForm(context, initialSale: sale);
     } else if (action == 'void') {
       _showVoidConfirmation(context, ref, sale);
     }
@@ -58,7 +56,7 @@ class SalesScreen extends ConsumerWidget {
       context: context,
       builder: (context) => ConfirmDialog(
         title: 'Annuler la vente',
-        message: 'Êtes-vous sûr de vouloir annuler cette vente ? Cette action est irréversible et restaurera le stock.',
+        message: 'Êtes-vous sûr de vouloir annuler cette vente ? Cela supprimera son impact en trésorerie et en stock.',
         confirmLabel: 'Annuler la vente',
         confirmColor: Theme.of(context).colorScheme.error,
         onConfirm: () async {
@@ -74,6 +72,8 @@ class SalesScreen extends ConsumerWidget {
             // Rafraîchir les données
             ref.invalidate(salesStateProvider);
             ref.invalidate(stockStateProvider);
+            ref.invalidate(treasuryHistoryProvider);
+            ref.invalidate(absoluteTreasuryBalanceProvider);
           } catch (e) {
             scaffoldMessenger.showSnackBar(
               SnackBar(content: Text('Erreur lors de l\'annulation : $e')),

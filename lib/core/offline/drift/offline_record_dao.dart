@@ -175,6 +175,25 @@ class OfflineRecordDao {
     return query.get();
   }
 
+  Stream<OfflineRecord?> watchByLocalId({
+    required String collectionName,
+    required String localId,
+    required String enterpriseId,
+    required String moduleType,
+  }) {
+    return (_db.select(_db.offlineRecords)
+          ..where(
+            (t) =>
+                t.collectionName.equals(collectionName) &
+                t.enterpriseId.equals(enterpriseId) &
+                t.moduleType.equals(moduleType) &
+                t.localId.equals(localId),
+          )
+          ..orderBy([(t) => OrderingTerm.desc(t.localUpdatedAt)])
+          ..limit(1))
+        .watchSingleOrNull();
+  }
+
   Stream<List<OfflineRecord>> watchForEnterprise({
     required String collectionName,
     required String enterpriseId,

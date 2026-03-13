@@ -86,7 +86,7 @@ class _ReceptionVerificationDialogState extends ConsumerState<ReceptionVerificat
                             final newQty = double.tryParse(v.replaceAll(',', '.')) ?? item.quantity.toDouble();
                             setState(() {
                               _verifiedItems[index] = item.copyWith(
-                                quantity: newQty.round(), // Toujours stocké en int dans l'entité
+                                quantity: newQty, // Toujours stocké en double dans l'entité
                                 totalPrice: (newQty * item.unitPrice).round(),
                               );
                             });

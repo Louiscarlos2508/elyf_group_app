@@ -5,7 +5,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../auth/entities/app_user.dart';
-import '../../auth/entities/enterprise_module_user.dart';
 import '../../auth/providers.dart' as auth_providers;
 import '../../logging/app_logger.dart';
 import '../drift_service.dart';
@@ -14,6 +13,7 @@ import '../sync_paths.dart';
 import '../providers.dart' as offline_providers;
 import '../sync/sync_push_service.dart';
 import '../../../features/administration/application/providers.dart' as admin_providers;
+import '../../../features/administration/domain/entities/enterprise.dart';
 import '../../tenant/tenant_provider.dart';
 
 /// Orchestre la synchronisation des données en fonction du cycle de vie.
@@ -117,19 +117,25 @@ class SyncOrchestrator {
       }
 
       // Check if we should also sync children for this user/module combo
+      final isAdmin = ref.read(auth_providers.isAdminProvider);
       final authService = ref.read(auth_providers.authServiceProvider);
       final currentUser = authService.currentUser;
-      if (currentUser != null) {
-        final assignments = await adminController.getUserEnterpriseModuleUsers(currentUser.id);
-        final activeAssignment = assignments.firstWhere(
-          (a) => a.enterpriseId == targetEnterpriseId && a.moduleId == moduleId && a.isActive,
-          orElse: () => assignments.firstWhere(
-            (a) => a.enterpriseId == targetEnterpriseId && a.isActive,
-            orElse: () => EnterpriseModuleUser(userId: currentUser.id, enterpriseId: targetEnterpriseId, moduleId: moduleId, roleIds: []),
-          ),
-        );
 
-        if (activeAssignment.includesChildren) {
+      if (currentUser != null) {
+        bool hasIncludesChildrenAccess = isAdmin;
+
+        if (!hasIncludesChildrenAccess) {
+          final assignments = await adminController.getUserEnterpriseModuleUsers(currentUser.id);
+          // Check if any assignment for THIS enterprise and THIS module has includesChildren
+          hasIncludesChildrenAccess = assignments.any((a) => 
+            a.enterpriseId == targetEnterpriseId && 
+            a.moduleId == moduleId && 
+            a.isActive && 
+            a.includesChildren
+          );
+        }
+
+        if (hasIncludesChildrenAccess) {
           AppLogger.info('SyncOrchestrator: Parent access detected, synchronizing child enterprises for module $moduleId', name: 'sync.orchestrator');
           final enterpriseController = ref.read(admin_providers.enterpriseControllerProvider);
           final allEnterprises = await enterpriseController.getAllEnterprises();
@@ -176,11 +182,52 @@ class SyncOrchestrator {
         return;
       }
 
-      final activeAccesses = userAccesses.where((access) => 
-        access.isActive && access.enterpriseId == activeEnterpriseId
-      ).toList();
+      // Récupérer l'entreprise active pour vérifier la hiérarchie
+      final enterpriseController = ref.read(admin_providers.enterpriseControllerProvider);
+      final activeEnterprise = await enterpriseController.getEnterpriseById(activeEnterpriseId);
+      final parentEnterpriseId = activeEnterprise?.parentEnterpriseId;
 
-      if (activeAccesses.isEmpty) {
+      final isAdmin = ref.read(auth_providers.isAdminProvider);
+      final authService = ref.read(auth_providers.authServiceProvider);
+      final currentUser = authService.currentUser;
+
+      final Set<String> modulesToSync = {};
+
+      if (isAdmin) {
+        // Un admin système synchronise tous les modules disponibles
+        modulesToSync.addAll(EnterpriseModule.values.map((m) => m.id));
+      } else {
+        // 1. Accès directs à l'entreprise active
+        for (final access in userAccesses) {
+          if (access.isActive && access.enterpriseId == activeEnterpriseId) {
+            modulesToSync.add(access.moduleId);
+          }
+        }
+
+        // 2. Accès hiérarchiques (via parent avec includesChildren)
+        if (parentEnterpriseId != null) {
+          for (final access in userAccesses) {
+            if (access.isActive && 
+                access.enterpriseId == parentEnterpriseId && 
+                access.includesChildren) {
+              modulesToSync.add(access.moduleId);
+            }
+          }
+        }
+
+        // 3. Accès via enterpriseIds dénormalisés (Enterprise Admin)
+        if (currentUser != null && 
+            currentUser.enterpriseIds.contains(activeEnterpriseId) && 
+            activeEnterprise != null) {
+          modulesToSync.add(activeEnterprise.type.module.id);
+          // Special case for groups
+          if (activeEnterprise.type == EnterpriseType.group) {
+            modulesToSync.add(EnterpriseModule.group.id);
+          }
+        }
+      }
+
+      if (modulesToSync.isEmpty) {
         AppLogger.info('SyncOrchestrator: No active modules found for $activeEnterpriseId in background', name: 'sync.orchestrator');
         return;
       }
@@ -193,36 +240,44 @@ class SyncOrchestrator {
 
       final firestoreSync = ref.read(offline_providers.firestoreSyncServiceProvider);
       
-      // Ensure all children are discovered if user is a parent
-      for (final access in activeAccesses) {
-        if (access.includesChildren) {
-          AppLogger.info('SyncOrchestrator: Discovering sub-tenants for parent enterprise ${access.enterpriseId}', name: 'sync.orchestrator');
-          await firestoreSync.discoverSubTenants(access.enterpriseId);
-        }
-      }
-
-      // Expand accesses to include children if necessary
+      // Expand accesses to include children if necessary for each module
       final List<({String enterpriseId, String moduleId, String? parentEnterpriseId})> syncQueue = [];
-      final enterpriseController = ref.read(admin_providers.enterpriseControllerProvider);
-      
-      // Refresh enterprises list after discovery
-      final allEnterprises = await enterpriseController.getAllEnterprises();
 
-      for (final access in activeAccesses) {
+      for (final moduleId in modulesToSync) {
+        // Direct sync for active enterprise
         syncQueue.add((
-          enterpriseId: access.enterpriseId,
-          moduleId: access.moduleId,
-          parentEnterpriseId: access.parentEnterpriseId,
+          enterpriseId: activeEnterpriseId,
+          moduleId: moduleId,
+          parentEnterpriseId: parentEnterpriseId,
         ));
 
-        if (access.includesChildren) {
-          final children = allEnterprises.where((e) => e.parentEnterpriseId == access.enterpriseId);
-          for (final child in children) {
-            syncQueue.add((
-              enterpriseId: child.id,
-              moduleId: access.moduleId,
-              parentEnterpriseId: access.enterpriseId,
-            ));
+        // Hierarchical sync for children if user has parent access with includesChildren OR is Admin
+        bool shouldSyncChildren = isAdmin;
+        if (!shouldSyncChildren) {
+          shouldSyncChildren = userAccesses.any((a) => 
+            a.enterpriseId == activeEnterpriseId && 
+            a.moduleId == moduleId && 
+            a.isActive && 
+            a.includesChildren
+          );
+        }
+
+        if (shouldSyncChildren) {
+          AppLogger.info('SyncOrchestrator: Parent access or Admin detected for module $moduleId, discovering and syncing child enterprises', name: 'sync.orchestrator');
+          
+          if (activeEnterprise != null) {
+            await firestoreSync.discoverSubTenants(activeEnterpriseId);
+            // Refresh enterprises list after discovery
+            final updatedEnterprises = await enterpriseController.getAllEnterprises();
+            final children = updatedEnterprises.where((e) => e.parentEnterpriseId == activeEnterpriseId);
+            
+            for (final child in children) {
+              syncQueue.add((
+                enterpriseId: child.id,
+                moduleId: moduleId,
+                parentEnterpriseId: activeEnterpriseId,
+              ));
+            }
           }
         }
       }

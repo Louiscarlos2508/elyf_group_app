@@ -3,6 +3,7 @@ import 'dart:convert';
 import '../../../../core/errors/error_handler.dart';
 import '../../../../core/logging/app_logger.dart';
 import '../../../../core/offline/offline_repository.dart';
+import '../../../../core/offline/collection_names.dart';
 import '../../domain/entities/machine_material_usage.dart';
 import '../../domain/entities/production_session.dart';
 import '../../domain/repositories/production_session_repository.dart';
@@ -16,14 +17,14 @@ class ProductionSessionOfflineRepository
     required super.syncManager,
     required super.connectivityService,
     required this.enterpriseId,
+    this.moduleType = 'eau_minerale',
   });
 
   final String enterpriseId;
+  final String moduleType;
 
   @override
-  String get collectionName => 'production_sessions';
-
-  String get moduleType => 'eau_minerale';
+  String get collectionName => CollectionNames.productionSessions;
 
   @override
   ProductionSession fromMap(Map<String, dynamic> map) =>

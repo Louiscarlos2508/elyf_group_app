@@ -55,7 +55,7 @@ class _DailyPersonnelFormState extends ConsumerState<DailyPersonnelForm> {
       
       // Initialiser les controllers directs si possible
       if (_producedItems.isNotEmpty) {
-        _directProductionController.text = _producedItems.first.quantity.toInt().toString();
+        _directProductionController.text = _producedItems.first.quantity.toString();
       }
       if (_consumptions.isNotEmpty) {
         _directMaterialController.text = _consumptions.first.quantity.toString();
@@ -191,8 +191,8 @@ class _DailyPersonnelFormState extends ConsumerState<DailyPersonnelForm> {
       nombrePersonnes: n,
       salaireJournalierParPersonne: salaireMoyen,
       coutTotalPersonnelStored: totalReel > 0 ? totalReel : null,
-      packsProduits: _producedItems.fold<double>(0.0, (s, i) => s + i.quantity).toInt(),
-      emballagesUtilises: _consumptions.fold<double>(0.0, (s, i) => s + i.quantity).toInt(),
+      packsProduits: _producedItems.fold<double>(0.0, (s, i) => s + i.quantity),
+      emballagesUtilises: _consumptions.fold<double>(0.0, (s, i) => s + i.quantity),
       consumptions: _consumptions,
       producedItems: _producedItems,
       notes: _notesController.text.isEmpty ? null : _notesController.text,
@@ -571,7 +571,7 @@ class _DailyPersonnelFormState extends ConsumerState<DailyPersonnelForm> {
                   style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 Text(
-                  '${consumption.quantity.toInt()} ${consumption.unit}',
+                  '${consumption.quantity} ${consumption.unit}',
                   style: theme.textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
                 ),
               ],
@@ -602,7 +602,7 @@ class _DailyPersonnelFormState extends ConsumerState<DailyPersonnelForm> {
       builder: (context) => _MaterialSelectionDialog(
         products: [p],
         title: 'Modifier Production',
-        initialQuantity: c.quantity.toInt().toString(),
+        initialQuantity: c.quantity.toString(),
       ),
     );
 

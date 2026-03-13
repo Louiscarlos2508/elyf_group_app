@@ -30,7 +30,7 @@ class Sale {
   final String enterpriseId;
   final String productId;
   final String productName;
-  final int quantity;
+  final double quantity;
   final int unitPrice;
   final int totalPrice;
   final int amountPaid;
@@ -55,7 +55,7 @@ class Sale {
     String? enterpriseId,
     String? productId,
     String? productName,
-    int? quantity,
+    double? quantity,
     int? unitPrice,
     int? totalPrice,
     int? amountPaid,
@@ -103,6 +103,37 @@ class Sale {
   }
 
   factory Sale.fromMap(Map<String, dynamic> map, String defaultEnterpriseId) {
+    // Helper to safely parse status
+    SaleStatus parseStatus(String? statusStr) {
+      if (statusStr == null) return SaleStatus.validated;
+      try {
+        return SaleStatus.values.byName(statusStr.toLowerCase().trim());
+      } catch (_) {
+        // Handle variations or legacy names
+        if (statusStr.toLowerCase().contains('void') || statusStr.toLowerCase().contains('annule')) {
+          return SaleStatus.voided;
+        }
+        if (statusStr.toLowerCase().contains('paid') || statusStr.toLowerCase().contains('paye')) {
+          return SaleStatus.fullyPaid;
+        }
+        return SaleStatus.validated;
+      }
+    }
+
+    // Helper to safely parse dates from String or Timestamp
+    DateTime? parseDate(dynamic value) {
+      if (value == null) return null;
+      if (value is String) return DateTime.tryParse(value);
+      if (value is DateTime) return value;
+      // Handle Firestore Timestamp if present in the map
+      try {
+        if (value.runtimeType.toString() == 'Timestamp') {
+          return (value as dynamic).toDate();
+        }
+      } catch (_) {}
+      return null;
+    }
+
     return Sale(
       id: (map['localId'] as String?)?.trim().isNotEmpty == true 
           ? map['localId'] as String 
@@ -110,38 +141,34 @@ class Sale {
       enterpriseId: map['enterpriseId'] as String? ?? defaultEnterpriseId,
       productId: map['productId'] as String? ?? '',
       productName: map['productName'] as String? ?? '',
-      quantity: (map['quantity'] as num?)?.toInt() ?? 0,
+      quantity: (map['quantity'] as num?)?.toDouble() ?? 0.0,
       unitPrice: (map['unitPrice'] as num?)?.toInt() ?? 0,
       totalPrice: (map['totalPrice'] as num?)?.toInt() ??
           (map['totalAmount'] as num?)?.toInt() ??
+          (map['total'] as num?)?.toInt() ??
           0,
       amountPaid: (map['amountPaid'] as num?)?.toInt() ??
           (map['paidAmount'] as num?)?.toInt() ??
+          (map['paid'] as num?)?.toInt() ??
           0,
       customerName: map['customerName'] as String? ?? '',
       customerPhone: map['customerPhone'] as String? ?? '',
       customerId: map['customerId'] as String? ?? '',
-      date: map['date'] != null
-          ? DateTime.parse(map['date'] as String)
-          : (map['saleDate'] != null
-              ? DateTime.parse(map['saleDate'] as String)
-              : DateTime.now()),
-      status: SaleStatus.values.byName(map['status'] as String? ?? 'validated'),
+      date: parseDate(map['date']) ?? 
+            parseDate(map['saleDate']) ?? 
+            DateTime.now(),
+      status: parseStatus(map['status'] as String?),
       createdBy: map['createdBy'] as String? ?? map['soldBy'] as String? ?? '',
       customerCnib: map['customerCnib'] as String?,
       notes: map['notes'] as String?,
-      cashAmount: (map['cashAmount'] as num?)?.toInt() ?? 0,
-      orangeMoneyAmount: (map['orangeMoneyAmount'] as num?)?.toInt() ?? 0,
+      cashAmount: (map['cashAmount'] as num?)?.toInt() ?? 
+                 (map['cash'] as num?)?.toInt() ?? 0,
+      orangeMoneyAmount: (map['orangeMoneyAmount'] as num?)?.toInt() ?? 
+                        (map['mobileMoney'] as num?)?.toInt() ?? 0,
       productionSessionId: map['productionSessionId'] as String?,
-      createdAt: map['createdAt'] != null
-          ? DateTime.parse(map['createdAt'] as String)
-          : null,
-      updatedAt: map['updatedAt'] != null
-          ? DateTime.parse(map['updatedAt'] as String)
-          : null,
-      deletedAt: map['deletedAt'] != null
-          ? DateTime.parse(map['deletedAt'] as String)
-          : null,
+      createdAt: parseDate(map['createdAt']),
+      updatedAt: parseDate(map['updatedAt']),
+      deletedAt: parseDate(map['deletedAt']),
       deletedBy: map['deletedBy'] as String?,
     );
   }

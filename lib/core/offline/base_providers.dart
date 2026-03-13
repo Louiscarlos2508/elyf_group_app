@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../auth/services/auth_service.dart';
 import 'connectivity_service.dart';
 import 'drift_service.dart';
 import 'sync_manager.dart';
@@ -44,6 +45,7 @@ final isOnlineProvider = Provider<bool>((ref) {
 final syncManagerProvider = Provider<SyncManager>((ref) {
   final driftService = ref.watch(driftServiceProvider);
   final connectivityService = ref.watch(connectivityServiceProvider);
+  final authService = ref.watch(authServiceProvider);
 
   // Initialize Firebase handler with global paths
   final syncHandler = FirebaseSyncHandler(
@@ -56,6 +58,7 @@ final syncManagerProvider = Provider<SyncManager>((ref) {
     driftService: driftService,
     connectivityService: connectivityService,
     syncHandler: syncHandler,
+    authService: authService,
     config: const SyncConfig(
       syncIntervalMinutes: 15, // Heartbeat every 15 mins (was 5)
       selectiveSyncEnabled: true,

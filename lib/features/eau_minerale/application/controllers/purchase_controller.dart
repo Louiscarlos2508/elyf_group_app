@@ -84,7 +84,7 @@ class PurchaseController {
       await _treasuryRepository.createOperation(TreasuryOperation(
         id: 'local_trs_settle_$id',
         enterpriseId: settlement.enterpriseId,
-        userId: settlement.createdBy ?? 'system',
+        userId: settlement.createdBy ?? 'unknown',
         amount: settlement.amount,
         type: TreasuryOperationType.removal,
         fromAccount: settlement.paymentMethod,
@@ -153,7 +153,7 @@ class PurchaseController {
         await _treasuryRepository.createOperation(TreasuryOperation(
           id: 'local_trs_pur_${purchase.id}',
           enterpriseId: purchase.enterpriseId,
-          userId: purchase.createdBy ?? 'system',
+          userId: purchase.createdBy ?? 'unknown',
           amount: purchase.paidAmount,
           type: TreasuryOperationType.removal,
           fromAccount: purchase.paymentMethod,

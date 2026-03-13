@@ -40,7 +40,9 @@ class ReportOfflineRepository implements ReportRepository {
   }
 
   DateTime _getEndDate(ReportPeriod period, {DateTime? endDate}) {
-    return endDate ?? period.endDate;
+    final date = endDate ?? period.endDate;
+    // Normalize to end of day (23:59:59.999)
+    return DateTime(date.year, date.month, date.day, 23, 59, 59, 999);
   }
 
   bool _isInPeriod(DateTime date, DateTime start, DateTime end) {
@@ -54,10 +56,10 @@ class ReportOfflineRepository implements ReportRepository {
       final start = _getStartDate(period);
       final end = _getEndDate(period);
 
-      final periodSales = await saleRepository.fetchSales(
+      final periodSales = (await saleRepository.fetchSales(
         startDate: start,
         endDate: end,
-      );
+      )).where((s) => s.status != SaleStatus.voided).toList();
 
       final periodExpenses = await financeRepository.fetchExpenses(
         startDate: start,
@@ -65,26 +67,21 @@ class ReportOfflineRepository implements ReportRepository {
       );
 
       final revenue = periodSales.fold<int>(0, (sum, s) => sum + s.totalPrice);
-      final salesCollections = periodSales.fold<int>(
+      final totalCollections = periodSales.fold<int>(
         0,
         (sum, s) => sum + s.amountPaid,
       );
 
-      // Fetch credit recoveries for the period
-      final creditPayments = await creditRepository.fetchPayments(
-        startDate: start,
-        endDate: end,
-      );
-      final creditRecoveries = creditPayments.fold<int>(0, (sum, p) => sum + p.amount);
+      // We no longer add credit recoveries or manual treasury apports to the main collection metric
+      // to keep it strictly aligned with the Sales collection as requested.
       
-      final totalCollections = salesCollections + creditRecoveries;
-
       final totalGeneralExpenses = periodExpenses.fold<int>(
         0,
         (sum, e) => sum + e.amountCfa,
       );
 
-      // Calculate payroll (salaries + production payments)
+      // We still fetch these for detail if needed, but they are ALREADY in totalGeneralExpenses
+      // because SalaryController and PurchaseController record them as ExpenseRecord.
       final salaryPayments = await salaryRepository.fetchMonthlySalaryPayments();
       final productionPayments = await salaryRepository.fetchProductionPayments();
       
@@ -102,7 +99,7 @@ class ReportOfflineRepository implements ReportRepository {
             (sum, p) => sum + p.totalAmount,
           );
 
-      // Calculate session direct costs (Bobines + Electricity)
+      // Calculate session direct costs (Bobines + Electricity) - Also already in ExpenseRecords via PurchaseController
       final sessions = await productionSessionRepository.fetchSessions(
         startDate: start,
         endDate: end,
@@ -114,7 +111,8 @@ class ReportOfflineRepository implements ReportRepository {
         return sum + (s.coutBobines ?? 0) + (s.coutEmballages ?? 0) + (s.coutElectricite ?? 0);
       });
 
-      final totalOutflows = totalGeneralExpenses + totalSalaries + totalSessionCosts;
+      // SOURCE OF TRUTH: ExpenseRecords already contain salaries and material purchases.
+      final totalOutflows = totalGeneralExpenses;
       final treasury = totalCollections - totalOutflows;
       
       final collectionRate = revenue > 0
@@ -144,10 +142,11 @@ class ReportOfflineRepository implements ReportRepository {
   @override
   Future<List<Sale>> fetchSalesForPeriod(ReportPeriod period) async {
     try {
-      return await saleRepository.fetchSales(
+      final sales = await saleRepository.fetchSales(
         startDate: _getStartDate(period),
         endDate: _getEndDate(period),
       );
+      return sales.where((s) => s.status != SaleStatus.voided).toList();
     } catch (error, stackTrace) {
       final appException = ErrorHandler.instance.handleError(error, stackTrace);
       AppLogger.error(
@@ -169,6 +168,7 @@ class ReportOfflineRepository implements ReportRepository {
 
       final productSales = <String, ProductSalesSummary>{};
       for (final sale in sales) {
+        // fetchSalesForPeriod already filters voided
         final existing = productSales[sale.productId];
         if (existing != null) {
           productSales[sale.productId] = ProductSalesSummary(
@@ -217,7 +217,7 @@ class ReportOfflineRepository implements ReportRepository {
           .where((s) => _isInPeriod(s.date, start, end) && s.status != ProductionSessionStatus.cancelled)
           .toList();
 
-      final totalQuantity = periodSessions.fold<int>(
+      final totalQuantity = periodSessions.fold<double>(
         0,
         (sum, s) {
            final dailySum = s.totalPacksProduitsJournalier;

@@ -101,8 +101,8 @@ class PersonnelSection extends ConsumerWidget {
       ..removeWhere((d) => d.id == day.id);
 
     // Recalculate totals
-    final newTotalPacks = updatedDays.fold<int>(0, (sum, d) => sum + d.packsProduits);
-    final newTotalEmballages = updatedDays.fold<int>(0, (sum, d) => sum + d.emballagesUtilises);
+    final newTotalPacks = updatedDays.fold<double>(0, (sum, d) => sum + d.packsProduits);
+    final newTotalEmballages = updatedDays.fold<double>(0, (sum, d) => sum + d.emballagesUtilises);
 
     final updatedSession = session.copyWith(
       productionDays: updatedDays,
@@ -173,8 +173,8 @@ class PersonnelSection extends ConsumerWidget {
               }
 
               // Recalculate totals
-              final newTotalPacks = updatedDays.fold<int>(0, (sum, d) => sum + d.packsProduits);
-              final newTotalEmballages = updatedDays.fold<int>(0, (sum, d) => sum + d.emballagesUtilises);
+              final newTotalPacks = updatedDays.fold<double>(0, (sum, d) => sum + d.packsProduits);
+              final newTotalEmballages = updatedDays.fold<double>(0, (sum, d) => sum + d.emballagesUtilises);
 
               final updatedSession = session.copyWith(
                 productionDays: updatedDays,

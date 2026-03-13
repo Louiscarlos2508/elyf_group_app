@@ -70,8 +70,8 @@ class ProductionSessionFormActions {
     required double consommationCourant,
     required List<String> machinesUtilisees,
     required List<MachineMaterialUsage> machineMaterials,
-    required int quantiteProduite,
-    required int? emballagesUtilises,
+    required double quantiteProduite,
+    required double? emballagesUtilises,
     required String? notes,
     required ProductionSessionStatus status,
     required List<ProductionDay> productionDays,
@@ -79,6 +79,7 @@ class ProductionSessionFormActions {
     int? machineMaterialCost,
     int? coutEmballages,
     int? coutElectricite,
+    String? createdBy,
   }) {
     return ProductionSession(
       id: sessionId ?? '',
@@ -101,6 +102,7 @@ class ProductionSessionFormActions {
       machineMaterialCost: machineMaterialCost,
       coutEmballages: coutEmballages,
       coutElectricite: coutElectricite,
+      createdBy: createdBy,
     );
   }
 
@@ -167,7 +169,7 @@ class ProductionSessionFormActions {
   /// Calculate session status.
   static ProductionSessionStatus calculateStatus({
     required WidgetRef ref,
-    required int quantiteProduite,
+    required double quantiteProduite,
     required DateTime? heureFin,
     required DateTime heureDebut,
     required List<String> machinesUtilisees,

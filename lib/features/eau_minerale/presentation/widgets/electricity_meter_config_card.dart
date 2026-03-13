@@ -40,7 +40,7 @@ class _ElectricityMeterConfigCardState
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final meterTypeAsync = ref.watch(electricityMeterTypeProvider);
+    final settingsAsync = ref.watch(eauMineraleSettingsProvider);
 
     return Card(
       elevation: 0,
@@ -104,9 +104,9 @@ class _ElectricityMeterConfigCardState
               ),
             ),
             const SizedBox(height: 12),
-            meterTypeAsync.when(
-              data: (ElectricityMeterType currentType) =>
-                  _buildMeterTypeSelector(context, ref, theme, currentType),
+            settingsAsync.when(
+              data: (settings) =>
+                  _buildMeterTypeSelector(context, ref, theme, settings.meterType),
               loading: () => const Center(
                 child: Padding(
                   padding: EdgeInsets.all(24),

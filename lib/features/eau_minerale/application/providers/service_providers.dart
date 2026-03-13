@@ -43,7 +43,7 @@ final saleCalculationServiceProvider = Provider<SaleCalculationService>(
 );
 
 final creditServiceProvider = Provider<CreditService>((ref) {
-  final creditRepo = ref.watch(creditRepositoryProvider);
+  final creditRepo = ref.watch(eauMineraleCreditRepositoryProvider);
   final saleRepo = ref.watch(saleRepositoryProvider);
   final treasuryRepo = ref.watch(treasuryRepositoryProvider);
 
@@ -100,9 +100,15 @@ final productionPeriodServiceProvider = Provider<ProductionPeriodService>(
 );
 
 final electricityMeterConfigServiceProvider =
-    Provider<ElectricityMeterConfigService>(
-      (ref) => ElectricityMeterConfigService.instance,
-    );
+    Provider<ElectricityMeterConfigService>((ref) {
+  final settingsRepo = ref.watch(eauMineraleSettingsRepositoryProvider);
+  final enterpriseId = ref.watch(activeEnterpriseIdProvider).value ?? 'default';
+
+  return ElectricityMeterConfigService(
+    settingsRepository: settingsRepo,
+    enterpriseId: enterpriseId,
+  );
+});
 
 /// Provider for PaymentSplitterService.
 final paymentSplitterServiceProvider = Provider<PaymentSplitterService>(
@@ -135,6 +141,8 @@ final stockIntegrityServiceProvider = Provider<StockIntegrityService>((ref) {
   return StockIntegrityService(
     stockRepository: ref.watch(stockRepositoryProvider),
     productRepository: ref.watch(eauMineraleProductRepositoryProvider),
+    saleRepository: ref.watch(saleRepositoryProvider),
+    sessionRepository: ref.watch(productionSessionRepositoryProvider),
   );
 });
 

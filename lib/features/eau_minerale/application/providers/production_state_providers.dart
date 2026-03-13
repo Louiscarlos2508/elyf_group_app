@@ -115,7 +115,10 @@ final productionPeriodConfigProvider = FutureProvider.autoDispose(
 );
 
 final productsProvider = FutureProvider.autoDispose<List<Product>>(
-  (ref) async => ref.watch(productControllerProvider).fetchProducts(),
+  (ref) async {
+    final controller = ref.watch(productControllerProvider);
+    return controller.fetchProducts();
+  },
 );
 
 final rawMaterialsProvider =

@@ -12,8 +12,8 @@ class ProductionDay {
     required this.nombrePersonnes,
     required this.salaireJournalierParPersonne,
     this.coutTotalPersonnelStored,
-    this.packsProduits = 0,
-    this.emballagesUtilises = 0,
+    this.packsProduits = 0.0,
+    this.emballagesUtilises = 0.0,
     this.notes,
     this.createdAt,
     this.updatedAt,
@@ -52,10 +52,10 @@ class ProductionDay {
   final int? coutTotalPersonnelStored;
 
   /// Nombre de packs produits pendant ce jour.
-  final int packsProduits;
+  final double packsProduits;
 
   /// Nombre d'emballages (packs) utilisés pendant ce jour.
-  final int emballagesUtilises;
+  final double emballagesUtilises;
 
   /// Commentaires éventuels sur la journée.
   final String? notes;
@@ -109,8 +109,8 @@ class ProductionDay {
     int? nombrePersonnes,
     int? salaireJournalierParPersonne,
     int? coutTotalPersonnelStored,
-    int? packsProduits,
-    int? emballagesUtilises,
+    double? packsProduits,
+    double? emballagesUtilises,
     String? notes,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -165,8 +165,8 @@ class ProductionDay {
           (map['salaireJournalierParPersonne'] as num?)?.toInt() ?? 0,
       coutTotalPersonnelStored:
           (map['coutTotalPersonnelStored'] as num?)?.toInt(),
-      packsProduits: (map['packsProduits'] as num?)?.toInt() ?? 0,
-      emballagesUtilises: (map['emballagesUtilises'] as num?)?.toInt() ?? 0,
+      packsProduits: (map['packsProduits'] as num?)?.toDouble() ?? 0.0,
+      emballagesUtilises: (map['emballagesUtilises'] as num?)?.toDouble() ?? 0.0,
       notes: map['notes'] as String?,
       createdAt: map['createdAt'] != null
           ? DateTime.parse(map['createdAt'] as String)

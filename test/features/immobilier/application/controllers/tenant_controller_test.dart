@@ -11,32 +11,7 @@ import 'tenant_controller_test.mocks.dart';
 
 import 'package:elyf_groupe_app/features/audit_trail/domain/services/audit_trail_service.dart';
 
-class MockAuditTrailService extends Mock implements AuditTrailService {
-  @override
-  Future<String> logAction({
-    required String enterpriseId,
-    required String userId,
-    required String module,
-    required String action,
-    required String entityId,
-    required String entityType,
-    Map<String, dynamic>? metadata,
-  }) =>
-      super.noSuchMethod(
-        Invocation.method(#logAction, [], {
-          #enterpriseId: enterpriseId,
-          #userId: userId,
-          #module: module,
-          #action: action,
-          #entityId: entityId,
-          #entityType: entityType,
-          #metadata: metadata,
-        }),
-        returnValue: Future.value('test-log-id'),
-      );
-}
-
-@GenerateMocks([TenantRepository, ImmobilierValidationService])
+@GenerateMocks([TenantRepository, ImmobilierValidationService, AuditTrailService])
 void main() {
   late TenantController controller;
   late MockTenantRepository mockRepository;
@@ -47,6 +22,18 @@ void main() {
     mockRepository = MockTenantRepository();
     mockValidationService = MockImmobilierValidationService();
     mockAuditService = MockAuditTrailService();
+
+    // Default stub for logAction
+    when(mockAuditService.logAction(
+      enterpriseId: anyNamed('enterpriseId'),
+      userId: anyNamed('userId'),
+      module: anyNamed('module'),
+      action: anyNamed('action'),
+      entityId: anyNamed('entityId'),
+      entityType: anyNamed('entityType'),
+      metadata: anyNamed('metadata'),
+    )).thenAnswer((_) async => 'test-log-id');
+
     controller = TenantController(
       mockRepository,
       mockValidationService,

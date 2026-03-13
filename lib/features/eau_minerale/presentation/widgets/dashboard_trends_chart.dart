@@ -52,11 +52,11 @@ class DashboardTrendsChart extends ConsumerWidget {
 
     // Group sales by day
     final salesByDay = <int, int>{};
-    final productionByDay = <int, int>{};
+    final productionByDay = <int, double>{};
 
     for (var i = 0; i < 7; i++) {
       salesByDay[i] = 0;
-      productionByDay[i] = 0;
+      productionByDay[i] = 0.0;
     }
 
     for (final sale in sales) {
@@ -76,15 +76,16 @@ class DashboardTrendsChart extends ConsumerWidget {
         if (dayIndex >= 0 && dayIndex < 7) {
           final reversedIndex = 6 - dayIndex;
           productionByDay[reversedIndex] =
-              (productionByDay[reversedIndex] ?? 0) + session.quantiteProduite;
+              (productionByDay[reversedIndex] ?? 0.0) +
+                  session.quantiteProduite;
         }
       }
     }
 
     // Find max values for scaling
     final maxSales = salesByDay.values.fold<int>(0, (a, b) => a > b ? a : b);
-    final maxProduction = productionByDay.values.fold<int>(
-      0,
+    final maxProduction = productionByDay.values.fold<double>(
+      0.0,
       (a, b) => a > b ? a : b,
     );
 

@@ -11,13 +11,17 @@ import '../../../../core/errors/app_exceptions.dart';
 import '../../../../core/logging/app_logger.dart';
 
 class SalesController {
-  SalesController(
-    this._saleRepository,
-    this._stockController,
-    this._productRepository,
-    this._auditTrailService,
-    this._treasuryRepository,
-  );
+  SalesController({
+    required SaleRepository saleRepository,
+    required StockController stockController,
+    required ProductRepository productRepository,
+    required AuditTrailService auditTrailService,
+    required TreasuryRepository treasuryRepository,
+  })  : _saleRepository = saleRepository,
+        _stockController = stockController,
+        _productRepository = productRepository,
+        _auditTrailService = auditTrailService,
+        _treasuryRepository = treasuryRepository;
 
   final SaleRepository _saleRepository;
   final StockController _stockController;
@@ -238,23 +242,15 @@ class SalesController {
 
       if (isFinishedGood && sale.quantity > 0) {
         try {
-          // Idempotency: Use Sale ID for stock restoration ID as well
-          final restorationId = 'local_stk_void_$saleId';
-          
-          await _stockController.recordEntry(
-            id: restorationId,
-            productId: sale.productId,
-            productName: sale.productName,
-            quantite: sale.quantity.toDouble(),
-            raison: 'Annulation Vente',
-            notes: 'Annulation vente ${sale.id}',
-          );
+          // Supprimer le mouvement de stock original au lieu de créer une restauration
+          final stockMovementId = 'local_stk_sale_$saleId';
+          await _stockController.deleteMovement(stockMovementId);
         } catch (e, st) {
-          AppLogger.error('Failed to restore stock for voided sale $saleId', error: e, stackTrace: st);
+          AppLogger.error('Failed to remove stock movement for voided sale $saleId', error: e, stackTrace: st);
         }
       }
 
-      await _recordReverseTreasuryOperationsForSale(sale, userId);
+      await _cleanupFinancialsForSale(saleId);
 
       try {
         await _auditTrailService.logAction(
@@ -278,44 +274,30 @@ class SalesController {
     }
   }
 
-  Future<void> _recordReverseTreasuryOperationsForSale(Sale sale, String userId) async {
+  Future<void> _cleanupFinancialsForSale(String saleId) async {
     try {
-      final saleId = sale.id;
-      if (sale.cashAmount > 0) {
-        await _treasuryRepository.createOperation(TreasuryOperation(
-          id: 'local_trs_void_cash_$saleId',
-          enterpriseId: sale.enterpriseId,
-          userId: userId,
-          amount: -sale.cashAmount,
-          type: TreasuryOperationType.supply,
-          toAccount: PaymentMethod.cash,
-          date: DateTime.now(),
-          reason: 'Annulation Vente ${sale.id}',
-          referenceEntityId: sale.id,
-          referenceEntityType: 'sale_void',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-        ));
-      }
+      // 1. Supprimer les opérations de trésorerie (Cash et OM)
+      final cashOpId = 'local_trs_sale_cash_$saleId';
+      final omOpId = 'local_trs_sale_om_$saleId';
+      
+      final cashOp = await _treasuryRepository.getOperation(cashOpId);
+      if (cashOp != null) await _treasuryRepository.deleteOperation(cashOp);
+      
+      final omOp = await _treasuryRepository.getOperation(omOpId);
+      if (omOp != null) await _treasuryRepository.deleteOperation(omOp);
 
-      if (sale.orangeMoneyAmount > 0) {
-        await _treasuryRepository.createOperation(TreasuryOperation(
-          id: 'local_trs_void_om_$saleId',
-          enterpriseId: sale.enterpriseId,
-          userId: userId,
-          amount: -sale.orangeMoneyAmount,
-          type: TreasuryOperationType.supply,
-          toAccount: PaymentMethod.mobileMoney,
-          date: DateTime.now(),
-          reason: 'Annulation Vente ${sale.id} (Orange Money)',
-          referenceEntityId: sale.id,
-          referenceEntityType: 'sale_void',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-        ));
-      }
+      // 2. Supprimer aussi les éventuelles opérations d'annulation (sale_void) créées par les versions précédentes
+      final voidCashId = 'local_trs_void_cash_$saleId';
+      final voidOmId = 'local_trs_void_om_$saleId';
+      
+      final vCash = await _treasuryRepository.getOperation(voidCashId);
+      if (vCash != null) await _treasuryRepository.deleteOperation(vCash);
+      
+      final vOm = await _treasuryRepository.getOperation(voidOmId);
+      if (vOm != null) await _treasuryRepository.deleteOperation(vOm);
+
     } catch (e) {
-      AppLogger.error('Failed to record reverse treasury operations for sale ${sale.id}', error: e);
+      AppLogger.error('Failed to cleanup financials for sale $saleId', error: e);
     }
   }
 

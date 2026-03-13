@@ -110,7 +110,7 @@ class ProductionService {
 
   /// Calculates production session status based on available data.
   ProductionSessionStatus calculateStatus({
-    required int quantiteProduite,
+    required double quantiteProduite,
     required DateTime? heureFin,
     required DateTime heureDebut,
     required List<String> machinesUtilisees,

@@ -51,7 +51,7 @@ class CreditService {
         await treasuryRepository.createOperation(TreasuryOperation(
           id: 'local_trs_cred_cash_$paymentId',
           enterpriseId: payment.enterpriseId,
-          userId: 'system',
+          userId: payment.createdBy ?? 'unknown',
           amount: payment.cashAmount,
           type: TreasuryOperationType.supply,
           toAccount: PaymentMethod.cash,
@@ -68,7 +68,7 @@ class CreditService {
         await treasuryRepository.createOperation(TreasuryOperation(
           id: 'local_trs_cred_om_$paymentId',
           enterpriseId: payment.enterpriseId,
-          userId: 'system',
+          userId: payment.createdBy ?? 'unknown',
           amount: payment.orangeMoneyAmount,
           type: TreasuryOperationType.supply,
           toAccount: PaymentMethod.mobileMoney,

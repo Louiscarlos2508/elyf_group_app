@@ -196,16 +196,16 @@ class ProductionReportFinancialSummary extends ConsumerWidget {
         // Si aucune vente, utiliser un prix par défaut estimé (ex: 200 CFA par unité)
         // Ce prix peut être ajusté selon les besoins métier
         const defaultUnitPrice = 200;
-        return session.quantiteProduite * defaultUnitPrice;
+        return (session.quantiteProduite * defaultUnitPrice).round();
       }
 
       // Calculer le prix unitaire moyen des ventes récentes
       final totalRevenue = sales.fold<int>(0, (sum, s) => sum + s.totalPrice);
-      final totalQuantity = sales.fold<int>(0, (sum, s) => sum + s.quantity);
+      final totalQuantity = sales.fold<double>(0, (sum, s) => sum + s.quantity);
       
       if (totalQuantity > 0) {
         final averageUnitPrice = (totalRevenue / totalQuantity).round();
-        return (session.quantiteProduite * averageUnitPrice).toInt();
+        return (session.quantiteProduite * averageUnitPrice).round();
       }
 
       // Fallback: utiliser le prix moyen des ventes individuelles
@@ -217,16 +217,16 @@ class ProductionReportFinancialSummary extends ConsumerWidget {
         // Estimer le prix unitaire en divisant par une quantité moyenne estimée
         const estimatedAverageQuantity = 10; // Quantité moyenne par vente
         final estimatedUnitPrice = (averagePrice / estimatedAverageQuantity).round();
-        return (session.quantiteProduite * estimatedUnitPrice).toInt();
+        return (session.quantiteProduite * estimatedUnitPrice).round();
       }
 
       // Dernier fallback: prix par défaut
       const defaultUnitPrice = 200;
-      return session.quantiteProduite * defaultUnitPrice;
+      return (session.quantiteProduite * defaultUnitPrice).round();
     } catch (e) {
       // En cas d'erreur, utiliser un prix par défaut
       const defaultUnitPrice = 200;
-      return session.quantiteProduite * defaultUnitPrice;
+      return (session.quantiteProduite * defaultUnitPrice).round();
     }
   }
 }

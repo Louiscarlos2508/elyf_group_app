@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:elyf_groupe_app/shared/presentation/widgets/elyf_ui/organisms/elyf_card.dart';
 
 import '../../domain/entities/product.dart';
+import '../../domain/product_roles.dart';
 import '../../domain/entities/stock_item.dart';
 class RawMaterialsCard extends StatelessWidget {
   final List<StockItem> items;
   final List<Product>? products; // Optionnel pour enrichir les données
-  final int availableMachineMaterials; // Total pour compatibilité
+  final double availableMachineMaterials; // Total pour compatibilité
 
   const RawMaterialsCard({
     super.key,
@@ -58,11 +59,14 @@ class RawMaterialsCard extends StatelessWidget {
           ...rawMaterialProducts.map((product) {
             final productId = product.id;
             
-            // Chercher la quantité totale dans toutes les sources de stock
+            // Chercher la quantité totale via l'ID OU le Nom
             double totalQuantity = 0;
 
-            final genericItems = items.where((i) => i.id == productId || i.name.toLowerCase() == product.name.toLowerCase());
-            for (final i in genericItems) {
+            final matchedItems = items.where((i) => 
+              i.id == productId || 
+              i.name.toLowerCase() == product.name.toLowerCase()
+            );
+            for (final i in matchedItems) {
               totalQuantity += i.quantity;
             }
 
@@ -70,7 +74,8 @@ class RawMaterialsCard extends StatelessWidget {
             String quantityDisplay;
             if (product.unitsPerLot > 1) {
               final lots = totalQuantity / product.unitsPerLot;
-              quantityDisplay = '${lots.toStringAsFixed(1)} lots (${totalQuantity.toInt()} ${product.unit})';
+              final unitLabel = product.supplyUnit ?? 'lots';
+              quantityDisplay = '${lots.toStringAsFixed(1)} $unitLabel (${totalQuantity.toInt()} ${product.unit})';
             } else {
               quantityDisplay = '${totalQuantity.toInt()} ${product.unit}';
             }
@@ -88,18 +93,30 @@ class RawMaterialsCard extends StatelessWidget {
                 false, // Disable low stock warning logic on raw materials temporarily
                 null,
                 customQuantityLabel: quantityDisplay,
-                icon: _getIconForName(product.name),
+                icon: _getIconForProduct(product),
               ),
             );
           }),
 
           // 3. Optionnel: Afficher les stocks qui ne sont PAS dans le catalogue (cas d'erreur/legacy)
           ...() {
-            final catalogNames = rawMaterialProducts.map((p) => p.name.toLowerCase()).toSet();
+            final displayedIds = <String>{};
+            final displayedNames = <String>{};
+            
+            for (final product in rawMaterialProducts) {
+              final productId = product.id;
+              final matchedItems = items.where((i) => i.id == productId || i.name.toLowerCase() == product.name.toLowerCase());
+              for (final i in matchedItems) {
+                displayedIds.add(i.id);
+                displayedNames.add(i.name.toLowerCase());
+              }
+            }
+
             final legacyItems = items.where((i) => 
               i.type == StockType.rawMaterial && 
-              !catalogNames.contains(i.name.toLowerCase()) &&
-              !i.name.toLowerCase().contains('sachet') // Sachet est géré en interne
+              !displayedIds.contains(i.id) &&
+              !displayedNames.contains(i.name.toLowerCase()) &&
+              !i.name.toLowerCase().contains('sachet')
             ).toList();
 
             if (legacyItems.isEmpty) return <Widget>[];
@@ -263,12 +280,22 @@ class RawMaterialsCard extends StatelessWidget {
       ],
     );
   }
-  IconData? _getIconForName(String name) {
-    final n = name.toLowerCase();
+  IconData? _getIconForProduct(Product product) {
+    if (product.role == ProductRoles.mainBobine) return Icons.repeat_rounded;
+    if (product.role == ProductRoles.mainPackaging) return Icons.layers_rounded;
+    
+    final id = product.id.toLowerCase();
+    if (id.contains('bobine')) return Icons.repeat_rounded;
+    if (id.contains('sachet') || id.contains('emballage')) return Icons.layers_rounded;
+    if (id.contains('bouchon')) return Icons.radio_button_checked_rounded;
+    if (id.contains('etiquette')) return Icons.label_important_outline_rounded;
+    
+    // Fallback on name if absolutely necessary but prefer id/role
+    final n = product.name.toLowerCase();
     if (n.contains('bobine')) return Icons.repeat_rounded;
     if (n.contains('sachet') || n.contains('emballage')) return Icons.layers_rounded;
     if (n.contains('bouchon')) return Icons.radio_button_checked_rounded;
-    if (n.contains('etiquette')) return Icons.label_important_outline_rounded;
+    
     return Icons.inventory_2_outlined;
   }
 }
